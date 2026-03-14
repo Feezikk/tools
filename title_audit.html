@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CB Title Assessment Audit v3.13</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+/* ── DESIGN TOKENS ── */
+:root{--bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--border:#2a3045;--text:#e4e8f0;--muted:#6b7592;--accent:#4f8ef7;--accent2:#7c5cbf;--pass:#22c97a;--fail:#f05252;--warn:#f5a623;--cs:#e8885a;--ids:#5b9cf6;--qa:#f0c940;--font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;--radius:6px;--nav:220px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono);background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:13px}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type="number"]{-moz-appearance:textfield}
+/* SIDEBAR */
+#sidebar{width:var(--nav);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.logo{padding:20px 16px 14px;border-bottom:1px solid var(--border)}.logo h1{font-family:var(--font-head);font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.3}
+.vtag{display:inline-block;margin-top:6px;font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:3px;padding:1px 6px}
+.ns{padding:8px 0;border-bottom:1px solid var(--border)}.nsl{font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:6px 16px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;transition:background .15s;color:var(--muted);font-size:12px;border-left:2px solid transparent}
+.ni:hover{background:var(--surface2);color:var(--text)}.ni.active{background:rgba(79,142,247,.1);color:var(--accent);border-left-color:var(--accent);padding-left:14px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--muted)}.dot-cs{background:var(--cs)}.dot-ids{background:var(--ids)}.dot-qa{background:var(--qa)}
+/* MAIN */
+#main{margin-left:var(--nav);flex:1;padding:0 32px 60px;min-width:0}.panel{display:none}.panel.active{display:block}
+.ph{margin-top:28px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}.ph h2{font-family:var(--font-head);font-size:22px;font-weight:700;letter-spacing:-.5px}
+.ph p{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.6}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:500}.badge::before{content:'●';font-size:8px}
+.bp{background:rgba(34,201,122,.12);color:var(--pass);border:1px solid rgba(34,201,122,.2)}.bf{background:rgba(240,82,82,.12);color:var(--fail);border:1px solid rgba(240,82,82,.2)}
+.bw{background:rgba(245,166,35,.12);color:var(--warn);border:1px solid rgba(245,166,35,.2)}.bn{background:rgba(107,117,146,.1);color:var(--muted);border:1px solid var(--border)}
+/* TABLE BASE */
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:12px}thead tr{background:var(--surface2)}
+th{padding:9px 12px;text-align:left;font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;line-height:1.3}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}td{padding:8px 12px;color:var(--text);vertical-align:middle}td:first-child{color:var(--muted)}
+/* SECTION TITLES */
+.stl{font-family:var(--font-head);font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;margin-top:20px;display:flex;align-items:center;gap:8px}
+.stl::after{content:'';flex:1;height:1px;background:var(--border)}.stl:first-child{margin-top:0}
+/* CARDS */
+.cg{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}.card:hover{border-color:#3a4565}
+.card-pass-border{border-color:rgba(34,201,122,.4)!important}.card-fail-border{border-color:rgba(240,82,82,.4)!important}
+.clabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}.cval{font-family:var(--font-head);font-size:26px;font-weight:700}
+/* INFO BOXES */
+.info{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;font-size:12px;color:var(--muted);line-height:1.7}
+/* COVER PAGE */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.chip{font-family:var(--font-mono);background:rgba(240,82,82,.08);border:1px solid rgba(240,82,82,.2);color:var(--fail);padding:3px 10px;border-radius:3px;font-size:12px}
+.sr{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}.sp{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px}.sp .lbl{color:var(--muted)}
+.ob{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:500}
+.ocs{background:rgba(232,136,90,.12);color:var(--cs);border:1px solid rgba(232,136,90,.2)}.oids{background:rgba(91,156,246,.12);color:var(--ids);border:1px solid rgba(91,156,246,.2)}
+.oqa{background:rgba(240,201,64,.12);color:var(--qa);border:1px solid rgba(240,201,64,.2)}.ov{background:rgba(107,117,146,.1);color:var(--muted);border:1px solid var(--border)}
+/* FORM ELEMENTS */
+.si{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none}
+.si:focus{border-color:var(--accent)}.si::placeholder{color:var(--muted)}
+.ui-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:4px 8px;font-family:var(--font-mono);font-size:11px}
+.si-pct{width:60px;padding:4px;text-align:center;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px;font-family:var(--font-mono);font-size:11px;outline:none}
+.si-pct:focus{border-color:var(--accent)}
+/* EDITABLE CELLS */
+.editable{background:rgba(79,142,247,.04);border:1px dashed rgba(79,142,247,.3);border-radius:3px;padding:4px 6px;outline:none;color:var(--text);font-family:var(--font-mono);font-size:12px;display:block;width:100%;box-sizing:border-box;min-width:40px;max-width:250px;transition:border-color .15s,background .15s,color .15s;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:1.4}
+.editable:focus{border-color:var(--accent);background:rgba(79,142,247,.1)}
+.editable.match-pass{background:rgba(34,201,122,.15)!important;border-color:rgba(34,201,122,.4)!important;border-style:solid!important;color:var(--pass)!important}
+.editable.match-fail{background:rgba(240,82,82,.15)!important;border-color:rgba(240,82,82,.4)!important;color:var(--fail)!important}
+.editable.match-na{background:rgba(107,117,146,.15)!important;border-color:rgba(107,117,146,.3)!important;color:var(--muted)!important}
+.has-prohibited{border-color:var(--fail)!important;background:rgba(240,82,82,.08)!important}
+.prohibited-hint{font-size:10px;color:var(--fail);margin-top:3px;font-family:var(--font-head)}
+/* BUTTONS */
+.tbtn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:var(--radius);font-family:var(--font-head);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.tbtn-add{background:rgba(34,201,122,.1);border-color:rgba(34,201,122,.3);color:var(--pass)}.tbtn-add:hover{background:rgba(34,201,122,.2);border-color:var(--pass)}
+.tbtn-clear{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.2);color:var(--warn)}.tbtn-clear:hover{background:rgba(245,166,35,.15);border-color:var(--warn)}
+.tbtn-del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;transition:color .15s}.tbtn-del:hover{color:var(--fail)}
+/* TOOLBAR */
+.cs-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sticky-bar{position:sticky;top:0;z-index:40;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:16px}
+/* PASTE ZONE */
+.paste-zone{display:none;background:rgba(79,142,247,.05);padding:16px;border-radius:var(--radius);margin-bottom:20px;border:1px dashed rgba(79,142,247,.4)}
+.paste-textarea{width:100%;height:120px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:3px;padding:10px;font-family:var(--font-mono);font-size:12px;margin-bottom:10px;resize:vertical;outline:none}
+.paste-label{font-size:12px;margin-bottom:8px}
+/* MODULE COLORS */
+.mod-00{background:rgba(107,117,146,.05)}.mod-01{background:rgba(79,142,247,.06)}.mod-02{background:rgba(124,92,191,.06)}
+.mod-03{background:rgba(34,201,122,.05)}.mod-04{background:rgba(232,136,90,.06)}.mod-05{background:rgba(240,201,64,.05)}
+.mod-06{background:rgba(91,200,214,.06)}.mod-07{background:rgba(214,91,150,.05)}.mod-08{background:rgba(140,200,80,.05)}.mod-09{background:rgba(200,140,80,.05)}
+tr.mod-00:hover,tr.mod-01:hover,tr.mod-02:hover,tr.mod-03:hover,tr.mod-04:hover,tr.mod-05:hover,tr.mod-06:hover,tr.mod-07:hover,tr.mod-08:hover,tr.mod-09:hover{filter:brightness(1.3)}
+.mod-hdr td{background:rgba(124,92,191,.08)!important;color:var(--accent2)!important;font-family:var(--font-head);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+
+/* CS SOURCE STICKY COLS */
+.cs-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);margin-bottom:20px}
+.cs-wrap table{border-collapse:collapse;width:max-content;min-width:100%}
+.cs-stk-1,.cs-stk-2,.cs-stk-3,.cs-stk-state{position:sticky;background:inherit;z-index:2}
+.cs-stk-1{left:0;min-width:36px}.cs-stk-2{left:36px;min-width:44px}.cs-stk-state{left:80px;min-width:70px}.cs-stk-3{left:80px;min-width:240px}
+.cs-stk-last{box-shadow:4px 0 8px rgba(0,0,0,.25)}
+thead .cs-stk-1,thead .cs-stk-2,thead .cs-stk-3,thead .cs-stk-state{background:var(--surface2);z-index:3}
+body.ms-on .cs-stk-3{left:150px}
+.drag-th{width:36px}.cs-col-hdr{display:flex;align-items:center;gap:6px}.sort-btn{padding:2px 6px!important;font-size:11px!important;flex-shrink:0}
+
+/* DOWNSTREAM STICKY COLS */
+.ds-stk-1,.ds-stk-2,.ds-stk-3,.ds-stk-4,.ds-stk-state{position:sticky;background:inherit;z-index:2}
+.ds-stk-1{left:0;min-width:45px;width:45px}.ds-stk-state{left:45px;min-width:70px;width:70px}.ds-stk-2{left:45px;min-width:280px;width:280px}
+.ds-stk-3{left:325px;min-width:85px;width:85px}.ds-stk-4{left:410px;min-width:85px;width:85px}
+.ds-stk-last{box-shadow:4px 0 8px rgba(0,0,0,.25)}
+thead .ds-stk-1,thead .ds-stk-2,thead .ds-stk-3,thead .ds-stk-4,thead .ds-stk-state{background:var(--surface2);z-index:3}
+body.ms-on .ds-stk-2{left:115px}
+body.ms-on .ds-stk-3{left:395px}
+body.ms-on .ds-stk-4{left:480px}
+
+/* STATE COL (multi-state downstream) */
+.ds-state-col{min-width:70px;width:70px;font-size:11px;font-family:var(--font-head);font-weight:600;color:var(--accent2);text-align:center}
+/* ROW CLASSES */
+tbody tr[id^="cspart-"] td{background:rgba(0,0,0,.12)}
+.multipart-label{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);cursor:pointer;margin-top:2px}
+.cs-from{color:var(--muted)!important;font-style:italic}.td-num{color:var(--muted);text-align:right}
+.seg-hdr{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--accent2);margin:24px 0 12px;padding:8px 14px;background:rgba(124,92,191,.07);border-left:3px solid var(--accent2);border-radius:0 var(--radius) var(--radius) 0}
+.seg-sticky-hdr{position:sticky;top:0;z-index:42;background:var(--bg);padding:10px 0;margin-bottom:14px;border-bottom:1px solid var(--border)}
+/* MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:108;animation:backdropIn .2s ease}
+.modal-backdrop.active{display:block}@keyframes backdropIn{from{opacity:0}to{opacity:1}}
+.flyout-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(860px,calc(100vw - 48px));max-height:calc(100vh - 60px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.85);z-index:110;flex-direction:column;overflow:hidden;animation:modalIn .18s ease}
+.flyout-panel.active{display:flex}@keyframes modalIn{from{opacity:0;transform:translate(-50%,-46%)}to{opacity:1;transform:translate(-50%,-50%)}}
+.modal-header{display:flex;align-items:center;gap:12px;padding:16px 20px 0;flex-shrink:0}
+.modal-title{font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--text);flex:1}
+.modal-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:16px;transition:all .15s}
+.modal-close:hover{background:rgba(240,82,82,.1);color:var(--fail);border-color:rgba(240,82,82,.3)}
+.modal-tabs{display:flex;gap:2px;padding:12px 20px 0;border-bottom:1px solid var(--border);flex-shrink:0;margin-top:12px}
+.modal-tab{font-family:var(--font-head);font-size:12px;font-weight:600;padding:7px 16px;border-radius:4px 4px 0 0;border:1px solid transparent;border-bottom:none;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;position:relative;bottom:-1px}
+.modal-tab:hover{color:var(--text);background:var(--surface2)}.modal-tab.active{color:var(--accent);background:var(--surface);border-color:var(--border);border-bottom-color:var(--surface)}
+.modal-body{flex:1;overflow:hidden;position:relative}.modal-pane{display:none;height:100%;overflow-y:auto;padding:20px}.modal-pane.active{display:block}
+/* CTRL SECTION */
+.ctrl-section{margin-bottom:20px;padding:14px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+.ctrl-section-title{font-family:var(--font-head);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px}
+.ctrl-section-desc{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.ctrl-toggle-label{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none}
+.ms-expand{overflow:hidden;max-height:0;transition:max-height .25s ease,opacity .2s ease,margin-top .2s ease;opacity:0;margin-top:0}
+.ms-expand.open{max-height:200px;opacity:1;margin-top:12px}
+.ms-expand-inner{padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius)}
+
+/* Custom Toggle Switch */
+.toggle-switch {
+  appearance: none; -webkit-appearance: none;
+  position: relative; width: 32px; height: 18px;
+  background: var(--surface2); border-radius: 10px;
+  cursor: pointer; outline: none; flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--border); transition: background .2s, box-shadow .2s;
+}
+.toggle-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; background: var(--muted);
+  border-radius: 50%; transition: left .2s, background .2s;
+}
+.toggle-switch:checked {
+  background: rgba(34,201,122,.2); box-shadow: inset 0 0 0 1px var(--pass);
+}
+.toggle-switch:checked::after {
+  left: 16px; background: var(--pass);
+}
+.toggle-switch:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* ASSESSMENT TYPES */
+.at-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.at-filter{font-size:11px;color:var(--muted);margin-left:auto;display:flex;align-items:center;gap:6px}.at-filter label{cursor:pointer;display:flex;align-items:center;gap:4px}
+.at-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.si-card{display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;gap:8px;transition:border-color .15s,opacity .15s}
+.si-card.is-hidden{opacity:.38}.si-card:hover{border-color:var(--accent)}
+.si-label{flex:1;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.si-time-wrap{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.si-time-wrap input{width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);padding:3px 5px;font-family:var(--font-mono);font-size:11px;text-align:right;outline:none}
+.si-time-wrap input:focus{border-color:var(--accent)}.si-time-suffix{font-size:10px;color:var(--muted)}
+.si-rubric-label{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);cursor:pointer;flex-shrink:0;white-space:nowrap}
+/* DASH BADGE */
+.dash-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;background:rgba(245,166,35,.2);color:var(--warn);border-radius:8px;font-size:10px;font-weight:700;font-family:var(--font-head);margin-left:4px;border:1px solid rgba(245,166,35,.35);transition:opacity .2s}
+.dash-badge[data-count="0"]{display:none}
+/* AI LIST */
+.ai-list-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.ai-type{user-select:none;pointer-events:none;width:115px;flex-shrink:0;text-align:right}
+.ai-type::before{content:attr(data-type);font-size:10px;background:var(--surface2);color:var(--muted);padding:2px 6px;border-radius:3px;border:1px solid var(--border);font-family:var(--font-head);letter-spacing:.5px;display:inline-block}
+/* SEG WEIGHTS */
+.dash-block{margin-bottom:20px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2)}
+.seg-ref-panel{display:flex;flex-direction:column;flex:0 0 420px;margin-bottom:10px;border-radius:var(--radius);border:1px solid var(--accent);background:var(--surface)}
+.seg-ref-header{position:sticky;top:0;z-index:10;padding:8px 12px;background:rgba(79,142,247,.1);border-bottom:1px solid var(--accent);font-weight:600;font-size:11px;display:flex;justify-content:space-between;align-items:center;color:var(--accent);border-radius:var(--radius) var(--radius) 0 0}
+.seg-ref-body{flex:1;overflow-y:auto;max-height:60vh}
+.seg-calc-grid{display:flex;flex-direction:column;flex:0 0 auto;min-width:340px;max-width:600px;margin-bottom:10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.splits-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.splits-part-label{width:50px;white-space:nowrap;color:var(--muted)}.splits-pct-label{color:var(--muted);font-size:11px}
+/* PACE */
+.pace-type-h{padding:2px 4px;border-radius:3px;font-size:9px;font-weight:600;background:rgba(240,82,82,.15);color:var(--fail)}
+.pace-type-r{padding:2px 4px;border-radius:3px;font-size:9px;font-weight:600;background:rgba(107,117,146,.15);color:var(--muted)}
+.pace-layout{display:flex;gap:24px;align-items:flex-start;margin-top:10px}
+.pace-pool-col{flex:0 0 280px;position:sticky;top:100px}
+.pace-pool{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);min-height:300px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:border .2s;overflow-y:auto;max-height:calc(100vh - 180px)}
+.pace-grids{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.pace-table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);table-layout:fixed}
+.pace-table th{background:var(--surface2);padding:8px 12px;font-size:10px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);text-align:left}
+.pace-table td{padding:8px 0;vertical-align:middle}.pace-table tr:last-child td{border-bottom:none}
+.pace-week-num{padding:12px;color:var(--muted);font-weight:600;text-align:center;border-right:1px solid var(--border);width:60px;font-size:11px;background:rgba(255,255,255,.01);vertical-align:middle}
+.pace-cell{min-height:27px;padding:8px;display:flex;flex-direction:column;gap:6px;transition:background .15s}
+.pace-cell.drag-over,.pace-pool.drag-over{background:rgba(79,142,247,.08);border-radius:4px;border:1px dashed var(--accent)}
+.pace-card{padding:8px 10px;border-radius:4px;font-size:11px;color:var(--text);line-height:1.4;border:1px solid transparent;box-shadow:0 2px 5px rgba(0,0,0,.15);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;transition:opacity .2s}
+.pace-card:active{opacity:.6}.pace-card strong{font-weight:500;font-family:var(--font-mono)}
+.pace-card.mod-00{background:rgba(107,117,146,.15);border-color:rgba(107,117,146,.3)}.pace-card.mod-01{background:rgba(79,142,247,.15);border-color:rgba(79,142,247,.3)}
+.pace-card.mod-02{background:rgba(124,92,191,.15);border-color:rgba(124,92,191,.3)}.pace-card.mod-03{background:rgba(34,201,122,.15);border-color:rgba(34,201,122,.3)}
+.pace-card.mod-04{background:rgba(232,136,90,.15);border-color:rgba(232,136,90,.3)}.pace-card.mod-05{background:rgba(240,201,64,.15);border-color:rgba(240,201,64,.3)}
+.pace-card.mod-06{background:rgba(91,200,214,.15);border-color:rgba(91,200,214,.3)}.pace-card.mod-07{background:rgba(214,91,150,.15);border-color:rgba(214,91,150,.3)}
+.pace-card.mod-08{background:rgba(140,200,80,.15);border-color:rgba(140,200,80,.3)}.pace-card.mod-09{background:rgba(200,140,80,.15);border-color:rgba(200,140,80,.3)}
+.honors-badge{font-size:11px;font-weight:400;color:var(--muted);font-family:var(--font-mono);padding:2px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-left:12px;vertical-align:middle}
+/* DRAG & DROP */
+.drag-handle{cursor:grab;color:var(--muted);padding:0 6px;user-select:none;font-size:14px;display:inline-block}.drag-handle:active{cursor:grabbing}
+tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{border-top:2px solid var(--accent)}
+/* STICKY THEAD CLONE */
+.sticky-thead-clone{position:fixed;z-index:45;overflow:hidden;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;scrollbar-width:none;box-shadow:0 4px 10px rgba(0,0,0,.4);pointer-events:none}
+.sticky-thead-clone::-webkit-scrollbar{display:none}
+.sticky-thead-clone table{width:max-content;min-width:100%;border-collapse:collapse}
+.sticky-thead-clone th{padding:9px 12px;font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);white-space:nowrap;line-height:1.3;background:var(--surface2);border-bottom:1px solid var(--border)}
+/* PHANTOM SCROLL */
+#phantom-scroll{position:fixed;bottom:0;left:var(--nav);right:0;z-index:200;background:var(--surface);border-top:1px solid var(--border);overflow-x:auto;overflow-y:hidden;height:20px;display:none}
+#phantom-scroll-inner{height:1px}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:8px;height:12px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+/* TOAST */
+#toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:12px 20px;border-radius:var(--radius);box-shadow:0 4px 12px rgba(0,0,0,.4);font-size:13px;font-weight:500;font-family:var(--font-head);animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards;display:flex;align-items:center;gap:10px}
+.toast::before{font-size:15px;flex-shrink:0}
+.toast-error{background:rgba(240,82,82,.15);color:var(--fail);border-color:rgba(240,82,82,.35)}.toast-error::before{content:'\u2715'}
+.toast-success{background:rgba(34,201,122,.12);color:var(--pass);border-color:rgba(34,201,122,.3)}.toast-success::before{content:'\u2713'}
+.toast-warn{background:rgba(245,166,35,.12);color:var(--warn);border-color:rgba(245,166,35,.3)}.toast-warn::before{content:'\u26a0'}
+.toast-info{background:rgba(79,142,247,.12);color:var(--accent);border-color:rgba(79,142,247,.3)}.toast-info::before{content:'\u2139'}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-8px)}}
+/* VERSION LOG */
+.vlog-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px}
+.vlog-form-title{font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px}
+.vlog-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}.vlog-notes{grid-column:1/-1}
+.vlog-field{display:flex;flex-direction:column;gap:4px}.vlog-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.vlog-input{background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text);padding:6px 10px;font-family:var(--font-mono);font-size:12px;outline:none}
+.vlog-input:focus{border-color:var(--accent)}.vlog-runtime-row{font-size:11px;color:var(--muted)}
+/* SUMMARY */
+.mod-summary-hdr{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:10px;padding-left:4px}
+.mod-no-entries{font-size:12px;color:var(--muted);padding:8px 4px;border-bottom:1px solid var(--border);margin-bottom:6px}
+/* UTILITY */
+.u-flex{display:flex}.u-flex-1{flex:1}.u-flex-between{justify-content:space-between}.u-items-center{align-items:center}
+.u-gap-4{gap:4px}.u-gap-6{gap:6px}.u-gap-8{gap:8px}.u-gap-10{gap:10px}.u-gap-12{gap:12px}.u-gap-16{gap:16px}.u-gap-20{gap:20px}
+.u-ml-auto{margin-left:auto}.u-mt-8{margin-top:8px}.u-mb-8{margin-bottom:8px}.u-mb-12{margin-bottom:12px}.u-mb-14{margin-bottom:14px}
+.u-mb-16{margin-bottom:16px}.u-mb-20{margin-bottom:20px}
+.u-text-muted{color:var(--muted)}.u-text-accent{color:var(--accent)}.u-text-11{font-size:11px}.u-text-12{font-size:12px}.u-text-13{font-size:13px}
+.u-font-head{font-family:var(--font-head)}.u-font-mono{font-family:var(--font-mono)}.u-font-bold{font-weight:700}.u-font-400{font-weight:400}
+.u-lh-15{line-height:1.5}.u-overflow-y{overflow-y:auto}.u-cursor-pointer{cursor:pointer}.u-select-none{user-select:none}.u-max-w-260{max-width:260px}
+
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="modal-backdrop" class="modal-backdrop" onclick="closeModal()"></div>
+<nav id="sidebar">
+  <div class="logo"><h1>CB Title Assessment<br>Audit</h1><span class="vtag">v3.13 &middot; Unlimited Exam Weights</span></div>
+  <div class="ns"><div class="nsl">Overview</div>
+    <div class="ni active" onclick="show('cover',this)"><span class="dot"></span>Cover &amp; Guide</div>
+    <div class="ni" onclick="show('summary',this)"><span class="dot"></span>Summary</div>
+    <div class="ni" onclick="show('summod',this)"><span class="dot"></span>Summary by Module</div>
+  </div>
+  <div class="ns"><div class="nsl">CS Workflow</div>
+    <div class="ni" onclick="show('cs',this)"><span class="dot dot-cs"></span>1 &middot; CS Source</div>
+  </div>
+  <div class="ns"><div class="nsl">IDS Workflow</div>
+    <div class="ni" onclick="show('checklist',this)"><span class="dot dot-ids"></span>2 &middot; Checklist / Sitemap</div>
+    <div class="ni" onclick="show('divs',this)"><span class="dot dot-ids"></span>3 &middot; Divs &amp; Rubrics</div>
+    <div class="ni" onclick="show('gradebuilder',this)"><span class="dot dot-ids"></span>4 &middot; Gradebuilder</div>
+    <div class="ni" onclick="show('ipp',this)"><span class="dot dot-ids"></span>6 &middot; IPP</div>
+    <div class="ni" onclick="show('pacecharts',this)"><span class="dot dot-ids"></span>7 &middot; Pace Charts</div>
+    <div class="ni" onclick="show('segweights-ids',this)"><span class="dot dot-ids"></span>IDS Seg Exam Weights</div>
+  </div>
+  <div class="ns"><div class="nsl">CS &amp; QA</div>
+    <div class="ni" onclick="show('answerkeys',this)"><span class="dot dot-cs"></span>5 &middot; Answer Keys</div>
+    <div class="ni" onclick="show('segweights-qa',this)"><span class="dot dot-qa"></span>QA Seg Exam Weights</div>
+  </div>
+  <div class="ns"><div class="nsl">Pace Boards</div>
+    <div class="ni" onclick="show('regularpace',this)"><span class="dot"></span>Regular Pace</div>
+    <div class="ni" id="nav-honorspace" onclick="show('honorspace',this)"><span class="dot"></span>Honors Pace</div>
+  </div>
+  <div class="ns"><div class="nsl">Reference</div>
+    <div class="ni" onclick="show('version',this)"><span class="dot"></span>Version History</div>
+  </div>
+</nav>
+<main id="main">
+
+<div id="tab-cover" class="panel active">
+  <div class="ph"><h2>Cover &amp; Guide</h2><p>Tab descriptions, ownership, and content validation rules.</p></div>
+  <div class="stl">Tab Directory</div>
+  <div class="tw"><table><thead><tr><th>Tab</th><th>Description</th><th>Owner</th></tr></thead><tbody>
+    <tr><td>Summary</td><td>Overall Pass/Fail for the audit and completeness check</td><td><span class="ob ov">View only</span></td></tr>
+    <tr><td>Summary by Module</td><td>Pass/Fail and completeness per item per module</td><td><span class="ob ov">View only</span></td></tr>
+    <tr><td>1-CS Source</td><td>Source of truth. CS enters base info; IDS assists.</td><td><span class="ob ocs">CS &amp; IDS</span></td></tr>
+    <tr><td>2-Checklist Sitemap</td><td>Pass/fail for titles, points, and times in the sitemap</td><td><span class="ob oids">IDS</span></td></tr>
+    <tr><td>3-Divs and Rubrics</td><td>Pass/fail for assessment and rubric titles and point values</td><td><span class="ob oids">IDS</span></td></tr>
+    <tr><td>4-Gradebuilder</td><td>Pass/fail for assessment titles and points in Educator</td><td><span class="ob oids">IDS</span></td></tr>
+    <tr><td>IDS Seg Exam Weights</td><td>Calculation tool for segment exam weight point values by IDS</td><td><span class="ob oids">IDS</span></td></tr>
+    <tr><td>QA Seg Exam Weights</td><td>Calculation tool for segment exam weight point values by QA</td><td><span class="ob oqa">QA</span></td></tr>
+    <tr><td>5-CS Answer Keys</td><td>Pass/fail for titles and points in answer key documents</td><td><span class="ob ocs">CS</span></td></tr>
+    <tr><td>6-IPP</td><td>Pass/fail for lesson titles and times in IPP documents</td><td><span class="ob oids">IDS</span></td></tr>
+    <tr><td>7-Pace Charts</td><td>Pass/fail for lesson titles in Pace charts</td><td><span class="ob oids">IDS</span></td></tr>
+  </tbody></table></div>
+  <div class="stl">Owner Colors</div>
+  <div class="sr">
+    <div class="sp"><span class="dot dot-cs"></span><span class="lbl">CS &middot;</span><span>Orange</span></div>
+    <div class="sp"><span class="dot dot-ids"></span><span class="lbl">IDS &middot;</span><span>Blue</span></div>
+    <div class="sp"><span class="dot dot-qa"></span><span class="lbl">QA &middot;</span><span>Yellow</span></div>
+  </div>
+  <div class="stl">Title Rules</div>
+  <div class="info"><strong>Character limit:</strong> Title Character Count cannot exceed <strong>100 characters</strong>. Validated automatically in CS Source.<br><br>
+    <strong>N/A Override:</strong> By default, all downstream tabs (2-7) strictly evaluate every row entered in CS Source. If a specific field legitimately does not require a match, manually type <strong>N/A</strong> into that downstream cell to bypass the check.</div>
+  <div class="stl">Prohibited Characters</div>
+  <div class="chips"><span class="chip">forward slash /</span><span class="chip">quotes "}</span><span class="chip">asterisk *</span><span class="chip">less than &lt;</span><span class="chip">greater than &gt;</span><span class="chip">plus +</span><span class="chip">equals =</span><span class="chip">pipe |</span><span class="chip">percent %</span><span class="chip">em dash &#x2014;</span><span class="chip">en dash &#x2013;</span></div>
+</div>
+
+<div id="tab-summary" class="panel"><div class="ph"><h2>Audit and Point Summary</h2><p>Overall pass/fail status across all audit sections.</p></div><div id="summary-content"></div></div>
+<div id="tab-summod" class="panel"><div class="ph"><h2>Summary by Module</h2><p>Pass/Fail completeness check per module.</p></div><div id="summod-content"></div></div>
+
+<div id="tab-cs" class="panel">
+  <div class="ph"><h2>1 &middot; CS Source</h2><p>Source of truth. All fields must be filled in to Pass.</p></div>
+  <div class="cs-toolbar sticky-bar">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('cs-body',this.value)">
+    <button class="tbtn tbtn-add" onclick="addCSRow()">&#xFE0E;+ Add Row</button>
+    <button class="tbtn tbtn-clear" onclick="clearAllCS()">&ldca; Clear All</button>
+    <div class="u-ml-auto u-flex u-gap-10">
+      <button class="tbtn" onclick="toggleSettings()">&#9881; CS Dashboard<span id="toolbar-dash-badge" class="dash-badge" data-count="0">0</span></button>
+    </div>
+  </div>
+  <div id="cs-settings-zone" class="flyout-panel">
+    <div class="modal-header"><span class="modal-title">CS Dashboard</span><button class="modal-close" onclick="closeModal()" title="Close (Esc)">&times;</button></div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchDashTab('controls',this)">Controls</button>
+      <button class="modal-tab" onclick="switchDashTab('types',this)">Assessment Types <span id="dash-hidden-badge" class="dash-badge" data-count="0">0</span></button>
+      <button class="modal-tab" onclick="switchDashTab('ailist',this)">Academic Integrity</button>
+      <button class="modal-tab" onclick="switchDashTab('stats',this)">Stats</button>
+    </div>
+    <div class="modal-body">
+      <div id="dash-pane-controls" class="modal-pane active">
+        <div class="ctrl-section">
+          <div class="ctrl-section-title">Multi-State Mode</div>
+          <div class="ctrl-section-desc">Adds a State column to CS Source and all downstream sections for courses that run in multiple states (e.g. TX, FL). The state entered in CS Source is visible throughout all validation tabs.</div>
+          <label class="ctrl-toggle-label"><input type="checkbox" id="ms-chk" onchange="toggleMultiState(this.checked)"> Enable Multi-State</label>
+          <div id="multi-state-ui" class="ms-expand">
+            <div class="ms-expand-inner">
+              <div class="u-flex u-gap-6"><input type="text" id="ms-input" class="si" style="width:120px;" placeholder="e.g. TX" onkeyup="if(event.key==='Enter') addMultiState(this.value)">
+              <button class="tbtn tbtn-add" onclick="addMultiState(document.getElementById('ms-input').value)" style="padding:5px 12px;font-size:11px;">Add State</button></div>
+              <div id="state-list" class="chips u-mt-8"></div>
+            </div>
+          </div>
+        </div>
+        <div class="ctrl-section" style="margin-bottom:0">
+          <div class="ctrl-section-title">Multi-Part Exam Tracking</div>
+          <div class="ctrl-section-desc">Enables a Multi-Part checkbox on each row. Parts share a parent title but track individual time and point values.</div>
+          <label class="ctrl-toggle-label"><input type="checkbox" id="mp-chk" onchange="toggleMultiPartGlobal(this.checked)"> Enable Multi-Part Exams</label>
+        </div>
+      </div>
+      <div id="dash-pane-types" class="modal-pane">
+        <div class="at-toolbar">
+          <button class="tbtn tbtn-add" onclick="toggleAllAssessments(true)" style="padding:5px 12px;font-size:11px;">Show All</button>
+          <button class="tbtn" onclick="toggleAllAssessments(false)" style="padding:5px 12px;font-size:11px;">Hide All</button>
+          <label class="at-filter"><input type="checkbox" id="at-show-hidden" checked onchange="renderSettings()"> Show hidden types</label>
+        </div>
+        <div class="at-grid" id="cs-settings-grid"></div>
+      </div>
+      <div id="dash-pane-ailist" class="modal-pane">
+        <div class="u-flex u-flex-between u-items-center u-mb-16">
+          <div class="u-flex u-gap-16">
+            <label class="u-flex u-items-center u-gap-6 u-text-12 u-cursor-pointer"><input type="checkbox" id="ai-chk-tg" checked onchange="renderAIList()"> Teacher Graded</label>
+            <label class="u-flex u-items-center u-gap-6 u-text-12 u-cursor-pointer"><input type="checkbox" id="ai-chk-pa" checked onchange="renderAIList()"> Partial-Auto</label>
+          </div>
+          <button class="tbtn u-text-11" style="padding:4px 10px;" onclick="copyAIList()">&#x1F4CB; Copy Titles</button>
+        </div>
+        <div id="ai-list-output" class="u-overflow-y u-font-mono u-text-13" style="max-height:400px;"></div>
+      </div>
+      <div id="dash-pane-stats" class="modal-pane">
+        </div>
+    </div>
+  </div>
+  <div class="cs-wrap"><table><thead id="cs-thead"></thead><tbody id="cs-body"></tbody></table></div>
+</div>
+
+<div id="tab-checklist" class="panel">
+  <div class="ph"><h2>2 &middot; Checklist / Sitemap</h2><p>Titles, points, and times auto-populated from CS Source.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('cl-body',this.value)">
+    <button class="tbtn" onclick="toggleCLPaste()">&#x1F4CB; Paste from CB Checklists</button>
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div id="cl-paste-zone" class="paste-zone">
+    <div class="paste-label"><strong>Bulk Paste:</strong> Copy 3 columns (Title, Points, Time) and paste below.</div>
+    <textarea id="cl-paste-input" class="paste-textarea"></textarea>
+    <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyCLPaste()">Apply Paste</button><button class="tbtn" onclick="toggleCLPaste()">Cancel</button></div>
+  </div>
+  <div class="tw"><table id="cl-table"><colgroup id="cl-colgroup"></colgroup><thead id="cl-thead"></thead><tbody id="cl-body"></tbody></table></div>
+</div>
+
+<div id="tab-divs" class="panel">
+  <div class="ph"><h2>3 &middot; Divs &amp; Rubrics</h2><p>Titles auto-populated from CS Source.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('dv-body',this.value)">
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div class="tw"><table id="dv-table"><colgroup id="dv-colgroup"></colgroup><thead id="dv-thead"></thead><tbody id="dv-body"></tbody></table></div>
+</div>
+
+<div id="tab-gradebuilder" class="panel">
+  <div class="ph"><h2>4 &middot; Gradebuilder</h2><p>Titles &amp; points auto-populated from CS Source.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('gb-body',this.value)">
+    <button class="tbtn" onclick="toggleGBPaste()">&#x1F4CB; Paste Gradebuilder Export</button>
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div id="gb-paste-zone" class="paste-zone">
+    <div class="paste-label"><strong>Bulk Paste:</strong> Copy 2 columns (Title, Points) from Excel and paste below.</div>
+    <textarea id="gb-paste-input" class="paste-textarea"></textarea>
+    <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyGBPaste()">Apply Paste</button><button class="tbtn" onclick="toggleGBPaste()">Cancel</button></div>
+  </div>
+  <div class="tw"><table id="gb-table"><colgroup id="gb-colgroup"></colgroup><thead id="gb-thead"></thead><tbody id="gb-body"></tbody></table></div>
+</div>
+
+<div id="tab-answerkeys" class="panel">
+  <div class="ph"><h2>5 &middot; CS Answer Keys</h2><p>Titles &amp; points auto-populated from CS Source.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('ak-body',this.value)">
+    <button class="tbtn" onclick="toggleAKPaste()">&#x1F4CB; Paste Word TOC</button>
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div id="ak-paste-zone" class="paste-zone">
+    <div class="paste-label"><strong>Bulk Paste:</strong> Copy the Table of Contents from your Word Document and paste below.</div>
+    <textarea id="ak-paste-input" class="paste-textarea"></textarea>
+    <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyAKPaste()">Apply Paste</button><button class="tbtn" onclick="toggleAKPaste()">Cancel</button></div>
+  </div>
+  <div class="tw"><table id="ak-table"><colgroup id="ak-colgroup"></colgroup><thead id="ak-thead"></thead><tbody id="ak-body"></tbody></table></div>
+</div>
+
+<div id="tab-ipp" class="panel">
+  <div class="ph"><h2>6 &middot; IPP</h2><p>Titles &amp; times auto-populated from CS Source.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('ipp-body',this.value)">
+    <button class="tbtn" onclick="toggleIPPPaste()">&#x1F4CB; Paste from IPP Site</button>
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div id="ipp-paste-zone" class="paste-zone">
+    <div class="paste-label u-mb-12"><strong>Bulk Paste:</strong> Copy 3 columns (Title, Segment, Time) and paste below.</div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Apply to:</label>
+      <select id="ipp-paste-type" class="ui-select"><option value="GS">GS (Global School)</option><option value="FL">FL (Florida)</option></select></div>
+    <textarea id="ipp-paste-input" class="paste-textarea"></textarea>
+    <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyIPPPaste()">Apply Paste</button><button class="tbtn" onclick="toggleIPPPaste()">Cancel</button></div>
+  </div>
+  <div class="tw"><table id="ipp-table"><colgroup id="ipp-colgroup"></colgroup><thead id="ipp-thead"></thead><tbody id="ipp-body"></tbody></table></div>
+</div>
+
+<div id="tab-pacecharts" class="panel">
+  <div class="ph"><h2>7 &middot; Pace Charts</h2><p>Titles auto-populated from CS Source.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14">
+    <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('pc-body',this.value)">
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div class="tw"><table id="pc-table"><colgroup id="pc-colgroup"></colgroup><thead id="pc-thead"></thead><tbody id="pc-body"></tbody></table></div>
+</div>
+
+<div id="tab-segweights-ids" class="panel">
+  <div class="ph"><h2>IDS Segment Exam Weights</h2><p>Calculation tool for segment exam weight point values for IDS.</p></div>
+  <div class="u-mb-20 u-flex u-gap-10"><button class="tbtn" onclick="toggleSegPaste('ids')">&#x1F4CB; Bulk Paste: GradeBuilder Export</button></div>
+  <div id="ids-seg-paste-zone" class="paste-zone">
+    <div class="paste-label u-mb-12"><strong>Bulk Paste:</strong> Copy 2 or 3 columns (Title, Points, Segment) and paste below.</div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Apply to:</label>
+      <select id="ids-seg-paste-type" class="ui-select"><option value="auto">Auto (Requires Segment column)</option><option value="1">Force to Segment 1</option><option value="2">Force to Segment 2</option></select></div>
+    <textarea id="ids-seg-paste-input" class="paste-textarea"></textarea>
+    <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applySegPaste('ids')">Apply Paste</button><button class="tbtn" onclick="toggleSegPaste('ids')">Cancel</button></div>
+  </div>
+  <div id="ids-seg-1-section"><div class="seg-sticky-hdr"><div class="seg-hdr" style="margin:0">Segment 1</div><div id="ids-seg-1-controls" class="u-flex u-gap-10 u-items-center" style="flex-wrap:wrap"></div></div><div id="ids-seg-1-grids" class="u-flex u-gap-20 u-items-start" style="overflow-x:auto;padding-bottom:10px;"></div></div>
+  <div id="ids-seg-2-section" style="margin-top:60px"><div class="seg-sticky-hdr"><div class="seg-hdr" style="margin:0">Segment 2</div><div id="ids-seg-2-controls" class="u-flex u-gap-10 u-items-center" style="flex-wrap:wrap"></div></div><div id="ids-seg-2-grids" class="u-flex u-gap-20 u-items-start" style="overflow-x:auto;padding-bottom:10px;"></div></div>
+</div>
+
+<div id="tab-segweights-qa" class="panel">
+  <div class="ph"><h2>QA Segment Exam Weights</h2><p>Calculation tool for segment exam weight point values for QA.</p></div>
+  <div class="u-mb-20 u-flex u-gap-10"><button class="tbtn" onclick="toggleSegPaste('qa')">&#x1F4CB; Bulk Paste: GradeBuilder Export</button></div>
+  <div id="qa-seg-paste-zone" class="paste-zone">
+    <div class="paste-label u-mb-12"><strong>Bulk Paste:</strong> Copy 2 or 3 columns (Title, Points, Segment) and paste below.</div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Apply to:</label>
+      <select id="qa-seg-paste-type" class="ui-select"><option value="auto">Auto (Requires Segment column)</option><option value="1">Force to Segment 1</option><option value="2">Force to Segment 2</option></select></div>
+    <textarea id="qa-seg-paste-input" class="paste-textarea"></textarea>
+    <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applySegPaste('qa')">Apply Paste</button><button class="tbtn" onclick="toggleSegPaste('qa')">Cancel</button></div>
+  </div>
+  <div id="qa-seg-1-section"><div class="seg-sticky-hdr"><div class="seg-hdr" style="margin:0">Segment 1</div><div id="qa-seg-1-controls" class="u-flex u-gap-10 u-items-center" style="flex-wrap:wrap"></div></div><div id="qa-seg-1-grids" class="u-flex u-gap-20 u-items-start" style="overflow-x:auto;padding-bottom:10px;"></div></div>
+  <div id="qa-seg-2-section" style="margin-top:60px"><div class="seg-sticky-hdr"><div class="seg-hdr" style="margin:0">Segment 2</div><div id="qa-seg-2-controls" class="u-flex u-gap-10 u-items-center" style="flex-wrap:wrap"></div></div><div id="qa-seg-2-grids" class="u-flex u-gap-20 u-items-start" style="overflow-x:auto;padding-bottom:10px;"></div></div>
+</div>
+
+<div id="tab-regularpace" class="panel">
+  <div class="ph"><h2>Regular Pace</h2><p>Drag and drop lessons into the pacing grids.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14" style="top:0;">
+    <button class="tbtn" id="btn-pace-view" onclick="togglePaceView('rp')">Switch to Code View</button>
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div id="rp-seg1-section">
+    <div class="seg-sticky-hdr" style="top:48px;"><div class="seg-hdr" style="margin:0">Segment 1 Pace</div></div>
+    <div class="pace-layout">
+      <div class="pace-pool-col"><div class="stl" style="margin-top:0">Available Lessons</div><div class="pace-pool" id="rp-pool-1" ondragover="onPaceDragOver(event)" ondragleave="onPaceDragLeave(event)" ondrop="onPaceDrop(event,'rp',1,'pool',null)"></div></div>
+      <div class="pace-grids">
+        <div><div class="stl" style="margin-top:0">Normal (18 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="rp-normal-1-body"></tbody></table></div>
+        <div><div class="stl" style="margin-top:0">Accelerated (9 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="rp-accel-1-body"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+  <div id="rp-seg2-section" style="margin-top:60px">
+    <div class="seg-sticky-hdr" style="top:48px;"><div class="seg-hdr" style="margin:0">Segment 2 Pace</div></div>
+    <div class="pace-layout">
+      <div class="pace-pool-col"><div class="stl" style="margin-top:0">Available Lessons</div><div class="pace-pool" id="rp-pool-2" ondragover="onPaceDragOver(event)" ondragleave="onPaceDragLeave(event)" ondrop="onPaceDrop(event,'rp',2,'pool',null)"></div></div>
+      <div class="pace-grids">
+        <div><div class="stl" style="margin-top:0">Normal (18 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="rp-normal-2-body"></tbody></table></div>
+        <div><div class="stl" style="margin-top:0">Accelerated (9 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="rp-accel-2-body"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-honorspace" class="panel">
+  <div id="honors-header" class="ph"><h2>Honors Pace <span id="honors-badge" class="honors-badge">No Honors items</span></h2><p>Both Regular and Honors lessons can be placed here.</p></div>
+  <div class="cs-toolbar sticky-bar u-mb-14" style="top:0;">
+    <button class="tbtn" id="btn-honors-pace-view" onclick="togglePaceView('hp')">Switch to Code View</button>
+    <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
+  </div>
+  <div id="hp-layout-wrapper">
+    <div id="hp-seg1-section">
+      <div class="seg-sticky-hdr" style="top:48px;"><div class="seg-hdr" style="margin:0">Segment 1 Pace</div></div>
+      <div class="pace-layout">
+        <div class="pace-pool-col"><div class="stl" style="margin-top:0">Available Lessons</div><div class="pace-pool" id="hp-pool-1" ondragover="onPaceDragOver(event)" ondragleave="onPaceDragLeave(event)" ondrop="onPaceDrop(event,'hp',1,'pool',null)"></div></div>
+        <div class="pace-grids">
+          <div><div class="stl" style="margin-top:0">Normal (18 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="hp-normal-1-body"></tbody></table></div>
+          <div><div class="stl" style="margin-top:0">Accelerated (9 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="hp-accel-1-body"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+    <div id="hp-seg2-section" style="margin-top:60px">
+      <div class="seg-sticky-hdr" style="top:48px;"><div class="seg-hdr" style="margin:0">Segment 2 Pace</div></div>
+      <div class="pace-layout">
+        <div class="pace-pool-col"><div class="stl" style="margin-top:0">Available Lessons</div><div class="pace-pool" id="hp-pool-2" ondragover="onPaceDragOver(event)" ondragleave="onPaceDragLeave(event)" ondrop="onPaceDrop(event,'hp',2,'pool',null)"></div></div>
+        <div class="pace-grids">
+          <div><div class="stl" style="margin-top:0">Normal (18 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="hp-normal-2-body"></tbody></table></div>
+          <div><div class="stl" style="margin-top:0">Accelerated (9 Weeks)</div><table class="pace-table"><thead><tr><th style="width:60px">Week</th><th>Lessons</th></tr></thead><tbody id="hp-accel-2-body"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-version" class="panel">
+  <div class="ph"><h2>Version History</h2><p>Development and approval tracking for this document.</p></div>
+  <div class="vlog-form">
+    <div class="vlog-form-title">&#x1F4DD; Log a Change</div>
+    <div class="vlog-grid">
+      <div class="vlog-field"><label class="vlog-label">Author</label><input id="vlog-author" class="vlog-input" type="text" placeholder="Your name&hellip;"></div>
+      <div class="vlog-field"><label class="vlog-label">Reason / Title</label><input id="vlog-reason" class="vlog-input" type="text" placeholder="e.g. Updated sitemap titles"></div>
+      <div class="vlog-field"><label class="vlog-label">Approved By</label><input id="vlog-approved" class="vlog-input" type="text" placeholder="Optional"></div>
+      <div class="vlog-field vlog-notes"><label class="vlog-label">Notes</label><input id="vlog-notes" class="vlog-input" type="text" placeholder="Describe what changed&hellip;"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;"><button class="tbtn tbtn-add" onclick="logVersionEntry()">+ Add Entry</button><span class="vlog-runtime-row">Date/time recorded automatically.</span></div>
+  </div>
+  <div class="tw"><table><thead><tr><th>Ver.</th><th>Author</th><th>Date</th><th>Reason</th><th>Approved By</th><th>Date Sent</th><th>Date Approved</th><th>Notes</th></tr></thead><tbody id="vh-body"></tbody></table></div>
+</div>
+
+</main>
+<div id="phantom-scroll"><div id="phantom-scroll-inner"></div></div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════════════════════
+// CB TITLE ASSESSMENT AUDIT v3.13
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── GLOBALS ─────────────────────────────────────────────────────────────────
+let MULTI_STATE_ENABLED = false;
+let MULTI_STATES        = [];
+let ACTIVE_STATE_FILTER = 'ALL';
+let MULTI_PART_ENABLED  = false;
+let APP_STATE           = [];
+let RUNTIME_VERSION_LOG = [];
+let paceViewMode        = { rp:'standard', hp:'standard' };
+let dragSrcIndex = null, dragPaceType = null, dragSrcGrid = null;
+window.lastSegPts = { ids:{1:[],2:[]}, qa:{1:[],2:[]} };
+let SEG_STATE = {
+  ids:{ 1:{rows:[],splits:[[50,50]],activeGrids:1,splitsOpen:false,refOpen:false,gridTitles:['Calculation Version 1']}, 2:{rows:[],splits:[[50,50]],activeGrids:1,splitsOpen:false,refOpen:false,gridTitles:['Calculation Version 1']} },
+  qa: { 1:{rows:[],splits:[[50,50]],activeGrids:1,splitsOpen:false,refOpen:false,gridTitles:['Calculation Version 1']}, 2:{rows:[],splits:[[50,50]],activeGrids:1,splitsOpen:false,refOpen:false,gridTitles:['Calculation Version 1']} }
+};
+
+// ── CONSTANTS ────────────────────────────────────────────────────────────────
+const PROHIBITED   = ['/', '"', '*', '<', '>', '+', '=', '|', '%', '\u2014', '\u2013'];
+const GRADING_OPTS = ['', 'Auto', 'Partial-Auto', 'Teacher Graded'];
+const LABEL_OPTS   = ['', 'Assignment', 'Collaboration Product', 'Collaboration Reflection',
+  'Discussion-Based Assessment', 'Enrichment Activity', 'Interactive Assessment', 'Milestone',
+  'Module Exam', 'Post-Test', 'Practice Exam', 'Pretest', 'Project', 'Quiz',
+  'Segment Exam', 'Voice Activity', 'Worksheet'];
+let ASSESSMENT_DEFAULTS = {
+  'Assignment':                  {time:'',rubric:'Yes',visible:true, gradingType:''},
+  'Collaboration Product':       {time:'',rubric:'No', visible:true, gradingType:''},
+  'Collaboration Reflection':    {time:'',rubric:'No', visible:true, gradingType:''},
+  'Discussion-Based Assessment': {time:'',rubric:'Yes',visible:true, gradingType:''},
+  'Enrichment Activity':         {time:'',rubric:'No', visible:true, gradingType:''},
+  'Interactive Assessment':      {time:'',rubric:'No', visible:false, gradingType:''},
+  'Milestone':                   {time:'',rubric:'No', visible:false, gradingType:''},
+  'Module Exam':                 {time:'',rubric:'No', visible:true, gradingType:''},
+  'Post-Test':                   {time:'',rubric:'No', visible:true, gradingType:''},
+  'Practice Exam':               {time:'',rubric:'No', visible:true, gradingType:''},
+  'Pretest':                     {time:'',rubric:'No', visible:true, gradingType:''},
+  'Project':                     {time:'',rubric:'Yes',visible:true, gradingType:''},
+  'Quiz':                        {time:'',rubric:'No', visible:true, gradingType:''},
+  'Segment Exam':                {time:'',rubric:'No', visible:true, gradingType:''},
+  'Voice Activity':              {time:'',rubric:'Yes',visible:true, gradingType:''},
+  'Worksheet':                   {time:'',rubric:'No', visible:false, gradingType:''}
+};
+
+const RAW_DATA = {
+  cs:[
+    ["01.01",5,1,5,10,5,"Auto","Quiz","No","Yes","No"],
+    ["02.01",5,1,5,5,5,"Auto","Quiz","No","Yes","No"],
+    ["03.01",5,1,5,5,5,"Auto","Quiz","No","Yes","No"],
+    ["04.01",5,1,5,5,5,"Auto","Quiz","No","Yes","No"],
+    ["04.02",5,2,5,5,5,"Auto","Quiz","No","Yes","No"],
+    ["06.03 Honors",5,1,5,5,5,"Auto","Quiz","No","Yes","Yes"],
+    ["07.03",5,1,5,5,5,"Auto","Quiz","No","Yes","No"],
+    ["08.03",5,1,5,5,5,"Auto","Quiz","No","Yes","No"],
+    ["09.03",5,1,5,5,5,"Auto","Quiz","No","Yes","No"]
+  ],
+  version:[
+    ["3.0","AI Assistant","2026-03-08","Complete v3.0 Rewrite","","","","Full ground-up rewrite. Cleaner architecture, better comments, optimized rendering. New: Multi-State column propagates to all downstream tabs (2-7) so state entered in CS Source is visible during validation. Point Checker removed. All prior fixes from v1.17-v2.31 incorporated."],
+    ["3.1","AI Assistant","2026-03-08","Fix Multi-State Column Order","","","","Moved State column before Lesson Title in downstream tabs and fixed data alignment. Adjusted sticky CSS for proper scrolling."],
+    ["3.2","AI Assistant","2026-03-09","Fix Checklist column widths","","","","Removed an extra column definition in the Checklist sitemap colgroup that caused table cells to stretch out of proportion."],
+    ["3.3","AI Assistant","2026-03-09","Added Grading Type defaults","","","","Added ability to set default Grading Type per Assessment Type in the CS Dashboard."],
+    ["3.4","AI Assistant","2026-03-09","Fix Downstream Title Sync","","","","Fixed a bug where newly added lessons in CS Source were not appearing in downstream tabs due to missing row initialization."],
+    ["3.5","AI Assistant","2026-03-09","Fix Validation State & Flyout Real-Time Sync","","","","Fixed a bug where activating a new row wiped validation colors and Rubric badges globally. Adjusted the CS Source Reference flyout in Exam Weights to dynamically display lessons missing a grading type to immediately show up when typed."],
+    ["3.6","AI Assistant","2026-03-09","Fix Downstream Points Sync","","","","Fixed an issue where editing points on a newly created CS Source lesson did not visibly propagate the point value to downstream read-only columns."],
+    ["3.8","AI Assistant","2026-03-09","Dashboard UI & Multi-Part LMS Sync","","","","Overhauled Dashboard UI with standard toggle switches and updated badge logic to indicate when settings are active. Added deep integration of Multi-Part exams into the Divs (Section 3) and Gradebuilder (Section 4) tables so child parts render seamlessly."],
+    ["3.9","AI Assistant","2026-03-09","Fix Multi-Part Structural Regeneration","","","","Fixed an issue where toggling or adding a multi-part exam did not trigger structural table regenerations downstream, hiding the parts from view."],
+    ["3.10","AI Assistant","2026-03-09","Added Course Stats Tab & Ref Updates","","","","Added a new Stats tab inside the CS Dashboard that builds a live matrix calculating the frequency of assessment types across the entire course and broken down by Module. Updated Exam Weights flyout to include Multi-part items."],
+    ["3.11","AI Assistant","2026-03-09","Refined Stats Tab & Exam Weights Ref","","","","Modified the Stats table to highlight the Course row in blue and alternate row shading for readability. Restyled the Segment Exam Weights reference to clearly bold the parent lesson above any indented multi-part exams."],
+    ["3.12","AI Assistant","2026-03-12","Added Multi-State Downstream Filtering","","","","Implemented dynamic state filters in downstream tabs. When Multi-State is enabled, toolbars display a dropdown to filter visible lessons by specific states or 'No States', while globally applicable (blank state) lessons remain visible across all filters."],
+    ["3.13","AI Assistant","2026-03-12","Dynamic Exam Weights Calculation Grids","","","","Updated Segment Exam Weights to support unlimited calculation versions. Enabled horizontal scrolling for grids and added the ability to manually rename calculation titles to better document what each grid computes."]
+  ]
+};
+
+// ── CORE UTILS ──────────────────────────────────────────────────────────────
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const isNA     = v => { const s = String(v ?? '').trim().toUpperCase(); return s === 'N/A' || s === 'NA'; };
+const getCleanTitle = t => (t || '').replace(/^\s*\[.*?\]\s*/, '').trim();
+function modClass(title) {
+  if (!title) return '';
+  const m = getCleanTitle(title).match(/^(\d{2})\./);
+  return m ? `mod-${m[1]}` : '';
+}
+function showToast(msg, type = 'error') {
+  const tc = document.getElementById('toast-container');
+  if (!tc) return;
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  tc.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+function setHtml(id, html) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const s = html == null ? '' : String(html);
+  if (el.innerHTML !== s) el.innerHTML = s;
+}
+function shouldShowState(state) {
+  if (!MULTI_STATE_ENABLED || ACTIVE_STATE_FILTER === 'ALL') return true;
+  if (ACTIVE_STATE_FILTER === 'NONE') return !state;
+  return !state || state === ACTIVE_STATE_FILTER;
+}
+
+// ── STATE INIT ──────────────────────────────────────────────────────────────
+function createEmptyRow(c = []) {
+  return {
+    cs: { title:c[0]||'', seg:c[2]!==undefined?c[2]:null, timeAssess:c[3]!=null?Number(c[3]):null,
+          timeLesson:c[4]!=null?Number(c[4]):null, points:c[5]!=null?Number(c[5]):null,
+          gradingType:c[6]||'', label:c[7]||'', rubricTitle:c[8]||'No',
+          inSitemap:c[9]!==undefined?c[9]:'Yes', honors:c[10]||'No',
+          state:'', multiPart:false, multiPartData:[] },
+    cl:{sitemapTitle:'',sitemapPts:'',sitemapTime:''},
+    dv:{divTitle:'',rubricTitle:'',rubricPts:''},
+    gb:{gbTitle:'',gbPts:''},
+    ak:{akTitle:'',akPts:''},
+    ipp:{ippGsTitle:'',ippGsTime:'',ippFlTitle:'',ippFlTime:''},
+    pc:{tradTitle:'',accelTitle:'',seg2Title:''},
+    rp:{normalWeek:null,accelWeek:null},
+    hp:{normalWeek:null,accelWeek:null}
+  };
+}
+function initState() {
+  const total = Math.max((RAW_DATA.cs||[]).filter(r=>r[0]).length, 35);
+  for (let i = 0; i < total; i++) APP_STATE.push(createEmptyRow(RAW_DATA.cs[i]||[]));
+  ['ids','qa'].forEach(role => [1,2].forEach(seg => {
+    for (let i = 0; i < 4; i++) SEG_STATE[role][seg].rows.push({title:'',pts:'',excl:[]});
+  }));
+}
+function getLastKnownSegment(idx) {
+  for (let i = idx-1; i >= 0; i--) {
+    if (APP_STATE[i].cs.seg !== null && APP_STATE[i].cs.seg !== '') return parseInt(APP_STATE[i].cs.seg,10)||1;
+  }
+  return 1;
+}
+
+// ── HTML GENERATORS ──────────────────────────────────────────────────────────
+function ed(val, tab, field, idx, style, pIdx) {
+  const v = val == null ? '' : String(val);
+  const isPart = pIdx !== undefined;
+  const idStr = isPart ? `${idx}-${pIdx}` : idx;
+  const pa = isPart ? ` data-pidx="${pIdx}"` : '';
+  const sa = style ? ` style="${style}"` : '';
+  return `<span class="editable" id="ed-${tab}-${field}-${idStr}" contenteditable="true" data-tab="${tab}" data-field="${field}" data-index="${idx}"${pa}${sa}>${v}</span>`;
+}
+function mkSel(opts, cur, tab, field, idx, style, pIdx) {
+  const isPart = pIdx !== undefined;
+  const idStr = isPart ? `${idx}-${pIdx}` : idx;
+  const pa = isPart ? ` data-pidx="${pIdx}"` : '';
+  const st = `background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:11px${style?';'+style:''}`;
+  return `<select id="sel-${tab}-${field}-${idStr}" style="${st}" data-tab="${tab}" data-field="${field}" data-index="${idx}"${pa}>${opts.map(o=>`<option${o===cur?' selected':''}>${o||'—'}</option>`).join('')}</select>`;
+}
+function bv(v) {
+  if (v == null) return '<span style="color:var(--muted)">—</span>';
+  const s = String(v).trim();
+  if (s === 'Pass') return '<span class="badge bp">Pass</span>';
+  if (s === 'Fail') return '<span class="badge bf">Fail</span>';
+  if (s === 'NA')   return '<span class="badge bn">N/A</span>';
+  if (!s || s === 'null') return '<span style="color:var(--muted)">—</span>';
+  return v;
+}
+function cv(v) { return (v==null||String(v).trim()===''||String(v).trim()==='null') ? '<span style="color:var(--muted)">—</span>' : String(v); }
+
+// ── VALIDATION ───────────────────────────────────────────────────────────────
+function fnValidateTitle(t) {
+  if (!t || !t.trim()) return '';
+  const found = PROHIBITED.filter(c => t.includes(c));
+  if (found.length) return 'Fail';
+  if (t.length > 100) return 'Fail';
+  return 'Pass';
+}
+function calcTimeTotal(i) {
+  const r = APP_STATE[i];
+  const ta = Number(r.cs.timeAssess)||0, tl = Number(r.cs.timeLesson)||0;
+  return (ta+tl)||null;
+}
+function matchExact(a, b) {
+  if (!a) return null;
+  if (!b && b !== 0) return 'Fail';
+  if (isNA(b)) return 'NA';
+  return String(a) === String(b) ? 'Pass' : 'Fail';
+}
+function matchNum(a, b) {
+  if (a == null) return null;
+  if (b === '' || b == null) return 'Fail';
+  if (isNA(b)) return 'NA';
+  return Number(a) === Number(b) ? 'Pass' : 'Fail';
+}
+function getActiveLabels(current) {
+  const active = [''];
+  for (const label of LABEL_OPTS) {
+    if (!label) continue;
+    if (ASSESSMENT_DEFAULTS[label].visible || label === current) active.push(label);
+  }
+  return active;
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────────────────
+function show(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const tab = document.getElementById('tab-'+id);
+  if (tab) tab.classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ── MODAL ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById('modal-backdrop').classList.add('active'); document.getElementById(id).classList.add('active'); }
+function closeModal() { document.getElementById('modal-backdrop').classList.remove('active'); document.querySelectorAll('.flyout-panel.active').forEach(el => el.classList.remove('active')); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+function toggleSettings() { const el = document.getElementById('cs-settings-zone'); const was = el.classList.contains('active'); closeModal(); if (!was) { openModal('cs-settings-zone'); updateDashBadge(); } }
+function switchDashTab(name, btn) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active'); document.getElementById('dash-pane-'+name).classList.add('active');
+  if (name === 'types') renderSettings();
+  if (name === 'ailist') renderAIList();
+  if (name === 'stats') renderStats();
+}
+
+// ── ASSESSMENT DEFAULTS ──────────────────────────────────────────────────────
+function renderSettings() {
+  const showH = document.getElementById('at-show-hidden')?.checked ?? true;
+  let html = '';
+  for (const label of LABEL_OPTS) {
+    if (!label) continue;
+    const def = ASSESSMENT_DEFAULTS[label];
+    if (!def.visible && !showH) continue;
+    
+    const disabledState = def.visible ? '' : 'disabled';
+    
+    html += `<div class="si-card${def.visible ? '' : ' is-hidden'}">
+      <input type="checkbox" class="toggle-switch" title="Toggle Visibility" ${def.visible ? 'checked' : ''} onchange="toggleDefVis('${label}')">
+      <span class="si-label" title="${label}" style="font-weight: 400;">${label}</span>
+      <select class="ui-select" style="max-width:110px;flex-shrink:0" onchange="updateDef('${label}','gradingType',this.value)" ${disabledState}>
+        ${GRADING_OPTS.map(o=>`<option value="${o}"${def.gradingType===o?' selected':''}>${o||'Grading...'}</option>`).join('')}
+      </select>
+      <div class="si-time-wrap">
+        <input type="number" placeholder="Min" title="Time in minutes" value="${def.time}" oninput="updateDef('${label}','time',this.value)" min="0" step="5" ${disabledState}>
+      </div>
+      <label class="si-rubric-label" style="${def.visible ? '' : 'cursor:not-allowed'}">
+        <input type="checkbox" ${def.rubric==='Yes' ? 'checked' : ''} onchange="updateDef('${label}','rubric',this.checked?'Yes':'No')" ${disabledState}> Rubric
+      </label>
+    </div>`;
+  }
+  if (!html) html = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted);font-size:12px;">All types are hidden. Use <strong>Show hidden types</strong> to edit.</div>`;
+  document.getElementById('cs-settings-grid').innerHTML = html;
+  updateDashBadge();
+}
+
+function updateDashBadge() {
+  const visibleCount = Object.values(ASSESSMENT_DEFAULTS).filter(d => d.visible).length;
+  const tabBadge = document.getElementById('dash-hidden-badge');
+  if (tabBadge) {
+    tabBadge.textContent = visibleCount;
+    tabBadge.dataset.count = visibleCount;
+    tabBadge.style.display = 'inline-flex'; 
+  }
+
+  const isUsed = MULTI_STATE_ENABLED || MULTI_PART_ENABLED || Object.values(ASSESSMENT_DEFAULTS).some(d => !d.visible || d.time !== '' || d.gradingType !== '');
+  const mainBadge = document.getElementById('toolbar-dash-badge');
+  if (mainBadge) {
+    if (isUsed) {
+      mainBadge.innerHTML = '&#10003;'; 
+      mainBadge.style.display = 'inline-flex';
+      mainBadge.style.background = 'rgba(34,201,122,.15)';
+      mainBadge.style.color = 'var(--pass)';
+      mainBadge.style.borderColor = 'rgba(34,201,122,.35)';
+    } else {
+      mainBadge.style.display = 'none';
+    }
+  }
+}
+
+function updateDef(label, key, val) { ASSESSMENT_DEFAULTS[label][key] = val; }
+window.toggleDefVis = function(label) { ASSESSMENT_DEFAULTS[label].visible = !ASSESSMENT_DEFAULTS[label].visible; renderSettings(); renderAllTables(); };
+window.toggleAllAssessments = function(show) {
+  for (const label in ASSESSMENT_DEFAULTS) ASSESSMENT_DEFAULTS[label].visible = show;
+  const pane = document.getElementById('dash-pane-types');
+  if (pane && pane.classList.contains('active')) renderSettings(); else updateDashBadge();
+  renderAllTables();
+};
+
+// ── MULTI-STATE ──────────────────────────────────────────────────────────────
+window.toggleMultiState = function(enabled) {
+  MULTI_STATE_ENABLED = enabled;
+  document.getElementById('multi-state-ui').classList.toggle('open', enabled);
+  document.body.classList.toggle('ms-on', enabled);
+  document.querySelectorAll('.ms-filter-container').forEach(el => el.style.display = enabled ? 'block' : 'none');
+  if (!enabled) ACTIVE_STATE_FILTER = 'ALL';
+  renderAllTables();
+};
+window.addMultiState = function(val) {
+  if (!val.trim()) return;
+  const fmt = '['+val.replace(/\[|\]/g,'').toUpperCase()+']';
+  if (!MULTI_STATES.includes(fmt)) { MULTI_STATES.push(fmt); renderStateList(); renderAllTables(); }
+  document.getElementById('ms-input').value = '';
+};
+window.removeMultiState = function(idx) { MULTI_STATES.splice(idx,1); renderStateList(); renderAllTables(); };
+window.renderStateList = function() {
+  const el = document.getElementById('state-list'); if (!el) return;
+  el.innerHTML = MULTI_STATES.map((s,i) => `<span class="chip">${s} <span style="cursor:pointer;margin-left:4px;opacity:.7" onclick="removeMultiState(${i})">×</span></span>`).join('');
+  updateFilterOptions();
+};
+function updateFilterOptions() {
+  document.querySelectorAll('.ms-filter-select').forEach(sel => {
+    let html = `<option value="ALL">All States</option><option value="NONE">No States Only</option>`;
+    MULTI_STATES.forEach(s => html += `<option value="${s}">${s}</option>`);
+    sel.innerHTML = html;
+    sel.value = (MULTI_STATES.includes(ACTIVE_STATE_FILTER) || ['ALL','NONE'].includes(ACTIVE_STATE_FILTER)) ? ACTIVE_STATE_FILTER : 'ALL';
+  });
+  if (!MULTI_STATES.includes(ACTIVE_STATE_FILTER) && !['ALL','NONE'].includes(ACTIVE_STATE_FILTER)) ACTIVE_STATE_FILTER = 'ALL';
+}
+window.changeStateFilter = function(val) {
+  ACTIVE_STATE_FILTER = val;
+  document.querySelectorAll('.ms-filter-select').forEach(sel => sel.value = val);
+  renderAllTables();
+};
+
+// ── MULTI-PART ───────────────────────────────────────────────────────────────
+window.toggleMultiPartGlobal = function(enabled) { MULTI_PART_ENABLED = enabled; renderAllTables(); };
+window.recalcMultiPartTotals = function(i) {
+  const r = APP_STATE[i]; if (!r.cs.multiPart) return;
+  let tT=0,tP=0,hT=false,hP=false;
+  r.cs.multiPartData.forEach(p => {
+    if (p.timeAssess!==''&&p.timeAssess!==null&&!isNaN(p.timeAssess)){tT+=parseFloat(p.timeAssess);hT=true;}
+    if (p.points!==''&&p.points!==null&&!isNaN(p.points)){tP+=parseFloat(p.points);hP=true;}
+  });
+  r.cs.timeAssess = hT?tT:null; r.cs.points = hP?tP:null;
+  const tEl = document.getElementById(`ed-cs-timeAssess-${i}`); if (tEl) tEl.textContent = hT?tT:'';
+  const pEl = document.getElementById(`ed-cs-points-${i}`); if (pEl) pEl.textContent = hP?tP:'';
+  setHtml(`cs-tt-${i}`, calcTimeTotal(i)||'');
+};
+window.toggleRowMultiPart = function(i, enabled) {
+  APP_STATE[i].cs.multiPart = enabled;
+  if (enabled && !APP_STATE[i].cs.multiPartData.length) {
+    const pfx = APP_STATE[i].cs.title ? APP_STATE[i].cs.title+' ' : '';
+    APP_STATE[i].cs.multiPartData = [
+      {title:pfx,timeAssess:'',points:'',gradingType:'',label:'',rubricTitle:'No', dv:{divTitle:'',rubricTitle:'',rubricPts:''}, gb:{gbTitle:'',gbPts:''}},
+      {title:pfx,timeAssess:'',points:'',gradingType:'',label:'',rubricTitle:'No', dv:{divTitle:'',rubricTitle:'',rubricPts:''}, gb:{gbTitle:'',gbPts:''}}
+    ];
+  }
+  if (enabled) recalcMultiPartTotals(i);
+  refreshSummary(); renderAllTables();
+};
+window.addMultiPart = function(i) {
+  const pfx = APP_STATE[i].cs.title ? APP_STATE[i].cs.title+' ' : '';
+  APP_STATE[i].cs.multiPartData.push({title:pfx,timeAssess:'',points:'',gradingType:'',label:'',rubricTitle:'No', dv:{divTitle:'',rubricTitle:'',rubricPts:''}, gb:{gbTitle:'',gbPts:''}});
+  renderAllTables();
+};
+window.removeMultiPart = function(i, pIdx) { APP_STATE[i].cs.multiPartData.splice(pIdx,1); recalcMultiPartTotals(i); refreshSummary(); renderAllTables(); };
+
+// ── ACADEMIC INTEGRITY ───────────────────────────────────────────────────────
+function getAIListRows() {
+  const tg = document.getElementById('ai-chk-tg')?.checked, pa = document.getElementById('ai-chk-pa')?.checked;
+  return APP_STATE.filter(r => {
+    if (!r.cs.title?.trim()) return false;
+    const t = r.cs.gradingType;
+    return (tg && t==='Teacher Graded') || (pa && t==='Partial-Auto');
+  });
+}
+function renderAIList() {
+  const html = getAIListRows().map(r => `<div class="ai-list-row"><span class="ai-type" data-type="${r.cs.gradingType}"></span><span style="flex:1;line-height:1.5">${r.cs.title}</span></div>`).join('');
+  const el = document.getElementById('ai-list-output');
+  if (el) el.innerHTML = html || '<span style="color:var(--muted);font-family:var(--font-head)">No lessons match the selected filters.</span>';
+}
+function copyAIList() {
+  const titles = getAIListRows().map(r => r.cs.title).join('\n');
+  if (!titles) return showToast('No titles to copy.');
+  navigator.clipboard.writeText(titles).then(() => showToast('Lesson titles copied!','success')).catch(() => showToast('Failed to copy.'));
+}
+function toggleAIList() {
+  closeModal(); openModal('cs-settings-zone');
+  const aiTab = [...document.querySelectorAll('.modal-tab')].find(t => t.textContent.trim()==='Academic Integrity');
+  if (aiTab) switchDashTab('ailist', aiTab);
+}
+
+// ── STATS DASHBOARD ──────────────────────────────────────────────────────────
+function renderStats() {
+    const pane = document.getElementById('dash-pane-stats');
+    if (!pane) return;
+
+    const counts = { overall: {}, modules: {} };
+    let activeLabels = new Set();
+    
+    const processItem = (title, label) => {
+        if(!title || !label) return;
+        const m = getCleanTitle(title).match(/^(\d{2})\./);
+        const mod = m ? m[1] : 'Other';
+        
+        activeLabels.add(label);
+        
+        counts.overall[label] = (counts.overall[label] || 0) + 1;
+        if(!counts.modules[mod]) counts.modules[mod] = {};
+        counts.modules[mod][label] = (counts.modules[mod][label] || 0) + 1;
+    };
+
+    APP_STATE.forEach(r => {
+        if(!r.cs.title) return;
+        if(MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+            r.cs.multiPartData.forEach(p => processItem(p.title, p.label));
+        } else {
+            processItem(r.cs.title, r.cs.label);
+        }
+    });
+
+    const labels = Array.from(activeLabels).sort();
+    const mods = Object.keys(counts.modules).sort();
+
+    if (labels.length === 0) {
+        pane.innerHTML = `<div style="text-align:center;padding:32px;color:var(--muted);font-size:12px;">No assessment types assigned yet.</div>`;
+        return;
+    }
+
+    let html = `<div class="ctrl-section"><div class="ctrl-section-title">Assessment Type Distribution</div>`;
+    html += `<div class="tw"><table style="table-layout:auto;width:100%;text-align:center"><thead><tr>`;
+    html += `<th style="width:70px;text-align:left">Module</th>`;
+    labels.forEach(l => html += `<th style="text-align:center" title="${l}">${l.length>12?l.substring(0,10)+'..':l}</th>`);
+    html += `<th style="width:60px;text-align:center;border-left:1px solid var(--border)">Total</th></tr></thead><tbody>`;
+
+    // Overall row -> Course row
+    html += `<tr style="background:rgba(79,142,247,.15);font-weight:700"><td style="text-align:left;color:var(--accent)">Course</td>`;
+    let cTotal = 0;
+    labels.forEach(l => {
+        const val = counts.overall[l] || 0;
+        cTotal += val;
+        html += `<td>${val || '-'}</td>`;
+    });
+    html += `<td style="color:var(--pass);border-left:1px solid var(--border)">${cTotal}</td></tr>`;
+
+    // Module rows
+    mods.forEach((mod, idx) => {
+        const bg = idx % 2 === 0 ? 'background:rgba(255,255,255,.02)' : 'background:transparent';
+        html += `<tr style="${bg}"><td style="font-weight:600;color:var(--accent2);text-align:left">${mod === 'Other' ? 'Other' : 'Module ' + mod}</td>`;
+        let mTotal = 0;
+        labels.forEach(l => {
+            const val = counts.modules[mod][l] || 0;
+            mTotal += val;
+            html += `<td style="color:${val?'var(--text)':'var(--muted)'}">${val || '-'}</td>`;
+        });
+        html += `<td style="font-weight:600;border-left:1px solid var(--border)">${mTotal}</td></tr>`;
+    });
+
+    html += `</tbody></table></div></div>`;
+    pane.innerHTML = html;
+}
+
+// ── DOM HELPERS ──────────────────────────────────────────────────────────────
+function setMatchStyle(tab, field, idx, result) {
+  const el = document.getElementById(`ed-${tab}-${field}-${idx}`);
+  if (!el) return;
+  el.classList.remove('match-pass','match-fail','match-na');
+  if (result==='Pass') el.classList.add('match-pass');
+  else if (result==='Fail') el.classList.add('match-fail');
+  else if (result==='NA') el.classList.add('match-na');
+}
+function updateRowClasses(i) {
+  const mc = modClass(APP_STATE[i].cs.title);
+  const apply = el => { if (!el) return; const old = [...el.classList].find(c => c.startsWith('mod-')); if (old !== mc) { if (old) el.classList.remove(old); if (mc) el.classList.add(mc); } };
+  ['cs','cl','dv','gb','ak','ipp','pc'].forEach(p => apply(document.getElementById(`${p}-row-${i}`)));
+}
+function syncRowStaticData(i) {
+  const r = APP_STATE[i];
+  ['cl','dv','gb','ak','ipp','pc'].forEach(prefix => {
+    const tr = document.getElementById(`${prefix}-row-${i}`); if (!tr) return;
+    const tds = tr.children;
+    const off = MULTI_STATE_ENABLED ? 2 : 1;
+    if (tds[off] && tds[off].textContent !== r.cs.title) tds[off].textContent = r.cs.title;
+    if (prefix !== 'ipp' && prefix !== 'pc') { const po = off+1; if (tds[po]) { const pv = cv(r.cs.points); if (tds[po].innerHTML !== pv) tds[po].innerHTML = pv; } }
+    if (MULTI_STATE_ENABLED && tds[1]) { const sv = r.cs.state||'—'; if (tds[1].textContent !== sv) tds[1].textContent = sv; }
+  });
+
+  if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+    r.cs.multiPartData.forEach((p, pIdx) => {
+      ['dv','gb'].forEach(prefix => {
+         const ptr = document.getElementById(`${prefix}part-row-${i}-${pIdx}`); if (!ptr) return;
+         const ptds = ptr.children;
+         const poff = MULTI_STATE_ENABLED ? 2 : 1;
+         if (ptds[poff]) {
+           const span = ptds[poff].querySelector('.part-title-text');
+           if (span && span.textContent !== p.title) span.textContent = p.title;
+         }
+         const ppo = poff + 1;
+         if (ptds[ppo]) { const pv = cv(p.points); if (ptds[ppo].innerHTML !== pv) ptds[ppo].innerHTML = pv; }
+      });
+    });
+  }
+}
+
+// ── ROW CALCULATIONS ─────────────────────────────────────────────────────────
+function updateRowCalculations(i) {
+  const r = APP_STATE[i];
+  const tt = calcTimeTotal(i);
+  setHtml(`cs-at-${i}`, bv(fnValidateTitle(r.cs.title)));
+  const ccEl = document.getElementById(`cs-cc-${i}`);
+  if (ccEl) { const cc = (r.cs.title||'').length; if (ccEl.textContent !== String(cc)) { ccEl.textContent = cc; ccEl.style.color = cc>100?'var(--fail)':cc>80?'var(--warn)':'var(--muted)'; } }
+  setHtml(`cs-tt-${i}`, tt||'');
+
+  // Prohibited chars inline warning
+  const tEl = document.getElementById(`ed-cs-title-${i}`);
+  if (tEl) {
+    const found = PROHIBITED.filter(c => (r.cs.title||'').includes(c));
+    const hintId = `cs-ph-${i}`; let hintEl = document.getElementById(hintId);
+    if (found.length) {
+      tEl.classList.add('has-prohibited');
+      const txt = 'Prohibited: '+found.map(c => c===' '?'space':c).join('  ');
+      if (!hintEl) { hintEl=document.createElement('div'); hintEl.id=hintId; hintEl.className='prohibited-hint'; tEl.parentNode.insertBefore(hintEl,tEl.nextSibling); }
+      if (hintEl.textContent !== txt) hintEl.textContent = txt;
+    } else { tEl.classList.remove('has-prohibited'); if (hintEl) hintEl.remove(); }
+  }
+
+  if (!r.cs.title) return;
+  setHtml(`cl-cs-tt-${i}`, cv(tt)); setHtml(`ipp-cs-tt-${i}`, cv(tt));
+  setMatchStyle('cl','sitemapTitle',i,matchExact(r.cs.title,r.cl.sitemapTitle));
+  setMatchStyle('cl','sitemapPts',i,matchNum(r.cs.points,r.cl.sitemapPts));
+  setMatchStyle('cl','sitemapTime',i,matchNum(tt,r.cl.sitemapTime));
+  setMatchStyle('dv','divTitle',i,matchExact(r.cs.title,r.dv.divTitle));
+  const rubActive = r.cs.rubricTitle==='Yes';
+  setHtml(`dv-hr-${i}`,`<span class="badge ${rubActive?'bp':'bn'}">${rubActive?'Yes':'No'}</span>`);
+  setMatchStyle('dv','rubricTitle',i,rubActive?matchExact(r.cs.title,r.dv.rubricTitle):'NA');
+  setMatchStyle('dv','rubricPts',i,rubActive?matchNum(r.cs.points,r.dv.rubricPts):'NA');
+  const rtEl = document.getElementById(`ed-dv-rubricTitle-${i}`), rpEl = document.getElementById(`ed-dv-rubricPts-${i}`);
+  if (rtEl && rpEl) {
+    if (rubActive) {
+      rtEl.contentEditable = rpEl.contentEditable = 'true';
+      rtEl.style.opacity = rpEl.style.opacity = ''; rtEl.style.pointerEvents = rpEl.style.pointerEvents = '';
+      if (rtEl.textContent==='N/A') rtEl.textContent = r.dv.rubricTitle||'';
+      if (rpEl.textContent==='N/A') rpEl.textContent = r.dv.rubricPts!==undefined?r.dv.rubricPts:'';
+    } else {
+      rtEl.contentEditable = rpEl.contentEditable = 'false';
+      rtEl.style.opacity = rpEl.style.opacity = '0.35'; rtEl.style.pointerEvents = rpEl.style.pointerEvents = 'none';
+      if (rtEl.textContent!=='N/A') rtEl.textContent = 'N/A'; if (rpEl.textContent!=='N/A') rpEl.textContent = 'N/A';
+      setMatchStyle('dv','rubricTitle',i,null); setMatchStyle('dv','rubricPts',i,null);
+    }
+  }
+  setMatchStyle('gb','gbTitle',i,matchExact(r.cs.title,r.gb.gbTitle)); setMatchStyle('gb','gbPts',i,matchNum(r.cs.points,r.gb.gbPts));
+  setMatchStyle('ak','akTitle',i,matchExact(r.cs.title,r.ak.akTitle)); setMatchStyle('ak','akPts',i,matchNum(r.cs.points,r.ak.akPts));
+  setMatchStyle('ipp','ippGsTitle',i,matchExact(r.cs.title,r.ipp.ippGsTitle)); setMatchStyle('ipp','ippGsTime',i,matchNum(tt,r.ipp.ippGsTime));
+  setMatchStyle('ipp','ippFlTitle',i,matchExact(r.cs.title,r.ipp.ippFlTitle)); setMatchStyle('ipp','ippFlTime',i,matchNum(tt,r.ipp.ippFlTime));
+  setMatchStyle('pc','tradTitle',i,matchExact(r.cs.title,r.pc.tradTitle));
+  setMatchStyle('pc','accelTitle',i,matchExact(r.cs.title,r.pc.accelTitle));
+  setMatchStyle('pc','seg2Title',i,r.cs.seg===2?matchExact(r.cs.title,r.pc.seg2Title):'NA');
+
+  // Handle nested multi-part data matching for Divs & Gradebuilder
+  if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+    r.cs.multiPartData.forEach((p, pIdx) => {
+      const pdv = p.dv || {divTitle:'',rubricTitle:'',rubricPts:''};
+      const pgb = p.gb || {gbTitle:'',gbPts:''};
+
+      setMatchStyle('dvpart','divTitle',`${i}-${pIdx}`, matchExact(p.title, pdv.divTitle));
+      
+      const partRubActive = p.rubricTitle === 'Yes';
+      setHtml(`dvpart-hr-${i}-${pIdx}`,`<span class="badge ${partRubActive?'bp':'bn'}">${partRubActive?'Yes':'No'}</span>`);
+      setMatchStyle('dvpart','rubricTitle',`${i}-${pIdx}`, partRubActive ? matchExact(p.title, pdv.rubricTitle) : 'NA');
+      setMatchStyle('dvpart','rubricPts',`${i}-${pIdx}`, partRubActive ? matchNum(p.points, pdv.rubricPts) : 'NA');
+      
+      const prtEl = document.getElementById(`ed-dvpart-rubricTitle-${i}-${pIdx}`);
+      const prpEl = document.getElementById(`ed-dvpart-rubricPts-${i}-${pIdx}`);
+      if (prtEl && prpEl) {
+        if (partRubActive) {
+          prtEl.contentEditable = prpEl.contentEditable = 'true';
+          prtEl.style.opacity = prpEl.style.opacity = ''; prtEl.style.pointerEvents = prpEl.style.pointerEvents = '';
+          if (prtEl.textContent==='N/A') prtEl.textContent = pdv.rubricTitle||'';
+          if (prpEl.textContent==='N/A') prpEl.textContent = pdv.rubricPts!==undefined?pdv.rubricPts:'';
+        } else {
+          prtEl.contentEditable = prpEl.contentEditable = 'false';
+          prtEl.style.opacity = prpEl.style.opacity = '0.35'; prtEl.style.pointerEvents = prpEl.style.pointerEvents = 'none';
+          if (prtEl.textContent!=='N/A') prtEl.textContent = 'N/A'; if (prpEl.textContent!=='N/A') prpEl.textContent = 'N/A';
+          setMatchStyle('dvpart','rubricTitle',`${i}-${pIdx}`,null); setMatchStyle('dvpart','rubricPts',`${i}-${pIdx}`,null);
+        }
+      }
+
+      setMatchStyle('gbpart','gbTitle',`${i}-${pIdx}`, matchExact(p.title, pgb.gbTitle));
+      setMatchStyle('gbpart','gbPts',`${i}-${pIdx}`, matchNum(p.points, pgb.gbPts));
+    });
+  }
+}
+
+// ── STATE COLUMN HELPER ───────────────────────────────────────────────────────
+function stateCell(r) { return MULTI_STATE_ENABLED ? `<td class="ds-state-col ds-stk-state">${r.cs.state||'—'}</td>` : ''; }
+
+
+// ── DOWNSTREAM HEADERS ────────────────────────────────────────────────────────
+function renderDownstreamHeaders() {
+  const S = MULTI_STATE_ENABLED;
+  const stH = S ? '<th class="ds-state-col ds-stk-state">State</th>' : '';
+  
+  document.getElementById('cl-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:85px;"><col style="width:280px;"><col style="width:85px;"><col style="width:85px;"><col style="width:auto;">`;
+  document.getElementById('cl-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3">Points</th><th class="ds-stk-4 ds-stk-last">Time</th><th>Sitemap Title</th><th>Sitemap Pts</th><th>Sitemap Time</th><th></th></tr>`;
+  
+  document.getElementById('dv-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:75px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
+  document.getElementById('dv-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Div Title</th><th>Rubric?</th><th>Rubric Title</th><th>Rubric Pts</th><th></th></tr>`;
+  
+  document.getElementById('gb-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
+  document.getElementById('gb-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Gradebuilder Title</th><th>Points</th><th></th></tr>`;
+  
+  document.getElementById('ak-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
+  document.getElementById('ak-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>AK Title</th><th>Points</th><th></th></tr>`;
+  
+  document.getElementById('ipp-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
+  document.getElementById('ipp-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Time: From CS</th><th>IPP GS Title</th><th>GS Time</th><th>IPP FL Title</th><th>FL Time</th><th></th></tr>`;
+  
+  document.getElementById('pc-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:280px;"><col style="width:280px;"><col style="width:280px;"><col style="width:auto;">`;
+  document.getElementById('pc-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2 ds-stk-last">Title: From CS</th><th>Traditional Title</th><th>Accelerated Title</th><th>2nd Seg Title</th><th></th></tr>`;
+}
+
+// ── MASTER RENDER ─────────────────────────────────────────────────────────────
+const debouncedHeavyRender = debounce(() => { renderRegularPace(); renderHonorsPace(); renderSegWeights(); }, 250);
+function renderCSAndRecalc() { renderCS(true); APP_STATE.forEach((_,i) => updateRowCalculations(i)); }
+function renderAllTables() {
+  renderDownstreamHeaders();
+  renderCS(true); renderChecklist(true); renderDivs(true); renderGradebuilder(true);
+  renderAnswerKeys(true); renderIPP(true); renderPaceCharts(true);
+  renderRegularPace(); renderHonorsPace(); updateHonorsState();
+  renderSegWeights(); renderVersion();
+  APP_STATE.forEach((_,i) => updateRowCalculations(i));
+  refreshSummary();
+  if (document.getElementById('dash-pane-stats')?.classList.contains('active')) renderStats();
+}
+
+
+// ── RENDER: CS SOURCE ─────────────────────────────────────────────────────────
+function renderCS(skipCalc) {
+  const S = MULTI_STATE_ENABLED;
+  document.getElementById('cs-thead').innerHTML = `<tr>
+    <th class="cs-stk-1 drag-th"></th><th class="cs-stk-2">#</th>
+    ${S?'<th class="cs-stk-state">State</th>':''}
+    <th class="cs-stk-3 cs-stk-last"><div class="cs-col-hdr"><span>Official Lesson Title</span><button class="tbtn-del sort-btn" onclick="sortCSTitles()" title="Sort alphanumerically">&updownarrow;</button></div></th>
+    <th>Char<br>Count</th><th>Segment</th><th>Time:<br>Assess</th><th>Time:<br>Lesson</th><th>Time:<br>Total</th>
+    <th>Points</th><th>Grading Type</th><th>Assessment Label</th>
+    <th style="text-align:center;">Rubric<br>Used?</th><th>In<br>Sitemap?</th><th>Honors</th><th>Acceptable<br>Title?</th><th>&vellip;</th>
+  </tr>`;
+  let html = '';
+  APP_STATE.forEach((r,i) => {
+    const rc = modClass(r.cs.title);
+    const locked = r.cs.multiPart ? 'pointer-events:none;opacity:.5;background:rgba(0,0,0,.2);border-color:transparent;' : '';
+    html += `<tr id="cs-row-${i}" class="${rc}" ondragstart="onCSDragStart(event,${i})" ondragover="onCSDragOver(event,${i})" ondragend="onCSDragEnd(event)" ondrop="onCSDrop(event,${i})">
+      <td class="cs-stk-1"><span class="drag-handle" title="Drag to reorder" onmousedown="this.closest('tr').setAttribute('draggable','true')">&#x2807;</span></td>
+      <td class="cs-stk-2 td-num">${i+1}</td>
+      ${S?`<td class="cs-stk-state">${mkSel(['', ...MULTI_STATES], r.cs.state||'', 'cs','state',i)}</td>`:''}
+      <td class="cs-stk-3 cs-stk-last"><div style="display:flex;flex-direction:column;gap:6px;">${ed(r.cs.title,'cs','title',i)}${MULTI_PART_ENABLED?`<label class="multipart-label"><input type="checkbox" onchange="toggleRowMultiPart(${i},this.checked)" ${r.cs.multiPart?'checked':''}> Multi-Part Exam</label>`:''}</div></td>
+      <td><span id="cs-cc-${i}">0</span></td>
+      <td>${mkSel(['','1','2'], r.cs.seg?String(r.cs.seg):'', 'cs','seg',i)}</td>
+      <td style="min-width:80px">${ed(r.cs.timeAssess,'cs','timeAssess',i,locked)}</td>
+      <td style="min-width:80px">${ed(r.cs.timeLesson,'cs','timeLesson',i)}</td>
+      <td id="cs-tt-${i}" style="color:var(--muted);min-width:70px"></td>
+      <td style="min-width:70px">${ed(r.cs.points,'cs','points',i,locked)}</td>
+      <td>${mkSel(GRADING_OPTS,r.cs.gradingType,'cs','gradingType',i)}</td>
+      <td>${mkSel(getActiveLabels(r.cs.label),r.cs.label,'cs','label',i)}</td>
+      <td style="text-align:center;"><input type="checkbox" id="cs-rubric-chk-${i}" data-tab="cs" data-field="rubricTitle" data-index="${i}" ${r.cs.rubricTitle==='Yes'?'checked':''}></td>
+      <td>${mkSel(['No','Yes'],r.cs.inSitemap,'cs','inSitemap',i)}</td>
+      <td>${mkSel(['No','Yes'],r.cs.honors,'cs','honors',i)}</td>
+      <td id="cs-at-${i}"></td>
+      <td><button class="tbtn-del" onclick="deleteCSRow(${i})" title="Delete row">&times;</button></td>
+    </tr>`;
+    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+      r.cs.multiPartData.forEach((p,pIdx) => {
+        html += `<tr id="cspart-row-${i}-${pIdx}" class="${rc}">
+          <td class="cs-stk-1"></td><td class="cs-stk-2"></td>${S?'<td class="cs-stk-state"></td>':''}
+          <td class="cs-stk-3 cs-stk-last" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span>${ed(p.title,'cspart','title',i,'',pIdx)}</div></td>
+          <td><span id="cspart-cc-${i}-${pIdx}">${(p.title||'').length}</span></td><td></td>
+          <td>${ed(p.timeAssess,'cspart','timeAssess',i,'',pIdx)}</td><td></td><td></td>
+          <td>${ed(p.points,'cspart','points',i,'',pIdx)}</td>
+          <td>${mkSel(GRADING_OPTS,p.gradingType,'cspart','gradingType',i,'',pIdx)}</td>
+          <td>${mkSel(getActiveLabels(p.label),p.label,'cspart','label',i,'',pIdx)}</td>
+          <td style="text-align:center;"><input type="checkbox" data-tab="cspart" data-field="rubricTitle" data-index="${i}" data-pidx="${pIdx}" ${p.rubricTitle==='Yes'?'checked':''}></td>
+          <td></td><td></td>
+          <td id="cspart-at-${i}-${pIdx}">${bv(fnValidateTitle(p.title))}</td>
+          <td><button class="tbtn-del" onclick="removeMultiPart(${i},${pIdx})" title="Remove part">&times;</button></td>
+        </tr>`;
+      });
+      html += `<tr id="cspart-add-row-${i}" class="${rc}"><td class="cs-stk-1"></td><td class="cs-stk-2"></td>${S?'<td class="cs-stk-state"></td>':''}<td class="cs-stk-3 cs-stk-last" style="padding-left:24px;padding-bottom:12px;"><button class="tbtn tbtn-add" style="padding:4px 10px;font-size:10px;" onclick="addMultiPart(${i})">+ Add Part</button></td><td colspan="12"></td></tr>`;
+    }
+  });
+  document.getElementById('cs-body').innerHTML = html;
+  if (!skipCalc) APP_STATE.forEach((_,i) => updateRowCalculations(i));
+}
+
+// ── RENDER: DOWNSTREAM ────────────────────────────────────────────────────────
+function renderChecklist(skipCalc) {
+  document.getElementById('cl-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="cl-row-${i}" class="${modClass(r.cs.title)}">
+    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+    <td class="ds-stk-3 cs-from">${cv(r.cs.points)}</td><td class="ds-stk-4 ds-stk-last cs-from" id="cl-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
+    <td>${ed(r.cl.sitemapTitle,'cl','sitemapTitle',i)}</td><td>${ed(r.cl.sitemapPts,'cl','sitemapPts',i)}</td><td>${ed(r.cl.sitemapTime,'cl','sitemapTime',i)}</td><td></td>
+  </tr>`).join('');
+  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
+}
+
+function renderDivs(skipCalc) {
+  let html = '';
+  APP_STATE.forEach((r, i) => {
+    if (!r.cs.title || !shouldShowState(r.cs.state)) return;
+    const mc = modClass(r.cs.title);
+    html += `<tr id="dv-row-${i}" class="${mc}">
+      <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+      <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
+      <td>${ed(r.dv.divTitle,'dv','divTitle',i)}</td><td id="dv-hr-${i}"></td>
+      <td>${ed(r.dv.rubricTitle,'dv','rubricTitle',i)}</td><td>${ed(r.dv.rubricPts,'dv','rubricPts',i)}</td><td></td>
+    </tr>`;
+
+    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+      r.cs.multiPartData.forEach((p, pIdx) => {
+        const pdv = p.dv || {divTitle:'',rubricTitle:'',rubricPts:''};
+        html += `<tr id="dvpart-row-${i}-${pIdx}" class="${mc}" style="background:rgba(0,0,0,.12)">
+          <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
+          <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
+          <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
+          <td>${ed(pdv.divTitle,'dvpart','divTitle',i,'',pIdx)}</td><td id="dvpart-hr-${i}-${pIdx}"></td>
+          <td>${ed(pdv.rubricTitle,'dvpart','rubricTitle',i,'',pIdx)}</td><td>${ed(pdv.rubricPts,'dvpart','rubricPts',i,'',pIdx)}</td><td></td>
+        </tr>`;
+      });
+    }
+  });
+  document.getElementById('dv-body').innerHTML = html;
+  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
+}
+
+function renderGradebuilder(skipCalc) {
+  let html = '';
+  APP_STATE.forEach((r, i) => {
+    if (!r.cs.title || !shouldShowState(r.cs.state)) return;
+    const mc = modClass(r.cs.title);
+    html += `<tr id="gb-row-${i}" class="${mc}">
+      <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+      <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
+      <td>${ed(r.gb.gbTitle,'gb','gbTitle',i)}</td><td>${ed(r.gb.gbPts,'gb','gbPts',i)}</td><td></td>
+    </tr>`;
+
+    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+      r.cs.multiPartData.forEach((p, pIdx) => {
+        const pgb = p.gb || {gbTitle:'',gbPts:''};
+        html += `<tr id="gbpart-row-${i}-${pIdx}" class="${mc}" style="background:rgba(0,0,0,.12)">
+          <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
+          <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
+          <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
+          <td>${ed(pgb.gbTitle,'gbpart','gbTitle',i,'',pIdx)}</td><td>${ed(pgb.gbPts,'gbpart','gbPts',i,'',pIdx)}</td><td></td>
+        </tr>`;
+      });
+    }
+  });
+  document.getElementById('gb-body').innerHTML = html;
+  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
+}
+
+function renderAnswerKeys(skipCalc) {
+  document.getElementById('ak-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="ak-row-${i}" class="${modClass(r.cs.title)}">
+    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+    <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
+    <td>${ed(r.ak.akTitle,'ak','akTitle',i)}</td><td>${ed(r.ak.akPts,'ak','akPts',i)}</td><td></td>
+  </tr>`).join('');
+  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
+}
+function renderIPP(skipCalc) {
+  document.getElementById('ipp-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="ipp-row-${i}" class="${modClass(r.cs.title)}">
+    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+    <td class="ds-stk-3 ds-stk-last cs-from" id="ipp-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
+    <td>${ed(r.ipp.ippGsTitle,'ipp','ippGsTitle',i)}</td><td>${ed(r.ipp.ippGsTime,'ipp','ippGsTime',i)}</td>
+    <td>${ed(r.ipp.ippFlTitle,'ipp','ippFlTitle',i)}</td><td>${ed(r.ipp.ippFlTime,'ipp','ippFlTime',i)}</td><td></td>
+  </tr>`).join('');
+  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
+}
+function renderPaceCharts(skipCalc) {
+  document.getElementById('pc-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="pc-row-${i}" class="${modClass(r.cs.title)}">
+    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 ds-stk-last cs-from">${r.cs.title}</td>
+    <td>${ed(r.pc.tradTitle,'pc','tradTitle',i)}</td><td>${ed(r.pc.accelTitle,'pc','accelTitle',i)}</td>
+    <td>${ed(r.pc.seg2Title,'pc','seg2Title',i)}</td><td></td>
+  </tr>`).join('');
+  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
+}
+
+// ── RENDER: VERSION ───────────────────────────────────────────────────────────
+function renderVersion() {
+  const fmt = d => { if (!d) return '—'; const m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[2]}/${m[3]}/${m[1]}` : String(d); };
+  setHtml('vh-body', [...(RAW_DATA.version||[]), ...RUNTIME_VERSION_LOG].map(r => {
+    const isRT = r[9]==='runtime';
+    return `<tr${isRT?' style="background:rgba(34,201,122,.06);border-left:3px solid rgba(34,201,122,.4);"':''}><td>${r[0]}</td><td>${r[1]}</td><td>${fmt(r[2])}</td><td>${r[3]}</td><td>${r[4]||'—'}</td><td>${fmt(r[5])}</td><td>${fmt(r[6])}</td><td>${r[7]||'—'}</td></tr>`;
+  }).join(''));
+}
+function logVersionEntry() {
+  const author=document.getElementById('vlog-author').value.trim(), reason=document.getElementById('vlog-reason').value.trim();
+  const approved=document.getElementById('vlog-approved').value.trim(), notes=document.getElementById('vlog-notes').value.trim();
+  if (!author || !reason) return showToast('Author and Reason are required.','warn');
+  const allNums = [...(RAW_DATA.version||[]), ...RUNTIME_VERSION_LOG].map(r=>parseFloat(r[0])).filter(n=>!isNaN(n));
+  const nextVer = allNums.length ? (Math.max(...allNums)+0.01).toFixed(2) : '1.00';
+  const now = new Date();
+  const ds = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  RUNTIME_VERSION_LOG.push([nextVer,author,ds,reason,approved,'','',`${notes}${notes?' · ':''}Logged ${ts}`,'','runtime']);
+  ['vlog-author','vlog-reason','vlog-approved','vlog-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  renderVersion();
+  showToast(`Version ${nextVer} logged.`,'success');
+  setTimeout(() => document.getElementById('vh-body')?.lastElementChild?.scrollIntoView({behavior:'smooth',block:'nearest'}), 100);
+}
+
+// ── CS ROW MANAGEMENT ─────────────────────────────────────────────────────────
+function addCSRow() {
+  const row = createEmptyRow(); row.cs.seg = getLastKnownSegment(APP_STATE.length);
+  APP_STATE.push(row); renderAllTables();
+  setTimeout(() => document.getElementById(`cs-row-${APP_STATE.length-1}`)?.scrollIntoView({behavior:'smooth',block:'center'}), 50);
+}
+function deleteCSRow(i) { if (APP_STATE.length <= 1) return alert('Cannot delete the last row.'); APP_STATE.splice(i,1); renderAllTables(); }
+function clearAllCS() { if (!confirm('Clear all CS Source rows and reset to 35 blank rows?')) return; APP_STATE = Array.from({length:35}, () => createEmptyRow()); renderAllTables(); }
+function sortCSTitles() {
+  const filled = APP_STATE.filter(r => r.cs.title?.trim());
+  const blanks  = APP_STATE.filter(r => !r.cs.title?.trim());
+  filled.sort((a,b) => getCleanTitle(a.cs.title).localeCompare(getCleanTitle(b.cs.title),undefined,{numeric:true,sensitivity:'base'}));
+  APP_STATE = [...filled, ...blanks]; renderAllTables();
+  showToast('Rows sorted alphanumerically.','success');
+}
+
+// ── CS DRAG & DROP ────────────────────────────────────────────────────────────
+function onCSDragStart(e,i){ dragSrcIndex=i; e.dataTransfer.effectAllowed='move'; setTimeout(()=>e.target.classList.add('dragging'),0); }
+function onCSDragEnd(e){ document.querySelectorAll('#cs-body tr').forEach(r=>{r.classList.remove('dragging','drag-over');r.setAttribute('draggable','false');}); dragSrcIndex=null; }
+function onCSDragOver(e,i){ e.preventDefault(); document.querySelectorAll('#cs-body tr').forEach(r=>r.classList.remove('drag-over')); if(i!==dragSrcIndex) document.getElementById(`cs-row-${i}`)?.classList.add('drag-over'); }
+function onCSDrop(e,i){ e.preventDefault(); if(dragSrcIndex===null||dragSrcIndex===i)return; const [row]=APP_STATE.splice(dragSrcIndex,1); APP_STATE.splice(i,0,row); renderAllTables(); }
+
+// ── PASTE HANDLERS ────────────────────────────────────────────────────────────
+function togglePaste(zoneId, inputId) { const el=document.getElementById(zoneId); el.style.display=el.style.display==='none'?'block':'none'; if(el.style.display==='block') document.getElementById(inputId).value=''; }
+function toggleCLPaste(){  togglePaste('cl-paste-zone',  'cl-paste-input'); }
+function toggleGBPaste(){  togglePaste('gb-paste-zone',  'gb-paste-input'); }
+function toggleIPPPaste(){ togglePaste('ipp-paste-zone', 'ipp-paste-input'); }
+function toggleAKPaste(){  togglePaste('ak-paste-zone',  'ak-paste-input'); }
+
+function applyCLPaste() {
+  const text=document.getElementById('cl-paste-input').value; if(!text.trim()) return toggleCLPaste();
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
+  APP_STATE.forEach(r => { if(!r.cs.title||li>=lines.length)return; const c=lines[li++].split('\t'); r.cl.sitemapTitle=c[0]?c[0].replace(/[\r\n]+/g,''):''; r.cl.sitemapPts=c[1]?c[1].replace(/(points?|pts?)/gi,'').trim:''; r.cl.sitemapTime=c[2]?c[2].replace(/(minutes?|mins?)/gi,'').trim():''; });
+  toggleCLPaste(); renderChecklist(); showToast('Checklist data pasted.','success');
+}
+
+function applyGBPaste() {
+  const text=document.getElementById('gb-paste-input').value; if(!text.trim()) return toggleGBPaste();
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
+  APP_STATE.forEach(r => { 
+    if(!r.cs.title||li>=lines.length) return; 
+    const c=lines[li++].split('\t'); 
+    r.gb.gbTitle=c[0]?c[0].replace(/[\r\n]+/g,'').replace(/^[\.\s]+/,'').trim():''; 
+    r.gb.gbPts=c[1]?c[1].replace(/[^\d.-]/g,''):''; 
+    
+    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+      r.cs.multiPartData.forEach((p, pIdx) => {
+        if(li>=lines.length) return;
+        const pc = lines[li++].split('\t');
+        if(!p.gb) p.gb = {gbTitle:'',gbPts:''};
+        p.gb.gbTitle = pc[0]?pc[0].replace(/[\r\n]+/g,'').replace(/^[\.\s]+/,'').trim():'';
+        p.gb.gbPts = pc[1]?pc[1].replace(/[^\d.-]/g,''):'';
+      });
+    }
+  });
+  toggleGBPaste(); renderGradebuilder(); showToast('Gradebuilder data pasted.','success');
+}
+
+function applyAKPaste() {
+  const text=document.getElementById('ak-paste-input').value; if(!text.trim()) return toggleAKPaste();
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
+  APP_STATE.forEach(r => { if(!r.cs.title||li>=lines.length)return; const raw=lines[li++].split('\t')[0]||''; r.ak.akTitle=raw.replace(/\.{2,}\s*\d+\s*$/,'').replace(/\s*\d+\s*$/,'').trim(); r.ak.akPts=lines[li]?(lines[li].split('\t')[1]||'').replace(/[^\d.-]/g,''):''; });
+  toggleAKPaste(); renderAnswerKeys(); showToast('Answer Keys TOC pasted.','success');
+}
+
+function applyIPPPaste() {
+  const text=document.getElementById('ipp-paste-input').value, target=document.getElementById('ipp-paste-type').value;
+  if(!text.trim()) return toggleIPPPaste();
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
+  APP_STATE.forEach(r => { if(!r.cs.title||li>=lines.length)return; const c=lines[li++].split('\t'); const t=c[0]?c[0].replace(/[\r\n]+/g,''):''; const time=c[2]?c[2].replace(/[^\d.-]/g,''):''; if(target==='GS'){r.ipp.ippGsTitle=t;r.ipp.ippGsTime=time;}else{r.ipp.ippFlTitle=t;r.ipp.ippFlTime=time;} });
+  toggleIPPPaste(); renderIPP(); showToast(`IPP ${target} data pasted.`,'success');
+}
+
+// ── TABLE FILTER ──────────────────────────────────────────────────────────────
+function filterTbl(bodyId, q) {
+  const tbody=document.getElementById(bodyId); if(!tbody)return;
+  const lq=q.toLowerCase().trim(); let shown=0;
+  let emptyRow=tbody.querySelector('.tbl-empty-row');
+  Array.from(tbody.rows).forEach(tr => { if(tr.classList.contains('tbl-empty-row'))return; const hide=lq&&!tr.textContent.toLowerCase().includes(lq); tr.style.display=hide?'none':''; if(!hide)shown++; });
+  if(lq&&shown===0){
+    if(!emptyRow){emptyRow=document.createElement('tr');emptyRow.className='tbl-empty-row';emptyRow.innerHTML=`<td colspan="20" style="text-align:center;padding:16px;color:var(--muted)">No results for "<strong>${q}</strong>"</td>`;tbody.appendChild(emptyRow);}
+    else{emptyRow.querySelector('td').innerHTML=`No results for "<strong>${q}</strong>"`;emptyRow.style.display='';}
+  } else if(emptyRow) emptyRow.style.display='none';
+}
+
+// ── SEG EXAM WEIGHTS ──────────────────────────────────────────────────────────
+function toggleSegRef(role,seg){ SEG_STATE[role][seg].refOpen=!SEG_STATE[role][seg].refOpen; renderSegWeights(); }
+function toggleSegSplits(role,seg){ SEG_STATE[role][seg].splitsOpen=!SEG_STATE[role][seg].splitsOpen; renderSegWeights(); }
+window.addGrid = (role,seg) => { 
+  SEG_STATE[role][seg].activeGrids++;
+  SEG_STATE[role][seg].splits.push([50,50]);
+  SEG_STATE[role][seg].gridTitles.push('Calculation Version '+SEG_STATE[role][seg].activeGrids);
+  renderSegWeights(); 
+};
+window.removeGrid = (role,seg,g) => { 
+  if(SEG_STATE[role][seg].activeGrids>1){
+    SEG_STATE[role][seg].activeGrids--;
+    SEG_STATE[role][seg].splits.splice(g,1);
+    SEG_STATE[role][seg].gridTitles.splice(g,1);
+    SEG_STATE[role][seg].rows.forEach(r=>r.excl.splice(g,1));
+    window.lastSegPts[role][seg].splice(g,1);
+    renderSegWeights();
+  } 
+};
+function addSegRow(role,seg){ SEG_STATE[role][seg].rows.push({title:'',pts:'',excl:[]}); renderSegWeights(); }
+function delSegRow(role,seg,idx){ SEG_STATE[role][seg].rows.splice(idx,1); renderSegWeights(); }
+window.onSegExcl = function(role,seg,idx,g,checked){
+  SEG_STATE[role][seg].rows[idx].excl[g]=checked;
+  const tr=document.getElementById(`${role}-seg-${seg}-row-${g}-${idx}`);
+  if(tr){tr.style.opacity=checked?'0.35':'1';tr.style.boxShadow=checked?'inset 0 0 0 9999px rgba(0,0,0,.4)':'';}
+  recalcSeg(role,seg);
+};
+window.addSegSplit = function(role,seg,g){ SEG_STATE[role][seg].splits[g].push(0); balanceSplits(role,seg,g,SEG_STATE[role][seg].splits[g].length-2); setHtml(`${role}-seg-${seg}-splits-container-${g}`,buildSplits(role,seg,g)); updateSplitsDOM(role,seg,g); };
+window.removeSegSplit = function(role,seg,g,idx){ if(SEG_STATE[role][seg].splits[g].length<=1)return; SEG_STATE[role][seg].splits[g].splice(idx,1); balanceSplits(role,seg,g,0); setHtml(`${role}-seg-${seg}-splits-container-${g}`,buildSplits(role,seg,g)); updateSplitsDOM(role,seg,g); };
+window.onSplitChange = function(role,seg,g,idx,val){ let v=parseFloat(val); if(isNaN(v))v=0; SEG_STATE[role][seg].splits[g][idx]=v; balanceSplits(role,seg,g,idx); updateSplitsDOM(role,seg,g); };
+function balanceSplits(role,seg,g,changed){ const sp=SEG_STATE[role][seg].splits[g]; if(sp.length<=1){sp[0]=100;return;} const t=(changed+1)%sp.length; const s=sp.reduce((a,v,i)=>i!==t?a+v:a,0); sp[t]=Math.max(0,parseFloat((100-s).toFixed(2))); }
+function buildSplits(role,seg,g){ return SEG_STATE[role][seg].splits[g].map((s,i)=>`<div class="splits-row"><span class="splits-part-label">Part ${i+1}:</span><input type="number" step="0.01" class="si-pct" id="${role}-seg-${seg}-split-inp-${g}-${i}" value="${s}" oninput="onSplitChange('${role}',${seg},${g},${i},this.value)"><span class="splits-pct-label">%</span><span id="${role}-seg-${seg}-split-out-${g}-${i}" style="font-weight:700;color:var(--text);margin-left:4px;font-size:11px;display:inline-block;width:150px"></span>${SEG_STATE[role][seg].splits[g].length>2?`<button class="tbtn-del" onclick="removeSegSplit('${role}',${seg},${g},${i})" title="Remove">&times;</button>`:''}</div>`).join('')+`<div style="margin-top:8px;"><button class="tbtn" onclick="addSegSplit('${role}',${seg},${g})" style="font-size:10px;padding:4px 8px;">+ Add Part</button></div>`; }
+function updateSplitsDOM(role,seg,g){ const total=window.lastSegPts[role][seg][g]||0; SEG_STATE[role][seg].splits[g].forEach((s,i)=>{ const inp=document.getElementById(`${role}-seg-${seg}-split-inp-${g}-${i}`); if(inp&&document.activeElement!==inp)inp.value=s; const out=document.getElementById(`${role}-seg-${seg}-split-out-${g}-${i}`); if(out){const dec=total*(s/100); out.innerHTML=`${dec.toFixed(4)} <span style="color:var(--accent);font-weight:700">(${Math.round(dec)} pts)</span>`;} }); }
+window.recalcSeg = function(role,seg){ for(let g=0;g<SEG_STATE[role][seg].activeGrids;g++){ let sum=0; SEG_STATE[role][seg].rows.forEach(r=>{if(!r.excl[g]&&r.pts)sum+=parseFloat(r.pts);}); setHtml(`${role}-seg-${seg}-sum-${g}`,sum); const sp=sum*20/80; window.lastSegPts[role][seg][g]=sp; setHtml(`${role}-seg-${seg}-div-${g}`,sp.toFixed(4)); setHtml(`${role}-seg-${seg}-final-${g}`,Math.round(sp)); updateSplitsDOM(role,seg,g); } };
+function toggleSegPaste(role){ const el=document.getElementById(`${role}-seg-paste-zone`); el.style.display=el.style.display==='none'?'block':'none'; if(el.style.display==='block')document.getElementById(`${role}-seg-paste-input`).value=''; }
+function applySegPaste(role) {
+  const text=document.getElementById(`${role}-seg-paste-input`).value, target=document.getElementById(`${role}-seg-paste-type`).value;
+  if(!text.trim())return toggleSegPaste(role);
+  text.split(/\r?\n/).filter(l=>l.trim()).forEach(line=>{ const c=line.split('\t'); const t=c[0]?c[0].replace(/[\r\n]+/g,''):''; const p=c[1]?parseFloat(c[1].replace(/[^\d.-]/g,'')):''; let s=target; if(target==='auto'){const c3=c[2]?.trim()||'';s=c3.includes('1')?'1':c3.includes('2')?'2':null;} if(s==='1'||s==='2'){const empty=SEG_STATE[role][s].rows.findIndex(r=>!r.title&&!r.pts); if(empty!==-1){SEG_STATE[role][s].rows[empty].title=t;SEG_STATE[role][s].rows[empty].pts=p;}else SEG_STATE[role][s].rows.push({title:t,pts:p,excl:[]});} });
+  toggleSegPaste(role); renderSegWeights(); showToast(`${role.toUpperCase()} Exam Weights pasted.`,'success');
+}
+
+function renderSegWeights() {
+  ['ids','qa'].forEach(role => { [1,2].forEach(seg => {
+    const st=SEG_STATE[role][seg], cnt=st.activeGrids;
+    let cHtml=`<button class="tbtn" onclick="toggleSegRef('${role}',${seg})" style="background:var(--surface2);color:var(--muted)">${st.refOpen?'Hide':'&#x1F441; Toggle'} CS Source Ref</button>`;
+    cHtml+=`<button class="tbtn tbtn-add" onclick="addGrid('${role}',${seg})">+ Add Version</button>`;
+    setHtml(`${role}-seg-${seg}-controls`,cHtml);
+    let refHtml='';
+    if(st.refOpen){
+      let refItems = [];
+      APP_STATE.forEach(r => {
+        if(!r.cs.title || parseInt(r.cs.seg) !== seg || !shouldShowState(r.cs.state)) return;
+        if(MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+          let hasValid = r.cs.multiPartData.some(p => p.title && (!p.gradingType || !p.gradingType.includes('Teacher')));
+          if(hasValid) {
+            refItems.push({ isParent: true, title: r.cs.title, honors: r.cs.honors, seg: r.cs.seg });
+          }
+          r.cs.multiPartData.forEach((p) => {
+            if(!p.title || (p.gradingType && p.gradingType.includes('Teacher'))) return;
+            refItems.push({ title: `<span style="color:var(--accent);font-size:10px;margin-right:6px;margin-left:8px;">&darr;</span>${p.title}`, pts: p.points, honors: r.cs.honors, label: p.label, seg: r.cs.seg });
+          });
+        } else {
+          if(r.cs.gradingType && r.cs.gradingType.includes('Teacher')) return;
+          refItems.push({ title: r.cs.title, pts: r.cs.points, honors: r.cs.honors, label: r.cs.label, seg: r.cs.seg });
+        }
+      });
+      
+      const tbody=refItems.length?refItems.map(r=> {
+        if (r.isParent) {
+           return `<tr class="${modClass(r.title.replace(/<[^>]*>?/gm, ''))}"><td style="padding:4px;text-align:center;color:var(--muted)">${r.seg||'-'}</td><td style="padding:4px;text-align:center">${r.honors==='Yes'?'<span style="color:var(--fail);font-weight:700">H</span>':'<span style="color:var(--muted);font-weight:700">R</span>'}</td><td colspan="3" style="padding:4px;font-weight:600;color:var(--text);">${r.title} <span style="font-weight:400;color:var(--muted)">(Multi-Part)</span></td></tr>`;
+        }
+        return `<tr class="${modClass(r.title.replace(/<[^>]*>?/gm, ''))}"><td style="padding:4px;text-align:center;color:var(--muted)">${r.seg||'-'}</td><td style="padding:4px;text-align:center">${r.honors==='Yes'?'<span style="color:var(--fail);font-weight:700">H</span>':'<span style="color:var(--muted);font-weight:700">R</span>'}</td><td style="padding:4px;word-break:break-word">${r.title}</td><td style="padding:4px;text-align:center;color:var(--muted)">${cv(r.pts)}</td><td style="padding:4px;color:var(--muted);font-size:11px">${r.label||'-'}</td></tr>`;
+      }).join(''):`<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted)">No auto-graded items</td></tr>`;
+      refHtml=`<div class="seg-ref-panel"><div class="seg-ref-header"><span>CS Source Reference</span><button class="tbtn-del" onclick="toggleSegRef('${role}',${seg})" style="font-size:10px;padding:2px 4px;color:var(--accent)">Close</button></div><div class="seg-ref-body"><table style="border-bottom:none;table-layout:fixed;width:100%;border-collapse:collapse;"><colgroup><col style="width:35px;"><col style="width:35px;"><col style="width:auto;"><col style="width:40px;"><col style="width:100px;"></colgroup><thead style="position:sticky;top:0;z-index:5;"><tr><th style="padding:9px 6px;text-align:center;background:var(--bg)">SEG</th><th style="padding:9px 6px;text-align:center;background:var(--bg)">R/H</th><th style="padding:9px 6px;background:var(--bg)">TITLE</th><th style="padding:9px 6px;text-align:center;background:var(--bg)">PTS</th><th style="padding:9px 6px;background:var(--bg)">TYPE</th></tr></thead><tbody>${tbody}</tbody></table></div></div>`;
+    }
+    let gridsHtml=refHtml;
+    for(let g=0;g<cnt;g++){ const cs=g===0?4:3;
+      gridsHtml+=`<div class="seg-calc-grid"><table style="width:100%;border-collapse:collapse;table-layout:auto;"><thead style="background:var(--surface2);"><tr><th colspan="${cs}" style="padding:8px 12px;font-weight:600;font-size:11px;text-transform:none;letter-spacing:normal;color:var(--text);text-align:left;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><span class="editable" contenteditable="true" data-tab="segGridTitle" data-field="title" data-index="${role}-${seg}-${g}" style="flex:1;font-size:12px;font-weight:700;color:var(--text);padding:4px 8px;max-width:none;border-color:transparent;background:transparent;" placeholder="Calculation Version ${g+1}">${st.gridTitles[g]!==undefined?st.gridTitles[g]:'Calculation Version '+(g+1)}</span>${g>0?`<button class="tbtn-del" onclick="removeGrid('${role}',${seg},${g})" style="font-size:10px;padding:2px 4px;flex-shrink:0;">Remove</button>`:''}</div></th></tr><tr style="border-bottom:1px solid var(--border);">${g===0?`<th style="text-align:center;padding:9px 6px;width:36px;border-right:1px solid var(--border);">DEL</th>`:''}<th style="text-align:center;padding:9px 6px;width:44px;border-right:1px solid var(--border);">EXCL.</th><th style="text-align:left;padding:9px 6px;border-right:1px solid var(--border);">LESSON TITLE</th><th style="text-align:center;padding:9px 6px;">PTS</th></tr></thead><tbody id="${role}-seg-${seg}-manual-body-${g}">${st.rows.map((r,idx)=>`<tr id="${role}-seg-${seg}-row-${g}-${idx}" class="${modClass(r.title)}" style="border-bottom:1px solid var(--border);${r.excl[g]?'opacity:.35;box-shadow:inset 0 0 0 9999px rgba(0,0,0,.4)':''}">${g===0?`<td style="text-align:center;padding:4px 6px;border-right:1px solid var(--border);"><button class="tbtn-del" onclick="delSegRow('${role}',${seg},${idx})" style="padding:0;width:22px;height:22px;line-height:22px;font-size:16px;margin:0 auto;display:block;" title="Delete">&times;</button></td>`:''}<td style="text-align:center;padding:4px 6px;border-right:1px solid var(--border);"><input type="checkbox" ${r.excl[g]?'checked':''} onchange="onSegExcl('${role}',${seg},${idx},${g},this.checked)"></td><td style="padding:4px 6px;border-right:1px solid var(--border);">${ed(r.title,'seg','title',`${role}-${seg}-${idx}`,'max-width:100%;min-width:150px;width:100%;')}</td><td style="padding:4px 6px;text-align:center;">${ed(r.pts,'seg','pts',`${role}-${seg}-${idx}`,'min-width:40px;max-width:100%;width:100%;text-align:center;padding:4px 2px;')}</td></tr>`).join('')}</tbody><tbody><tr style="border-bottom:1px solid var(--border);"><td colspan="${cs}" style="padding:10px 12px;text-align:left;"><button class="tbtn" onclick="addSegRow('${role}',${seg})" style="font-size:11px;padding:4px 10px">+ Add Row</button></td></tr></tbody><tbody style="background:rgba(0,0,0,.1);"><tr style="border-bottom:1px solid var(--border);"><td colspan="${cs-1}" style="font-weight:600;text-align:right;padding:8px 10px;border-right:1px dashed var(--border);">Total Points</td><td id="${role}-seg-${seg}-sum-${g}" style="font-weight:600;color:var(--pass);text-align:center;padding:8px 6px;">0</td></tr><tr style="border-bottom:1px solid var(--border);"><td colspan="${cs-1}" style="text-align:right;color:var(--muted);padding:4px 10px;border-right:1px dashed var(--border);">Calculated Points (&times; 20 &divide; 80)</td><td id="${role}-seg-${seg}-div-${g}" style="color:var(--text);text-align:center;padding:4px 6px;">0.0000</td></tr><tr style="background:rgba(79,142,247,.08);"><td colspan="${cs-1}" style="font-weight:600;text-align:right;color:var(--accent);padding:8px 10px;border-right:1px solid rgba(79,142,247,.2);">Segment Points (Rounded)</td><td id="${role}-seg-${seg}-final-${g}" style="color:var(--accent);font-weight:700;text-align:center;padding:8px 6px;">0</td></tr></tbody></table><div style="padding:16px;"><button class="tbtn" onclick="toggleSegSplits('${role}',${seg})">${st.splitsOpen?'&#x25BC;':'&#x25B6;'} Calculate Exam Parts (Optional)</button><div id="${role}-seg-${seg}-splits-${g}" class="splits-reveal" style="display:${st.splitsOpen?'block':'none'}"><div style="font-size:10px;color:var(--muted);margin-bottom:12px;line-height:1.4">Enter percentage values. Balances strictly to 100%.</div><div id="${role}-seg-${seg}-splits-container-${g}">${buildSplits(role,seg,g)}</div></div></div></div>`;
+    }
+    setHtml(`${role}-seg-${seg}-grids`,gridsHtml); recalcSeg(role,seg);
+  }); });
+}
+
+// ── PACE BOARDS ───────────────────────────────────────────────────────────────
+function togglePaceView(type){ paceViewMode[type]=paceViewMode[type]==='standard'?'code':'standard'; const btn=document.getElementById(type==='rp'?'btn-pace-view':'btn-honors-pace-view'); if(btn){btn.textContent=paceViewMode[type]==='standard'?'Switch to Code View':'Switch to Standard View';btn.classList.toggle('tbtn-add',paceViewMode[type]==='code');} type==='rp'?renderRegularPace():renderHonorsPace(); }
+function renderPaceSegment(type,segNum){
+  const unassigned=[]; const nw=Array.from({length:18},()=>[]); const aw=Array.from({length:9},()=>[]);
+  APP_STATE.forEach((r,i)=>{ if(!r.cs.title||r.cs.seg!==segNum||!shouldShowState(r.cs.state))return; const item={i,r}; const n=r[type].normalWeek,a=r[type].accelWeek; if(n>=1&&n<=18)nw[n-1].push(item);else unassigned.push(item); if(a>=1&&a<=9)aw[a-1].push(item); });
+  const sort=(a,b)=>getCleanTitle(a.r.cs.title).localeCompare(getCleanTitle(b.r.cs.title),undefined,{numeric:true,sensitivity:'base'});
+  unassigned.sort(sort); nw.forEach(w=>w.sort(sort)); aw.forEach(w=>w.sort(sort));
+  const card=(item,src)=>{ const isH=item.r.cs.honors==='Yes'; const badge=isH?'<span class="pace-type-h">H</span>':'<span class="pace-type-r">R</span>'; const canDrag=(type==='hp'||!isH)&&paceViewMode[type]==='standard'; let text=item.r.cs.title; if(paceViewMode[type]==='code'){const clean=getCleanTitle(text);const m=clean.match(/^(\d+)\.(\d+)/);if(m)text=`[[ maln | ${parseInt(m[1])} | ${parseInt(m[2])} ]] [[ lessonName | ${parseInt(m[1])} | ${parseInt(m[2])} ]]`;} return `<div class="pace-card ${modClass(item.r.cs.title)}" style="${canDrag?'cursor:grab;':paceViewMode[type]==='code'?'cursor:text;':'cursor:not-allowed;opacity:.55;'}" ${canDrag?`draggable="true" ondragstart="onPaceDragStart(event,${item.i},'${type}','${src}')" ondragend="onPaceDragEnd(event)"`:''} ${!canDrag&&isH&&type==='rp'&&paceViewMode[type]==='standard'?`onclick="showToast('Honors lessons cannot be added to Regular Pace.')"` : ''}><div>${paceViewMode[type]==='code'?text:`<strong>${text}</strong>`}</div><div>${badge}</div></div>`; };
+  const pool=document.getElementById(`${type}-pool-${segNum}`); if(pool)pool.innerHTML=unassigned.map(i=>card(i,'pool')).join('');
+  const gridRows=(data,gName)=>data.map((items,wi)=>`<tr><td class="pace-week-num">W${wi+1}</td><td class="pace-cell" ondragover="onPaceDragOver(event)" ondragleave="onPaceDragLeave(event)" ondrop="onPaceDrop(event,'${type}',${segNum},'${gName}',${wi+1})">${items.map(i=>card(i,gName)).join('')}</td></tr>`).join('');
+  const nGrid=document.getElementById(`${type}-normal-${segNum}-body`); if(nGrid)nGrid.innerHTML=gridRows(nw,'normal');
+  const aGrid=document.getElementById(`${type}-accel-${segNum}-body`); if(aGrid)aGrid.innerHTML=gridRows(aw,'accel');
+}
+function renderRegularPace(){renderPaceSegment('rp',1);renderPaceSegment('rp',2);}
+function renderHonorsPace(){renderPaceSegment('hp',1);renderPaceSegment('hp',2);}
+function onPaceDragStart(e,i,type,src){dragSrcIndex=i;dragPaceType=type;dragSrcGrid=src;e.dataTransfer.effectAllowed=src==='normal'?'copyMove':'move';setTimeout(()=>e.target.style.opacity='0.5',0);}
+function onPaceDragEnd(e){e.target.style.opacity='1';dragSrcIndex=dragPaceType=dragSrcGrid=null;document.querySelectorAll('.pace-cell,.pace-pool').forEach(el=>el.classList.remove('drag-over'));}
+function onPaceDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function onPaceDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function onPaceDrop(e,targetType,targetSeg,targetGrid,targetWeek){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(dragSrcIndex===null||dragPaceType!==targetType)return;
+  const row=APP_STATE[dragSrcIndex];
+  if(row.cs.seg!==targetSeg)return showToast(`Segment ${row.cs.seg} lessons cannot be placed in the Segment ${targetSeg} area.`);
+  if(targetGrid==='normal'){if(dragSrcGrid==='accel')return showToast('Cannot move lessons backwards from Accelerated to Normal.');row[targetType].normalWeek=targetWeek;}
+  else if(targetGrid==='accel'){if(dragSrcGrid==='pool')return showToast('Must drag from the Normal grid first.');if(row[targetType].normalWeek===null)return showToast('Lesson must be in Normal grid first.');row[targetType].accelWeek=targetWeek;}
+  else if(targetGrid==='pool'){if(dragSrcGrid==='normal'){row[targetType].normalWeek=null;row[targetType].accelWeek=null;}else if(dragSrcGrid==='accel')row[targetType].accelWeek=null;}
+  targetType==='rp'?renderRegularPace():renderHonorsPace();
+}
+function updateHonorsState(){
+  const hasH=APP_STATE.some(r=>r.cs.title&&r.cs.honors==='Yes');
+  const panel=document.getElementById('tab-honorspace'); if(!panel)return;
+  panel.style.opacity=hasH?'':'0.45'; panel.style.filter=hasH?'':'grayscale(0.6)';
+  const badge=document.getElementById('honors-badge'),nav=document.getElementById('nav-honorspace'),layout=document.getElementById('hp-layout-wrapper'),btn=document.getElementById('btn-honors-pace-view');
+  if(badge)badge.style.display=hasH?'none':'';
+  if(nav)nav.style.opacity=hasH?'':'0.45';
+  if(layout){layout.style.pointerEvents=hasH?'':'none';layout.style.opacity=hasH?'':'0.5';}
+  if(btn){btn.disabled=!hasH;btn.style.opacity=hasH?'':'0.4';}
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────────────────
+const refreshSummary = debounce(() => {
+  const rows=APP_STATE.filter(r=>r.cs.title && shouldShowState(r.cs.state));
+  const tRows=rows.filter(r=>r.cs.rubricTitle==='Yes'), s2=rows.filter(r=>r.cs.seg===2);
+  const getTT=r=>(r.cs.timeAssess||0)+(r.cs.timeLesson||0);
+  const secPass=(subset,fn)=>subset.map(fn).filter(v=>v&&v!=='NA').some(v=>String(v).startsWith('Fail'))?'Fail':'Pass';
+  const audit=[
+    ['2. Checklist/Sitemap',  secPass(rows,r=>matchExact(r.cs.title,r.cl.sitemapTitle)), secPass(rows,r=>matchNum(r.cs.points,r.cl.sitemapPts)),  secPass(rows,r=>matchNum(getTT(r),r.cl.sitemapTime)),  rows.filter(r=>r.cl.sitemapTitle).length, rows.length],
+    ['3. Gradebuilder',       secPass(rows,r=>matchExact(r.cs.title,r.gb.gbTitle)),      secPass(rows,r=>matchNum(r.cs.points,r.gb.gbPts)),        null,                                                   rows.filter(r=>r.gb.gbTitle).length,      rows.length],
+    ['4. Divs',               secPass(rows,r=>matchExact(r.cs.title,r.dv.divTitle)),     null,null,                                                                                                         rows.filter(r=>r.dv.divTitle).length,     rows.length],
+    ['4. Rubrics',            secPass(tRows,r=>matchExact(r.cs.title,r.dv.rubricTitle)), secPass(tRows,r=>matchNum(r.cs.points,r.dv.rubricPts)),   null,                                                   tRows.filter(r=>r.dv.rubricTitle).length, tRows.length],
+    ['5. Answer Keys',        secPass(rows,r=>matchExact(r.cs.title,r.ak.akTitle)),      secPass(rows,r=>matchNum(r.cs.points,r.ak.akPts)),        null,                                                   rows.filter(r=>r.ak.akTitle).length,      rows.length],
+    ['6. IPP (GS)',           secPass(rows,r=>matchExact(r.cs.title,r.ipp.ippGsTitle)),  null,secPass(rows,r=>matchNum(getTT(r),r.ipp.ippGsTime)),                                                         rows.filter(r=>r.ipp.ippGsTitle).length,  rows.length],
+    ['6. IPP (FL)',           secPass(rows,r=>matchExact(r.cs.title,r.ipp.ippFlTitle)),  null,secPass(rows,r=>matchNum(getTT(r),r.ipp.ippFlTime)),                                                         rows.filter(r=>r.ipp.ippFlTitle).length,  rows.length],
+    ['7. Traditional Pace',   secPass(rows,r=>matchExact(r.cs.title,r.pc.tradTitle)),    null,null,                                                                                                         rows.filter(r=>r.pc.tradTitle).length,    rows.length],
+    ['7. Accelerated Pace',   secPass(rows,r=>matchExact(r.cs.title,r.pc.accelTitle)),   null,null,                                                                                                         rows.filter(r=>r.pc.accelTitle).length,   rows.length],
+    ['7. 2nd Segment Pace',   secPass(s2,r=>matchExact(r.cs.title,r.pc.seg2Title)),      null,null,                                                                                                         s2.filter(r=>r.pc.seg2Title).length,      s2.length]
+  ];
+  const overall=audit.every(r=>[r[1],r[2],r[3]].filter(Boolean).every(v=>v==='Pass'));
+  const complete=rows.every(r=>r.cs.title&&r.cs.seg!==null&&r.cs.timeAssess!==null&&r.cs.points!==null&&r.cs.gradingType&&r.cs.inSitemap)?'Pass':'Fail';
+  const valid=rows.every(r=>fnValidateTitle(r.cs.title)==='Pass')?'Pass':'Fail';
+  document.getElementById('summary-content').innerHTML=`<div class="cg" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:20px"><div class="card ${overall?'card-pass-border':'card-fail-border'}"><div class="clabel">Overall Audit</div><div style="margin-top:8px">${overall?'<span class="badge bp" style="font-size:14px">PASS</span>':'<span class="badge bf" style="font-size:14px">FAIL</span>'}</div></div><div class="card"><div class="clabel">Number of Entries</div><div class="cval">${rows.length}</div></div><div class="card"><div class="clabel">Data Entry Complete?</div><div style="margin-top:8px">${bv(complete)}</div></div><div class="card"><div class="clabel">All Titles Valid?</div><div style="margin-top:8px">${bv(valid)}</div></div></div><div class="stl">Title and Point Audit</div><div class="tw"><table><thead><tr><th>Section</th><th>Titles</th><th>Points</th><th>Time</th><th>Actual<br>Entries</th><th>Expected<br>Entries</th><th>CS<br>Signoff</th><th>IDS<br>Signoff</th><th>QA<br>Signoff</th></tr></thead><tbody>${audit.map(r=>`<tr><td>${r[0]}</td><td>${bv(r[1])}</td><td>${bv(r[2])}</td><td>${bv(r[3])}</td><td>${r[4]}</td><td>${r[5]}</td><td><span class="editable" contenteditable="true"></span></td><td><span class="editable" contenteditable="true"></span></td><td><span class="editable" contenteditable="true"></span></td></tr>`).join('')}</tbody></table></div>`;
+  let mHtml='';
+  ['01','02','03','04','05','06','07','08','09'].forEach(mod=>{
+    const mR=rows.filter(r=>r.cs.title.startsWith(mod+'.')); if(!mR.length){mHtml+=`<div class="mod-no-entries">Module ${mod} — no entries</div>`;return;}
+    const mtR=mR.filter(r=>r.cs.rubricTitle==='Yes'),ms2R=mR.filter(r=>r.cs.seg===2);
+    const ma=[['2. Checklist/Sitemap',secPass(mR,r=>matchExact(r.cs.title,r.cl.sitemapTitle)),secPass(mR,r=>matchNum(r.cs.points,r.cl.sitemapPts)),secPass(mR,r=>matchNum(getTT(r),r.cl.sitemapTime)),mR.filter(r=>r.cl.sitemapTitle).length,mR.length],['3. Divs',secPass(mR,r=>matchExact(r.cs.title,r.dv.divTitle)),null,null,mR.filter(r=>r.dv.divTitle).length,mR.length],['3. Rubrics',secPass(mtR,r=>matchExact(r.cs.title,r.dv.rubricTitle)),secPass(mtR,r=>matchNum(r.cs.points,r.dv.rubricPts)),null,mtR.filter(r=>r.dv.rubricTitle).length,mtR.length],['4. Gradebuilder',secPass(mR,r=>matchExact(r.cs.title,r.gb.gbTitle)),secPass(mR,r=>matchNum(r.cs.points,r.gb.gbPts)),null,mR.filter(r=>r.gb.gbTitle).length,mR.length],['5. Answer Keys',secPass(mR,r=>matchExact(r.cs.title,r.ak.akTitle)),secPass(mR,r=>matchNum(r.cs.points,r.ak.akPts)),null,mR.filter(r=>r.ak.akTitle).length,mR.length],['6. IPP (GS)',secPass(mR,r=>matchExact(r.cs.title,r.ipp.ippGsTitle)),null,secPass(mR,r=>matchNum(getTT(r),r.ipp.ippGsTime)),mR.filter(r=>r.ipp.ippGsTitle).length,mR.length],['6. IPP (FL)',secPass(mR,r=>matchExact(r.cs.title,r.ipp.ippFlTitle)),null,secPass(mR,r=>matchNum(getTT(r),r.ipp.ippFlTime)),mR.filter(r=>r.ipp.ippFlTitle).length,mR.length],['7. Traditional Pace',secPass(mR,r=>matchExact(r.cs.title,r.pc.tradTitle)),null,null,mR.filter(r=>r.pc.tradTitle).length,mR.length],['7. Accelerated Pace',secPass(mR,r=>matchExact(r.cs.title,r.pc.accelTitle)),null,null,mR.filter(r=>r.pc.accelTitle).length,mR.length],['7. 2nd Segment Pace',secPass(ms2R,r=>matchExact(r.cs.title,r.pc.seg2Title)),null,null,ms2R.filter(r=>r.pc.seg2Title).length,ms2R.length]];
+    mHtml+=`<div class="u-mb-20"><div class="mod-summary-hdr">Module ${mod} <span class="u-text-11 u-font-400 u-text-muted" style="margin-left:12px">${mR.length} entries</span></div><div class="tw"><table><thead><tr><th>Section</th><th>Titles</th><th>Points</th><th>Time</th><th>Actual</th><th>Expected</th></tr></thead><tbody>${ma.map(r=>`<tr><td>${r[0]}</td><td>${bv(r[1])}</td><td>${bv(r[2])}</td><td>${bv(r[3])}</td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('')}</tbody></table></div></div>`;
+  });
+  document.getElementById('summod-content').innerHTML=mHtml;
+  if (document.getElementById('dash-pane-stats')?.classList.contains('active')) renderStats();
+},300);
+
+// ── EVENT DELEGATION ──────────────────────────────────────────────────────────
+document.addEventListener('paste', e => { if(e.target?.classList?.contains('editable')){e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text/plain'));} });
+
+document.getElementById('main').addEventListener('input', e => {
+  if (!e.target.hasAttribute('data-tab')) return;
+  if (e.target.tagName !== 'SPAN' && e.target.tagName !== 'INPUT') return;
+  if (e.target.tagName === 'INPUT' && (e.target.type === 'checkbox' || e.target.tagName === 'SELECT')) return;
+  const val=e.target.textContent??e.target.value, tab=e.target.dataset.tab, field=e.target.dataset.field;
+  
+  // Custom Handler: Seg Grid Titles
+  if(tab==='segGridTitle'){ const parts=e.target.dataset.index.split('-'),role=parts[0],segNum=parts[1],g=parseInt(parts[2]); SEG_STATE[role][segNum].gridTitles[g]=val; return; }
+
+  const i=parseInt(e.target.dataset.index);
+
+  // Seg weights
+  if(tab==='seg'){ const parts=e.target.dataset.index.split('-'),role=parts[0],segNum=parts[1],rowIdx=parseInt(parts[2]),v=field==='pts'?(parseFloat(val)||null):val; SEG_STATE[role][segNum].rows[rowIdx][field]=v; if(field==='title'){const mc=modClass(val);for(let g=0;g<SEG_STATE[role][segNum].activeGrids;g++){const tr=document.getElementById(`${role}-seg-${segNum}-row-${g}-${rowIdx}`);if(tr){tr.className=tr.className.replace(/mod-\d{2}/g,'').trim();if(mc)tr.classList.add(mc);}}document.querySelectorAll(`[data-tab="seg"][data-field="${field}"][data-index="${e.target.dataset.index}"]`).forEach(el=>{if(el!==e.target)el.textContent=v;});} recalcSeg(role,segNum); return; }
+
+  // Multi-part child
+  if(tab==='cspart'){ 
+    const pIdx=parseInt(e.target.dataset.pidx), v=['timeAssess','points'].includes(field)?(parseFloat(val)||null):val; 
+    APP_STATE[i].cs.multiPartData[pIdx][field]=v; 
+    if(field==='title'){
+      const cc=document.getElementById(`cspart-cc-${i}-${pIdx}`);if(cc)cc.textContent=(val||'').length;
+      setHtml(`cspart-at-${i}-${pIdx}`,bv(fnValidateTitle(val)));
+      syncRowStaticData(i); 
+    } 
+    if(['timeAssess','points'].includes(field)){
+      recalcMultiPartTotals(i);
+      syncRowStaticData(i); 
+    }
+    updateRowCalculations(i);refreshSummary();return;
+  }
+
+  if(tab==='dvpart'){
+    const pIdx=parseInt(e.target.dataset.pidx);
+    if(!APP_STATE[i].cs.multiPartData[pIdx].dv) APP_STATE[i].cs.multiPartData[pIdx].dv = {divTitle:'',rubricTitle:'',rubricPts:''};
+    APP_STATE[i].cs.multiPartData[pIdx].dv[field]=val;
+    updateRowCalculations(i);refreshSummary();return;
+  }
+
+  if(tab==='gbpart'){
+    const pIdx=parseInt(e.target.dataset.pidx);
+    let v = field==='gbPts'?(parseFloat(val)||null):val;
+    if(!APP_STATE[i].cs.multiPartData[pIdx].gb) APP_STATE[i].cs.multiPartData[pIdx].gb = {gbTitle:'',gbPts:''};
+    APP_STATE[i].cs.multiPartData[pIdx].gb[field]=v;
+    updateRowCalculations(i);refreshSummary();return;
+  }
+
+  // Standard
+  if(tab&&field){
+    let v=val;
+    if(tab==='cs'&&['timeAssess','timeLesson','points'].includes(field))v=parseFloat(val)||null;
+    
+    let titleStateChanged = false;
+    if (tab === 'cs' && field === 'title') {
+        const oldTitle = APP_STATE[i].cs.title || '';
+        const newTitle = v || '';
+        titleStateChanged = (oldTitle.trim() === '') !== (newTitle.trim() === '');
+    }
+
+    APP_STATE[i][tab][field]=v;
+
+    if(tab==='cs'&&field==='title'){
+      if((APP_STATE[i].cs.seg===null||APP_STATE[i].cs.seg==='')&&val.trim()){
+        APP_STATE[i].cs.seg=getLastKnownSegment(i);
+        const sel=document.getElementById(`sel-cs-seg-${i}`);
+        if(sel)sel.value=APP_STATE[i].cs.seg;
+      }
+      updateRowClasses(i);
+
+      if (titleStateChanged) {
+          renderChecklist(true); renderDivs(true); renderGradebuilder(true);
+          renderAnswerKeys(true); renderIPP(true); renderPaceCharts(true);
+          APP_STATE.forEach((r, idx) => { if (r.cs.title) updateRowCalculations(idx); });
+      } else {
+          syncRowStaticData(i);
+          updateRowCalculations(i);
+      }
+      debouncedHeavyRender();
+    } else if (tab === 'cs' && field === 'points') {
+        syncRowStaticData(i); 
+        updateRowCalculations(i);
+        debouncedHeavyRender();
+    } else {
+        updateRowCalculations(i);
+    }
+    refreshSummary();
+  }
+});
+
+document.getElementById('main').addEventListener('change', e => {
+  if(!e.target.hasAttribute('data-tab'))return;
+  const isSel=e.target.tagName==='SELECT',isChk=e.target.type==='checkbox';
+  if(!isSel&&!isChk)return;
+  const i=parseInt(e.target.dataset.index),tab=e.target.dataset.tab,field=e.target.dataset.field;
+  let val=isChk?(e.target.checked?'Yes':'No'):e.target.value;
+
+  // Multi-part
+  if(tab==='cspart'){
+    const pIdx=parseInt(e.target.dataset.pidx);APP_STATE[i].cs.multiPartData[pIdx][field]=val;
+    if(field==='label'){
+      const defs=ASSESSMENT_DEFAULTS[val];
+      if(defs){
+        APP_STATE[i].cs.multiPartData[pIdx].rubricTitle=defs.rubric;
+        const rc=document.querySelector(`input[type="checkbox"][data-tab="cspart"][data-field="rubricTitle"][data-index="${i}"][data-pidx="${pIdx}"]`);if(rc)rc.checked=defs.rubric==='Yes';
+        if(defs.time&&APP_STATE[i].cs.multiPartData[pIdx].timeAssess==null){APP_STATE[i].cs.multiPartData[pIdx].timeAssess=parseFloat(defs.time);const tEl=document.getElementById(`ed-cspart-timeAssess-${i}-${pIdx}`);if(tEl)tEl.textContent=defs.time;recalcMultiPartTotals(i);}
+        if(defs.gradingType){APP_STATE[i].cs.multiPartData[pIdx].gradingType=defs.gradingType;const gtSel=document.getElementById(`sel-cspart-gradingType-${i}-${pIdx}`);if(gtSel)gtSel.value=defs.gradingType;}
+      }
+    } 
+    updateRowCalculations(i);refreshSummary();return;
+  }
+
+  // Seg change — clear pacing
+  if(tab==='cs'&&field==='seg'){val=val?parseInt(val):null;if(val!==APP_STATE[i].cs.seg){APP_STATE[i].rp.normalWeek=APP_STATE[i].rp.accelWeek=null;APP_STATE[i].hp.normalWeek=APP_STATE[i].hp.accelWeek=null;}}
+  APP_STATE[i][tab][field]=val;
+
+  // Label defaults
+  if(tab==='cs'&&field==='label'){const defs=ASSESSMENT_DEFAULTS[val];if(defs){APP_STATE[i].cs.rubricTitle=defs.rubric;const rc=document.getElementById(`cs-rubric-chk-${i}`);if(rc)rc.checked=defs.rubric==='Yes';if(defs.time&&APP_STATE[i].cs.timeAssess==null){APP_STATE[i].cs.timeAssess=parseFloat(defs.time);const tEl=document.getElementById(`ed-cs-timeAssess-${i}`);if(tEl)tEl.textContent=defs.time;}if(defs.gradingType){APP_STATE[i].cs.gradingType=defs.gradingType;const gtSel=document.getElementById(`sel-cs-gradingType-${i}`);if(gtSel)gtSel.value=defs.gradingType;}}}
+
+  updateRowCalculations(i);
+  if(tab==='cs'){if(field==='honors'){updateHonorsState();debouncedHeavyRender();}if(field==='seg')debouncedHeavyRender();if(field==='gradingType'||field==='label'){renderSegWeights();renderAIList();}if(field==='state')syncRowStaticData(i);}
+  refreshSummary();
+});
+
+// ── STARTUP ────────────────────────────────────────────────────────────────────
+initState();
+renderAllTables();
+
+// ── STICKY THEAD + PHANTOM SCROLL ─────────────────────────────────────────────
+(function(){
+  const tracked=[]; let phantomTarget=null;
+  const phantom=document.getElementById('phantom-scroll'), phantomInner=document.getElementById('phantom-scroll-inner');
+  function buildClone(scroller,table){const thead=table.querySelector('thead');if(!thead)return null;const clone=document.createElement('div');clone.className='sticky-thead-clone';const ct=document.createElement('table');ct.innerHTML=`<thead>${thead.innerHTML}</thead>`;clone.appendChild(ct);document.body.appendChild(clone);clone.style.display='none';return clone;}
+  function positionClone(entry){const{scroller,clone}=entry;const sr=scroller.getBoundingClientRect();const navW=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav'))||220;clone.style.left=Math.max(sr.left,navW)+'px';clone.style.width=(sr.right-Math.max(sr.left,navW))+'px';clone.style.top='0px';clone.scrollLeft=scroller.scrollLeft;const st=scroller.querySelector('table');if(st){const ct=clone.querySelector('table');if(ct)ct.style.width=st.offsetWidth+'px';}}
+  function initTracking(){document.querySelectorAll('.tw,.cs-wrap').forEach(scroller=>{const table=scroller.querySelector('table');if(!table||!table.querySelector('thead'))return;const clone=buildClone(scroller,table);if(!clone)return;const entry={scroller,table,clone};tracked.push(entry);scroller.addEventListener('scroll',()=>{if(entry.clone.style.display!=='none')positionClone(entry);if(phantomTarget===scroller)phantom.scrollLeft=scroller.scrollLeft;})});}
+  phantom.addEventListener('scroll',()=>{if(phantomTarget)phantomTarget.scrollLeft=phantom.scrollLeft;});
+  window.addEventListener('scroll',()=>{const panel=document.querySelector('.panel.active');if(!panel){tracked.forEach(e=>{if(e.clone)e.clone.style.display='none';});phantom.style.display='none';return;}tracked.forEach(entry=>{const sr=entry.scroller.getBoundingClientRect();const thH=entry.table.querySelector('thead')?.offsetHeight||40;if(!panel.contains(entry.scroller)){entry.clone.style.display='none';return;}if(sr.top<0&&sr.bottom>thH){positionClone(entry);entry.clone.style.display='block';const table=entry.scroller.querySelector('table');if(table){phantomTarget=entry.scroller;const navW=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav'))||220;phantomInner.style.width=table.offsetWidth+'px';phantom.style.left=navW+'px';phantom.style.display=table.offsetWidth>(sr.right-Math.max(sr.left,navW))?'block':'none';}}else{entry.clone.style.display='none';if(phantomTarget===entry.scroller)phantom.style.display='none';}});},{passive:true});
+  window.addEventListener('resize',()=>{tracked.forEach(entry=>{if(entry.clone.style.display!=='none')positionClone(entry);if(phantomTarget===entry.scroller){const table=entry.scroller.querySelector('table');if(table){phantomInner.style.width=table.offsetWidth+'px';const sr=entry.scroller.getBoundingClientRect();const navW=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav'))||220;phantom.style.display=table.offsetWidth>(sr.right-Math.max(sr.left,navW))?'block':'none';}}});});
+  let reinitTimer=null;
+  new MutationObserver(()=>{clearTimeout(reinitTimer);reinitTimer=setTimeout(()=>{tracked.forEach(e=>{if(e.clone)e.clone.remove();});tracked.length=0;initTracking();},300);}).observe(document.getElementById('main'),{childList:true,subtree:true});
+  initTracking();
+})();
+
+</script>
+</body>
+</html>

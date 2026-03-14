@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Version Editor v2.0.2</title>
+    <style>
+        /* --- CSS VARIABLES (THEMING) --- */
+        :root {
+            --bg-main: #f5f5f5;
+            --bg-surface: #ffffff;
+            --bg-surface-alt: #f8fafc;
+            --bg-header: #2c3e50;
+            --bg-hover: #edf2f7;
+            --bg-input: #f8fafc;
+            
+            --text-main: #333333;
+            --text-muted: #718096;
+            --text-light: #ffffff;
+            
+            --border-main: #e2e8f0;
+            --border-strong: #cbd5e0;
+            
+            --color-primary: #3182ce;
+            --color-primary-hover: #2b6cb0;
+            --color-success: #38a169;
+            --color-success-hover: #276749;
+            --color-danger: #e53e3e;
+            --color-danger-hover: #c53030;
+            --color-warning: #dd6b20;
+            --color-warning-hover: #c05621;
+            --color-accent: #7e57c2;
+            --color-accent-hover: #5e35b1;
+            --color-teal: #009688;
+            --color-teal-hover: #00796b;
+            
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 15px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 20px rgba(0,0,0,0.08);
+
+            --highlight-tag: #2b6cb0;
+            --highlight-attr: #c05621;
+            --highlight-comment: #009688;
+            --highlight-custom: #7e57c2;
+            --highlight-entity: #e53e3e;
+            --highlight-lang: #d53f8c;
+            --highlight-find-bg: rgba(255, 165, 0, 0.3);
+            --highlight-find-border: orange;
+        }
+
+        body.dark-mode {
+            --bg-main: #1a1a1a;
+            --bg-surface: #2d2d2d;
+            --bg-surface-alt: #252525;
+            --bg-header: #1e2936;
+            --bg-hover: #444444;
+            --bg-input: #1a1a1a;
+            
+            --text-main: #e2e8f0;
+            --text-muted: #a0aec0;
+            
+            --border-main: #4a5568;
+            --border-strong: #718096;
+
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+            --shadow-md: 0 4px 15px rgba(0,0,0,0.5);
+            --shadow-lg: 0 4px 20px rgba(0,0,0,0.4);
+
+            --highlight-tag: #569cd6;
+            --highlight-attr: #ce9178;
+            --highlight-comment: #4db6ac;
+            --highlight-custom: #b39ddb;
+            --highlight-entity: #ff6b6b;
+            --highlight-lang: #f687b3;
+            --highlight-find-bg: rgba(212, 175, 55, 0.4);
+            --highlight-find-border: #d4af37;
+        }
+
+        /* --- RESET & BASICS --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-main);
+            padding: 20px;
+            line-height: 1.6;
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        svg.icon { width: 100%; height: 100%; fill: currentColor; pointer-events: none; }
+
+        /* --- LAYOUT --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-surface);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+            position: relative; 
+            transition: background-color 0.3s ease;
+        }
+
+        /* --- HEADER --- */
+        .header { background: var(--bg-header); color: var(--text-light); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .header p { font-size: 13px; opacity: 0.8; }
+        .header-controls { display: flex; gap: 10px; align-items: center; }
+
+        .lang-select { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: var(--text-light); font-size: 13px; cursor: pointer; outline: none; }
+        .lang-select option { background: var(--bg-header); color: var(--text-light); }
+        
+        button.icon-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-light); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 6px;}
+        button.icon-btn svg { width: 14px; height: 14px; }
+        button.icon-btn:hover { background: rgba(255,255,255,0.2); }
+        
+        button.action-btn-header { display: none; font-weight: bold; }
+        button.action-btn-header.active { display: flex; }
+        .btn-clear-all { background: var(--color-warning); border-color: var(--color-warning-hover); }
+        .btn-clear-all:hover { background: var(--color-warning-hover); }
+        .btn-reset { background: var(--color-danger); border-color: var(--color-danger-hover); }
+        .btn-reset:hover { background: var(--color-danger-hover); }
+
+        /* --- TOAST NOTIFICATIONS --- */
+        .toast-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 300px; }
+        .toast { background: #333; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(20px); transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55); text-align: center; font-weight: 500; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: var(--color-success); }
+        .toast.error { background: var(--color-danger); }
+
+        /* --- START SCREEN --- */
+        .start-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; background: var(--bg-surface-alt); overflow-y: auto; }
+        .start-screen.hidden { display: none; }
+        .start-options { margin-bottom: 20px; background: var(--bg-surface); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-main); box-shadow: var(--shadow-sm); }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); cursor: pointer; user-select: none; font-weight: 500; }
+        input[type="checkbox"] { accent-color: var(--color-primary); width: 16px; height: 16px; cursor: pointer; }
+
+        .upload-area { width: 100%; max-width: 500px; height: 200px; border: 3px dashed var(--border-strong); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-surface); cursor: pointer; transition: all 0.2s; margin-bottom: 25px; }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--color-primary); background: rgba(49, 130, 206, 0.05); transform: scale(1.01); }
+        .upload-icon { width: 48px; height: 48px; fill: var(--text-muted); margin-bottom: 12px; }
+        .upload-title { font-size: 18px; font-weight: 600; color: var(--text-main); }
+        .upload-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+        .start-divider { display: flex; align-items: center; width: 100%; max-width: 500px; margin-bottom: 25px; color: var(--text-muted); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .start-divider::before, .start-divider::after { content: ""; flex: 1; height: 1px; background: var(--border-main); }
+        .start-divider::before { margin-right: 15px; } .start-divider::after { margin-left: 15px; }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 500px; }
+        .action-card { background: var(--bg-surface); border: 1px solid var(--border-main); border-radius: 8px; padding: 15px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .action-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); transform: translateY(-2px); background: var(--bg-surface-alt); }
+        .ac-icon { width: 32px; height: 32px; border-radius: 6px; background: rgba(49, 130, 206, 0.1); color: var(--color-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ac-icon svg { width: 18px; height: 18px; }
+        .action-card.paste .ac-icon { background: rgba(56, 161, 105, 0.1); color: var(--color-success); }
+        .ac-text { display: flex; flex-direction: column; }
+        .ac-title { font-size: 14px; font-weight: 600; color: var(--text-main); }
+        .ac-desc { font-size: 12px; color: var(--text-muted); }
+
+        /* --- MODALS & POPUPS --- */
+        .fr-modal { position: absolute; top: 70px; right: 20px; width: 340px; background: var(--bg-surface); border: 1px solid var(--border-main); border-radius: 8px; box-shadow: var(--shadow-md); padding: 15px; z-index: 100; display: none; flex-direction: column; gap: 10px; }
+        .fr-modal.active { display: flex; }
+        .fr-input-group { display: flex; flex-direction: column; gap: 5px; }
+        .fr-input { padding: 8px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 13px; background: var(--bg-input); color: var(--text-main); }
+        .fr-input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
+        .fr-buttons { display: flex; gap: 6px; justify-content: space-between; margin-top: 5px; }
+        .fr-btn { flex: 1; padding: 6px 4px; font-size: 11px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; color: white; white-space: nowrap; }
+        .fr-btn-find { background: var(--color-primary); } .fr-btn-find:hover { background: var(--color-primary-hover); }
+        .fr-btn-findall { background: #d69e2e; } .fr-btn-findall:hover { background: #b7791f; }
+        .fr-btn-replace { background: var(--color-success); } .fr-btn-replace:hover { background: var(--color-success-hover); }
+        .fr-btn-all { background: var(--color-accent); } .fr-btn-all:hover { background: var(--color-accent-hover); }
+        .modal-close { position: absolute; top: -10px; right: -10px; background: var(--color-danger); border: 2px solid var(--bg-surface); color: white; font-size: 16px; cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 0.2s; }
+        .modal-close:hover { background: var(--color-danger-hover); transform: scale(1.1); }
+
+        /* --- TOOLBARS --- */
+        .toolbar { padding: 12px 20px; background: var(--bg-surface-alt); border-bottom: 1px solid var(--border-main); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex-shrink: 0; position: relative; }
+        .toolbar.hidden { display: none; }
+        
+        #langToolbar { padding: 8px 20px; background: rgba(56, 178, 172, 0.1); border-bottom: 1px solid rgba(56, 178, 172, 0.3); display: none; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .lang-btn-container { display: flex; flex-wrap: wrap; gap: 4px; }
+        .lang-char-btn { min-width: 28px; height: 32px; padding: 0 6px; font-size: 14px; font-weight: bold; background: var(--bg-surface); border: 1px solid rgba(56, 178, 172, 0.5); color: var(--text-main); border-radius: 4px; cursor: pointer; transition: all 0.1s; }
+        .lang-char-btn:hover { background: #38b2ac; color: white; }
+        .lang-options { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+        .btn-group { display: flex; align-items: center; }
+        .btn-group button { padding: 6px 12px; height: 32px; min-width: 36px; background: var(--bg-surface); border: 1px solid var(--border-strong); color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.1s; margin-right: -1px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .btn-group button svg { width: 16px; height: 16px; }
+        .btn-group button:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+        .btn-group button:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; margin-right: 0; }
+        .btn-group button:hover { background: var(--bg-hover); z-index: 2; border-color: var(--border-strong); color: var(--text-main); }
+        .toggle-active { background: var(--color-teal) !important; color: white !important; border-color: var(--color-teal-hover) !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .font-control { display: flex; align-items: center; gap: 10px; padding: 0 10px; border-left: 1px solid var(--border-strong); margin-left: 4px; height: 28px; }
+        .font-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .font-value-display { font-family: monospace; font-size: 12px; color: var(--text-main); width: 34px; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; text-align: center; }
+        .dark-mode .font-value-display { background: rgba(255,255,255,0.1); }
+
+        /* --- STATUS BAR --- */
+        .status-bar { background: var(--bg-surface); padding: 12px 20px; border-bottom: 1px solid var(--border-main); flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; gap: 0; flex-wrap: wrap; }
+        .status-bar.hidden { display: none; }
+        .sb-section { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .sb-divider { width: 1px; height: 24px; background-color: var(--border-main); margin: 0 20px; }
+        .sb-right { margin-left: auto; }
+
+        .btn-action { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; color: white; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm); height: 34px; display: flex; align-items: center; gap: 6px; }
+        .btn-action:active { transform: translateY(1px); }
+        .btn-combine { background: var(--color-primary); } .btn-combine:hover { background: var(--color-primary-hover); }
+        .btn-clear { background: var(--color-danger); } .btn-clear:hover { background: var(--color-danger-hover); }
+        .btn-compress { background: var(--color-warning); } .btn-compress:hover { background: var(--color-warning-hover); }
+        
+        .control-group { display: flex; align-items: stretch; background: var(--bg-surface); border-radius: 6px; overflow: hidden; height: 34px; }
+        .cg-screen { border: 1px solid var(--color-teal); }
+        .btn-screen-main { background: var(--color-teal); color: white; border: none; padding: 0 12px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-screen-main:hover { background: var(--color-teal-hover); }
+        .cg-screen .options { background: rgba(0, 150, 136, 0.15); } 
+        
+        .cg-custom { border: 1px solid var(--color-accent); }
+        .custom-input-wrapper { position: relative; display: flex; align-items: center; background: var(--bg-input); border-right: 1px solid var(--border-main); }
+        .custom-input { border: none; outline: none; padding: 0 24px 0 8px; font-size: 12px; width: 100px; height: 100%; background: transparent; color: var(--text-main); transition: all 0.2s; }
+        .custom-input:focus { box-shadow: inset 0 0 0 2px var(--color-accent); background: rgba(126, 87, 194, 0.05); }
+        .clear-input-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); font-size: 14px; font-weight: bold; cursor: pointer; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .clear-input-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+        .btn-custom-main { background: var(--color-accent); color: white; border: none; padding: 0 12px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-custom-main:hover { background: var(--color-accent-hover); }
+        .cg-custom .options { background: rgba(126, 87, 194, 0.15); }
+
+        .options { display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+        .st-checkbox { display: flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; cursor: pointer; user-select: none; }
+        .cg-screen .st-checkbox { color: var(--color-teal); }
+        .cg-custom .st-checkbox { color: var(--color-accent); }
+
+        .copy-btn { background: var(--color-success); border: 1px solid var(--color-success-hover); }
+        .copy-btn:hover { background: var(--color-success-hover); }
+        .save-btn { background: #4a5568; border: 1px solid #2d3748; }
+        .save-btn:hover { background: #2d3748; }
+
+        /* --- EDITOR AREA --- */
+        .editor-wrapper { position: relative; flex: 1; overflow: hidden; display: none; }
+        .editor-wrapper.active { display: block; }
+        .code-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 40px; margin: 0; border: none; font-family: 'Menlo', 'Monaco', 'Courier New', monospace; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; overflow-x: hidden; cursor: text; }
+        .code-layer::-webkit-scrollbar { width: 8px; }
+        .code-layer::-webkit-scrollbar-track { background: transparent; }
+        .code-layer::-webkit-scrollbar-thumb { background-color: var(--border-strong); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+        .code-layer::-webkit-scrollbar-thumb:hover { background-color: var(--text-muted); }
+
+        #highlightLayer { z-index: 1; color: var(--text-main); background-color: var(--bg-surface-alt); pointer-events: none; }
+        #inputLayer { z-index: 2; color: transparent; background: transparent; caret-color: var(--text-main); resize: none; outline: none; }
+        #inputLayer::selection { background: rgba(66, 153, 225, 0.25); }
+
+        /* SYNTAX HIGHLIGHTING */
+        .tag-token { color: var(--highlight-tag); font-weight: bold; }
+        .attr-token { color: var(--highlight-attr); } 
+        .comment-token { color: var(--highlight-comment); font-style: italic; font-weight: bold; }
+        .custom-token { color: var(--highlight-custom); font-style: italic; font-weight: bold; }
+        .entity-token { color: var(--highlight-entity); font-weight: bold; }
+        .find-highlight { background-color: var(--highlight-find-bg); border-bottom: 2px solid var(--highlight-find-border); color: inherit; }
+        .lang-token { color: var(--highlight-lang); font-weight: bold; }
+        .folded-token { background-color: var(--border-main); color: var(--text-main); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-strong); font-weight: bold; font-size: 12px; }
+
+        /* --- TABLE BUILDER MODAL --- */
+        #tableBuilderModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .tb-content { background: var(--bg-surface); border-radius: 12px; width: 1000px; max-width: 95vw; height: 85vh; max-height: 800px; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg); }
+        .tb-header { padding: 15px 20px; background: var(--bg-surface-alt); border-bottom: 1px solid var(--border-main); display: flex; justify-content: space-between; align-items: center; }
+        .tb-toolbar { padding: 12px 20px; background: var(--bg-surface); border-bottom: 1px solid var(--border-main); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .tb-tool-group { display: flex; align-items: center; gap: 6px; background: var(--bg-surface-alt); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-main); }
+        .tb-btn { padding: 6px 12px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-muted); transition: all 0.1s;}
+        .tb-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+        .tb-btn.toggle.active { background: var(--color-primary); color: white; border-color: var(--color-primary-hover); }
+        .tb-btn-danger { color: var(--color-danger) !important; }
+        .tb-btn-danger:hover { background: rgba(229, 62, 62, 0.1) !important; }
+        .tb-workspace { flex: 1; overflow: auto; padding: 40px; background-color: var(--bg-surface-alt); background-image: radial-gradient(var(--border-strong) 1px, transparent 1px); background-size: 20px 20px; display: flex; justify-content: center; align-items: flex-start; }
+        .tb-table-wrapper table { background: var(--bg-surface); border-collapse: collapse; min-width: 400px; box-shadow: var(--shadow-md); }
+        .tb-table-wrapper th, .tb-table-wrapper td { border: 1px solid var(--border-strong); padding: 12px; min-width: 80px; min-height: 40px; text-align: left; position: relative; cursor: text; outline: none; transition: background 0.1s; }
+        .tb-table-wrapper th { background: var(--bg-surface-alt); font-weight: bold; }
+        .tb-table-wrapper caption { padding: 10px; font-weight: bold; color: var(--text-muted); border: 1px dashed var(--border-strong); border-bottom: none; outline: none; background: var(--bg-surface);}
+        .tb-table-wrapper ul, .tb-table-wrapper ol { padding-left: 20px; margin: 8px 0; }
+        .tb-table-wrapper li { margin-bottom: 4px; }
+        .tb-table-wrapper td.selected, .tb-table-wrapper th.selected { background-color: rgba(49, 130, 206, 0.25) !important; box-shadow: inset 0 0 0 1px var(--color-primary); }
+        .tb-table-wrapper td.hidden, .tb-table-wrapper th.hidden { display: none !important; }
+        .tb-footer { padding: 15px 20px; background: var(--bg-surface-alt); border-top: 1px solid var(--border-main); display: flex; justify-content: flex-end; gap: 10px; }
+
+        .grid-picker { position: absolute; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 6px; padding: 10px; box-shadow: var(--shadow-md); z-index: 500; display: none; flex-direction: column; gap: 5px; }
+        .grid-row { display: flex; gap: 2px; }
+        .grid-cell { width: 16px; height: 16px; border: 1px solid var(--border-main); cursor: pointer; }
+        .grid-cell.active { background: var(--color-primary); border-color: var(--color-primary-hover); }
+        .grid-label { font-size: 12px; text-align: center; font-weight: 600; color: var(--text-muted); margin-top: 5px; }
+
+        /* --- QUICK GUIDE MODAL --- */
+        #tbGuideModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .tg-content { background: var(--bg-surface); border-radius: 12px; width: 500px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-lg); padding: 20px; }
+        .tg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .tg-body { flex: 1; overflow-y: auto; font-size: 13px; }
+        .tg-section { margin-bottom: 15px; }
+        .tg-section-title { font-weight: bold; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; font-size: 11px; letter-spacing: 0.5px; }
+        .tg-command-list { list-style: none; }
+        .tg-command-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-main); }
+        .tg-command-item:last-child { border-bottom: none; }
+        .tg-key { font-family: monospace; background: var(--bg-surface-alt); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border-strong); font-weight: bold; color: var(--text-main); }
+
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+<svg style="display: none;">
+    <defs>
+        <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></symbol>
+        <symbol id="icon-new" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></symbol>
+        <symbol id="icon-paste" viewBox="0 0 24 24"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></symbol>
+        <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></symbol>
+        <symbol id="icon-p" viewBox="0 0 24 24"><path d="M13 4v7h2v7h2V4h3V2H9C6.79 2 5 3.79 5 6s1.79 4 4 4h4v8h2V4h-2z"/></symbol>
+        <symbol id="icon-bold" viewBox="0 0 24 24"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></symbol>
+        <symbol id="icon-italic" viewBox="0 0 24 24"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></symbol>
+        <symbol id="icon-ul" viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></symbol>
+        <symbol id="icon-ol" viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></symbol>
+        <symbol id="icon-li" viewBox="0 0 24 24"><path d="M4 11h2v2H4v-2zm-2 0h2v2H2v-2zm12-4h8v2h-8V7zm0 6h8v2h-8v-2zm0 6h8v2h-8v-2zM8 7h4v2H8V7zm0 6h4v2H8v-2zm0 6h4v2H8v-2z" opacity="0.6"/><path d="M7 11h2v2H7z"/></symbol>
+        <symbol id="icon-table" viewBox="0 0 24 24"><path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 2v3H5V5h15zm-5 14h-5v-9h5v9zM5 10h3v9H5v-9zm15 9h-3v-9h3v9z"/></symbol>
+        <symbol id="icon-table-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
+        <symbol id="icon-fold" viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></symbol>
+        <symbol id="icon-unfold" viewBox="0 0 24 24"><path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"/></symbol>
+        <symbol id="icon-br" viewBox="0 0 24 24"><path d="M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7z"/></symbol>
+        <symbol id="icon-dash-em" viewBox="0 0 24 24"><path d="M4 11h16v2H4z"/></symbol>
+        <symbol id="icon-dash-en" viewBox="0 0 24 24"><path d="M6 11h12v2H6z"/></symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></symbol>
+        <symbol id="icon-span" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></symbol>
+        <symbol id="icon-conv" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></symbol>
+        <symbol id="icon-rev" viewBox="0 0 24 24"><path d="M18.5 12c0-3.59-2.91-6.5-6.5-6.5h-10l4-4-1.41-1.41L.17 4.5 4.59 8.91 6 7.5l-4-4 10 0c2.48 0 4.5 2.02 4.5 4.5s-2.02 4.5-4.5 4.5h-10v2h10c3.59 0 6.5-2.91 6.5-6.5z"/></symbol>
+        <symbol id="icon-quote" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+    </defs>
+</svg>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<div class="container">
+    <div class="header">
+        <div class="header-info">
+            <h1>Text Version Editor v2.0.2</h1>
+            <p>Create and Edit Text Versions</p>
+        </div>
+        <div class="header-controls">
+            <select id="langSelect" class="lang-select" style="display:none;">
+                <option value="none">Language: None</option>
+                <option value="fr">French</option>
+                <option value="es">Spanish</option>
+            </select>
+
+            <button class="icon-btn" id="findReplaceBtn" data-action="toggleFindReplace" title="Find & Replace (Ctrl+F)" style="display:none;">🔍</button>
+            <button class="icon-btn" data-action="toggleDarkMode"><span id="darkModeIcon">🌙</span> <span id="darkModeText">Dark</span></button>
+            <button class="icon-btn action-btn-header btn-clear-all" id="clearAllBtn" data-action="clearAll" title="Clear all text (Ctrl+Z to undo)">Clear All</button>
+            <button class="icon-btn action-btn-header btn-reset" id="resetBtn" data-action="resetEditor" title="Discard file and return to start screen">Start Over</button>
+        </div>
+    </div>
+
+    <div id="findReplaceModal" class="fr-modal">
+        <button class="modal-close" data-action="frClose" title="Close">×</button>
+        <div class="fr-input-group">
+            <input type="text" id="findInput" class="fr-input" placeholder="Find what...">
+            <input type="text" id="replaceInput" class="fr-input" placeholder="Replace with...">
+        </div>
+        <div class="fr-buttons">
+            <button class="fr-btn fr-btn-find" data-action="frFindNext">Find Next</button>
+            <button class="fr-btn fr-btn-findall" data-action="frFindAll">Find All</button>
+            <button class="fr-btn fr-btn-replace" data-action="frReplace">Replace</button>
+            <button class="fr-btn fr-btn-all" data-action="frReplaceAll">Replace All</button>
+        </div>
+    </div>
+
+    <div class="start-screen" id="dropZone">
+        <div class="start-options" onclick="event.stopPropagation()">
+            <label class="checkbox-label"><input type="checkbox" id="rawTextCheckbox"> Import as Raw Text (Skip Smart HTML Wrapping)</label>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <svg class="upload-icon"><use href="#icon-upload"></use></svg>
+            <div class="upload-title">Drag & Drop SRT or TXT</div>
+            <div class="upload-subtitle">or click to browse</div>
+        </div>
+
+        <div class="start-divider">OR</div>
+
+        <div class="action-grid">
+            <div class="action-card" id="startBlankBtn">
+                <div class="ac-icon"><svg><use href="#icon-new"></use></svg></div>
+                <div class="ac-text"><span class="ac-title">New Blank Page</span><span class="ac-desc">Start fresh editor</span></div>
+            </div>
+
+            <div class="action-card paste" id="pasteBlankBtn">
+                <div class="ac-icon"><svg><use href="#icon-paste"></use></svg></div>
+                <div class="ac-text"><span class="ac-title">Paste Clipboard</span><span class="ac-desc">Preserves Semantic HTML</span></div>
+            </div>
+        </div>
+        <input type="file" id="fileInput" accept=".srt,.txt">
+    </div>
+
+    <div id="langToolbar">
+        <div id="langButtons" class="lang-btn-container"></div>
+        <div class="lang-options">
+            <div class="btn-group">
+                <button id="btnCapsToggle" data-action="toggleCaps" title="Toggle Uppercase Buttons">Aa</button>
+                <button id="btnHtmlMode" data-action="toggleHtml" title="Toggle: Insert characters as HTML Code"><span style="font-size: 16px; font-weight: bold;">&amp;</span></button>
+            </div>
+            <div class="btn-group">
+                <button data-action="wrapLangSpan" title="Wrap Selection in Span"><svg class="icon"><use href="#icon-span"></use></svg></button>
+                <button data-action="injectLangPara" title="Inject Language into Paragraph"><svg class="icon"><use href="#icon-p"></use></svg></button>
+            </div>
+            <div class="btn-group">
+                <button data-action="convertLang" title="Convert Characters to Entities"><svg class="icon"><use href="#icon-conv"></use></svg></button>
+                <button data-action="revertLang" title="Revert HTML Entities to Characters"><svg class="icon"><use href="#icon-rev"></use></svg></button>
+                <button data-action="fixQuotes" title="Fix Quotes inside Tags"><svg class="icon"><use href="#icon-quote"></use></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toolbar hidden" id="toolbar">
+        <div class="btn-group">
+            <button data-action="undo" title="Undo (Ctrl+Z)" style="width:42px;"><svg class="icon"><use href="#icon-undo"></use></svg></button>
+        </div>
+
+        <div class="btn-group">
+            <button data-action="wrap" data-tag="h1">H1</button>
+            <button data-action="wrap" data-tag="h2">H2</button>
+            <button data-action="wrap" data-tag="h3">H3</button>
+            <button data-action="wrap" data-tag="h4">H4</button>
+        </div>
+
+        <div class="btn-group">
+            <button data-action="wrap" data-tag="p" title="Paragraph"><svg class="icon"><use href="#icon-p"></use></svg></button>
+            <button data-action="wrap" data-tag="strong" title="Bold (Ctrl+B)"><svg class="icon"><use href="#icon-bold"></use></svg></button>
+            <button data-action="wrap" data-tag="em" title="Italic (Ctrl+I)"><svg class="icon"><use href="#icon-italic"></use></svg></button>
+        </div>
+
+        <div class="btn-group">
+            <button data-action="list" data-tag="ul" title="Unordered List"><svg class="icon"><use href="#icon-ul"></use></svg></button>
+            <button data-action="list" data-tag="ol" title="Ordered List"><svg class="icon"><use href="#icon-ol"></use></svg></button>
+            <button data-action="wrap" data-tag="li" title="List Item"><svg class="icon"><use href="#icon-li"></use></svg></button>
+        </div>
+        
+        <div class="btn-group">
+            <button data-action="toggleTablePicker" title="Insert New Table" id="tableBtnMain"><svg class="icon"><use href="#icon-table"></use></svg></button>
+            <button data-action="editTable" title="Edit Table at Cursor"><svg class="icon"><use href="#icon-table-edit"></use></svg></button>
+            <button data-action="foldTable" title="Collapse/Fold Table at Cursor"><svg class="icon"><use href="#icon-fold"></use></svg></button>
+            <button data-action="unfoldTables" title="Unfold All Tables"><svg class="icon"><use href="#icon-unfold"></use></svg></button>
+            <div id="tablePicker" class="grid-picker">
+                <div id="gridArea"></div>
+                <div class="grid-label" id="gridLabel">Insert Table</div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button data-action="insert" data-str="<br/>" title="Line Break (Shift+Enter)"><svg class="icon"><use href="#icon-br"></use></svg></button>
+            <button data-action="insert" data-str="&amp;mdash;" title="Em Dash (Long)"><svg class="icon"><use href="#icon-dash-em"></use></svg></button>
+            <button data-action="insert" data-str="&amp;ndash;" title="En Dash (Medium)"><svg class="icon"><use href="#icon-dash-en"></use></svg></button>
+        </div>
+
+        <div class="font-control">
+            <span class="font-label">Size</span>
+            <input type="range" min="12" max="24" value="14" step="1" id="fontSlider" style="width: 80px;">
+            <span class="font-value-display" id="fontDisplay">14px</span>
+        </div>
+    </div>
+
+    <div class="status-bar hidden" id="statusBar">
+        <div class="sb-section">
+            <button class="btn-action btn-combine" data-action="combine" title="Merge selected lines into one paragraph">Combine</button>
+            <button class="btn-action btn-clear" data-action="clearTags" title="Remove all HTML tags from selection">Clear Tags</button>
+            <button class="btn-action btn-compress" data-action="compress" title="Remove extra whitespace and line breaks">Compress</button>
+        </div>
+
+        <div class="sb-divider"></div>
+
+        <div class="sb-section">
+            <div class="control-group cg-screen">
+                <button class="btn-screen-main" data-action="insertScreenText">Screen Text</button>
+                <div class="options">
+                    <label class="st-checkbox"><input type="checkbox" id="stPara"> P</label>
+                    <label class="st-checkbox"><input type="checkbox" id="stBold"> B</label>
+                </div>
+            </div>
+
+            <div class="control-group cg-custom">
+                <div class="custom-input-wrapper">
+                    <input type="text" id="customLabelInput" class="custom-input" placeholder="Label...">
+                    <button class="clear-input-btn" data-action="clearCustomInput" title="Clear">×</button>
+                </div>
+                <button class="btn-custom-main" data-action="insertCustomTag">Insert</button>
+                <div class="options">
+                    <label class="st-checkbox"><input type="checkbox" id="customPara"> P</label>
+                    <label class="st-checkbox"><input type="checkbox" id="customBold"> B</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sb-divider"></div>
+        
+        <div class="sb-section sb-right">
+            <button class="btn-action copy-btn" id="copyBtn" data-action="copy"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-copy"></use></svg> Copy</button>
+			<button class="btn-action save-btn" data-action="save"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-save"></use></svg> Save</button>
+        </div>
+    </div>
+
+    <div class="editor-wrapper" id="editorWrapper">
+        <pre id="highlightLayer" class="code-layer" aria-hidden="true"></pre>
+        <textarea id="inputLayer" class="code-layer" spellcheck="false" placeholder="Content will appear here..."></textarea>
+    </div>
+</div>
+
+<div id="tableBuilderModal">
+    <div class="tb-content">
+        <div class="tb-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <h2>Table Editor</h2>
+                <button class="icon-btn" onclick="App.Table.toggleGuide()" title="Quick Help" style="background:var(--bg-hover); color:var(--text-main); border-radius:50%; width:24px; height:24px; padding:0; display:flex; align-items:center; justify-content:center; font-weight:bold;">?</button>
+            </div>
+            <button class="modal-close" style="position:relative; top:0; right:0;" data-action="tbCancel">×</button>
+        </div>
+        <div class="tb-toolbar">
+            <div class="tb-tool-group" title="History"><button class="tb-btn" data-action="tbUndo" title="Undo Table Action (Ctrl+Z)">↶ Undo</button></div>
+            <div class="tb-tool-group" title="Structure">
+                <button class="tb-btn toggle active" id="btnTblHeaderRow" data-action="tbToggle" data-setting="btnTblHeaderRow">Header Row</button>
+                <button class="tb-btn toggle" id="btnTblHeaderCol" data-action="tbToggle" data-setting="btnTblHeaderCol">Header Col</button>
+                <button class="tb-btn toggle" id="btnTblCaption" data-action="tbToggle" data-setting="btnTblCaption">Caption</button>
+                <button class="tb-btn toggle" id="btnTblFooter" data-action="tbToggle" data-setting="btnTblFooter">Footer</button>
+            </div>
+            <div class="tb-tool-group" title="Add / Remove Rows & Cols">
+                <button class="tb-btn" data-action="tbInsertRow" data-dir="above" title="Insert Row Above (Alt+Up)">+ Row ↑</button>
+                <button class="tb-btn" data-action="tbInsertRow" data-dir="below" title="Insert Row Below (Alt+Down)">+ Row ↓</button>
+                <button class="tb-btn tb-btn-danger" data-action="tbDelRow" title="Delete Row (Alt+Backspace)">- Row</button>
+                <div style="width:1px; height:20px; background:var(--border-strong); margin:0 4px;"></div>
+                <button class="tb-btn" data-action="tbInsertCol" data-dir="left" title="Insert Column Left (Alt+Left)">+ Col ←</button>
+                <button class="tb-btn" data-action="tbInsertCol" data-dir="right" title="Insert Column Right (Alt+Right)">+ Col →</button>
+                <button class="tb-btn tb-btn-danger" data-action="tbDelCol" title="Delete Column (Alt+Shift+Backspace)">- Col</button>
+            </div>
+            <div class="tb-tool-group" title="Cells">
+                <button class="tb-btn" data-action="tbMerge">Merge</button>
+                <button class="tb-btn" data-action="tbSplit">Split</button>
+            </div>
+            <div class="tb-tool-group" title="Format">
+                <button class="tb-btn" data-action="tbAlign" data-align="left" title="Align Left">⫷</button>
+                <button class="tb-btn" data-action="tbAlign" data-align="center" title="Align Center">☰</button>
+                <button class="tb-btn" data-action="tbAlign" data-align="right" title="Align Right">⫸</button>
+                <div style="width:1px; height:20px; background:var(--border-strong); margin:0 4px;"></div>
+                <button class="tb-btn" data-action="tbFormat" data-format="bold"><strong>B</strong></button>
+                <button class="tb-btn" data-action="tbFormat" data-format="italic"><em>I</em></button>
+                <div style="width:1px; height:20px; background:var(--border-strong); margin:0 4px;"></div>
+                <button class="tb-btn" data-action="tbFormat" data-format="insertUnorderedList">• List</button>
+                <button class="tb-btn" data-action="tbFormat" data-format="insertOrderedList">1. List</button>
+            </div>
+        </div>
+        <div class="tb-workspace" id="tbWorkspace"><div class="tb-table-wrapper" id="tbWrapper"></div></div>
+        <div class="tb-footer">
+            <button class="tb-btn" data-action="tbCancel">Cancel</button>
+            <button class="tb-btn" id="tblInsertBtn" style="background:var(--color-primary); color:white;" data-action="tbInsertHtml">Insert HTML</button>
+        </div>
+    </div>
+</div>
+
+<div id="tbGuideModal" onclick="App.Table.toggleGuide()">
+    <div class="tg-content" onclick="event.stopPropagation()">
+        <div class="tg-header"><h3 style="font-size:16px;">Table Editor Quick Guide</h3><button class="modal-close" style="position:relative; top:0; right:0;" onclick="App.Table.toggleGuide()">×</button></div>
+        <div class="tg-body">
+            <div class="tg-section">
+                <div class="tg-section-title">Workflow</div>
+                <p>Click and drag inside the table grid to highlight multiple cells. Actions like Merging, Splitting, Clearing Content, and Formatting apply to the entire highlighted selection.</p>
+            </div>
+            <div class="tg-section">
+                <div class="tg-section-title">Buttons</div>
+                <ul style="list-style:disc; margin-left:15px; display:flex; flex-direction:column; gap:2px;">
+                    <li><strong>Structure:</strong> Toggle special table sections (Headers, Captions, Footers).</li>
+                    <li><strong>Add/Remove:</strong> Add or delete rows/columns relative to your cursor position.</li>
+                    <li><strong>Merge:</strong> Combine highlighted cells into one large cell.</li>
+                    <li><strong>Split:</strong> Revert a merged cell back into individual cells.</li>
+                </ul>
+            </div>
+            <div class="tg-section">
+                <div class="tg-section-title">Keyboard Commands</div>
+                <ul class="tg-command-list">
+                    <li class="tg-command-item"><span>Undo Action inside Table Editor</span> <span class="tg-key">Ctrl+Z</span></li>
+                    <li class="tg-command-item"><span>Insert Row Above / Below</span> <span class="tg-key">Alt + ↑ / ↓</span></li>
+                    <li class="tg-command-item"><span>Insert Col Left / Right</span> <span class="tg-key">Alt + ← / →</span></li>
+                    <li class="tg-command-item"><span>Delete Row</span> <span class="tg-key">Alt + Backspace</span></li>
+                    <li class="tg-command-item"><span>Delete Column</span> <span class="tg-key">Alt + Shift + Backspace</span></li>
+                    <li class="tg-command-item"><span>Clear Content in Highlighted Cells</span> <span class="tg-key">Delete</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * TEXT VERSION EDITOR v2.0.2
+ * Modularized Architecture
+ */
+
+const App = (function() {
+    
+    // --- 1. CONFIG & CONSTANTS ---
+    const CONFIG = {
+        MAX_UNDO: 50,
+        HIGHLIGHT_DELAY: 40,
+        LANGUAGES: {
+            fr: { chars: [
+                {c: 'à', e: '&agrave;', uc: 'À', ue: '&Agrave;'}, {c: 'â', e: '&acirc;', uc: 'Â', ue: '&Acirc;'},
+                {c: 'ç', e: '&ccedil;', uc: 'Ç', ue: '&Ccedil;'}, {c: 'é', e: '&eacute;', uc: 'É', ue: '&Eacute;'},
+                {c: 'è', e: '&egrave;', uc: 'È', ue: '&Egrave;'}, {c: 'ê', e: '&ecirc;', uc: 'Ê', ue: '&Ecirc;'},
+                {c: 'ë', e: '&euml;', uc: 'Ë', ue: '&Euml;'}, {c: 'î', e: '&icirc;', uc: 'Î', ue: '&Icirc;'},
+                {c: 'ï', e: '&iuml;', uc: 'Ï', ue: '&Iuml;'}, {c: 'ô', e: '&ocirc;', uc: 'Ô', ue: '&Ocirc;'}, 
+                {c: 'ù', e: '&ugrave;', uc: 'Ù', ue: '&Ugrave;'}, {c: 'û', e: '&ucirc;', uc: 'Û', ue: '&Ucirc;'},
+                {c: 'ü', e: '&uuml;', uc: 'Ü', ue: '&Uuml;'}, {c: 'œ', e: '&oelig;', uc: 'Œ', ue: '&OElig;'},
+                {c: '«', e: '&#171;', uc: '«', ue: '&#171;'}, {c: '»', e: '&#187;', uc: '»', ue: '&#187;'},
+                {c: '€', e: '&#128;', uc: '€', ue: '&#128;'}, {c: '₧', e: '&#8359;', uc: '₧', ue: '&#8359;'}
+            ]},
+            es: { chars: [
+                {c: 'á', e: '&aacute;', uc: 'Á', ue: '&Aacute;'}, {c: 'é', e: '&eacute;', uc: 'É', ue: '&Eacute;'},
+                {c: 'í', e: '&iacute;', uc: 'Í', ue: '&Iacute;'}, {c: 'ó', e: '&oacute;', uc: 'Ó', ue: '&Oacute;'},
+                {c: 'ú', e: '&uacute;', uc: 'Ú', ue: '&Uacute;'}, {c: 'ü', e: '&uuml;', uc: 'Ü', ue: '&Uuml;'},
+                {c: 'ñ', e: '&ntilde;', uc: 'Ñ', ue: '&Ntilde;'}, {c: '¿', e: '&iquest;', uc: '¿', ue: '&iquest;'},
+                {c: '¡', e: '&iexcl;', uc: '¡', ue: '&iexcl;'}, {c: '«', e: '&#171;', uc: '«', ue: '&#171;'},
+                {c: '»', e: '&#187;', uc: '»', ue: '&#187;'}, {c: '€', e: '&#128;', uc: '€', ue: '&#128;'},
+                {c: '₧', e: '&#8359;', uc: '₧', ue: '&#8359;'}
+            ]}
+        }
+    };
+
+    // Pre-compile Regex
+    const ALL_LANG_CHARS = Object.values(CONFIG.LANGUAGES).flatMap(l => l.chars.map(i => i.c + i.uc)).join('').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const LANG_TOKEN_REGEX = ALL_LANG_CHARS ? new RegExp(`([${ALL_LANG_CHARS}])`, 'g') : null;
+
+    // --- 2. STATE MANAGEMENT ---
+    const State = {
+        undoStack: [],
+        fileName: "transcript.txt",
+        isVirtualCaps: false,
+        activeSearchRegex: null,
+        highlightTimeout: null,
+        saveTimeout: null,
+        foldedTables: {},
+        foldCounter: 0,
+        
+        save() {
+            const content = DOM.input.value;
+            if (this.undoStack.length === 0 || this.undoStack[this.undoStack.length - 1] !== content) {
+                this.undoStack.push(content);
+                if (this.undoStack.length > CONFIG.MAX_UNDO) this.undoStack.shift();
+            }
+        },
+        undo() {
+            if (this.undoStack.length > 1) {
+                this.undoStack.pop();
+                DOM.input.value = this.undoStack[this.undoStack.length - 1];
+                Editor.updateHighlight();
+            }
+        },
+        setSearchTerm(term) {
+            this.activeSearchRegex = term ? new RegExp(`(?![^<]*>)(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi') : null;
+        }
+    };
+
+    // --- 3. DOM ELEMENTS & UI ---
+    const DOM = {
+        input: document.getElementById('inputLayer'),
+        highlight: document.getElementById('highlightLayer'),
+        wrapper: document.getElementById('editorWrapper'),
+        dropZone: document.getElementById('dropZone'),
+        uploadArea: document.getElementById('uploadArea'),
+        toolbar: document.getElementById('toolbar'),
+        langToolbar: document.getElementById('langToolbar'),
+        statusBar: document.getElementById('statusBar'),
+        fileInput: document.getElementById('fileInput'),
+        toastContainer: document.getElementById('toastContainer'),
+        
+        showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = message;
+            this.toastContainer.appendChild(toast);
+            void toast.offsetWidth; // trigger reflow
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        },
+        
+        activateEditor(content) {
+            this.dropZone.style.display = 'none';
+            this.toolbar.classList.remove('hidden');
+            this.statusBar.classList.remove('hidden');
+            this.wrapper.classList.add('active');
+            
+            document.querySelectorAll('.action-btn-header').forEach(btn => btn.classList.add('active'));
+            document.getElementById('findReplaceBtn').style.display = 'inline-block';
+            document.getElementById('langSelect').style.display = 'inline-block';
+            
+            Lang.renderButtons();
+            this.input.value = content;
+            Editor.updateHighlight();
+            State.undoStack = [];
+            State.save();
+        },
+
+        resetEditor() {
+            if(!confirm("Start over? This will discard your current file.")) return;
+            this.input.value = '';
+            this.highlight.innerHTML = '';
+            this.dropZone.style.display = 'flex';
+            this.toolbar.classList.add('hidden');
+            this.statusBar.classList.add('hidden');
+            this.langToolbar.style.display = 'none';
+            this.wrapper.classList.remove('active');
+            
+            document.querySelectorAll('.action-btn-header').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('findReplaceBtn').style.display = 'none';
+            document.getElementById('langSelect').style.display = 'none';
+            document.getElementById('findReplaceModal').style.display = 'none';
+            
+            this.fileInput.value = '';
+            State.undoStack = [];
+            State.setSearchTerm(null);
+        },
+
+        toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('darkModeIcon').innerText = isDark ? '☀️' : '🌙';
+            document.getElementById('darkModeText').innerText = isDark ? 'Light' : 'Dark';
+        }
+    };
+
+    // --- 4. CORE EDITOR LOGIC ---
+    const Editor = {
+        updateHighlight() {
+            let text = DOM.input.value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            // Syntax coloring
+            text = text.replace(/(&lt;\/?[a-z0-9]+)(.*?)(&gt;)/gi, (m, start, attrs, end) => `<span class="tag-token">${start}</span>${attrs.trim().length ? `<span class="attr-token">${attrs}</span>` : attrs}<span class="tag-token">${end}</span>`);
+            text = text.replace(/\[Text on Screen:.*?\]/g, m => `<span class="comment-token">${m}</span>`);
+            text = text.replace(/\[(?!Text on Screen:).*?:.*?\]/g, m => `<span class="custom-token">${m}</span>`);
+            text = text.replace(/&amp;([a-zA-Z0-9#]+);/g, '<span class="entity-token">&amp;$1;</span>');
+            
+            // Search Highlighting
+            if (State.activeSearchRegex) text = text.replace(State.activeSearchRegex, '<span class="find-highlight">$1</span>');
+            
+            // Folded Tables
+            text = text.replace(/\[\[FOLDED_TABLE_(\d+)\]\]/g, '<span class="folded-token">▶ Folded Table #$1 (Double-click to expand)</span>');
+            
+            // Language characters
+            if (LANG_TOKEN_REGEX) text = text.replace(LANG_TOKEN_REGEX, '<span class="lang-token">$1</span>');
+            
+            if (text[text.length-1] === "\n") text += " ";
+            DOM.highlight.innerHTML = text;
+        },
+
+        checkBlockNesting(startPos) {
+            const before = DOM.input.value.substring(0, startPos);
+            const matchOpen = [...before.matchAll(/<(p|h[1-6])(?:\s[^>]*)?>/gi)];
+            const matchClose = [...before.matchAll(/<\/(p|h[1-6])\s*>/gi)];
+            const lastOpenPos = matchOpen.length > 0 ? matchOpen[matchOpen.length - 1].index : -1;
+            const lastClosePos = matchClose.length > 0 ? matchClose[matchClose.length - 1].index : -1;
+            return lastOpenPos > lastClosePos;
+        },
+
+        replaceSelection(textBefore, textAfter, wrap = true, paddingMode = false) {
+            State.save(); 
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd, text = DOM.input.value, selected = text.substring(start, end);
+            let paddingPre = "", paddingPost = "", cursorOffset = 0;
+
+            if (paddingMode && start === end) {
+                if (paddingMode === 'block') {
+                    let bc = 0, i = start - 1; while (i >= 0 && text[i] === '\n') { bc++; i--; }
+                    if (start > 0) paddingPre = (bc === 0) ? "\n\n" : (bc === 1 ? "\n" : "");
+                    let ac = 0, j = end; while (j < text.length && text[j] === '\n') { ac++; j++; }
+                    if (end < text.length) paddingPost = (ac === 0) ? "\n\n" : (ac === 1 ? "\n" : "");
+                } else if (paddingMode === 'inline') {
+                    if (start > 0 && text[start - 1] !== ' ' && text[start - 1] !== '\n') paddingPre = " ";
+                    if (end < text.length && text[end] !== ' ' && text[end] !== '\n') paddingPost = " ";
+                }
+            }
+            let newText = wrap ? paddingPre + textBefore + selected + textAfter + paddingPost : textBefore + textAfter;
+            if (wrap && start === end) cursorOffset = paddingPre.length + textBefore.length;
+            
+            DOM.input.setRangeText(newText, start, end, 'end');
+            if (wrap && start === end) DOM.input.setSelectionRange(start + cursorOffset, start + cursorOffset);
+            
+            DOM.input.focus(); 
+            this.updateHighlight(); 
+            State.save(); 
+        },
+
+        wrap(tag) {
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd, selected = DOM.input.value.substring(start, end);
+            let paddingMode = ['h1', 'h2', 'h3', 'h4', 'p'].includes(tag.toLowerCase()) ? 'block' : (['strong', 'em'].includes(tag.toLowerCase()) ? 'inline' : false);
+            
+            if (paddingMode === 'block' && this.checkBlockNesting(start)) {
+                if (!/<(p|h[1-6])(\s+[^>]*)?>/i.test(selected)) {
+                    DOM.showToast("Cannot nest block tags. Select the entire line including tags, or clear tags first.", "error");
+                    return;
+                }
+            }
+
+            State.save();
+            if (start === end) {
+                this.replaceSelection(`<${tag}>`, `</${tag}>`, true, paddingMode);
+            } else if (/<(p|h[1-6])\b/i.test(selected)) {
+                DOM.input.setRangeText(selected.replace(/<(p|h[1-6])(\s+[^>]*)?>/gi, `<${tag}$2>`).replace(/<\/(p|h[1-6])>/gi, `</${tag}>`), start, end, 'select');
+                this.updateHighlight(); 
+                State.save();
+            } else {
+                this.replaceSelection(`<${tag}>`, `</${tag}>`, true, false);
+            }
+        },
+
+        insertList(type) {
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd, selected = DOM.input.value.substring(start, end);
+            if (this.checkBlockNesting(start)) {
+                DOM.showToast("Cannot insert lists inside paragraphs. Select the entire line, or clear tags first.", "error");
+                return;
+            }
+            State.save(); 
+            let output = `<${type}>\n`, cursorOffset = 0;
+            if (selected.trim().length > 0) {
+                selected.split('\n').forEach(line => {
+                    if (/^<\/?(ul|ol)[^>]*>$/i.test(line.trim())) return;
+                    let cleanLine = line.replace(/<\/?(p|h[1-6]|div|ul|ol|li|br|blockquote)[^>]*>/gi, "").trim();
+                    if(/<li/i.test(line) || cleanLine) output += `  <li>${cleanLine}</li>\n`;
+                });
+                output += `</${type}>`; 
+                DOM.input.setRangeText(output, start, end, 'select');
+            } else {
+                output += `  <li></li>\n  <li></li>\n</${type}>`; 
+                cursorOffset = `<${type}>\n  <li>`.length;
+                DOM.input.setRangeText(output, start, end, 'end'); 
+                DOM.input.setSelectionRange(start + cursorOffset, start + cursorOffset);
+            }
+            this.updateHighlight(); DOM.input.focus(); State.save();
+        },
+        
+        insertStr(str, skipConfirm = false) {
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd;
+            if (DOM.input.value.substring(start, end).trim().length > 0 && !skipConfirm) {
+                if (!confirm("You have text selected. Replace it?")) { 
+                    DOM.input.focus(); DOM.input.setSelectionRange(start, end); return; 
+                }
+            }
+            this.replaceSelection(str, '', false);
+        },
+
+        clearAll() {
+            if (DOM.input.value.trim() === '') return;
+            if (confirm("Are you sure you want to clear all text? (You can use Undo to bring it back)")) {
+                State.save(); 
+                DOM.input.value = '';
+                State.save(); 
+                this.updateHighlight();
+                DOM.input.focus();
+                DOM.showToast("All text cleared.", "success");
+            }
+        },
+
+        foldTableAtCursor() {
+            const text = DOM.input.value, lowerText = text.toLowerCase(), cursorPos = DOM.input.selectionStart;
+            let tableStart = lowerText.lastIndexOf('<table', cursorPos);
+            if (tableStart === -1 || cursorPos < tableStart) tableStart = lowerText.lastIndexOf('<table', cursorPos + 15); 
+            
+            if (tableStart !== -1) {
+                let tableEnd = lowerText.indexOf('</table>', tableStart);
+                if (tableEnd !== -1 && cursorPos >= tableStart && cursorPos <= tableEnd + 8) {
+                    State.save();
+                    let id = ++State.foldCounter;
+                    State.foldedTables[id] = text.substring(tableStart, tableEnd + 8);
+                    DOM.input.setRangeText(`[[FOLDED_TABLE_${id}]]`, tableStart, tableEnd + 8, 'select');
+                    this.updateHighlight();
+                    DOM.showToast("Table collapsed. Double-click it to expand.", "success");
+                    return;
+                }
+            }
+            DOM.showToast("Cursor must be inside a table to collapse it.", "error");
+        },
+
+        unfoldTableById(id) {
+            let text = DOM.input.value;
+            let placeholder = `[[FOLDED_TABLE_${id}]]`;
+            if (text.includes(placeholder) && State.foldedTables[id]) {
+                State.save();
+                DOM.input.value = text.replace(placeholder, State.foldedTables[id]);
+                delete State.foldedTables[id];
+                this.updateHighlight();
+                DOM.showToast("Table expanded.", "success");
+            }
+        },
+
+        unfoldAllTables() {
+            let text = DOM.input.value, unfolded = false;
+            for (let id in State.foldedTables) {
+                let placeholder = `[[FOLDED_TABLE_${id}]]`;
+                if (text.includes(placeholder)) { text = text.replace(placeholder, State.foldedTables[id]); unfolded = true; }
+            }
+            if (unfolded) {
+                State.save(); DOM.input.value = text; State.foldedTables = {}; 
+                this.updateHighlight(); DOM.showToast("All tables expanded.", "success");
+            } else DOM.showToast("No collapsed tables found.", "info");
+        }
+    };
+
+    // --- 5. PARSER & SANITIZATION ---
+    const Parser = {
+        cleanWordHTML(html) {
+            let tempDiv = document.createElement('div');
+            const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            tempDiv.innerHTML = bodyMatch ? bodyMatch[1] : html;
+
+            tempDiv.querySelectorAll('p').forEach(p => {
+                const match = (p.className || '').match(/MsoHeading(\d)/i) || (p.className || '').match(/Heading\s*(\d)/i);
+                if (match) { const h = document.createElement(`h${match[1]}`); h.innerHTML = p.innerHTML; p.replaceWith(h); }
+            });
+
+            let currentList = null, listType = null;
+            Array.from(tempDiv.querySelectorAll('p')).forEach(el => {
+                let isWordList = (el.getAttribute('style') || '').includes('mso-list:') || (el.className || '').includes('MsoListParagraph');
+                if (isWordList) {
+                    let bulletSpan = el.querySelector('span[style*="mso-list:Ignore"]');
+                    let isOrdered = bulletSpan ? /^\s*(\d+[\.\)]|[a-zA-Z][\.\)])/.test(bulletSpan.textContent) : /^\s*(\d+[\.\)]|[a-zA-Z][\.\)])/.test(el.textContent || el.innerText);
+                    if (bulletSpan) bulletSpan.remove();
+                    let targetType = isOrdered ? 'OL' : 'UL';
+                    
+                    if (!currentList || listType !== targetType || el.previousElementSibling !== currentList) {
+                        currentList = document.createElement(targetType);
+                        el.parentNode.insertBefore(currentList, el);
+                        listType = targetType;
+                    }
+                    let li = document.createElement('li'); li.innerHTML = el.innerHTML; currentList.appendChild(li); el.remove();
+                } else { currentList = null; listType = null; }
+            });
+            return tempDiv.innerHTML;
+        },
+
+        sanitizeHTML(htmlString) {
+            const parser = new DOMParser(), doc = parser.parseFromString(htmlString, 'text/html');
+            const allowedTags = ['H1','H2','H3','H4','H5','H6','P','UL','OL','LI','STRONG','EM','TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','CAPTION','BR'];
+
+            function cleanNode(node) {
+                if (node.nodeType === 3) return node.cloneNode(false);
+                if (node.nodeType !== 1) return document.createDocumentFragment();
+
+                let tag = node.nodeName.toUpperCase();
+                if (tag === 'B') tag = 'STRONG'; if (tag === 'I') tag = 'EM';
+
+                let frag = document.createDocumentFragment(), el = null;
+                if (allowedTags.includes(tag)) {
+                    el = document.createElement(tag);
+                    [...node.attributes].forEach(attr => {
+                        const name = attr.name.toLowerCase();
+                        if (name === 'style') { const match = attr.value.match(/text-align:\s*(left|center|right)/i); if (match) el.style.textAlign = match[1].toLowerCase(); } 
+                        else if (['colspan', 'rowspan', 'scope', 'border', 'cellpadding'].includes(name)) el.setAttribute(name, attr.value);
+                    });
+                    frag.appendChild(el);
+                }
+
+                Array.from(node.childNodes).forEach(child => {
+                    const cleanChild = cleanNode(child);
+                    if (el) el.appendChild(cleanChild); else frag.appendChild(cleanChild);
+                });
+                return frag;
+            }
+
+            const cleanDoc = document.createElement('div');
+            Array.from(doc.body.childNodes).forEach(child => cleanDoc.appendChild(cleanNode(child)));
+
+            cleanDoc.querySelectorAll('p').forEach(p => { if (!p.textContent.trim() && !p.querySelector('br')) p.remove(); });
+            cleanDoc.querySelectorAll('li > p').forEach(p => { const frag = document.createDocumentFragment(); while (p.firstChild) frag.appendChild(p.firstChild); p.parentNode.replaceChild(frag, p); });
+            cleanDoc.querySelectorAll('td p, th p').forEach(p => {
+                const frag = document.createDocumentFragment(); while (p.firstChild) frag.appendChild(p.firstChild);
+                if (p.nextElementSibling && p.nextElementSibling.tagName !== 'BR') frag.appendChild(document.createElement('br'));
+                p.parentNode.replaceChild(frag, p);
+            });
+
+            return this.formatHTMLString(cleanDoc.innerHTML);
+        },
+
+        formatHTMLString(str) {
+            return str.replace(/><(h[1-6]|p|ul|ol|table|div|blockquote|li|tr|thead|tbody|tfoot|caption)/gi, ">\n<$1")
+                      .replace(/<\/(h[1-6]|p|ul|ol|table|div|blockquote|tr|thead|tbody|tfoot|caption)></gi, "</$1>\n<").trim();
+        },
+        
+        cleanPlainPaste(text) { return text.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "..."); },
+
+        processTXT(text) {
+            if (document.getElementById('rawTextCheckbox').checked) return text;
+            if (/<(h[1-6]|p|ul|ol|table|div|blockquote|tr|td|th)\b/i.test(text)) {
+                const div = document.createElement('div'); div.innerHTML = text;
+                const wrapOrphans = (parent) => {
+                    let currentP = null;
+                    Array.from(parent.childNodes).forEach(node => {
+                        if (node.nodeType === 1 && ['H1','H2','H3','H4','H5','H6','P','UL','OL','TABLE','DIV','BLOCKQUOTE','PRE','BR','TR','THEAD','TBODY'].includes(node.nodeName)) currentP = null;
+                        else {
+                            if (node.nodeType === 3 && !node.textContent.trim() && !currentP) return;
+                            if (!currentP) { currentP = document.createElement('p'); parent.insertBefore(currentP, node); }
+                            currentP.appendChild(node);
+                        }
+                    });
+                };
+                wrapOrphans(div); return this.formatHTMLString(div.innerHTML);
+            } else {
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+                let html = '', inList = false, listType = '';
+                lines.forEach(line => {
+                    const ulMatch = line.match(/^([•\-\*·o])[\s\t]+(.*)/), olMatch = line.match(/^(\d+[\.\)])[\s\t]+(.*)/);
+                    if (ulMatch || olMatch) {
+                        const currentType = ulMatch ? 'ul' : 'ol', content = ulMatch ? ulMatch[2] : olMatch[2];
+                        if (!inList) { html += `<${currentType}>\n`; inList = true; listType = currentType; } 
+                        else if (inList && listType !== currentType) { html += `</${listType}>\n<${currentType}>\n`; listType = currentType; }
+                        html += `  <li>${content}</li>\n`;
+                    } else {
+                        if (inList) { html += `</${listType}>\n`; inList = false; listType = ''; }
+                        html += `<p>${line}</p>\n`;
+                    }
+                });
+                if (inList) html += `</${listType}>`; return html.trim();
+            }
+        },
+
+        processSRT(srtText) {
+            const blocks = srtText.trim().split(/\n\s*\n/), allTextLines = [];
+            blocks.forEach(block => {
+                const textLines = block.split(/\r?\n/).slice(2).filter(l => l.trim() !== '');
+                if (textLines.length) allTextLines.push(textLines.join(' ').trim());
+            });
+            let fullContent = allTextLines.join(' ').replace(/\s+/g, ' ').trim();
+            fullContent = fullContent.replace(/\b(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|Mt|Capt|Gen|Lt|Col|vs|etc)\./gi, '$1{{DOT}}')
+                                     .replace(/([a-zA-Z])\.(?=[a-zA-Z])/g, '$1{{DOT}}').replace(/\.\s+(?=[a-z])/g, '{{DOT}} ');
+            
+            const isRaw = document.getElementById('rawTextCheckbox').checked;
+            const rawSentences = fullContent.match(/[^.!?]+[.!?]+['"”’\])]*(?:\s|$)|.+$/g) || [];
+            return rawSentences.map(s => s.replace(/\{\{DOT\}\}/g, '.').trim()).filter(s => s.length > 0).map(s => isRaw ? s : `<p>${s}</p>`).join('\n');
+        }
+    };
+
+    // --- 6. LANGUAGE TOOLS ---
+    const Lang = {
+        renderButtons() {
+            const lang = document.getElementById('langSelect').value, container = document.getElementById('langButtons');
+            container.innerHTML = '';
+            if (lang === 'none' || !CONFIG.LANGUAGES[lang]) { DOM.langToolbar.style.display = 'none'; return; }
+            DOM.langToolbar.style.display = 'flex';
+            CONFIG.LANGUAGES[lang].chars.forEach(item => {
+                const btn = document.createElement('button'); btn.className = 'lang-char-btn';
+                btn.innerText = State.isVirtualCaps ? item.uc : item.c;
+                btn.title = "Click to insert. Shift+Click or Caps Lock for Uppercase.";
+                Object.assign(btn.dataset, item);
+                container.appendChild(btn);
+            });
+        },
+        toggleCaps() { State.isVirtualCaps = !State.isVirtualCaps; document.getElementById('btnCapsToggle').classList.toggle('toggle-active', State.isVirtualCaps); this.renderButtons(); },
+        toggleHtml() { document.getElementById('btnHtmlMode').classList.toggle('toggle-active'); },
+        insert(e, item) {
+            const isHardwareCaps = e.getModifierState("CapsLock");
+            let isUppercase = (isHardwareCaps !== e.shiftKey); if (State.isVirtualCaps) isUppercase = !isUppercase; 
+            const useHtml = document.getElementById('btnHtmlMode').classList.contains('toggle-active');
+            Editor.insertStr(useHtml ? (isUppercase ? item.ue : item.e) : (isUppercase ? item.uc : item.c), true);
+        },
+        wrapSpan() {
+            const lang = document.getElementById('langSelect').value; if (lang === 'none') return;
+            State.save(); const start = DOM.input.selectionStart, end = DOM.input.selectionEnd, selected = DOM.input.value.substring(start, end);
+            DOM.input.setRangeText(`<span lang="${lang}">${selected}</span>`, start, end, 'select');
+            DOM.input.focus(); Editor.updateHighlight();
+        },
+        injectPara() {
+            const lang = document.getElementById('langSelect').value; if (lang === 'none') return;
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd, selected = DOM.input.value.substring(start, end);
+            if (Editor.checkBlockNesting(start) && !/<p\b/i.test(selected)) { DOM.showToast("Cannot nest paragraphs. Select entire line including tags.", "error"); return; }
+            State.save(); 
+            if (/<p\b/i.test(selected)) DOM.input.setRangeText(selected.replace(/<p(\s|>)/gi, `<p lang="${lang}"$1`), start, end, 'select');
+            else Editor.replaceSelection(`<p lang="${lang}">`, `</p>`, true, 'block');
+            DOM.input.focus(); Editor.updateHighlight();
+        },
+        convert(direction) { // direction: 'toEntities' or 'toChars'
+            const lang = document.getElementById('langSelect').value; if (lang === 'none' || !CONFIG.LANGUAGES[lang]) return;
+            State.save(); let text = DOM.input.value, count = 0;
+            CONFIG.LANGUAGES[lang].chars.forEach(item => {
+                const search1 = direction === 'toEntities' ? item.c : item.e, replace1 = direction === 'toEntities' ? item.e : item.c;
+                const search2 = direction === 'toEntities' ? item.uc : item.ue, replace2 = direction === 'toEntities' ? item.ue : item.uc;
+                
+                if (search1 && replace1) { const r = new RegExp(search1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); const m = text.match(r); if(m) count+=m.length; text = text.replace(r, replace1); }
+                if (search2 && replace2 && search2 !== search1) { const r = new RegExp(search2.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); const m = text.match(r); if(m) count+=m.length; text = text.replace(r, replace2); }
+            });
+            if (count > 0) { DOM.input.value = text; Editor.updateHighlight(); DOM.showToast(`${direction === 'toEntities' ? 'Converted' : 'Reverted'} ${count} items`, 'success'); }
+        }
+    };
+
+    // --- 7. TABLE BUILDER ---
+    const Table = {
+        cols: 0, rows: 0, editRange: null, undoStack: [],
+        wrapper: document.getElementById('tbWrapper'),
+        modal: document.getElementById('tableBuilderModal'),
+        picker: document.getElementById('tablePicker'),
+        isSelectingCells: false,
+        startNode: null,
+
+        saveState() { this.undoStack.push(this.wrapper.innerHTML); if(this.undoStack.length > 20) this.undoStack.shift(); },
+        undo() { if(this.undoStack.length > 0) { this.wrapper.innerHTML = this.undoStack.pop(); } else DOM.showToast("Nothing to undo in table", "info"); },
+        close() { this.modal.style.display = 'none'; },
+        toggleGuide() { const g = document.getElementById('tbGuideModal'); g.style.display = g.style.display === 'flex' ? 'none' : 'flex'; },
+        
+        togglePicker() {
+            if (Editor.checkBlockNesting(DOM.input.selectionStart) || DOM.input.value.toLowerCase().lastIndexOf('<table', DOM.input.selectionStart) > DOM.input.value.toLowerCase().lastIndexOf('</table>', DOM.input.selectionStart)) {
+                DOM.showToast("Cannot insert a table inside an existing table or block.", "error"); return;
+            }
+            if (this.picker.style.display === 'flex') { this.picker.style.display = 'none'; return; }
+            const gridArea = document.getElementById('gridArea'); gridArea.innerHTML = '';
+            for(let r=0; r<10; r++) {
+                let row = document.createElement('div'); row.className = 'grid-row';
+                for(let c=0; c<10; c++) {
+                    let cell = document.createElement('div'); cell.className = 'grid-cell'; cell.dataset.r = r; cell.dataset.c = c;
+                    cell.onmouseover = () => this.highlightGrid(r, c); cell.onclick = () => this.openNew(r+1, c+1);
+                    row.appendChild(cell);
+                }
+                gridArea.appendChild(row);
+            }
+            this.picker.style.display = 'flex'; this.highlightGrid(2, 2); 
+        },
+        highlightGrid(tr, tc) {
+            document.getElementById('gridLabel').innerText = `${tc+1} x ${tr+1} Table`;
+            Array.from(document.getElementById('gridArea').getElementsByClassName('grid-cell')).forEach(cell => {
+                cell.classList.toggle('active', parseInt(cell.dataset.r) <= tr && parseInt(cell.dataset.c) <= tc);
+            });
+        },
+        
+        openNew(rows, cols) {
+            this.picker.style.display = 'none'; this.editRange = null; this.undoStack = [];
+            document.getElementById('tblInsertBtn').innerText = "Insert HTML";
+            this.cols = cols; this.rows = rows;
+            
+            ['btnTblHeaderRow','btnTblHeaderCol','btnTblCaption','btnTblFooter'].forEach((id, i) => document.getElementById(id).classList.toggle('active', i===0));
+            
+            let html = '<table border="1" cellpadding="10"><thead><tr>';
+            for(let c=0; c<cols; c++) html += `<th scope="col" data-r="0" data-c="${c}" contenteditable="true">Header</th>`;
+            html += '</tr></thead><tbody>';
+            for(let r=1; r<rows; r++) {
+                html += '<tr>'; for(let c=0; c<cols; c++) html += `<td data-r="${r}" data-c="${c}" contenteditable="true">Cell</td>`; html += '</tr>';
+            }
+            html += '</tbody></table>';
+            
+            this.wrapper.innerHTML = html; this.wrapper.dataset.cols = cols;
+            this.modal.style.display = 'flex';
+        },
+
+        editExisting() {
+            const text = DOM.input.value.toLowerCase(), cursorPos = DOM.input.selectionStart;
+            let start = text.lastIndexOf('<table', cursorPos); if (start === -1 || cursorPos < start) start = text.lastIndexOf('<table', cursorPos + 15);
+            
+            if (start !== -1) {
+                let end = text.indexOf('</table>', start);
+                if (end !== -1 && cursorPos >= start && cursorPos <= end + 8) {
+                    let tempDiv = document.createElement('div'); tempDiv.innerHTML = DOM.input.value.substring(start, end + 8);
+                    let tableNode = tempDiv.querySelector('table');
+                    if (!tableNode) { DOM.showToast("Failed to parse table.", "error"); return; }
+
+                    this.picker.style.display = 'none'; this.editRange = { start: start, end: end + 8 }; this.undoStack = [];
+                    try {
+                        tableNode = this.injectCoordinates(tableNode);
+                        this.wrapper.innerHTML = ''; this.wrapper.appendChild(tableNode);
+
+                        let maxCols = 0; if (tableNode.rows[0]) Array.from(tableNode.rows[0].children).forEach(c => maxCols += parseInt(c.getAttribute('colspan') || 1));
+                        this.wrapper.dataset.cols = maxCols || 1;
+
+                        document.getElementById('btnTblHeaderRow').classList.toggle('active', !!tableNode.querySelector('thead, th[scope="col"]'));
+                        document.getElementById('btnTblHeaderCol').classList.toggle('active', !!tableNode.querySelector('th[scope="row"]'));
+                        document.getElementById('btnTblCaption').classList.toggle('active', !!tableNode.querySelector('caption'));
+                        document.getElementById('btnTblFooter').classList.toggle('active', !!tableNode.querySelector('tfoot'));
+
+                        document.getElementById('tblInsertBtn').innerText = "Update HTML";
+                        this.modal.style.display = 'flex';
+                    } catch (e) { DOM.showToast("HTML is too complex to edit visually.", "error"); this.editRange = null; }
+                    return;
+                }
+            }
+            DOM.showToast("Place your cursor inside an existing table to edit it.", "error");
+        },
+
+        injectCoordinates(tableNode) {
+            let grid = [], rIdx = 0;
+            Array.from(tableNode.rows).filter(r => !r.closest('tfoot')).forEach(row => {
+                let cIdx = 0;
+                Array.from(row.children).forEach(cell => {
+                    if (cell.classList.contains('hidden') || !['TH','TD'].includes(cell.tagName)) return;
+                    while (grid[rIdx] && grid[rIdx][cIdx]) cIdx++;
+                    cell.dataset.r = rIdx; cell.dataset.c = cIdx; cell.contentEditable = "true";
+                    let rSpan = parseInt(cell.getAttribute('rowspan') || 1), cSpan = parseInt(cell.getAttribute('colspan') || 1);
+                    if (rSpan > 1 || cSpan > 1) {
+                        for (let rr = 0; rr < rSpan; rr++) {
+                            for (let cc = 0; cc < cSpan; cc++) {
+                                if (!grid[rIdx + rr]) grid[rIdx + rr] = []; grid[rIdx + rr][cIdx + cc] = true;
+                                if (rr === 0 && cc === 0) continue;
+                                let dummy = document.createElement(cell.tagName); dummy.className = 'hidden';
+                                dummy.dataset.r = rIdx + rr; dummy.dataset.c = cIdx + cc; dummy.dataset.mergedInto = `${rIdx},${cIdx}`;
+                                if (tableNode.rows[rIdx + rr]) tableNode.rows[rIdx + rr].appendChild(dummy);
+                            }
+                        }
+                    } else { if (!grid[rIdx]) grid[rIdx] = []; grid[rIdx][cIdx] = true; }
+                    cIdx += cSpan;
+                });
+                rIdx++;
+            });
+            tableNode.querySelectorAll('tfoot tr').forEach(row => {
+                let cIdx = 0; Array.from(row.children).filter(c=>['TH','TD'].includes(c.tagName)).forEach(cell => { cell.dataset.r = 999; cell.dataset.c = cIdx++; cell.contentEditable="true"; });
+            });
+            if (tableNode.querySelector('caption')) tableNode.querySelector('caption').contentEditable = "true";
+            return tableNode;
+        },
+
+        insertHtml() {
+            let clone = this.wrapper.querySelector('table').cloneNode(true);
+            clone.querySelectorAll('.hidden').forEach(el => el.remove());
+            if (!clone.hasAttribute('cellpadding')) clone.setAttribute('cellpadding', '10');
+            if (!clone.hasAttribute('border')) clone.setAttribute('border', '1');
+
+            clone.querySelectorAll('*').forEach(el => {
+                el.classList.remove('selected');
+                ['data-r', 'data-c', 'data-merged-into', 'contenteditable'].forEach(a => el.removeAttribute(a));
+                if (el.getAttribute('class') === '') el.removeAttribute('class');
+                if (el.tagName === 'B') { let st = document.createElement('strong'); st.innerHTML = el.innerHTML; el.replaceWith(st); }
+                if (el.tagName === 'I') { let em = document.createElement('em'); em.innerHTML = el.innerHTML; el.replaceWith(em); }
+            });
+
+            // V1.03 robust replacement logic to prevent regex collision
+            let htmlStr = clone.outerHTML.replace(/\s*[\r\n]+\s*/g, '').replace(/>\s+</g, '><')
+                .replace(/<caption/ig, '\n  <caption').replace(/<\/caption>/ig, '</caption>')
+                .replace(/<thead/ig, '\n  <thead').replace(/<\/thead>/ig, '\n  </thead>')
+                .replace(/<tbody/ig, '\n  <tbody').replace(/<\/tbody>/ig, '\n  </tbody>')
+                .replace(/<tfoot/ig, '\n  <tfoot').replace(/<\/tfoot>/ig, '\n  </tfoot>')
+                .replace(/<tr/ig, '\n    <tr').replace(/<\/tr>/ig, '\n    </tr>')
+                .replace(/<th/ig, '\n      <th').replace(/<td/ig, '\n      <td')
+                .replace(/<\/table>/ig, '\n</table>').replace(/\n\s*\n/g, '\n');
+            
+            if (this.editRange) {
+                State.save(); DOM.input.setRangeText(htmlStr, this.editRange.start, this.editRange.end, 'select');
+                this.editRange = null; Editor.updateHighlight(); DOM.showToast('Table Updated Successfully!', 'success');
+            } else { Editor.insertStr(htmlStr + "\n<br>\n", true); }
+            this.close();
+        },
+
+        highlightTableBox(c1, c2) {
+            let r1 = parseInt(c1.dataset.r), c_1 = parseInt(c1.dataset.c), r2 = parseInt(c2.dataset.r), c_2 = parseInt(c2.dataset.c);
+            let minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c_1, c_2), maxC = Math.max(c_1, c_2);
+            let expanded = true;
+            while(expanded) {
+                expanded = false;
+                this.wrapper.querySelectorAll('td:not(.hidden), th:not(.hidden)').forEach(c => {
+                    let r = parseInt(c.dataset.r), col = parseInt(c.dataset.c); if(r===999) return; 
+                    let rs = parseInt(c.getAttribute('rowspan')||1), cs = parseInt(c.getAttribute('colspan')||1);
+                    if (r < maxR + 1 && r + rs > minR && col < maxC + 1 && col + cs > minC) {
+                        if (r < minR) { minR = r; expanded = true; } if (r + rs - 1 > maxR) { maxR = r + rs - 1; expanded = true; }
+                        if (col < minC) { minC = col; expanded = true; } if (col + cs - 1 > maxC) { maxC = col + cs - 1; expanded = true; }
+                    }
+                });
+            }
+            this.wrapper.querySelectorAll('td, th').forEach(c => {
+                let r = parseInt(c.dataset.r), col = parseInt(c.dataset.c);
+                c.classList.toggle('selected', r!==999 && r >= minR && r <= maxR && col >= minC && col <= maxC && !c.classList.contains('hidden'));
+            });
+        },
+        
+        // --- Table Actions ---
+        getActive() { let s = this.wrapper.querySelector('.selected:not(.hidden)'); if(!s && document.activeElement && this.wrapper.contains(document.activeElement) && /^(TD|TH)$/i.test(document.activeElement.tagName)) { s=document.activeElement; s.classList.add('selected'); } return s; },
+        safeUnmerge(type, idx) {
+            this.wrapper.querySelectorAll('td:not(.hidden), th:not(.hidden)').forEach(master => {
+                let r = parseInt(master.dataset.r), c = parseInt(master.dataset.c), rs = parseInt(master.getAttribute('rowspan')||1), cs = parseInt(master.getAttribute('colspan')||1);
+                if ((type === 'row' && rs > 1 && r <= idx && r + rs > idx) || (type === 'col' && cs > 1 && c <= idx && c + cs > idx)) {
+                    master.removeAttribute('colspan'); master.removeAttribute('rowspan');
+                    this.wrapper.querySelectorAll(`.hidden[data-merged-into="${r},${c}"]`).forEach(h => { h.classList.remove('hidden'); h.removeAttribute('data-merged-into'); h.innerHTML = ''; });
+                }
+            });
+        },
+        insRow(dir) {
+            const s = this.getActive(); if(!s) return DOM.showToast("Select cell first", "error"); this.saveState();
+            this.safeUnmerge('row', parseInt(s.dataset.r)); this.wrapper.querySelectorAll('.hidden[data-merged-into]').forEach(e=>e.remove());
+            const tr = s.closest('tr'), newTr = document.createElement('tr'), cols = parseInt(this.wrapper.dataset.cols)||1;
+            for(let i=0; i<cols; i++) { let td=document.createElement('td'); td.contentEditable="true"; td.innerText="New"; newTr.appendChild(td); }
+            tr.parentNode.insertBefore(newTr, dir==='above'?tr:tr.nextSibling); this.rebuild(); DOM.showToast("Row added", "success");
+        },
+        delRow() {
+            const s = this.getActive(); if(!s) return DOM.showToast("Select cell first", "error");
+            const tbl = this.wrapper.querySelector('table'), tr = s.closest('tr');
+            if(tbl.rows.length<=1) return DOM.showToast("Cannot delete last row", "error"); if(tr.closest('tfoot')) return DOM.showToast("Toggle Footer button to remove", "error");
+            this.saveState(); this.safeUnmerge('row', parseInt(s.dataset.r)); tr.remove(); this.wrapper.querySelectorAll('.hidden[data-merged-into]').forEach(e=>e.remove());
+            this.rebuild(); DOM.showToast("Row deleted", "success");
+        },
+        insCol(dir) {
+            const s = this.getActive(); if(!s) return DOM.showToast("Select cell first", "error"); this.saveState();
+            const cIdx = parseInt(s.dataset.c); this.safeUnmerge('col', cIdx); this.wrapper.querySelectorAll('.hidden[data-merged-into]').forEach(e=>e.remove());
+            this.wrapper.dataset.cols = (parseInt(this.wrapper.dataset.cols)||1)+1;
+            Array.from(this.wrapper.querySelector('table').rows).forEach(row => {
+                let newTd = document.createElement('td'); newTd.contentEditable="true"; newTd.innerText="New"; let ins=false;
+                Array.from(row.children).forEach(cell => {
+                    if(cell.tagName!=='CAPTION' && !ins && ((dir==='left'&&parseInt(cell.dataset.c)>=cIdx) || (dir==='right'&&parseInt(cell.dataset.c)>cIdx))) { row.insertBefore(newTd, cell); ins=true; }
+                });
+                if(!ins) row.appendChild(newTd);
+            });
+            this.rebuild(); DOM.showToast("Column added", "success");
+        },
+        delCol() {
+            const s = this.getActive(); if(!s) return DOM.showToast("Select cell first", "error");
+            let cols = parseInt(this.wrapper.dataset.cols)||1; if(cols<=1) return DOM.showToast("Cannot delete last col", "error");
+            this.saveState(); const cIdx = parseInt(s.dataset.c); this.safeUnmerge('col', cIdx);
+            Array.from(this.wrapper.querySelector('table').rows).forEach(row => { let c = Array.from(row.children).find(x=>parseInt(x.dataset.c)===cIdx); if(c && c.tagName!=='CAPTION') c.remove(); });
+            this.wrapper.dataset.cols = cols-1; this.wrapper.querySelectorAll('.hidden[data-merged-into]').forEach(e=>e.remove());
+            this.rebuild(); DOM.showToast("Column deleted", "success");
+        },
+        merge() {
+            const s = Array.from(this.wrapper.querySelectorAll('.selected:not(.hidden)')); if(s.length<2) return; this.saveState();
+            let minR=9999, minC=9999, maxR=-1, maxC=-1;
+            s.forEach(c => { let r=parseInt(c.dataset.r), col=parseInt(c.dataset.c), rs=parseInt(c.getAttribute('rowspan')||1), cs=parseInt(c.getAttribute('colspan')||1); minR=Math.min(minR,r); minC=Math.min(minC,col); maxR=Math.max(maxR,r+rs-1); maxC=Math.max(maxC,col+cs-1); });
+            let m = s.find(c=>parseInt(c.dataset.r)===minR && parseInt(c.dataset.c)===minC) || s[0];
+            m.setAttribute('rowspan', maxR-minR+1); m.setAttribute('colspan', maxC-minC+1);
+            s.forEach(c => { if(c!==m) { if(c.innerText.trim()) m.innerHTML += (m.innerHTML.trim()?' ':'')+c.innerHTML; c.classList.add('hidden'); c.classList.remove('selected'); c.dataset.mergedInto=`${minR},${minC}`; } });
+        },
+        split() { this.saveState(); this.wrapper.querySelectorAll('.selected:not(.hidden)').forEach(m => { if(m.hasAttribute('colspan')||m.hasAttribute('rowspan')){ let r=m.dataset.r, c=m.dataset.c; m.removeAttribute('colspan'); m.removeAttribute('rowspan'); this.wrapper.querySelectorAll(`.hidden[data-merged-into="${r},${c}"]`).forEach(h=>{h.classList.remove('hidden');h.removeAttribute('data-merged-into');h.innerHTML='';}); } }); },
+        align(a) { this.saveState(); this.wrapper.querySelectorAll('.selected:not(.hidden), caption:focus').forEach(c => c.style.textAlign=a); },
+        format(cmd) { this.saveState(); const ae = document.activeElement; if(ae && ae.isContentEditable && this.wrapper.contains(ae)) document.execCommand(cmd, false, null); else { this.wrapper.querySelectorAll('.selected:not(.hidden)').forEach(c => { c.focus(); document.execCommand('selectAll', false, null); document.execCommand(cmd, false, null); }); window.getSelection().removeAllRanges(); } },
+        toggleExtra(type) {
+            const tbl = this.wrapper.querySelector('table');
+            if (type==='caption') { let cap = tbl.querySelector('caption'); if(document.getElementById('btnTblCaption').classList.contains('active') && !cap) { cap=document.createElement('caption'); cap.contentEditable="true"; cap.innerText="Caption"; tbl.insertBefore(cap, tbl.firstChild); } else if(!document.getElementById('btnTblCaption').classList.contains('active') && cap) cap.remove(); }
+            else { let tf = tbl.querySelector('tfoot'); if(document.getElementById('btnTblFooter').classList.contains('active') && !tf) { tf=document.createElement('tfoot'); let tr=document.createElement('tr'); for(let c=0;c<(parseInt(this.wrapper.dataset.cols)||1);c++){ let td=document.createElement('td'); td.dataset.r=999; td.dataset.c=c; td.contentEditable="true"; td.innerText="Foot"; tr.appendChild(td); } tf.appendChild(tr); tbl.appendChild(tf); } else if(!document.getElementById('btnTblFooter').classList.contains('active') && tf) tf.remove(); }
+        },
+        rebuild() {
+            const hr = document.getElementById('btnTblHeaderRow').classList.contains('active'), hc = document.getElementById('btnTblHeaderCol').classList.contains('active'), tbl = this.wrapper.querySelector('table');
+            tbl.querySelectorAll('tr').forEach(tr => {
+                Array.from(tr.children).forEach(c => {
+                    if(c.tagName==='CAPTION' || c.dataset.r==="999") return;
+                    let r=parseInt(c.dataset.r), col=parseInt(c.dataset.c), isHead=false, scope='';
+                    if(hr && r===0) { isHead=true; scope='col'; } if(hc && col===0) { isHead=true; scope=(r===0&&hr)?'col':'row'; }
+                    let tgt = isHead?'TH':'TD'; if(c.tagName!==tgt || c.getAttribute('scope')!==scope) { let nc=document.createElement(tgt); nc.innerHTML=c.innerHTML; [...c.attributes].forEach(a=>{if(a.name!=='scope')nc.setAttribute(a.name,a.value);}); if(scope)nc.setAttribute('scope',scope); else nc.removeAttribute('scope'); c.replaceWith(nc); }
+                });
+            });
+            let thead = tbl.querySelector('thead'); if(!thead){thead=document.createElement('thead');tbl.insertBefore(thead,tbl.querySelector('tbody,tfoot,tr'));}
+            let tbody = tbl.querySelector('tbody'); if(!tbody){tbody=document.createElement('tbody');tbl.insertBefore(tbody,tbl.querySelector('tfoot'));}
+            Array.from(tbl.querySelectorAll('tr')).forEach(tr => { let f=tr.querySelector('th, td'); if(!f || f.dataset.r==="999") return; if(hr && parseInt(f.dataset.r)===0) thead.appendChild(tr); else tbody.appendChild(tr); });
+            if(thead.children.length===0) thead.remove();
+            this.injectCoordinates(tbl); // Re-map coordinates
+        }
+    };
+
+    // --- 8. MISC TOOLS (Combine, Custom Tags, Files) ---
+    const Tools = {
+        combine() {
+            State.save(); const t = DOM.input.value; let s = DOM.input.selectionStart, e = DOM.input.selectionEnd;
+            if(s===e) return DOM.showToast("Select lines to combine.", 'error');
+            while(s>0 && t[s-1]!=='\n') s--; while(e<t.length && t[e]!=='\n') e++;
+            const lines = t.substring(s,e).split('\n').map(l=>l.replace(/<\/?(p|h[1-6]|div|ul|ol|li|br|blockquote)[^>]*>/gi,"").trim()).filter(l=>l!=="");
+            DOM.input.setRangeText(`\n<p>${lines.join(' ')}</p>\n`, s, e, 'select'); Editor.updateHighlight(); DOM.showToast("Combined!", 'success');
+        },
+        clearTags() {
+            State.save(); const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value.substring(s,e);
+            if(!txt) return DOM.showToast("Select text to clear tags.", 'error');
+            DOM.input.setRangeText(txt.replace(/<[^>]*>/g, ''), s, e, 'select'); Editor.updateHighlight();
+        },
+        compress() {
+            State.save(); const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value.substring(s,e);
+            if(txt) DOM.input.setRangeText(txt.replace(/\s+/g, ' ').trim(), s, e, 'select'); else DOM.input.value = DOM.input.value.replace(/\s+/g, ' ').trim();
+            Editor.updateHighlight();
+        },
+        customTag(label, pId, bId) {
+            const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value, sel=txt.substring(s,e);
+            const useP = document.getElementById(pId).checked, useB = document.getElementById(bId).checked;
+            if (useP && Editor.checkBlockNesting(s)) return DOM.showToast("Cannot nest paragraphs.", "error");
+            State.save();
+            let padPre="", padPost="";
+            if(useP) {
+                let bc=0, i=s-1; while(i>=0 && txt[i]==='\n'){bc++;i--;} if(s>0)padPre=(bc===0)?"\n\n":(bc===1?"\n":"");
+                let ac=0, j=e; while(j<txt.length && txt[j]==='\n'){ac++;j++;} if(e<txt.length)padPost=(ac===0)?"\n\n":(ac===1?"\n":"");
+            } else {
+                if(s>0 && txt[s-1]!==' ' && txt[s-1]!=='\n') padPre=" "; if(e<txt.length && txt[e]!==' ' && txt[e]!=='\n') padPost=" ";
+            }
+            const res = padPre + (useP?"<p>":"") + (useB?"<strong>":"") + (label?`[${label}: `:`[`) + sel + "]" + (useB?"</strong>":"") + (useP?"</p>":"") + padPost;
+            DOM.input.setRangeText(res, s, e, sel.length>0?'select':'end');
+            if(!sel) DOM.input.setSelectionRange(s+padPre.length+(useP?3:0)+(useB?8:0)+(label?label.length+3:1), s+padPre.length+(useP?3:0)+(useB?8:0)+(label?label.length+3:1));
+            Editor.updateHighlight();
+        },
+        copy() {
+            const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value; // Fallback
+            if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(this.copyAnim).catch(e=>this.fallbackCopy(txt));
+            else this.fallbackCopy(txt);
+        },
+        fallbackCopy(t) { const ta = document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.left="-9999px"; document.body.appendChild(ta); ta.focus(); ta.select(); try{document.execCommand('copy');this.copyAnim();}catch(e){} document.body.removeChild(ta); },
+        copyAnim() { const b = document.getElementById('copyBtn'), o = b.innerHTML; b.innerHTML = '<svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-check"></use></svg> Copied!'; b.style.background="var(--color-success)"; setTimeout(()=>{b.innerHTML=o;b.style.background="";},2000); DOM.showToast("Copied!", "success"); },
+        async saveTxt() {
+            const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
+            if(window.showSaveFilePicker) { try { const h = await window.showSaveFilePicker({suggestedName:State.fileName, types:[{accept:{'text/plain':['.txt']}}]}); const w = await h.createWritable(); await w.write(txt); await w.close(); DOM.showToast("Saved!", "success"); return; } catch(e){if(e.name!=='AbortError')console.error(e);return;} }
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'})); a.download = State.fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+    };
+    Editor.getUnfoldedText = function() { let t = DOM.input.value; for(let id in State.foldedTables) t = t.replace(`[[FOLDED_TABLE_${id}]]`, State.foldedTables[id]); return t.split('\n').filter(l=>l.trim()!=='').join('\n'); };
+
+    // --- 9. EVENT BINDINGS ---
+    function initEvents() {
+        // Find Replace Modal
+        const fr = { m: document.getElementById('findReplaceModal'), i: document.getElementById('findInput'), r: document.getElementById('replaceInput') };
+        
+        document.querySelector('.header-controls').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if(!btn) return;
+            const a = btn.dataset.action;
+            if(a==='toggleFindReplace') { fr.m.style.display = fr.m.style.display==='flex'?'none':'flex'; if(fr.m.style.display==='flex') fr.i.focus(); else { State.setSearchTerm(null); Editor.updateHighlight(); } }
+            else if(a==='toggleDarkMode') DOM.toggleDarkMode();
+            else if(a==='clearAll') Editor.clearAll();
+            else if(a==='resetEditor') DOM.resetEditor();
+        });
+
+        DOM.toolbar.addEventListener('click', e => {
+            const btn = e.target.closest('button'); if(!btn) return; const a = btn.dataset.action;
+            if(a==='undo') State.undo(); else if(a==='wrap') Editor.wrap(btn.dataset.tag); else if(a==='list') Editor.insertList(btn.dataset.tag); else if(a==='toggleTablePicker') Table.togglePicker(); else if(a==='editTable') Table.editExisting(); else if(a==='foldTable') Editor.foldTableAtCursor(); else if(a==='unfoldTables') Editor.unfoldAllTables(); else if(a==='insert') Editor.insertStr(btn.dataset.str);
+        });
+
+        DOM.statusBar.addEventListener('click', e => {
+            const btn = e.target.closest('button'); if(!btn) return; const a = btn.dataset.action;
+            if(a==='combine') Tools.combine(); else if(a==='clearTags') Tools.clearTags(); else if(a==='compress') Tools.compress(); else if(a==='insertScreenText') Tools.customTag("Text on Screen", "stPara", "stBold"); else if(a==='insertCustomTag') Tools.customTag(document.getElementById('customLabelInput').value.trim(), "customPara", "customBold"); else if(a==='clearCustomInput') { document.getElementById('customLabelInput').value=''; document.getElementById('customLabelInput').focus(); } else if(a==='copy') Tools.copy(); else if(a==='save') Tools.saveTxt();
+        });
+
+        DOM.langToolbar.addEventListener('click', e => {
+            const btn = e.target.closest('button'); if(!btn) return;
+            if(btn.classList.contains('lang-char-btn')) return Lang.insert(e, btn.dataset);
+            const a = btn.dataset.action;
+            if(a==='toggleCaps') Lang.toggleCaps(); else if(a==='toggleHtml') Lang.toggleHtml(); else if(a==='wrapLangSpan') Lang.wrapSpan(); else if(a==='injectLangPara') Lang.injectPara(); else if(a==='convertLang') Lang.convert('toEntities'); else if(a==='revertLang') Lang.convert('toChars'); else if(a==='fixQuotes') { State.save(); DOM.input.value = DOM.input.value.replace(/<[^>]+>/g, m => m.includes('"') ? m.replace(/"/g, "'") : m); Editor.updateHighlight(); DOM.showToast("Quotes fixed", "success"); }
+        });
+
+        document.getElementById('findReplaceModal').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if(!btn) return; const a = btn.dataset.action;
+            if(a==='frClose') { fr.m.style.display='none'; State.setSearchTerm(null); Editor.updateHighlight(); }
+            else if(a==='frFindNext' || a==='frReplace') { 
+                const term = fr.i.value; if(!term) return; 
+                if(a==='frReplace') { 
+                    const s=DOM.input.selectionStart, e=DOM.input.selectionEnd; 
+                    if(DOM.input.value.substring(s,e).toLowerCase()===term.toLowerCase()){ 
+                        State.save(); DOM.input.setRangeText(fr.r.value, s, e, 'end'); 
+                    } 
+                }
+                State.setSearchTerm(null); Editor.updateHighlight(); 
+                let np = DOM.input.value.toLowerCase().indexOf(term.toLowerCase(), DOM.input.selectionEnd); 
+                if(np===-1) np = DOM.input.value.toLowerCase().indexOf(term.toLowerCase(), 0);
+                if(np!==-1) { DOM.input.focus(); DOM.input.setSelectionRange(np, np+term.length); } else DOM.showToast("Not found", "error");
+            }
+            else if(a==='frFindAll') { if(fr.i.value) { State.setSearchTerm(fr.i.value); Editor.updateHighlight(); } }
+            else if(a==='frReplaceAll') { const t=fr.i.value; if(!t)return; State.save(); const rx=new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), v=DOM.input.value, c=(v.match(rx)||[]).length; if(c===0) return DOM.showToast("No matches","error"); DOM.input.value=v.replace(rx,fr.r.value); State.setSearchTerm(null); Editor.updateHighlight(); DOM.showToast(`Replaced ${c}`,"success"); }
+        });
+
+        // Global Table Cell Selection Logic
+        Table.wrapper.addEventListener('mousedown', e => {
+            const cell = e.target.closest('td, th, caption'); 
+            if (!cell || cell.tagName === 'CAPTION') return;
+            Table.wrapper.querySelectorAll('.selected').forEach(c => c.classList.remove('selected'));
+            Table.isSelectingCells = true; Table.startNode = cell; cell.classList.add('selected');
+        });
+
+        Table.wrapper.addEventListener('mouseover', e => {
+            if (!Table.isSelectingCells) return;
+            const cell = e.target.closest('td, th'); if (!cell || !Table.startNode) return;
+            Table.highlightTableBox(Table.startNode, cell);
+        });
+
+        document.addEventListener('mouseup', () => { Table.isSelectingCells = false; });
+
+        document.querySelector('.tb-toolbar').addEventListener('click', e => {
+            const btn = e.target.closest('button'); if(!btn) return; const a = btn.dataset.action;
+            if(a==='tbUndo') Table.undo(); 
+            else if(a==='tbToggle') { Table.saveState(); btn.classList.toggle('active'); if(btn.dataset.setting.includes('Row')||btn.dataset.setting.includes('Col')) Table.rebuild(); else Table.toggleExtra(btn.dataset.setting.includes('Caption')?'caption':'footer'); } 
+            else if(a==='tbInsertRow') Table.insRow(btn.dataset.dir); 
+            else if(a==='tbDelRow') Table.delRow(); 
+            else if(a==='tbInsertCol') Table.insCol(btn.dataset.dir); 
+            else if(a==='tbDelCol') Table.delCol(); 
+            else if(a==='tbMerge') Table.merge(); 
+            else if(a==='tbSplit') Table.split(); 
+            else if(a==='tbAlign') Table.align(btn.dataset.align); 
+            else if(a==='tbFormat') Table.format(btn.dataset.format);
+        });
+
+        document.querySelector('.tb-header').addEventListener('click', e => { if(e.target.closest('button[data-action="tbCancel"]')) Table.close(); });
+        document.querySelector('.tb-footer').addEventListener('click', e => { const btn=e.target.closest('button'); if(btn && btn.dataset.action==='tbCancel') Table.close(); else if(btn && btn.dataset.action==='tbInsertHtml') Table.insertHtml(); });
+        document.addEventListener('click', e => { if (!e.target.closest('#tablePicker') && !e.target.closest('#tableBtnMain')) Table.picker.style.display = 'none'; });
+
+        // Editor Input Events
+        DOM.input.addEventListener('input', () => {
+            if (State.activeSearchRegex) State.setSearchTerm(null);
+            clearTimeout(State.highlightTimeout); State.highlightTimeout = setTimeout(() => requestAnimationFrame(() => Editor.updateHighlight()), CONFIG.HIGHLIGHT_DELAY);
+            clearTimeout(State.saveTimeout); State.saveTimeout = setTimeout(() => State.save(), 500);
+        });
+        
+        DOM.input.addEventListener('scroll', () => { DOM.highlight.scrollTop = DOM.input.scrollTop; DOM.highlight.scrollLeft = DOM.input.scrollLeft; }, {passive:true});
+        window.addEventListener('resize', () => requestAnimationFrame(()=>{ DOM.highlight.scrollTop = DOM.input.scrollTop; DOM.highlight.scrollLeft = DOM.input.scrollLeft; }), {passive:true});
+
+        DOM.input.addEventListener('keydown', e => {
+            const isCmd = e.ctrlKey || e.metaKey;
+            if (isCmd && e.key === 'z' && Table.modal.style.display !== 'flex') { e.preventDefault(); State.undo(); }
+            else if (isCmd && e.key === 'f') { e.preventDefault(); document.querySelector('[data-action="toggleFindReplace"]').click(); }
+            else if (isCmd && e.key === 'b') { e.preventDefault(); Editor.wrap('strong'); }
+            else if (isCmd && e.key === 'i') { e.preventDefault(); Editor.wrap('em'); }
+            else if (e.shiftKey && e.key === 'Enter') { e.preventDefault(); Editor.insertStr('<br/>'); }
+        });
+
+        DOM.input.addEventListener('dblclick', () => {
+            setTimeout(() => {
+                const s = DOM.input.selectionStart, e = DOM.input.selectionEnd, txt = DOM.input.value;
+                const winTxt = txt.substring(Math.max(0, s-30), Math.min(txt.length, s+30));
+                const m = winTxt.match(/\[\[FOLDED_TABLE_(\d+)\]\]/);
+                if (m) { const abs = Math.max(0, s-30) + winTxt.indexOf(m[0]); if (s >= abs && s <= abs + m[0].length) return Editor.unfoldTableById(m[1]); }
+                if (e > s && txt[e-1] === ' ') DOM.input.setSelectionRange(s, e-1);
+            }, 0);
+        });
+
+        // Table Key Events
+        document.addEventListener('keydown', e => {
+            if (Table.modal.style.display !== 'flex') return;
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); Table.undo(); return; }
+            if (e.altKey) {
+                e.preventDefault();
+                if(e.key==='ArrowUp') Table.insRow('above'); else if(e.key==='ArrowDown') Table.insRow('below'); else if(e.key==='ArrowLeft') Table.insCol('left'); else if(e.key==='ArrowRight') Table.insCol('right'); else if(e.key==='Backspace'||e.key==='Delete') e.shiftKey?Table.delCol():Table.delRow(); return;
+            }
+            if (e.key === 'Delete' || e.key === 'Backspace') { const sel = Table.wrapper.querySelectorAll('.selected:not(.hidden)'); if(sel.length>1) { e.preventDefault(); Table.saveState(); sel.forEach(c=>c.innerHTML=''); } }
+        });
+
+        // --- PASTE & FILE UPLOAD EVENTS ---
+        function handleFile(file) {
+            const name = file.name.toLowerCase();
+            if (!name.endsWith('.srt') && !name.endsWith('.txt')) return DOM.showToast('Please upload SRT or TXT', 'error');
+            State.fileName = file.name.replace(/\.(srt|txt)$/i, '_processed.txt');
+            const r = new FileReader(); 
+            r.onload = e => DOM.activateEditor(name.endsWith('.srt') ? Parser.processSRT(e.target.result) : Parser.processTXT(e.target.result)); 
+            r.readAsText(file);
+        }
+
+        // Global Drag/Drop Prevents so missing the dropzone doesn't open the file
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+            window.addEventListener(evt, e => e.preventDefault(), false);
+        });
+
+        // Handle Visuals and Drops on the main DropZone (broad target)
+        DOM.dropZone.addEventListener('dragover', () => DOM.uploadArea.classList.add('dragover'));
+        DOM.dropZone.addEventListener('dragleave', e => {
+            if (!DOM.dropZone.contains(e.relatedTarget)) DOM.uploadArea.classList.remove('dragover');
+        });
+        DOM.dropZone.addEventListener('drop', e => { 
+            DOM.uploadArea.classList.remove('dragover'); 
+            if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); 
+        });
+
+        // Click to Upload
+        DOM.uploadArea.addEventListener('click', () => DOM.fileInput.click());
+        DOM.fileInput.addEventListener('change', e => { if(e.target.files.length) handleFile(e.target.files[0]); });
+
+        // Missing Start Blank button restored here!
+        document.getElementById('startBlankBtn').addEventListener('click', e => {
+            e.stopPropagation();
+            DOM.activateEditor('');
+        });
+
+        document.getElementById('pasteBlankBtn').addEventListener('click', async e => {
+            e.stopPropagation();
+            try {
+                const items = await navigator.clipboard.read(); let pasted = false;
+                for (const i of items) {
+                    let html="", plain="";
+                    if (i.types.includes('text/plain')) plain = await (await i.getType('text/plain')).text();
+                    if (i.types.includes('text/html') && !document.getElementById('rawTextCheckbox').checked) html = await (await i.getType('text/html')).text();
+                    
+                    if (plain && /<(h[1-6]|p|ul|ol|li|table|div|span|blockquote|a|b|i|strong|em)\b/i.test(plain)) { DOM.activateEditor(Parser.processTXT(Parser.cleanPlainPaste(plain))); DOM.showToast('HTML code pasted!', 'success'); pasted=true; break; }
+                    if (html) { DOM.activateEditor(Parser.sanitizeHTML(html.includes('urn:schemas-microsoft-com:office:word') || html.includes('mso-list') ? Parser.cleanWordHTML(html) : html)); DOM.showToast('Semantic HTML Preserved!', 'success'); pasted=true; break; }
+                }
+                if (!pasted) { let txt = await navigator.clipboard.readText(); if(!txt.trim()) return DOM.showToast('Clipboard empty', 'error'); DOM.activateEditor(Parser.processTXT(Parser.cleanPlainPaste(txt))); DOM.showToast('Text pasted', 'success'); }
+            } catch (err) { let txt = await navigator.clipboard.readText(); DOM.activateEditor(Parser.processTXT(Parser.cleanPlainPaste(txt))); }
+        });
+
+        DOM.input.addEventListener('paste', e => {
+            if (document.getElementById('rawTextCheckbox').checked) return;
+            const html = e.clipboardData.getData('text/html'), plain = e.clipboardData.getData('text/plain');
+            if (plain && /<(h[1-6]|p|ul|ol|li|table|div|span|blockquote|a|b|i|strong|em)\b/i.test(plain)) { e.preventDefault(); Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(plain)), true); return DOM.showToast('HTML code pasted', 'success'); }
+            if (html) { e.preventDefault(); Editor.insertStr(Parser.sanitizeHTML((html.includes('urn:schemas-microsoft-com:office:word') || html.includes('mso-list')) ? Parser.cleanWordHTML(html) : html), true); DOM.showToast('HTML pasted', 'success'); }
+            else if (plain) { e.preventDefault(); Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(plain)), true); DOM.showToast('Text pasted', 'success'); }
+        });
+
+        document.getElementById('fontSlider').addEventListener('input', e => {
+            const s = e.target.value + "px"; DOM.input.style.fontSize = s; DOM.highlight.style.fontSize = s; document.getElementById('fontDisplay').innerText = s;
+        });
+        
+        document.getElementById('langSelect').addEventListener('change', () => Lang.renderButtons());
+    }
+
+    // --- 10. PUBLIC API ---
+    return {
+        init() { initEvents(); },
+        Table: Table // Exposed for inline onclick handlers in HTML
+    };
+})();
+
+// Boot
+App.init();
+
+</script>
+</body>
+</html>

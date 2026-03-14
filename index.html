@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LlamaTools — Your Toolkit Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ──────────────────────────────────────────── */
+    :root {
+      --sun:      #FFD166;   /* warm golden yellow   */
+      --terracotta: #E07A5F; /* llama dusty rose-red */
+      --sky:      #3D9BE9;   /* bright sky blue      */
+      --sage:     #81B29A;   /* andean sage green    */
+      --cream:    #FFF8EE;   /* warm cream           */
+      --ink:      #2B2118;   /* deep warm brown      */
+      --mist:     #F3EAD8;   /* light tan            */
+      --card-bg:  #FFFDF7;   /* off white            */
+      --shadow:   rgba(43, 33, 24, 0.12);
+
+      --font-display: 'Playfair Display', serif;
+      --font-body:    'DM Sans', sans-serif;
+
+      --radius: 20px;
+      --radius-sm: 12px;
+    }
+
+    /* ─── RESET & BASE ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── BACKGROUND TEXTURE ─────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 15% 85%, rgba(224,122,95,.18) 0%, transparent 45%),
+        radial-gradient(circle at 85% 10%, rgba(255,209,102,.25) 0%, transparent 40%),
+        radial-gradient(circle at 55% 60%, rgba(129,178,154,.12) 0%, transparent 35%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── HEADER / HERO ──────────────────────────────────────────── */
+    header {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 34px 24px 0px;
+    }
+
+    .llama-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--terracotta);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 99px;
+      margin-bottom: 24px;
+      animation: fadeDown .5s ease both;
+    }
+
+    .llama-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--sun);
+      border-radius: 50%;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      font-weight: 900;
+      line-height: 1.0;
+      color: var(--ink);
+      animation: fadeDown .55s .1s ease both;
+    }
+
+    h1 span.accent { color: var(--terracotta); }
+    h1 span.accent2 { color: var(--sky); }
+
+    .tagline {
+      margin-top: 18px;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      font-weight: 300;
+      color: #7a6858;
+      max-width: 480px;
+      margin-inline: auto;
+      animation: fadeDown .6s .2s ease both;
+    }
+
+    /* ─── LLAMA SVG MASCOT ───────────────────────────────────────── */
+    .mascot-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 8px auto 0;
+      animation: floatBob 4s ease-in-out infinite;
+    }
+
+    @keyframes floatBob {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    /* ─── DIVIDER ────────────────────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      max-width: 200px;
+      margin: 16px auto 0;
+      opacity: .4;
+    }
+    .divider-line { flex: 1; height: 1px; background: var(--ink); }
+    .divider-icon { font-size: 18px; }
+
+    /* ─── GRID SECTION ───────────────────────────────────────────── */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--terracotta);
+      margin-bottom: 28px;
+    }
+
+    /* ─── TOOL CARDS ─────────────────────────────────────────────── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    /*
+     * ════════════════════════════════════════════════════════════════
+     *  HOW TO ADD MORE TOOLS:
+     *  1. Copy an existing <a class="tool-card"> block.
+     *  2. Change href to your new page path.
+     *  3. Update the emoji, name, and description.
+     *  4. Optionally swap the --card-accent color.
+     * ════════════════════════════════════════════════════════════════
+     */
+    .tool-card {
+      --card-accent: var(--terracotta);   /* override per card */
+      text-decoration: none;
+      color: var(--ink);
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 28px;
+      border: 2px solid transparent;
+      box-shadow: 0 4px 20px var(--shadow);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp .55s ease both;
+    }
+
+    /* staggered reveal for each card */
+    .tool-card:nth-child(1) { animation-delay: .30s; }
+    .tool-card:nth-child(2) { animation-delay: .38s; }
+    .tool-card:nth-child(3) { animation-delay: .46s; }
+    .tool-card:nth-child(4) { animation-delay: .54s; }
+    .tool-card:nth-child(5) { animation-delay: .62s; }
+    .tool-card:nth-child(6) { animation-delay: .70s; }
+
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--card-accent) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-5px) scale(1.01);
+      box-shadow: 0 14px 36px var(--shadow);
+      border-color: var(--card-accent);
+    }
+    .tool-card:hover::before { opacity: .06; }
+
+    .card-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+      background: var(--mist);
+      width: 60px; height: 60px;
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      position: relative;
+      z-index: 1;
+      transition: background .25s;
+    }
+    .tool-card:hover .card-icon { background: color-mix(in srgb, var(--card-accent) 15%, var(--mist)); }
+
+    .card-content { position: relative; z-index: 1; }
+
+    .card-name {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .card-desc {
+      margin-top: 4px;
+      font-size: .9rem;
+      font-weight: 300;
+      color: #7a6858;
+      line-height: 1.55;
+    }
+
+    .card-arrow {
+      margin-top: auto;
+      align-self: flex-end;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--mist);
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      position: relative;
+      z-index: 1;
+      transition: background .25s, transform .25s;
+    }
+    .tool-card:hover .card-arrow {
+      background: var(--card-accent);
+      color: #fff;
+      transform: translateX(3px);
+    }
+
+    /* ─── "MORE COMING" PLACEHOLDER CARD ─────────────────────────── */
+    .card-placeholder {
+      border: 2px dashed color-mix(in srgb, var(--ink) 20%, transparent);
+      background: transparent;
+      box-shadow: none;
+      color: #b8a898;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 10px;
+      min-height: 160px;
+      border-radius: var(--radius);
+      padding: 28px;
+      animation: fadeUp .55s .78s ease both;
+    }
+    .card-placeholder .plus { font-size: 2rem; line-height: 1; }
+    .card-placeholder p { font-size: .85rem; line-height: 1.5; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 0 24px 48px;
+      font-size: .8rem;
+      color: #b0a090;
+    }
+
+    .footer-note {
+      margin-bottom: 4px;
+    }
+
+    footer .heart { color: var(--terracotta); }
+
+    /* ─── ANIMATIONS ─────────────────────────────────────────────── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .tools-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── HERO ──────────────────────────────────────────────────── -->
+  <header>
+    <div class="llama-badge"><span class="dot"></span> Tool Hub<span class="dot"></span></div>
+
+    <h1>Llama<span class="accent">Tools</span></h1>
+
+    <p class="tagline">A cozy collection of handy tools, growing one llama-step at a time.</p>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-icon">🌵</span>
+      <div class="divider-line"></div>
+    </div>
+  </header>
+
+  <!-- ─── TOOL CARDS ─────────────────────────────────────────────── -->
+  <main>
+    <p class="section-label">🦙 Available Tools</p>
+
+    <div class="tools-grid" id="toolsGrid">
+
+      <!--
+        ╔══════════════════════════════════════════════════════════╗
+        ║  TOOL CARD TEMPLATE — copy this block to add a new tool  ║
+        ╠══════════════════════════════════════════════════════════╣
+        ║  1. Set href="path/to/your-tool.html"                    ║
+        ║  2. Change the emoji in .card-icon                       ║
+        ║  3. Update .card-name and .card-desc text                ║
+        ║  4. Optionally change --card-accent to any CSS color     ║
+        ╚══════════════════════════════════════════════════════════╝
+      -->
+
+      <!-- TOOL 1 -->
+      <a class="tool-card" href="text_version_editor.html" style="--card-accent: #E07A5F;">
+        <div class="card-icon">✏️</div>
+        <div class="card-content">
+          <div class="card-name">Text Version Editor</div>
+          <div class="card-desc">Create a text version from scratch, drop in an SRT file, or just copy and paste.</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+
+      <!-- TOOL 2 -->
+      <a class="tool-card" href="course_explorer.html" style="--card-accent: #3D9BE9;">
+        <div class="card-icon">🔭</div>
+        <div class="card-content">
+          <div class="card-name">Course Explorer</div>
+          <div class="card-desc">Browse and explore a single course's content, structure, and details at a glance.</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+
+      <!-- TOOL 3 -->
+      <a class="tool-card" href="multi_course_explorer.html" style="--card-accent: #81B29A;">
+        <div class="card-icon">🗺️</div>
+        <div class="card-content">
+          <div class="card-name">Multi-Course Explorer</div>
+          <div class="card-desc">Compare and navigate across multiple courses. Spot patterns in a herd.</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+
+      <!-- TOOL 4 -->
+      <a class="tool-card" href="assessment_checker.html" style="--card-accent: #FFD166;">
+        <div class="card-icon">✅</div>
+        <div class="card-content">
+          <div class="card-name">Assessment Checker</div>
+          <div class="card-desc">Review and validate assessments quickly. No llama left behind on quality checks.</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+
+      <!-- "MORE COMING" placeholder — stays at the end automatically -->
+      <div class="card-placeholder">
+        <span class="plus">＋</span>
+        <p>More tools grazing<br>in the fields — coming soon.</p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ─── FOOTER ─────────────────────────────────────────────────── -->
+  <footer>
+    <p class="footer-note">Made with <span class="heart">♥</span> and a sprinkle of llama magic</p>
+
+    <!-- SVG Llama Mascot -->
+    <div class="mascot-wrap">
+      <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" width="160" height="160" aria-label="Llama mascot">
+        <!-- Body -->
+        <ellipse cx="80" cy="112" rx="38" ry="28" fill="#E8C9A0"/>
+        <!-- Neck -->
+        <rect x="66" y="68" width="28" height="46" rx="14" fill="#E8C9A0"/>
+        <!-- Head -->
+        <ellipse cx="80" cy="62" rx="24" ry="22" fill="#F0D5B0"/>
+        <!-- Snout -->
+        <ellipse cx="80" cy="74" rx="12" ry="8" fill="#F5DFC5"/>
+        <!-- Eyes -->
+        <circle cx="71" cy="58" r="4" fill="#2B2118"/>
+        <circle cx="89" cy="58" r="4" fill="#2B2118"/>
+        <circle cx="72.5" cy="56.5" r="1.5" fill="#fff"/>
+        <circle cx="90.5" cy="56.5" r="1.5" fill="#fff"/>
+        <!-- Nostrils -->
+        <ellipse cx="76" cy="76" rx="2.5" ry="2" fill="#C9A07A"/>
+        <ellipse cx="84" cy="76" rx="2.5" ry="2" fill="#C9A07A"/>
+        <!-- Ears -->
+        <ellipse cx="62" cy="44" rx="7" ry="12" fill="#E8C9A0" transform="rotate(-12 62 44)"/>
+        <ellipse cx="63" cy="44" rx="3.5" ry="7" fill="#F5B8A0" transform="rotate(-12 63 44)"/>
+        <ellipse cx="98" cy="44" rx="7" ry="12" fill="#E8C9A0" transform="rotate(12 98 44)"/>
+        <ellipse cx="97" cy="44" rx="3.5" ry="7" fill="#F5B8A0" transform="rotate(12 97 44)"/>
+        <!-- Legs -->
+        <rect x="52" y="130" width="14" height="22" rx="7" fill="#D4A87A"/>
+        <rect x="70" y="132" width="14" height="20" rx="7" fill="#D4A87A"/>
+        <rect x="88" y="132" width="14" height="20" rx="7" fill="#D4A87A"/>
+        <rect x="94" y="130" width="14" height="22" rx="7" fill="#D4A87A"/>
+        <!-- Festive hat -->
+        <ellipse cx="80" cy="41" rx="20" ry="5" fill="#E07A5F"/>
+        <rect x="66" y="16" width="28" height="26" rx="6" fill="#E07A5F"/>
+        <rect x="63" y="37" width="34" height="5" rx="2.5" fill="#FFD166"/>
+        <!-- Hat stars -->
+        <circle cx="80" cy="24" r="3" fill="#FFD166"/>
+        <circle cx="72" cy="30" r="2" fill="#FFD166" opacity=".7"/>
+        <circle cx="88" cy="30" r="2" fill="#FFD166" opacity=".7"/>
+        <!-- Smile -->
+        <path d="M74 80 Q80 86 86 80" stroke="#C9A07A" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- Neck scarf -->
+        <rect x="63" y="92" width="34" height="10" rx="5" fill="#3D9BE9" opacity=".85"/>
+        <circle cx="80" cy="97" r="4" fill="#FFD166"/>
+      </svg>
+    </div>
+  </footer>
+
+</body>
+</html>

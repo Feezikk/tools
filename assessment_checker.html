@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Educator Assessment Checker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#f4f5f7; --surface:#ffffff; --surface2:#f0f2f5;
+      --border:#dde1e9; --border2:#c8cdd8;
+      --text:#1a1d26; --text-mid:#4a5068; --text-dim:#8a90a4;
+      --accent:#1b4dff; --accent-light:#e8eeff;
+      --error:#d93025; --error-bg:#fff0ef; --error-border:#fac5c1;
+      --warn:#b45309;  --warn-bg:#fffbeb;  --warn-border:#fcd34d;
+      --pass:#15803d;  --pass-bg:#f0fdf4;  --pass-border:#86efac;
+      --wand:#7c3aed;  --wand-bg:#f5f3ff;  --wand-border:#c4b5fd;
+      --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+      --radius:6px;
+    }
+    html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px;}
+
+    header{height:52px;background:var(--text);color:#fff;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:200;}
+    .logo{font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;}
+    .logo-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:1px;}
+    .header-right{margin-left:auto;font-size:11px;color:rgba(255,255,255,.4);font-family:var(--mono);}
+
+    .workspace{display:flex;height:calc(100vh - 52px);overflow:hidden;}
+
+    /* ── Resizable divider ── */
+    .divider{width:5px;background:var(--border2);cursor:col-resize;flex-shrink:0;position:relative;transition:background .15s;z-index:10;}
+    .divider:hover,.divider.dragging{background:var(--accent);}
+    .divider::before{content:'⋮';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-dim);font-size:14px;letter-spacing:-2px;pointer-events:none;}
+
+    .left-panel{display:flex;flex-direction:column;background:var(--surface);overflow:hidden;min-width:240px;width:520px;flex-shrink:0;}
+    .panel-toolbar{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface2);}
+    .panel-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);}
+
+    .tab-group{display:flex;background:var(--border);border-radius:5px;padding:2px;gap:2px;}
+    .tab{padding:5px 12px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-mid);font-family:var(--sans);transition:all .12s;}
+    .tab:hover{color:var(--text);}
+    .tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+
+    .input-area{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+    .tab-content{display:none;flex:1;flex-direction:column;overflow:hidden;}
+    .tab-content.active{display:flex;}
+
+    .editor-wrap{flex:1;display:flex;overflow:hidden;font-family:var(--mono);font-size:12px;line-height:1.7;position:relative;}
+    /* Line numbers rendered as a sticky overlay column */
+    .line-nums-wrap{width:44px;flex-shrink:0;overflow:hidden;background:var(--surface2);border-right:1px solid var(--border);position:relative;}
+    .line-nums{position:absolute;top:0;left:0;width:100%;padding:16px 0 200px 0;text-align:right;color:var(--text-dim);font-size:12px;user-select:none;pointer-events:none;will-change:transform;}
+    /* Update line-num to flex so the number aligns to the top of wrapped lines */
+    .line-num {
+      padding: 0 8px 0 4px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      line-height: 1.7; /* Matches textarea */
+      box-sizing: border-box;
+    }
+    .line-num.highlight{background:#fff3cd;color:var(--warn);font-weight:600;}
+    .line-num.error-line{background:#fde8e8;color:var(--error);font-weight:600;}
+    .line-num.fixed-line{background:#fef9c3;color:#854d0e;font-weight:600;}
+
+	/* NEW: Mirror element styling */
+    #textarea-mirror {
+      position: absolute;
+      top: 0; 
+      left: 0;
+      visibility: hidden; /* Invisible but still takes up computed space */
+      pointer-events: none;
+      z-index: -1;
+      
+      /* Must match the textarea typography and spacing EXACTLY */
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-sizing: border-box;
+    }
+	  
+	  .mirror-line {
+      /* Prevents collapsing margins/padding inside the mirror */
+      display: block; 
+      min-height: 1em;
+    }
+	  
+    /* Update the main textarea to wrap text */
+	textarea#assessment-input {
+	  flex: 1; border: none; outline: none; resize: none; 
+	  padding: 16px; font-family: var(--mono); font-size: 12px; line-height: 1.7; 
+	  color: var(--text); background: var(--surface); tab-size: 2; 
+	  overflow-y: scroll; 
+	  white-space: pre-wrap; /* Changed from pre */
+	  word-break: break-word; /* Ensures long URLs or strings wrap */
+	  overflow-x: hidden; /* Removes the horizontal scrollbar */
+	}
+    textarea::placeholder{color:var(--text-dim);}
+	  
+	
+
+    .upload-zone{flex:1;margin:20px;border:2px dashed var(--border2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:all .15s;padding:40px;text-align:center;}
+    .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-light);}
+    .upload-icon{font-size:36px;}
+    .upload-label{color:var(--text-mid);font-size:13px;}
+    .upload-label strong{color:var(--accent);}
+    .upload-label small{display:block;color:var(--text-dim);margin-top:4px;}
+    .file-pill{margin:16px;padding:10px 14px;background:var(--pass-bg);border:1px solid var(--pass-border);border-radius:var(--radius);display:none;align-items:center;gap:10px;font-size:13px;font-family:var(--mono);}
+
+    .action-bar{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface);}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .12s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{filter:brightness(1.1);}
+    .btn-primary:active{transform:scale(.98);}
+    .btn-secondary{background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);}
+    .btn-secondary:hover{border-color:var(--border2);color:var(--text);}
+    .btn-link{background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:var(--sans);margin-left:auto;}
+    .btn-link:hover{color:var(--error);}
+    .shortcut-hint{font-size:11px;color:var(--text-dim);font-family:var(--mono);}
+
+    .right-panel{display:flex;flex-direction:column;overflow:hidden;flex:1;min-width:240px;}
+    .results-header{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;}
+    .summary-chips{display:flex;gap:6px;margin-left:auto;}
+    .chip{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;}
+    .chip-error{background:var(--error-bg);color:var(--error);border:1px solid var(--error-border);}
+    .chip-warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);}
+    .chip-pass{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-border);}
+
+    .results-body{flex:1;overflow-y:auto;padding:14px;}
+    .results-body::-webkit-scrollbar{width:5px;}
+    .results-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+    .empty-state{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:40px;color:var(--text-dim);}
+    .empty-icon{font-size:40px;opacity:.5;}
+    .empty-state p{max-width:280px;line-height:1.6;font-size:13px;}
+    .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    .q-strip{padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);display:none;gap:12px;align-items:center;flex-wrap:wrap;}
+    .q-strip.visible{display:flex;}
+    .q-stat{display:flex;align-items:center;gap:4px;font-family:var(--mono);}
+    .q-stat strong{color:var(--text);}
+
+    .category-section{margin-bottom:8px;}
+    .category-header{width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text-mid);text-align:left;transition:background .12s;}
+    .category-header:hover{background:var(--border);}
+    .category-header.has-errors{background:var(--error-bg);border-color:var(--error-border);color:var(--error);}
+    .category-header.has-warnings{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn);}
+    .category-header.all-pass{background:var(--pass-bg);border-color:var(--pass-border);color:var(--pass);}
+    .cat-count{font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700;}
+    .cat-count-error{background:var(--error);color:#fff;}
+    .cat-count-warn{background:var(--warn);color:#fff;}
+    .cat-count-pass{background:var(--pass);color:#fff;}
+    .category-items{display:none;flex-direction:column;gap:4px;margin-top:4px;}
+    .category-section.open .category-items{display:flex;}
+
+    .result-item{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);overflow:hidden;}
+    .result-item.err{border-left:3px solid var(--error);}
+    .result-item.warn{border-left:3px solid var(--warn);}
+    .result-item.pass{border-left:3px solid var(--pass);opacity:.65;}
+    .result-row{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;cursor:pointer;}
+    .result-row:hover{background:var(--surface2);}
+    .sev-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+    .result-text{flex:1;min-width:0;}
+    .result-rule-name{font-size:12px;font-weight:600;color:var(--text);line-height:1.4;}
+    .result-msg{font-size:11px;color:var(--text-mid);margin-top:2px;line-height:1.4;font-family:var(--mono);}
+    .line-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);flex-shrink:0;cursor:pointer;white-space:nowrap;}
+    .line-badge:hover{background:var(--accent-light);color:var(--accent);border-color:var(--accent);}
+    .wand-btn{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--wand-bg);border:1px solid var(--wand-border);color:var(--wand);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0;transition:all .12s;}
+    .wand-btn:hover{background:var(--wand-border);}
+    .wand-btn.applied{background:#fef9c3;border-color:#ca8a04;color:#854d0e;cursor:default;}
+
+    .fix-panel{display:none;border-top:1px solid var(--border);background:var(--surface2);}
+    .result-item.expanded .fix-panel{display:block;}
+    .fix-applied-banner{padding:7px 12px;background:#fef9c3;border-bottom:1px solid #fcd34d;font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px;}
+    .fix-description{padding:8px 12px;font-size:12px;color:var(--text-mid);line-height:1.5;border-bottom:1px solid var(--border);}
+    .fix-snippet-wrap{position:relative;}
+    /* Update the snippet block to wrap text */
+	.fix-snippet {
+	  padding: 10px 12px; font-family: var(--mono); font-size: 11.5px; 
+	  color: var(--text); line-height: 1.6; background: #f8f9fc;
+	  white-space: pre-wrap; /* Changed from pre */
+	  word-break: break-word;
+	  overflow-x: hidden;
+	}
+	  
+	  /* Add this NEW rule anywhere in your style block for the highlight */
+		mark.error-highlight {
+		  background-color: #fecaca;
+		  color: #991b1b;
+		  padding: 0 3px;
+		  border-radius: 3px;
+		  font-weight: 600;
+		}
+
+    /* Copy corrected text button — in action bar */
+    .btn-copy-text{background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);font-size:12px;}
+    .btn-copy-text:hover{border-color:var(--pass-border);color:var(--pass);}
+    .btn-copy-text.copied{background:var(--pass-bg);color:var(--pass);border-color:var(--pass-border);}
+
+    /* Fixed state for result items */
+    .result-item.fixed{border-left:3px solid #ca8a04;background:#fefce8;}
+    .result-item.fixed .result-rule-name{color:#854d0e;}
+    .result-item.fixed .sev-icon{color:#ca8a04;}
+    .line-num.fixed-line{background:#fef9c3;color:#854d0e;font-weight:600;}
+
+    .all-pass-banner{text-align:center;padding:60px 24px;}
+    .all-pass-banner .check{font-size:52px;}
+    .all-pass-banner h2{font-size:20px;font-weight:700;color:var(--pass);margin:12px 0 6px;}
+    .all-pass-banner p{color:var(--text-dim);font-size:13px;}
+
+    .status-bar{padding:7px 16px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text-dim);display:none;align-items:center;gap:4px;}
+    .status-bar.visible{display:flex;}
+
+    @media(max-width:900px){.workspace{grid-template-columns:1fr;grid-template-rows:1fr 1fr;height:auto;}.left-panel{border-right:none;border-bottom:1px solid var(--border);}}
+	 /* ── Caret / Expand Icons ── */
+	.caret-svg {
+	  width: 16px;
+	  height: 16px;
+	  display: block;
+	  fill: none;
+	  stroke: currentColor;
+	  stroke-width: 2.5;
+	  stroke-linecap: round;
+	  stroke-linejoin: round;
+	}
+
+	.cat-chevron {
+	  margin-right: 8px; /* Pushes the label to the right of the caret */
+	  opacity: 0.6;
+	  transition: transform 0.15s ease;
+	  display: flex;
+	  align-items: center;
+	  flex-shrink: 0;
+	}
+
+	.result-chevron {
+	  margin-right: 8px; /* Spaces it out from the severity icon */
+	  opacity: 0.5;
+	  transition: transform 0.15s ease;
+	  align-self: center;
+	  display: flex;
+	  align-items: center;
+	  flex-shrink: 0;
+	}
+
+	/* Rotate the carets 180 degrees when their container is opened */
+	.category-section.open .cat-chevron,
+	.result-item.expanded .result-chevron {
+	  transform: rotate(180deg);
+	}
+	 
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v2.0</span></div>
+  <div class="header-right">standalone · no server needed</div>
+</header>
+
+<div class="workspace">
+
+  <div class="left-panel">
+    <div class="panel-toolbar">
+      <span class="panel-label">Input</span>
+      <div class="tab-group">
+        <button class="tab active" onclick="switchTab('paste',this)">Paste Text</button>
+        <button class="tab" onclick="switchTab('upload',this)">Upload File</button>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="tab-content active" id="tab-paste">
+        <div class="editor-wrap">
+          <div class="line-nums-wrap">
+            <div class="line-nums" id="line-nums"><div class="line-num">1</div></div>
+          </div>
+          <div id="textarea-mirror"></div>
+          
+          <textarea id="assessment-input"
+            placeholder="Paste your assessment .txt content here…"
+            spellcheck="false"
+            oninput="updateLineNums()"
+            onscroll="syncScroll()"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-upload">
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-label">
+            <strong>Click to browse</strong> or drag &amp; drop
+            <small>Accepts .txt files</small>
+          </div>
+        </div>
+        <div class="file-pill" id="file-pill">
+          📄 <span id="file-name-label"></span>
+          <button class="btn-link" onclick="clearFile()" style="margin-left:auto">✕ Remove</button>
+        </div>
+        <input type="file" id="file-input" accept=".txt,.html,.htm" style="display:none" onchange="handleFile(event)">
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="runAudit()">▶ Run Audit</button>
+      <button class="btn btn-secondary" onclick="loadSample()">Load Sample</button>
+      <span class="shortcut-hint">⌘↵</span>
+      <button class="btn btn-copy-text" id="copy-text-btn" onclick="copyTextarea(this)" title="Copy the full corrected text to clipboard">⎘ Copy Text</button>
+      <button class="btn-link" onclick="clearAll()">Clear</button>
+    </div>
+  </div><!-- /left-panel -->
+
+  <div class="divider" id="divider"></div>
+
+  <div class="right-panel">
+    <div class="results-header">
+      <span class="panel-label">Results</span>
+      <div class="summary-chips" id="summary-chips" style="display:none">
+        <span class="chip chip-error" id="chip-error">0 Errors</span>
+        <span class="chip chip-warn"  id="chip-warn">0 Warnings</span>
+        <span class="chip chip-pass"  id="chip-pass">✓ 0 Passed</span>
+      </div>
+    </div>
+
+    <div class="q-strip" id="q-strip">
+      <div class="q-stat">Questions: <strong id="q-count">—</strong></div>
+      <div class="q-stat">mc:radio: <strong id="q-mcradio">—</strong></div>
+      <div class="q-stat">essay: <strong id="q-essay">—</strong></div>
+      <div class="q-stat">fib: <strong id="q-fib">—</strong></div>
+      <div class="q-stat">tf: <strong id="q-tf">—</strong></div>
+      <div class="q-stat">matching: <strong id="q-matching">—</strong></div>
+    </div>
+
+    <div class="results-body" id="results-body">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>Paste your assessment file content and click <strong>Run Audit</strong> to check for formatting issues.</p>
+      </div>
+    </div>
+
+    <div class="status-bar" id="status-bar"><span id="status-text"></span></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// RULES — embedded directly (edit here to add/change rules)
+// ═══════════════════════════════════════════════════════════════
+const RULES_DATA = {
+  "version": "2.0.0",
+  "categories": {
+    "question-structure": "Question Structure",
+    "html-tags":          "HTML Tag Integrity",
+    "images":             "Images",
+    "answer-keys":        "Answer Keys",
+    "span-metadata":      "Span Metadata",
+    "groups-points":      "Groups & Points",
+    "matching":           "Matching Questions",
+    "accessibility":      "Accessibility"
+  },
+  "rules": [
+    {
+      "id": "no-space-in-code", "category": "question-structure", "severity": "error",
+      "description": "No spaces allowed before or after colons in question type codes",
+      "type": "code-spacing",
+      "message": "Question code has extra spaces around colons: \"{found}\". Codes must have no spaces (e.g. mc:radio: not mc : radio :)",
+      "fix": { "description": "Remove all spaces around the colons in the question type code.", "snippet": "mc:radio:  (not mc : radio : or mc:radio :)\nessay:     (not essay : )\nfib:       (not fib : )\ntf:        (not tf : )" }
+    },
+    {
+      "id": "groups-sequential", "category": "groups-points", "severity": "error",
+      "description": "Groups must be listed sequentially — all group 1 together, then group 2, etc.",
+      "type": "group-sequence",
+      "message": "Group sequence error: group:{found} appears after group:{previous}. All questions in a group must appear together before the next group starts.",
+      "fix": { "description": "Reorder questions so all group 1 questions come first, then all group 2, and so on.", "snippet": "mc:radio:Question A\n...\ngroup:1\n\nmc:radio:Question B\n...\ngroup:1\n\nmc:radio:Question C  \u2190 group 2 starts here\n...\ngroup:2" }
+    },
+    {
+      "id": "points-present", "category": "groups-points", "severity": "error",
+      "description": "Every question must have a points: line",
+      "type": "question-has-field", "field": "points",
+      "message": "Question {num} is missing a points: line.",
+      "fix": { "description": "Add a points: line at the end of the question block, before group:.", "snippet": "x-Correct answer\nWrong answer\npoints:3\ngroup:1" }
+    },
+    {
+      "id": "group-present", "category": "groups-points", "severity": "error",
+      "description": "Every question must have a group: line",
+      "type": "question-has-field", "field": "group",
+      "message": "Question {num} is missing a group: line.",
+      "fix": { "description": "Add a group: line at the end of the question block, after points:.", "snippet": "x-Correct answer\nWrong answer\npoints:3\ngroup:1" }
+    },
+    {
+      "id": "points-before-group", "category": "groups-points", "severity": "error",
+      "description": "points: must appear before group: in every question",
+      "type": "field-order",
+      "message": "Question {num} has group: appearing before points:. Correct order is: points: then group:.",
+      "fix": { "description": "Swap the order so points: always comes before group:.", "snippet": "points:3\ngroup:1" }
+    },
+    {
+      "id": "same-group-same-type", "category": "groups-points", "severity": "error",
+      "description": "All questions within a group must be the same question type",
+      "type": "group-type-consistency",
+      "message": "Group {group} mixes question types: {types}. All questions in a group must use the same type code.",
+      "fix": { "description": "Ensure every question in the same group uses the same type prefix (e.g. all mc:radio:).", "snippet": "mc:radio:Question A\npoints:3\ngroup:1\n\nmc:radio:Question B  \u2190 must also be mc:radio:\npoints:3\ngroup:1" }
+    },
+    {
+      "id": "same-group-same-points", "category": "groups-points", "severity": "error",
+      "description": "All questions within a group must have the same point value",
+      "type": "group-points-consistency",
+      "message": "Group {group} has inconsistent point values: {values}. All questions in a group must share the same points value.",
+      "fix": { "description": "Update all questions in the group to use the same points: value.", "snippet": "mc:radio:Question A\npoints:3\ngroup:1\n\nmc:radio:Question B\npoints:3  \u2190 must match\ngroup:1" }
+    },
+    {
+      "id": "mc-radio-one-correct", "category": "answer-keys", "severity": "error",
+      "description": "mc:radio questions must have exactly one correct answer marked with x-",
+      "type": "mc-correct-count",
+      "message": "Question {num} (mc:radio) has {count} x- answer(s). Must have exactly 1.",
+      "fix": { "description": "Ensure only one answer choice is prefixed with x- to mark the correct answer.", "snippet": "mc:radio:Which is correct?\nx-Correct answer\nWrong answer A\nWrong answer B\nWrong answer C\npoints:3\ngroup:1" }
+    },
+    {
+      "id": "tf-answer-valid", "category": "answer-keys", "severity": "error",
+      "description": "tf: questions must contain only the one correct answer — either 'true' or 'false'",
+      "type": "tf-answer",
+      "message": "Question {num} (tf:) has an issue with its answer: {detail}.",
+      "fix": { "description": "List only the correct answer on its own line — 'true' or 'false', not both.", "snippet": "tf:You are fantastic.\ntrue\npoints:2\ngroup:1" }
+    },
+    {
+      "id": "malformed-html-tag", "category": "html-tags", "severity": "error",
+      "description": "HTML tags must be properly formed with no missing angle brackets",
+      "type": "malformed-tags",
+      "message": "Line {line} has mismatched < and > characters: \"{found}\". Check for a missing > or <.",
+      "fix": { "description": "Fix the broken tag. Most common: missing > at the end.", "snippet": "<!-- Broken: <br/><br< -->\n<!-- Fixed:  -->\n<br /><br />" }
+    },
+    {
+      "id": "self-closing-br", "category": "html-tags", "severity": "error",
+      "description": "Line breaks must be written as <br /> — with a space before the slash",
+      "type": "br-format",
+      "message": "Line {line} has an incorrectly formatted break tag: \"{found}\". Use <br /> (space before slash).",
+      "fix": { "description": "Replace all br variations with <br />.", "snippet": "<!-- Wrong -->\n<br>  <br/>  </br>\n\n<!-- Correct -->\n<br />\n\n<!-- Two breaks for a blank line -->\n<br /><br />" }
+    },
+    {
+      "id": "no-inline-styles", "category": "html-tags", "severity": "error",
+      "description": "Inline style attributes are not permitted",
+      "type": "inline-style-check",
+      "message": "Line {line} contains an inline style attribute. Remove all style=\"...\" from HTML.",
+      "fix": { "description": "Remove the style attribute. Use semantic tags like <strong> or <em>.", "snippet": "<!-- Wrong -->\n<span style=\"color:red;\">text</span>\n\n<!-- Correct -->\n<strong>bold</strong>  or  <em>italic</em>" }
+    },
+    {
+      "id": "no-deprecated-tags", "category": "html-tags", "severity": "error",
+      "description": "Deprecated HTML tags must not be used",
+      "type": "forbidden-html-tags",
+      "tags": ["<b>", "<i ", "<i>", "<center>", "<font", "<strike>", "<marquee>", "<big>", "<tt>"],
+      "message": "Line {line} uses a deprecated HTML tag: \"{found}\". Use modern semantic equivalents.",
+      "fix": { "description": "Replace deprecated tags with semantic HTML.", "snippet": "<b>text</b>       \u2192 <strong>text</strong>\n<i>text</i>       \u2192 <em>text</em>\n<center>...</center>  \u2192 remove; use CSS\n<font color=\"red\"> \u2192 remove; use CSS" }
+    },
+    {
+      "id": "no-commented-code", "category": "html-tags", "severity": "warning",
+      "description": "Commented-out HTML code should be removed before submitting",
+      "type": "commented-html",
+      "message": "Line {line} contains commented-out HTML. Remove all commented code before submitting.",
+      "fix": { "description": "Delete the commented-out block entirely.", "snippet": "<!-- Remove blocks like this before submitting -->" }
+    },
+    {
+      "id": "img-has-alt", "category": "images", "severity": "error",
+      "description": "All <img> tags must have a non-empty alt attribute",
+      "type": "img-alt-check",
+      "message": "Line {line} has an <img> tag with a missing or empty alt attribute.",
+      "fix": { "description": "Add a descriptive alt attribute that accurately describes the image.", "snippet": "<img src=\"//cdn.flvs.net/assessment_images/[course]/[image].jpg\"\n     alt=\"A description of what the image shows.\" />" }
+    },
+    {
+      "id": "img-double-quotes", "category": "images", "severity": "error",
+      "description": "Image src and alt attributes must use double quotes",
+      "type": "img-quote-check",
+      "message": "Line {line} has an <img> attribute using single quotes. Double quotes are required.",
+      "fix": { "description": "Replace single quotes with double quotes on all img attributes.", "snippet": "<!-- Wrong -->\n<img src='image.jpg' alt='a photo' />\n\n<!-- Correct -->\n<img src=\"image.jpg\" alt=\"a photo\" />" }
+    },
+    {
+      "id": "img-format", "category": "images", "severity": "warning",
+      "description": "Images must be .jpg, .gif, .png, or .svg format",
+      "type": "img-extension-check", "allowed": [".jpg", ".gif", ".png", ".svg"],
+      "message": "Line {line} references an image with a disallowed extension: \"{found}\". Allowed formats: .jpg, .gif, .png, .svg.",
+      "fix": { "description": "Convert or rename the image to an allowed format (.jpg, .gif, .png, or .svg).", "snippet": "<img src=\"//cdn.flvs.net/assessment_images/[course]/image.jpg\" alt=\"Description.\" />" }
+    },
+    {
+      "id": "span-data-complexity", "category": "span-metadata", "severity": "error",
+      "description": "Metadata span must include data-complexity with a valid value (LC, MC, or HC)",
+      "type": "span-attribute-check", "attribute": "data-complexity", "validValues": ["LC","MC","HC"],
+      "message": "Question {num} span tag is missing data-complexity or has invalid value \"{found}\". Valid: LC, MC, HC.",
+      "fix": { "description": "Add data-complexity with a valid level to the span.", "snippet": "<span data-standard-florida=\"VA.68.C.3.1\" data-complexity=\"LC\" data-associatedlessons=\"02.01R\">(02.01 LC)</span> <br /><br />" }
+    },
+    {
+      "id": "span-data-associatedlessons", "category": "span-metadata", "severity": "error",
+      "description": "Metadata span must include data-associatedlessons attribute",
+      "type": "span-attribute-check", "attribute": "data-associatedlessons",
+      "message": "Question {num} span tag is missing the data-associatedlessons attribute.",
+      "fix": { "description": "Add data-associatedlessons matching the lesson reference.", "snippet": "<span data-standard-florida=\"VA.68.C.3.1\" data-complexity=\"LC\" data-associatedlessons=\"02.01R\">(02.01 LC)</span> <br /><br />" }
+    },
+    {
+      "id": "span-followed-by-br", "category": "span-metadata", "severity": "error",
+      "description": "Metadata span must be immediately followed by <br /><br />",
+      "type": "span-br-check",
+      "message": "Question {num}: metadata <span> is not followed by <br /><br />. Two line breaks required after span.",
+      "fix": { "description": "Add <br /><br /> immediately after the closing </span> tag.", "snippet": "<span ...>(02.01 LC)</span> <br /><br />Question stem text here" }
+    },
+    {
+      "id": "matching-dash-separator", "category": "matching", "severity": "error",
+      "description": "Matching pairs must use a hyphen to separate term from definition",
+      "type": "matching-format",
+      "message": "Question {num}: matching pair on line {line} does not use term-definition format.",
+      "fix": { "description": "Format each pair as: term-definition with a single hyphen.", "snippet": "matching:label:Match the term with the definition.\nline-an infinite number of points extending in opposite directions\nray-part of a line with one endpoint\npoint-a location with no dimension\npoints:5\ngroup:1" }
+    },
+    {
+      "id": "matching-points-multiple", "category": "matching", "severity": "warning",
+      "description": "Matching point value must equal the number of pairs or a clean multiple",
+      "type": "matching-points-check",
+      "message": "Question {num}: matching has {pairs} pairs but points:{points}. Points must equal pairs or a multiple.",
+      "fix": { "description": "Set points: to the number of pairs or a whole multiple.", "snippet": "-- 4 matching pairs --\npoints:4   (or points:8, points:12...)\ngroup:1" }
+    },
+	{
+      "id": "img-alt-quotes", "category": "images", "severity": "error",
+      "description": "Alt text cannot contain double quotes inside the attribute",
+      "type": "img-alt-quotes-check",
+      "message": "Line {line} has double quotes inside the alt attribute. Use single quotes for inner quotes.",
+      "fix": { "description": "Swap the inner double quotes to single quotes.", "snippet": "\n<img alt=\"A sign that reads, \"Stop\"\" />\n\n\n<img alt=\"A sign that reads, 'Stop'\" />" }
+    },
+    {
+      "id": "img-alt-html", "category": "images", "severity": "error",
+      "description": "Alt text must not contain HTML tags",
+      "type": "img-alt-html-check",
+      "message": "Line {line} contains HTML tags inside the alt attribute.",
+      "fix": { "description": "Remove the HTML tags from the alt text.", "snippet": "\n<img alt=\"A <b>bold</b> sign\" />\n\n\n<img alt=\"A bold sign\" />" }
+    },
+    {
+      "id": "accessible-symbols", "category": "accessibility", "severity": "warning",
+      "description": "Spell out symbols (like degrees or minus) for screen readers",
+      "type": "accessible-symbols-check",
+      "message": "Line {line} contains a symbol '{found}' that should usually be spelled out (e.g., 'degrees', 'minus').",
+      "fix": { "description": "Manually review the symbol and spell it out if it is meant to be read as a word.", "snippet": "45° \u2192 45 degrees\n\n5 - 3 \u2192 5 minus 3" }
+    }
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CHECKER ENGINE
+// ═══════════════════════════════════════════════════════════════
+const AssessmentChecker = (() => {
+  const QUESTION_CODES = ['mc:radio:', 'essay:', 'fib:', 'matching:label:', 'tf:'];
+
+  function parseQuestions(raw) {
+    const lines = raw.split('\n');
+    const questions = [];
+    let current = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      const lineNum = i + 1;
+      const code = QUESTION_CODES.find(c => trimmed.startsWith(c));
+      if (code) {
+        if (current) questions.push(current);
+        current = {
+          num: questions.length + 1, type: code, code,
+          startLine: lineNum, stem: trimmed.slice(code.length),
+          answers: [], points: null, group: null,
+          pointsLine: null, groupLine: null
+        };
+        continue;
+      }
+      if (!current) continue;
+      if (/^points:\d+$/.test(trimmed)) {
+        current.points = parseInt(trimmed.split(':')[1]);
+        current.pointsLine = lineNum;
+      } else if (/^group:\d+$/.test(trimmed)) {
+        current.group = parseInt(trimmed.split(':')[1]);
+        current.groupLine = lineNum;
+      } else if (trimmed && current.points === null && current.group === null) {
+        current.answers.push({ text: trimmed, lineNum });
+      }
+    }
+    if (current) questions.push(current);
+    return { questions, lines };
+  }
+
+  function pass(rule)                    { return { status:'pass', rule }; }
+  function fail(rule, message, lineNum, errorStr) { return { status:'fail', rule, message, lineNum: lineNum||null, errorStr: errorStr||null }; }
+
+  const handlers = {
+    'code-spacing'(rule, questions, rawText, lines) {
+      const results = [];
+      const badPattern = /\b(mc\s*:\s*radio\s*:|essay\s*:\s*(?!\w)|fib\s*:\s*(?!\w)|tf\s*:\s*(?!\w)|matching\s*:\s*label\s*:\s*)/gi;
+      lines.forEach((line, i) => {
+        const m = line.match(badPattern);
+        if (m && m.some(x => /\s/.test(x)))
+          results.push(fail(rule, rule.message.replace('{found}', m[0].trim()), i+1, m[0].trim())); // Pass errorStr
+      });
+      return results;
+    },
+    'group-sequence'(rule, questions) {
+      const results = [];
+      let max = 0;
+      for (const q of questions) {
+        if (q.group === null) continue;
+        if (q.group < max)
+          results.push(fail(rule, rule.message.replace('{found}', q.group).replace('{previous}', max), q.groupLine));
+        max = Math.max(max, q.group);
+      }
+      return results;
+    },
+    'question-has-field'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        if (rule.field === 'points' && q.points === null)
+          results.push(fail(rule, rule.message.replace('{num}', q.num), q.startLine));
+        if (rule.field === 'group' && q.group === null)
+          results.push(fail(rule, rule.message.replace('{num}', q.num), q.startLine));
+      }
+      return results;
+    },
+    'field-order'(rule, questions) {
+      const results = [];
+      for (const q of questions)
+        if (q.pointsLine && q.groupLine && q.groupLine < q.pointsLine)
+          results.push(fail(rule, rule.message.replace('{num}', q.num), q.groupLine));
+      return results;
+    },
+    'group-type-consistency'(rule, questions) {
+      const results = [];
+      const byGroup = {};
+      for (const q of questions) {
+        if (q.group === null) continue;
+        if (!byGroup[q.group]) byGroup[q.group] = [];
+        byGroup[q.group].push(q.code);
+      }
+      for (const [g, types] of Object.entries(byGroup)) {
+        const u = [...new Set(types)];
+        if (u.length > 1)
+          results.push(fail(rule, rule.message.replace('{group}', g).replace('{types}', u.join(', '))));
+      }
+      return results;
+    },
+    'group-points-consistency'(rule, questions) {
+      const results = [];
+      const byGroup = {};
+      for (const q of questions) {
+        if (q.group === null || q.points === null) continue;
+        if (!byGroup[q.group]) byGroup[q.group] = [];
+        byGroup[q.group].push(q.points);
+      }
+      for (const [g, pts] of Object.entries(byGroup)) {
+        const u = [...new Set(pts)];
+        if (u.length > 1)
+          results.push(fail(rule, rule.message.replace('{group}', g).replace('{values}', u.join(', '))));
+      }
+      return results;
+    },
+    'mc-correct-count'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        if (q.code !== 'mc:radio:') continue;
+        const c = q.answers.filter(a => a.text.startsWith('x-')).length;
+        if (c !== 1)
+          results.push(fail(rule, rule.message.replace('{num}', q.num).replace('{count}', c), q.startLine));
+      }
+      return results;
+    },
+    'tf-answer'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        if (q.code !== 'tf:') continue;
+        const ans = q.answers.map(a => a.text.toLowerCase().trim());
+        if (ans.includes('true') && ans.includes('false'))
+          results.push(fail(rule, rule.message.replace('{num}', q.num).replace('{detail}', 'both true and false listed'), q.startLine));
+      }
+      return results;
+    },
+    'malformed-tags'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        const open = (line.match(/</g)||[]).length;
+        const close = (line.match(/>/g)||[]).length;
+        if (open !== close && /<[a-zA-Z!]/.test(line)) {
+          // Find the exact chunk that is missing its closing bracket (e.g., "<br")
+          const badChunk = line.match(/<[^>]*?(?=<|$)/);
+          const errorStr = badChunk ? badChunk[0] : null;
+          results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', errorStr || line.trim().substring(0,60)), i+1, errorStr));
+        }
+      });
+      return results;
+    },
+   'br-format'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        // Matches <br, </br, <br/>, <br >, <br< (stopping at the next > or <)
+        const matches = line.match(/<\/?\s*br\b[^><]*(?:>|(?=<|$))/gi);
+        if (matches) {
+          matches.forEach(m => {
+            // Strictly enforce the exact string match
+            if (m !== '<br />') {
+              results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', m), i+1, m));
+            }
+          });
+        }
+      });
+      return results;
+    },
+   'inline-style-check'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        const m = line.match(/style\s*=\s*["'][^"']*["']/i);
+        if (m) results.push(fail(rule, rule.message.replace('{line}', i+1), i+1, m[0])); // Pass errorStr
+      });
+      return results;
+    },
+    'forbidden-html-tags'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        for (const tag of rule.tags)
+          if (line.toLowerCase().includes(tag.toLowerCase()))
+            results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', tag), i+1, tag)); // Pass errorStr
+      });
+      return results;
+    },
+    'commented-html'(rule, questions, rawText) {
+      const results = [];
+      const re = /<!--([\s\S]*?)-->/g;
+      let m;
+      while ((m = re.exec(rawText)) !== null) {
+        if (/<[a-zA-Z]/.test(m[1])) {
+          const lineNum = (rawText.substring(0, m.index).match(/\n/g)||[]).length + 1;
+          results.push(fail(rule, rule.message.replace('{line}', lineNum), lineNum));
+        }
+      }
+      return results;
+    },
+    'img-alt-check'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        const imgs = line.match(/<img\s[^>]*>/gi);
+        if (!imgs) return;
+        imgs.forEach(tag => {
+          if (!/alt\s*=\s*"[^"]+"/i.test(tag))
+            results.push(fail(rule, rule.message.replace('{line}', i+1), i+1));
+        });
+      });
+      return results;
+    },
+   'img-quote-check'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        const m = line.match(/(src|alt)\s*=\s*'/i);
+        if (/<img/i.test(line) && m)
+          results.push(fail(rule, rule.message.replace('{line}', i+1), i+1, m[0])); // Pass errorStr
+      });
+      return results;
+    },
+    'img-extension-check'(rule, questions, rawText, lines) {
+      const results = [];
+      const re = /src\s*=\s*"([^"]+)"/gi;
+      lines.forEach((line, i) => {
+        let m;
+        while ((m = re.exec(line)) !== null) {
+          const src = m[1].toLowerCase();
+          if (!rule.allowed.some(ext => src.endsWith(ext))) {
+            const ext = '.' + src.split('.').pop();
+            results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', ext), i+1, ext)); // Pass errorStr
+          }
+        }
+        re.lastIndex = 0;
+      });
+      return results;
+    },
+	'img-alt-quotes-check'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        const imgs = line.match(/<img[^>]+>/gi);
+        if (!imgs) return;
+        imgs.forEach(img => {
+          // Captures the alt string all the way to the final closing quote of the attribute
+          const altMatch = img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
+          if (altMatch && altMatch[1].includes('"')) {
+             results.push(fail(rule, rule.message.replace('{line}', i+1), i+1, '"'));
+          }
+        });
+      });
+      return results;
+    },
+    'img-alt-html-check'(rule, questions, rawText, lines) {
+      const results = [];
+      lines.forEach((line, i) => {
+        const imgs = line.match(/<img[^>]+>/gi);
+        if (!imgs) return;
+        imgs.forEach(img => {
+          const altMatch = img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
+          if (altMatch) {
+            const htmlMatch = altMatch[1].match(/<[^>]+>/);
+            if (htmlMatch) {
+              results.push(fail(rule, rule.message.replace('{line}', i+1), i+1, htmlMatch[0]));
+            }
+          }
+        });
+      });
+      return results;
+    },
+    'accessible-symbols-check'(rule, questions, rawText, lines) {
+      const results = [];
+      // Checks for °, &deg;, minus signs (- attached to a number, or spaced like a math operator)
+      const regex = /(°|&deg;|\s-\d|\s-\s)/gi; 
+      lines.forEach((line, i) => {
+        // Strip HTML so we don't accidentally flag hyphens inside span metadata tags
+        const cleanLine = line.replace(/<[^>]+>/g, '');
+        let m;
+        while ((m = regex.exec(cleanLine)) !== null) {
+          results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', m[0].trim()), i+1, m[0].trim()));
+        }
+      });
+      return results;
+    },
+    'span-attribute-check'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        const spanMatch = q.stem.match(/<span([^>]*)>/i);
+        if (!spanMatch) continue;
+        const attrs = spanMatch[1];
+        if (!attrs.includes(rule.attribute)) {
+          results.push(fail(rule, rule.message.replace('{num}', q.num).replace('{found}', 'missing'), q.startLine));
+          continue;
+        }
+        if (rule.validValues) {
+          const vm = attrs.match(new RegExp(rule.attribute + '\\s*=\\s*"([^"]*)"', 'i'));
+          const val = vm ? vm[1] : '';
+          if (!rule.validValues.includes(val))
+            results.push(fail(rule, rule.message.replace('{num}', q.num).replace('{found}', val || '(empty)'), q.startLine));
+        }
+      }
+      return results;
+    },
+    'span-br-check'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        if (!q.stem.includes('<span')) continue;
+        const after = q.stem.match(/<\/span>(.*)/i);
+        if (after) {
+          const tail = after[1].trim();
+          // If it isn't a perfect double break, grab the bad part
+          if (!tail.startsWith('<br /><br />') && !tail.startsWith('<br/><br/>')) {
+            // Grab the messy br tags right after the span to highlight them
+            const badBrMatch = tail.match(/^(?:<\/?\s*br\b[^><]*(?:>|(?=<|$)))+/i);
+            const errorStr = badBrMatch ? badBrMatch[0] : tail.substring(0, 15);
+            results.push(fail(rule, rule.message.replace('{num}', q.num), q.startLine, errorStr));
+          }
+        }
+      }
+      return results;
+    },
+    'matching-format'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        if (q.code !== 'matching:label:') continue;
+        for (const ans of q.answers)
+          if (!/-/.test(ans.text))
+            results.push(fail(rule, rule.message.replace('{num}', q.num).replace('{line}', ans.lineNum), ans.lineNum));
+      }
+      return results;
+    },
+    'matching-points-check'(rule, questions) {
+      const results = [];
+      for (const q of questions) {
+        if (q.code !== 'matching:label:' || q.points === null) continue;
+        const pairs = q.answers.length;
+        if (pairs > 0 && q.points % pairs !== 0)
+          results.push(fail(rule, rule.message.replace('{num}', q.num).replace('{pairs}', pairs).replace('{points}', q.points), q.pointsLine));
+      }
+      return results;
+    }
+  };
+
+  function run(rawText) {
+    const { rules, categories } = RULES_DATA;
+    const lines = rawText.split('\n');
+    const { questions } = parseQuestions(rawText);
+    const allResults = [];
+
+    for (const rule of rules) {
+      const handler = handlers[rule.type];
+      if (!handler) { console.warn('No handler:', rule.type); continue; }
+      try {
+        const out = handler(rule, questions, rawText, lines);
+        if (Array.isArray(out)) {
+          if (out.length === 0) allResults.push(pass(rule));
+          else allResults.push(...out);
+        } else if (out) allResults.push(out);
+      } catch(e) { console.error('Rule error:', rule.id, e); }
+    }
+
+    const grouped = {};
+    for (const cat of Object.keys(categories))
+      grouped[cat] = { label: categories[cat], passes:[], failures:[] };
+    for (const r of allResults) {
+      if (!grouped[r.rule.category]) continue;
+      (r.status === 'pass' ? grouped[r.rule.category].passes : grouped[r.rule.category].failures).push(r);
+    }
+    // Dedupe passes
+    for (const cat of Object.values(grouped)) {
+      const seen = new Set();
+      cat.passes = cat.passes.filter(p => { if(seen.has(p.rule.id)) return false; seen.add(p.rule.id); return true; });
+    }
+
+    const totalErrors   = allResults.filter(r => r.status==='fail' && r.rule.severity==='error').length;
+    const totalWarnings = allResults.filter(r => r.status==='fail' && r.rule.severity==='warning').length;
+    const totalPasses   = new Set(allResults.filter(r => r.status==='pass').map(r => r.rule.id)).size;
+
+    return { grouped, categories, totalErrors, totalWarnings, totalPasses,
+             total: rules.length, questionCount: questions.length, questions };
+  }
+
+  return { run };
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════════
+const ta        = document.getElementById('assessment-input');
+const lineNums  = document.getElementById('line-nums');
+
+const mirror = document.getElementById('textarea-mirror');
+
+function updateLineNums() {
+  const lines = ta.value.split('\n');
+  
+  // 1. Sync the mirror's width to the textarea's inner width (accounting for scrollbars)
+  mirror.style.width = ta.clientWidth + 'px';
+  
+  // 2. Populate the mirror with individual divs per line
+  mirror.innerHTML = lines.map(line => {
+    // Escape HTML to prevent injection, use <br> for empty lines so they retain height
+    const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<div class="mirror-line">${escaped || '<br>'}</div>`;
+  }).join('');
+  
+  // 3. Measure each line and build the gutter HTML
+  let html = '';
+  const mirrorChildren = mirror.querySelectorAll('.mirror-line');
+  let totalHeight = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const n = i + 1;
+    const h = mirrorChildren[i].offsetHeight;
+    totalHeight += h;
+    html += `<div class="line-num" id="ln-${n}" style="height: ${h}px">${n}</div>`;
+  }
+  
+  lineNums.innerHTML = html;
+  
+  // Adjust the total wrapper height (adding top+bottom padding of 32px)
+  lineNums.style.height = (totalHeight + 32) + 'px';
+}
+
+// NEW: Automatically recalculate wrap heights when the workspace is resized
+const resizeObserver = new ResizeObserver(() => {
+  // Only update if the paste tab is active to save performance
+  if (document.getElementById('tab-paste').classList.contains('active')) {
+    updateLineNums();
+  }
+});
+resizeObserver.observe(ta);
+function syncScroll() {
+  // Translate the line-nums div upward as textarea scrolls — perfect pixel sync
+  lineNums.style.transform = `translateY(-${ta.scrollTop}px)`;
+}
+
+function highlightLines(errLines, warnLines) {
+  document.querySelectorAll('.line-num').forEach(el => {
+    if (!el.classList.contains('fixed-line')) // preserve fixed (yellow) highlights
+      el.classList.remove('error-line','highlight');
+  });
+  (warnLines||[]).forEach(n => {
+    const el = document.getElementById('ln-'+n);
+    if(el && !el.classList.contains('fixed-line')) el.classList.add('highlight');
+  });
+  (errLines||[]).forEach(n  => {
+    const el = document.getElementById('ln-'+n);
+    if(el && !el.classList.contains('fixed-line')) el.classList.add('error-line');
+  });
+}
+function jumpToLine(n) {
+  const lines = ta.value.split('\n');
+  let pos = 0;
+  for (let i = 0; i < n-1; i++) pos += lines[i].length + 1;
+  ta.focus();
+  ta.setSelectionRange(pos, pos + (lines[n-1]||'').length);
+  ta.scrollTop = (n - 5) * parseFloat(getComputedStyle(ta).lineHeight);
+  lineNums.scrollTop = ta.scrollTop;
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+let uploadedText = '';
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedText = ev.target.result;
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('file-pill').style.display = 'flex';
+    document.getElementById('file-name-label').textContent = file.name;
+  };
+  reader.readAsText(file);
+}
+function clearFile() {
+  uploadedText = '';
+  document.getElementById('upload-zone').style.display = 'flex';
+  document.getElementById('file-pill').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile({ target:{ files:[file] } });
+});
+
+function clearAll() {
+  ta.value = ''; updateLineNums(); clearFile();
+  document.getElementById('results-body').innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Paste your assessment file content and click <strong>Run Audit</strong> to check for formatting issues.</p></div>`;
+  document.getElementById('summary-chips').style.display = 'none';
+  document.getElementById('q-strip').classList.remove('visible');
+  document.getElementById('status-bar').classList.remove('visible');
+}
+
+function loadSample() {
+  ta.value = `mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br/><br/><img src="//cdn.flvs.net/assessment_images/educator_mjexptwodimart_v24/02_01_noah_gummy.jpg" alt="A painting of a red, green, and yellow gummy bears stacked on top of each other; they look three-dimensional with cast shadows." />&copy; 2024 Noah Verrier<br/></br>Which element of art did Noah Verrier use to show dimension in his painting <em>Gummy Bears</em>?
+Line
+Shape
+Texture
+x-Value
+group:1
+points:1
+mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br/><br<img src="//cdn.flvs.net/assessment_images/educator_mjexptwodimart_v24/02_01_noah_gummy.jpg" alt="A painting of a red, green, and yellow gummy bears stacked on top of each other." />&copy; 2024 Noah Verrier<br/></br>Which principle of design did Noah Verrier focus on?
+Movement
+Proportion
+x-Repetition
+Variety
+group:2
+points:1
+mc:radio:<span data-standard-florida="VA.68.S.2.3" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />When using hatching, which part of the value scale has little to no lines?
+x-Highlight
+Middle Value
+Core Shadow
+Cast Shadow
+points:1
+group:2
+tf:You can use a Sharpie to smudge values in a drawing.
+false
+true
+points:2
+group:3
+essay:Describe how value is used to show dimension in artwork.
+points:5
+group:4
+matching:label:Match the technique with the description.
+hatching-parallel lines drawn close together to show value
+crosshatching-lines drawn in two directions to show darker value
+stippling-dots used to create areas of light and shadow
+points:4
+group:5`;
+  updateLineNums();
+  document.querySelectorAll('.tab')[0].click();
+}
+
+function runAudit() {
+  const activeTab = document.querySelector('.tab-content.active').id;
+  const raw = (activeTab === 'tab-paste' ? ta.value : uploadedText).trim();
+  if (!raw) { alert('Please paste content or upload a file first.'); return; }
+
+  document.getElementById('results-body').innerHTML = `<div class="empty-state"><div class="spinner"></div><p>Running checks\u2026</p></div>`;
+  // Reset state for fresh run
+  Object.keys(resultRegistry).forEach(k => delete resultRegistry[k]);
+  fixedLines.clear();
+
+  // Use setTimeout to allow spinner to render before synchronous work
+  setTimeout(() => {
+    try {
+      const lines = raw.split('\n'); // Add this to grab the raw lines
+      const report = AssessmentChecker.run(raw);
+      renderReport(report, lines); // Pass lines here
+    } catch(err) {
+      document.getElementById('results-body').innerHTML = `<div class="empty-state"><div class="empty-icon">\u26a0\ufe0f</div><p>Error: ${err.message}</p></div>`;
+    }
+  }, 50);
+}
+
+function renderReport(report, lines) {
+  document.getElementById('summary-chips').style.display = 'flex';
+  document.getElementById('chip-error').textContent = `${report.totalErrors} Error${report.totalErrors!==1?'s':''}`;
+  document.getElementById('chip-warn').textContent  = `${report.totalWarnings} Warning${report.totalWarnings!==1?'s':''}`;
+  document.getElementById('chip-pass').textContent  = `\u2713 ${report.totalPasses} Passed`;
+
+  document.getElementById('q-strip').classList.add('visible');
+  document.getElementById('q-count').textContent    = report.questionCount;
+  document.getElementById('q-mcradio').textContent  = report.questions.filter(q=>q.code==='mc:radio:').length;
+  document.getElementById('q-essay').textContent    = report.questions.filter(q=>q.code==='essay:').length;
+  document.getElementById('q-fib').textContent      = report.questions.filter(q=>q.code==='fib:').length;
+  document.getElementById('q-tf').textContent       = report.questions.filter(q=>q.code==='tf:').length;
+  document.getElementById('q-matching').textContent = report.questions.filter(q=>q.code==='matching:label:').length;
+
+  document.getElementById('status-bar').classList.add('visible');
+  document.getElementById('status-text').innerHTML =
+    `<strong>${report.total}</strong> rules &nbsp;\u00b7\u00a0 ` +
+    `<strong style="color:var(--error)">${report.totalErrors}</strong> errors &nbsp;\u00b7\u00a0 ` +
+    `<strong style="color:var(--warn)">${report.totalWarnings}</strong> warnings &nbsp;\u00b7\u00a0 ` +
+    `<strong style="color:var(--pass)">${report.totalPasses}</strong> passed`;
+
+  if (report.totalErrors === 0 && report.totalWarnings === 0) {
+    document.getElementById('results-body').innerHTML = `
+      <div class="all-pass-banner">
+        <div class="check">\u2705</div>
+        <h2>All checks passed!</h2>
+        <p>${report.questionCount} questions parsed. No formatting issues found.</p>
+      </div>`;
+    return;
+  }
+
+  const errLines = [], warnLines = [];
+  let html = '';
+  for (const [catKey, catData] of Object.entries(report.grouped)) {
+    const fails = catData.failures, passes = catData.passes;
+    if (!fails.length && !passes.length) continue;
+    const errCount  = fails.filter(f=>f.rule.severity==='error').length;
+    const warnCount = fails.filter(f=>f.rule.severity==='warning').length;
+    const allPass   = fails.length === 0;
+    const hClass = allPass ? 'all-pass' : errCount > 0 ? 'has-errors' : 'has-warnings';
+    let badges = allPass
+      ? `<span class="cat-count cat-count-pass">\u2713</span>`
+      : (errCount  ? `<span class="cat-count cat-count-error">${errCount}</span>` : '') +
+        (warnCount ? `<span class="cat-count cat-count-warn">${warnCount}</span>` : '');
+
+   let items = '';
+    for (const r of [...fails, ...passes]) {
+      items += renderItem(r, lines); // Pass lines here
+      if (r.lineNum) (r.rule.severity==='error' ? errLines : warnLines).push(r.lineNum);
+    }
+   html += `<div class="category-section" id="cat-${catKey}">
+      <button class="category-header ${hClass}" onclick="toggleCat('cat-${catKey}')">
+        <span class="cat-chevron">
+          <svg xmlns="http://www.w3.org/2000/svg" class="caret-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </span>
+        ${catData.label} ${badges}
+      </button>
+      <div class="category-items">${items}</div>
+    </div>`;
+  }
+  document.getElementById('results-body').innerHTML = html;
+  highlightLines(errLines, warnLines);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-FIX ENGINE — applies fixes directly into the textarea
+// ═══════════════════════════════════════════════════════════════
+
+// Stores result objects by uid for fix application
+const resultRegistry = {};
+
+// Keys MUST match rule "id" fields exactly from RULES_DATA
+const autoFixers = {
+
+ // "self-closing-br" — strictly catches any malformed br, even if missing the >
+  'self-closing-br'(text) {
+    return text.replace(/<\/?\s*br\b[^><]*(?:>|(?=<|$))/gi, '<br />'); 
+  },
+
+  // "no-inline-styles" — strip all style="..." attributes
+  'no-inline-styles'(text) {
+    return text
+      .replace(/\s*style\s*=\s*"[^"]*"/gi, '')
+      .replace(/\s*style\s*=\s*'[^']*'/gi, '');
+  },
+
+  // "img-double-quotes" — convert single quotes to double quotes inside <img> tags
+  'img-double-quotes'(text) {
+    return text.replace(/<img([^>]*)>/gi, (match, attrs) => {
+      const fixed = attrs
+        .replace(/src\s*=\s*'([^']*)'/gi, 'src="$1"')
+        .replace(/alt\s*=\s*'([^']*)'/gi, 'alt="$1"');
+      return `<img${fixed}>`;
+    });
+  },
+	
+  // "img-alt-quotes" — cleverly swaps ONLY the quotes trapped inside the alt string
+  'img-alt-quotes'(text) {
+    return text.replace(/(<img[^>]+>)/gi, (match) => {
+      return match.replace(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i, (altStr, innerText) => {
+        const fixedInner = innerText.replace(/"/g, "'");
+        return `alt="${fixedInner}"`;
+      });
+    });
+  },
+
+  // No safe auto-fix for these — they will just highlight the error
+  'img-alt-html': null,
+  'accessible-symbols': null,
+
+  // "no-deprecated-tags" — replace <b>→<strong>, <i>→<em>
+  'no-deprecated-tags'(text) {
+    return text
+      .replace(/<b>([\s\S]*?)<\/b>/gi, '<strong>$1</strong>')
+      .replace(/<i>([\s\S]*?)<\/i>/gi, '<em>$1</em>')
+      .replace(/<\/b>/gi, '</strong>')
+      .replace(/<\/i>/gi, '</em>');
+  },
+
+  // "points-before-group" — swap group:/points: when in wrong order
+  'points-before-group'(text) {
+    return text.replace(/(group:\d+)\n(points:\d+)/g, '$2\n$1');
+  },
+
+  // "span-followed-by-br" — ensure </span> is followed by exactly two breaks
+  'span-followed-by-br'(text) {
+    // Matches </span> followed by any number of br tags (malformed, missing brackets, or valid)
+    // and cleanly replaces the entire cluster with a perfect </span> <br /><br />
+    return text.replace(/(<\/span>)(?:\s*<\/?\s*br\b[^><]*(?:>|(?=<|$)))*/gi, '$1 <br /><br />');
+  },
+
+  // "img-has-alt" — add placeholder alt text to images missing it
+  'img-has-alt'(text) {
+    return text.replace(/<img([^>]*?)(\/?>)/gi, (match, attrs, close) => {
+      if (/alt\s*=\s*"[^"]+"/.test(attrs)) return match; // already has non-empty alt
+      if (/alt\s*=\s*""/.test(attrs)) {
+        return `<img${attrs.replace(/alt\s*=\s*""/, 'alt="[Describe image here]"')}${close}`;
+      }
+      if (/alt/.test(attrs)) return match; // some other alt form, leave it
+      // No alt at all — insert before the closing
+      return `<img${attrs} alt="[Describe image here]"${close}`;
+    });
+  },
+
+  // Rules with no safe auto-fix — button shows "Show Fix" and opens explanation panel
+  'malformed-html-tag': null,
+  'no-space-in-code': null,
+  'mc-radio-one-correct': null,
+  'tf-answer-valid': null,
+  'groups-sequential': null,
+  'same-group-same-type': null,
+  'same-group-same-points': null,
+  'span-data-complexity': null,
+  'span-data-associatedlessons': null,
+  'matching-dash-separator': null,
+  'matching-points-multiple': null,
+  'points-present': null,
+  'group-present': null,
+  'no-commented-code': null,
+  'img-format': null,
+};
+
+// Track which lines have been fixed (for gutter coloring)
+const fixedLines = new Set();
+
+function applyFix(uid, event) {
+  if (event) event.stopPropagation();
+  const result = resultRegistry[uid];
+  if (!result) return;
+
+  const ruleId = result.rule.id;
+  const fixer = autoFixers[ruleId];
+  const itemEl = document.getElementById(uid);
+  if (!itemEl) return;
+
+  // If already fixed, just toggle the explanation panel
+  if (itemEl.classList.contains('fixed')) {
+    itemEl.classList.toggle('expanded');
+    return;
+  }
+
+  if (fixer) {
+    // Apply the global text transformation to the textarea
+    const before = ta.value;
+    const after = fixer(before, result);
+    if (after !== before) {
+      ta.value = after;
+      updateLineNums();
+    }
+
+    // Mark ALL result items that share the same rule id as fixed (yellow)
+    // because the fixer runs globally and clears all instances at once
+    Object.entries(resultRegistry).forEach(([itemUid, itemResult]) => {
+      if (itemResult.rule.id !== ruleId) return;
+      const el = document.getElementById(itemUid);
+      if (!el || el.classList.contains('fixed')) return;
+
+      el.classList.remove('err', 'warn');
+      el.classList.add('fixed');
+
+      const iconEl = el.querySelector('.sev-icon');
+      if (iconEl) iconEl.textContent = '✦';
+
+      const wandEl = el.querySelector('.wand-btn');
+      if (wandEl) { wandEl.textContent = '✓ Fixed'; wandEl.classList.add('applied'); wandEl.disabled = true; }
+
+      // Mark gutter line yellow
+      if (itemResult.lineNum) {
+        fixedLines.add(itemResult.lineNum);
+        const ln = document.getElementById('ln-' + itemResult.lineNum);
+        if (ln) { ln.classList.remove('error-line', 'highlight'); ln.classList.add('fixed-line'); }
+      }
+    });
+
+    // Open the explanation panel on the clicked item only
+    itemEl.classList.add('expanded');
+    const fixPanel = itemEl.querySelector('.fix-panel');
+    if (fixPanel) {
+      if (!fixPanel.querySelector('.fix-applied-banner')) {
+        const banner = document.createElement('div');
+        banner.className = 'fix-applied-banner';
+        banner.innerHTML = '✦ Fix applied to all instances in the text above — review and re-audit when done';
+        fixPanel.prepend(banner);
+      }
+      fixPanel.style.display = 'block';
+    }
+
+  } else {
+    // No auto-fixer — open the explanation panel so user knows what to fix manually
+    itemEl.classList.toggle('expanded');
+  }
+}
+
+function renderItem(r, lines) {
+  const isPassing = r.status === 'pass';
+  const cls  = isPassing ? 'pass' : r.rule.severity==='error' ? 'err' : 'warn';
+  const icon = isPassing ? '✓' : r.rule.severity==='error' ? '✕' : '⚠';
+  const uid  = 'ri-' + r.rule.id + (r.lineNum||'') + Math.random().toString(36).slice(2,6);
+
+  resultRegistry[uid] = r;
+
+  const lineBadge = r.lineNum
+    ? `<span class="line-badge" title="Jump to line ${r.lineNum}" onclick="jumpToLine(${r.lineNum});event.stopPropagation()">L${r.lineNum}</span>`
+    : '';
+
+  const hasFixer = !isPassing && r.rule.fix;
+  const hasAutoFix = hasFixer && (autoFixers[r.rule.id] !== null && autoFixers[r.rule.id] !== undefined && typeof autoFixers[r.rule.id] === 'function');
+  const wandLabel = hasAutoFix ? '✦ Apply Fix' : '✦ Show Fix';
+  
+  // wandBtn needs event.stopPropagation() so clicking it doesn't also toggle the row open/closed
+  const wandBtn = hasFixer
+    ? `<button class="wand-btn" onclick="applyFix('${uid}',event); event.stopPropagation();">${wandLabel}</button>`
+    : '';
+
+  const applyHighlight = (text) => {
+    let safeText = escHtml(text);
+    if (r.errorStr) {
+        const safeErr = escHtml(r.errorStr);
+        const regexStr = safeErr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${regexStr})`, 'gi');
+        safeText = safeText.replace(regex, '<mark class="error-highlight">$1</mark>');
+    }
+    return safeText;
+  };
+
+  const displayMsg = !isPassing ? applyHighlight(r.message || '') : '';
+
+  let fixPanel = '';
+  let chevron = '';
+  let rowClick = '';
+
+  if (hasFixer) {
+    // Inject the chevron and the toggle action
+    chevron = `
+      <div class="result-chevron">
+        <svg xmlns="http://www.w3.org/2000/svg" class="caret-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>`;
+    rowClick = `onclick="document.getElementById('${uid}').classList.toggle('expanded')"`;
+    
+    const esc = r.rule.fix.snippet.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const userLine = r.lineNum && lines ? lines[r.lineNum - 1] : '';
+    const safeUserLine = userLine ? applyHighlight(userLine.trim()) : '(Empty line)';
+    
+    const userSnippet = userLine ? `
+      <div class="fix-snippet-wrap" style="background:var(--error-bg); border-bottom:1px solid var(--border);">
+        <div style="font-size:10px; color:var(--error); padding: 4px 12px; font-weight:bold; text-transform:uppercase;">Your Text (Line ${r.lineNum}):</div>
+        <pre class="fix-snippet" style="background:transparent; color:var(--error); margin:0;">${safeUserLine}</pre>
+      </div>` : '';
+
+    // Notice there is no "expanded" class here by default, so it stays hidden
+    fixPanel = `<div class="fix-panel">
+      <div class="fix-description">${escHtml(r.rule.fix.description)}</div>
+      ${userSnippet}
+      <div class="fix-snippet-wrap">
+        <div style="font-size:10px; color:var(--pass); padding: 4px 12px; font-weight:bold; text-transform:uppercase;">Example Fix:</div>
+        <pre class="fix-snippet">${esc}</pre>
+      </div></div>`;
+  }
+
+ return `<div class="result-item ${cls}" id="${uid}">
+    <div class="result-row" ${rowClick}>
+      ${chevron}
+      <span class="sev-icon">${icon}</span>
+      <div class="result-text">
+        <div class="result-rule-name">${escHtml(r.rule.description)}</div>
+        ${!isPassing?`<div class="result-msg">${displayMsg}</div>`:''}
+      </div>
+      ${lineBadge}${wandBtn}
+    </div>${fixPanel}</div>`;
+}
+
+function copyTextarea(btn) {
+  const text = ta.value;
+  if (!text.trim()) { alert('Nothing to copy — paste some content first.'); return; }
+  // Use a temporary textarea to guarantee we copy raw plain text, not the page
+  const tmp = document.createElement('textarea');
+  tmp.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  tmp.value = text;
+  document.body.appendChild(tmp);
+  tmp.focus();
+  tmp.select();
+  try {
+    document.execCommand('copy');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Copy Text'; btn.classList.remove('copied'); }, 2000);
+  } catch(e) {
+    // Modern clipboard API fallback
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '⎘ Copy Text'; btn.classList.remove('copied'); }, 2000);
+    }).catch(() => alert('Copy failed — please select all text in the editor and copy manually (Ctrl+A, Ctrl+C).'));
+  }
+  document.body.removeChild(tmp);
+}
+
+function toggleCat(id) { document.getElementById(id).classList.toggle('open'); }
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+document.addEventListener('keydown', e => { if((e.metaKey||e.ctrlKey)&&e.key==='Enter') runAudit(); });
+
+// ── Resizable split panel ──────────────────────────────────────
+(function() {
+  const divider   = document.getElementById('divider');
+  const leftPanel = document.querySelector('.left-panel');
+  const workspace = document.querySelector('.workspace');
+  let dragging = false, startX = 0, startW = 0;
+
+  divider.addEventListener('mousedown', e => {
+    dragging = true;
+    startX = e.clientX;
+    startW = leftPanel.getBoundingClientRect().width;
+    divider.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const totalW  = workspace.getBoundingClientRect().width;
+    const delta   = e.clientX - startX;
+    const newW    = Math.max(240, Math.min(startW + delta, totalW - 240 - 5));
+    leftPanel.style.width = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+updateLineNums();
+</script>
+</body>
+</html>
