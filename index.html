@@ -407,6 +407,55 @@
     @media (max-width: 480px) {
       .tools-grid { grid-template-columns: 1fr; }
     }
+	  
+	/* ─── EASTER EGG: PET THE LLAMA ──────────────────────────────── */
+    .mascot-wrap { 
+      cursor: pointer; 
+      user-select: none; /* Prevents text highlighting if you click fast */
+      -webkit-tap-highlight-color: transparent; 
+    }
+
+    /* This adds an invisible shield over the llama to perfectly catch all clicks */
+    .mascot-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+    }
+
+    .floating-heart {
+      position: absolute;
+      top: 10px; 
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--terracotta);
+      font-size: 28px; /* Made slightly larger so it pops! */
+      pointer-events: none; 
+      z-index: 100; /* Forces it to the very top layer */
+      animation: floatHeart 1s ease-out forwards;
+    }
+
+    @keyframes floatHeart {
+      0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -45px) scale(1.5); }
+    }
+
+    @keyframes happyTwitchLeft {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-25deg); }
+      50% { transform: rotate(5deg); }
+      75% { transform: rotate(-25deg); }
+    }
+    
+    @keyframes happyTwitchRight {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(25deg); }
+      50% { transform: rotate(-5deg); }
+      75% { transform: rotate(25deg); }
+    }
+
+    .ear-left.pet-twitch { animation: happyTwitchLeft 0.5s ease-in-out !important; }
+    .ear-right.pet-twitch { animation: happyTwitchRight 0.5s ease-in-out !important; }
   </style>
 </head>
 <body>
@@ -552,7 +601,7 @@
     </div>
   </footer>
 
-  <script>
+ <script>
     // --- 1. Day / Night Cycle ---
     function setPastureTime() {
       const hour = new Date().getHours();
@@ -563,19 +612,19 @@
 
       if (hour >= 6 && hour < 12) {
         // Morning
-        root.style.setProperty('--cream', '#FFF8EE');
-        root.style.setProperty('--ink', '#2B2118');
-        root.style.setProperty('--card-bg', '#FFFDF7');
-        root.style.setProperty('--mist', '#F3EAD8');
+        root.style.setProperty('--cream', '#FFF1E6'); 
+        root.style.setProperty('--ink', '#33241A');   
+        root.style.setProperty('--card-bg', '#FFFDFB'); 
+        root.style.setProperty('--mist', '#F0DFD5');  
       } else if (hour >= 12 && hour < 17) {
         // Afternoon
-        root.style.setProperty('--cream', '#FDF5E6'); 
+        root.style.setProperty('--cream', '#FDFBEA'); 
         root.style.setProperty('--ink', '#2B2118');
         root.style.setProperty('--card-bg', '#FFFFFF');
-        root.style.setProperty('--mist', '#F2E6D0');
+        root.style.setProperty('--mist', '#EBE7D1');
       } else if (hour >= 17 && hour < 20) {
         // Sunset
-        root.style.setProperty('--cream', '#FBE5D6'); 
+        root.style.setProperty('--cream', '#FAD5C5'); 
         root.style.setProperty('--ink', '#3A2618');
         root.style.setProperty('--card-bg', '#FFF6F0');
         root.style.setProperty('--mist', '#EAD1C1');
@@ -594,14 +643,12 @@
 
     // --- 2. Card Animation Fix ---
     document.querySelectorAll('.tool-card').forEach(card => {
-      // Prevent load animation from looping if it finishes naturally
       card.addEventListener('animationend', (e) => {
         if (e.animationName === 'fadeUp') {
           card.style.animation = 'none';
           card.style.opacity = '1';
         }
       });
-      // Instantly kill load animation if hovered early
       card.addEventListener('mouseenter', () => {
         if (card.style.animation !== 'none') {
           card.style.animation = 'none';
@@ -609,6 +656,46 @@
         }
       }, { once: true });
     });
+
+   // --- 3. Easter Egg: Pet the Llama ---
+    const mascotWrap = document.querySelector('.mascot-wrap');
+    const leftEar = document.querySelector('.ear-left');
+    const rightEar = document.querySelector('.ear-right');
+
+    if (mascotWrap) {
+      mascotWrap.addEventListener('click', (e) => {
+        // Create the heart
+        const heart = document.createElement('div');
+        heart.textContent = '♥'; // Using textContent is slightly faster and safer
+        heart.className = 'floating-heart';
+        mascotWrap.appendChild(heart);
+
+        // Clean up the heart code after 1 second
+        setTimeout(() => {
+          heart.remove();
+        }, 1000);
+
+        // Safely trigger the ears
+        if (leftEar && rightEar) {
+          // Remove the class just in case it was already there
+          leftEar.classList.remove('pet-twitch');
+          rightEar.classList.remove('pet-twitch');
+          
+          // Force the browser to 'reflow', which perfectly resets the animation
+          void leftEar.offsetWidth; 
+          
+          // Add the happy twitch back!
+          leftEar.classList.add('pet-twitch');
+          rightEar.classList.add('pet-twitch');
+
+          // Clean up the classes after the 0.8s animation finishes
+          setTimeout(() => {
+            leftEar.classList.remove('pet-twitch');
+            rightEar.classList.remove('pet-twitch');
+          }, 800);
+        }
+      });
+    }
   </script>
 
 </body>
