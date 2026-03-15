@@ -8,17 +8,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
   <style>
-    /* ─── DESIGN TOKENS ──────────────────────────────────────────── */
+    /* ─── DESIGN TOKENS (DYNAMIC DAY/NIGHT) ──────────────────────── */
     :root {
-      --sun:      #FFD166;   /* warm golden yellow   */
-      --terracotta: #E07A5F; /* llama dusty rose-red */
-      --sky:      #3D9BE9;   /* bright sky blue      */
-      --sage:     #81B29A;   /* andean sage green    */
-      --cream:    #FFF8EE;   /* warm cream           */
-      --ink:      #2B2118;   /* deep warm brown      */
-      --mist:     #F3EAD8;   /* light tan            */
-      --card-bg:  #FFFDF7;   /* off white            */
-      --shadow:   rgba(43, 33, 24, 0.12);
+      /* Default (Morning/Base) */
+      --sun:        #FFD166;
+      --terracotta: #E07A5F;
+      --sky:        #3D9BE9;
+      --sage:       #81B29A;
+      --cream:      #FFF8EE;
+      --ink:        #2B2118;
+      --mist:       #F3EAD8;
+      --card-bg:    #FFFDF7;
+      --shadow:     rgba(43, 33, 24, 0.12);
 
       --font-display: 'Playfair Display', serif;
       --font-body:    'DM Sans', sans-serif;
@@ -27,7 +28,6 @@
       --radius-sm: 12px;
     }
 
-    /* Custom highlight color */
     ::selection {
       background-color: var(--sun);
       color: var(--ink);
@@ -42,8 +42,7 @@
       color: var(--ink);
       min-height: 100vh;
       overflow-x: hidden;
-      /* Add this line to smooth out the background and text color changes */
-      transition: background-color 3s ease, color 3s ease; 
+      transition: background-color 3s ease, color 3s ease;
     }
 
     /* ─── BACKGROUND TEXTURE & DUST ──────────────────────────────── */
@@ -59,22 +58,14 @@
       z-index: 0;
     }
 
-    /* ─── DUST MOTES ANIMATION ───────────────────────────────────── */
-    @keyframes dustDrift {
-      0% { background-position: 0px 0px, 0px 0px; }
-      100% { background-position: 100vw 100vh, -50vw 50vh; }
-    }
-
     body::after {
       content: '';
       position: fixed;
       inset: 0;
-      pointer-events: none; /* Ensures the dust doesn't block clicks */
+      pointer-events: none;
       z-index: 0;
       background-image:
-        /* Golden sun dust */
         radial-gradient(circle at center, rgba(255, 209, 102, 0.6) 1.5px, transparent 1.5px),
-        /* Terracotta dust */
         radial-gradient(circle at center, rgba(224, 122, 95, 0.4) 1px, transparent 1px);
       background-size: 140px 140px, 100px 100px;
       background-position: 0 0, 40px 60px;
@@ -118,53 +109,24 @@
       font-weight: 900;
       line-height: 1.0;
       color: var(--ink);
+      transition: color 3s ease;
       animation: fadeDown .55s .1s ease both;
     }
 
     h1 span.accent { color: var(--terracotta); }
-    h1 span.accent2 { color: var(--sky); }
 
     .tagline {
       margin-top: 18px;
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       font-weight: 300;
-      color: #7a6858;
+      color: color-mix(in srgb, var(--ink) 70%, transparent);
       max-width: 480px;
       margin-inline: auto;
+      transition: color 3s ease;
       animation: fadeDown .6s .2s ease both;
     }
 
-    /* ─── LLAMA SVG MASCOT ───────────────────────────────────────── */
-    .mascot-wrap {
-      position: relative;
-      width: 160px;
-      height: 160px;
-      margin: 8px auto 0;
-      animation: floatBob 4s ease-in-out infinite;
-    }
-
-    @keyframes floatBob {
-      0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-10px); }
-    }
-
-    /* Llama Ear Twitch Animations */
-    @keyframes earTwitchLeft {
-      0%, 88%, 100% { transform: rotate(0deg); }
-      92% { transform: rotate(-10deg); }
-      96% { transform: rotate(4deg); }
-    }
-    
-    @keyframes earTwitchRight {
-      0%, 93%, 100% { transform: rotate(0deg); }
-      95% { transform: rotate(12deg); }
-      98% { transform: rotate(-6deg); }
-    }
-    
-    .ear-left { animation: earTwitchLeft 5s infinite; }
-    .ear-right { animation: earTwitchRight 6s infinite; }
-
-    /* ─── DIVIDER ────────────────────────────────────────────────── */
+    /* ─── CLOVEN HOOF DIVIDER ────────────────────────────────────── */
     .divider {
       display: flex;
       align-items: center;
@@ -174,19 +136,20 @@
       opacity: .6;
     }
     
-   .divider-line {
+    .divider-line {
+
       flex: 1; 
       height: 14px; 
-      /* Updated to the anatomical cloven hoof track */
       background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232B2118'%3E%3Cpath d='M10 2C8 4 4 10 5 15C6 20 11 20 11 16C11 12 10 5 10 2ZM14 4C14 7 13 14 13 18C13 22 18 22 19 17C20 12 16 6 14 4Z'/%3E%3C/svg%3E");
       background-size: 14px;
       background-repeat: repeat-x;
       background-position: center;
       opacity: 0.2;
     }
+
     .divider-icon { font-size: 18px; }
 
-    /* ─── GRID SECTION ───────────────────────────────────────────── */
+    /* ─── MAIN GRID ──────────────────────────────────────────────── */
     main {
       position: relative;
       z-index: 1;
@@ -204,15 +167,15 @@
       margin-bottom: 28px;
     }
 
-    /* ─── TOOL CARDS ─────────────────────────────────────────────── */
     .tools-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 20px;
     }
 
+    /* ─── TOOL CARDS ─────────────────────────────────────────────── */
     .tool-card {
-      --card-accent: var(--terracotta);   /* override per card */
+      --card-accent: var(--terracotta);
       text-decoration: none;
       color: var(--ink);
       background: var(--card-bg);
@@ -220,23 +183,21 @@
       padding: 28px;
       border: 2px solid transparent;
       box-shadow: 0 4px 20px var(--shadow);
-      
-		transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background 3s ease, color 3s ease;
       display: flex;
       flex-direction: column;
       gap: 14px;
       position: relative;
       overflow: hidden;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color 3s ease, color 3s ease;
       animation: fadeUp .55s ease both;
     }
 
-    /* staggered reveal for each card */
+    /* Staggered load animation */
     .tool-card:nth-child(1) { animation-delay: .30s; }
     .tool-card:nth-child(2) { animation-delay: .38s; }
     .tool-card:nth-child(3) { animation-delay: .46s; }
     .tool-card:nth-child(4) { animation-delay: .54s; }
     .tool-card:nth-child(5) { animation-delay: .62s; }
-    .tool-card:nth-child(6) { animation-delay: .70s; }
 
     .tool-card::before {
       content: '';
@@ -248,11 +209,9 @@
     }
 
     .tool-card:hover {
-      transform: translateY(-5px) scale(1.01);
       box-shadow: 0 14px 36px var(--shadow);
       border-color: var(--card-accent);
-      /* Added !important to protect the wiggle */
-      animation: cardWiggle 0.4s ease-in-out forwards !important; 
+      animation: cardWiggle 0.4s ease-in-out forwards !important;
     }
     .tool-card:hover::before { opacity: .06; }
 
@@ -266,7 +225,7 @@
       place-items: center;
       position: relative;
       z-index: 1;
-      transition: background .25s;
+      transition: background-color .25s ease, color 3s ease;
     }
     .tool-card:hover .card-icon { background: color-mix(in srgb, var(--card-accent) 15%, var(--mist)); }
 
@@ -282,8 +241,9 @@
       margin-top: 4px;
       font-size: .9rem;
       font-weight: 300;
-      color: #7a6858;
+      color: color-mix(in srgb, var(--ink) 70%, transparent);
       line-height: 1.55;
+      transition: color 3s ease;
     }
 
     .card-arrow {
@@ -303,7 +263,6 @@
     .tool-card:hover .card-arrow {
       background-color: var(--card-accent);
       color: transparent; 
-      /* Updated to the anatomical cloven hoof track */
       background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M10 2C8 4 4 10 5 15C6 20 11 20 11 16C11 12 10 5 10 2ZM14 4C14 7 13 14 13 18C13 22 18 22 19 17C20 12 16 6 14 4Z'/%3E%3C/svg%3E");
       background-size: 14px;
       background-repeat: no-repeat;
@@ -311,12 +270,31 @@
       transform: translateX(6px);
     }
 
-    /* ─── "MORE COMING" PLACEHOLDER CARD ─────────────────────────── */
+    /* ─── IN DEV BADGE ───────────────────────────────────────────── */
+    .dev-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background-color: var(--ink);
+      color: var(--cream);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 99px;
+      z-index: 2;
+      pointer-events: none;
+      animation: badgePulse 2.5s infinite ease-in-out;
+      transition: background-color 3s ease, color 3s ease;
+    }
+
+    /* ─── "MORE COMING" PLACEHOLDER ──────────────────────────────── */
     .card-placeholder {
       border: 2px dashed color-mix(in srgb, var(--ink) 20%, transparent);
       background: transparent;
       box-shadow: none;
-      color: #b8a898;
+      color: color-mix(in srgb, var(--ink) 50%, transparent);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -327,27 +305,33 @@
       border-radius: var(--radius);
       padding: 28px;
       animation: fadeUp .55s .78s ease both;
+      transition: border-color 3s ease, color 3s ease;
     }
     .card-placeholder .plus { font-size: 2rem; line-height: 1; }
     .card-placeholder p { font-size: .85rem; line-height: 1.5; }
 
-    /* ─── FOOTER ─────────────────────────────────────────────────── */
+    /* ─── FOOTER & MASCOT ────────────────────────────────────────── */
     footer {
       position: relative;
       z-index: 1;
       text-align: center;
       padding: 0 24px 48px;
       font-size: .8rem;
-      color: #b0a090;
-    }
-
-    .footer-note {
-      margin-bottom: 4px;
+      color: color-mix(in srgb, var(--ink) 60%, transparent);
+      transition: color 3s ease;
     }
 
     footer .heart { color: var(--terracotta); }
 
-    /* ─── ANIMATIONS ─────────────────────────────────────────────── */
+    .mascot-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 8px auto 0;
+      animation: floatBob 4s ease-in-out infinite;
+    }
+
+    /* ─── KEYFRAMES & ANIMATIONS ─────────────────────────────────── */
     @keyframes fadeDown {
       from { opacity: 0; transform: translateY(-20px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -358,21 +342,45 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ─── RESPONSIVE ─────────────────────────────────────────────── */
-    @media (max-width: 480px) {
-      .tools-grid { grid-template-columns: 1fr; }
+    @keyframes dustDrift {
+      0% { background-position: 0px 0px, 0px 0px; }
+      100% { background-position: 100vw 100vh, -50vw 50vh; }
     }
-	  
-	  @keyframes cardWiggle {
+
+    @keyframes cardWiggle {
       0%   { transform: translateY(-5px) scale(1.01) rotate(0deg); }
       25%  { transform: translateY(-5px) scale(1.01) rotate(-1.5deg); }
       50%  { transform: translateY(-5px) scale(1.01) rotate(1.5deg); }
       75%  { transform: translateY(-5px) scale(1.01) rotate(-0.5deg); }
       100% { transform: translateY(-5px) scale(1.01) rotate(0deg); }
     }
-	  
-	/* ─── SLEEPING LLAMA ANIMATIONS ──────────────────────────────── */
-    /* By default, hide the closed eyes and Zzzs */
+
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50%      { transform: scale(1.05); opacity: 1; }
+    }
+
+    @keyframes floatBob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    @keyframes earTwitchLeft {
+      0%, 88%, 100% { transform: rotate(0deg); }
+      92% { transform: rotate(-10deg); }
+      96% { transform: rotate(4deg); }
+    }
+    
+    @keyframes earTwitchRight {
+      0%, 93%, 100% { transform: rotate(0deg); }
+      95% { transform: rotate(12deg); }
+      98% { transform: rotate(-6deg); }
+    }
+
+    .ear-left { animation: earTwitchLeft 5s infinite; }
+    .ear-right { animation: earTwitchRight 6s infinite; }
+
+    /* ─── NIGHT MODE OVERRIDES ───────────────────────────────────── */
     .eyes-closed, .zzzs { 
       opacity: 0; 
       transition: opacity 0.5s ease;
@@ -381,12 +389,10 @@
       transition: opacity 0.5s ease;
     }
 
-    /* When night mode triggers, swap them! */
     body.night-mode .eyes-open { opacity: 0; }
     body.night-mode .eyes-closed { opacity: 1; }
     body.night-mode .zzzs { opacity: 1; }
 
-    /* The floating Zzz animation */
     @keyframes floatZ {
       0%   { opacity: 0; transform: translateY(0) scale(0.8); }
       50%  { opacity: 1; transform: translateY(-8px) scale(1.1); }
@@ -396,17 +402,19 @@
     body.night-mode .z1 { animation: floatZ 3s infinite linear; }
     body.night-mode .z2 { animation: floatZ 3s infinite linear 1s; }
     body.night-mode .z3 { animation: floatZ 3s infinite linear 2s; }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .tools-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
   <header>
     <div class="llama-badge"><span class="dot"></span> Tool Hub<span class="dot"></span></div>
-
     <h1>Llama<span class="accent">Tools</span></h1>
-
     <p class="tagline">A cozy collection of handy tools, growing one llama-step at a time.</p>
-
     <div class="divider">
       <div class="divider-line"></div>
       <span class="divider-icon">🌵</span>
@@ -429,7 +437,7 @@
       </a>
 
       <a class="tool-card" href="course_explorer.html" target="_blank"  style="--card-accent: #3D9BE9;">
-      <div class="card-icon">🔭</div>
+        <div class="card-icon">🔭</div>
         <div class="card-content">
           <div class="card-name">Course Explorer</div>
           <div class="card-desc">Browse and explore a single course's content, structure, and details at a glance.</div>
@@ -447,6 +455,7 @@
       </a>
 
       <a class="tool-card" href="assessment_checker.html" target="_blank"  style="--card-accent: #FFD166;">
+        <div class="dev-badge">🚧 In Dev</div>
         <div class="card-icon">✅</div>
         <div class="card-content">
           <div class="card-name">Assessment Checker</div>
@@ -468,29 +477,29 @@
 
     <div class="mascot-wrap">
       <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" width="160" height="160" aria-label="Llama mascot">
-        
-	  <ellipse cx="80" cy="112" rx="38" ry="28" fill="#E8C9A0"/>
+        <ellipse cx="80" cy="112" rx="38" ry="28" fill="#E8C9A0"/>
         <rect x="66" y="68" width="28" height="46" rx="14" fill="#E8C9A0"/>
         <ellipse cx="80" cy="62" rx="24" ry="22" fill="#F0D5B0"/>
         <ellipse cx="80" cy="74" rx="12" ry="8" fill="#F5DFC5"/>
         
-		 <g class="eyes-open">
+        <g class="eyes-open">
           <circle cx="71" cy="58" r="4" fill="#2B2118"/>
           <circle cx="89" cy="58" r="4" fill="#2B2118"/>
           <circle cx="72.5" cy="56.5" r="1.5" fill="#fff"/>
           <circle cx="90.5" cy="56.5" r="1.5" fill="#fff"/>
         </g>
-        
         <g class="eyes-closed">
           <path d="M68 59 Q71 63 74 59" stroke="#2B2118" stroke-width="2.5" stroke-linecap="round" fill="none"/>
           <path d="M86 59 Q89 63 92 59" stroke="#2B2118" stroke-width="2.5" stroke-linecap="round" fill="none"/>
         </g>
-
         <g class="zzzs">
           <text x="100" y="45" font-family="var(--font-display)" font-weight="900" font-size="12" fill="#3D9BE9" class="z1">Z</text>
           <text x="115" y="30" font-family="var(--font-display)" font-weight="900" font-size="16" fill="#3D9BE9" class="z2">Z</text>
           <text x="135" y="15" font-family="var(--font-display)" font-weight="900" font-size="20" fill="#3D9BE9" class="z3">Z</text>
         </g>
+
+        <ellipse cx="76" cy="76" rx="2.5" ry="2" fill="#C9A07A"/>
+        <ellipse cx="84" cy="76" rx="2.5" ry="2" fill="#C9A07A"/>
         
         <g class="ear-left" transform-origin="62 50">
           <ellipse cx="62" cy="44" rx="7" ry="12" fill="#E8C9A0" transform="rotate(-12 62 44)"/>
@@ -502,25 +511,29 @@
         </g>
 
         <g class="leg-foot" transform="translate(52 130)">
-          <rect x="0" y="0" width="14" height="15" fill="#D4A87A"/> <g class="hoof" transform="translate(0 15)">
+          <rect x="0" y="0" width="14" height="15" fill="#D4A87A"/>
+          <g class="hoof" transform="translate(0 15)">
              <ellipse cx="4.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(-5 4.5 4)"/>
              <ellipse cx="9.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(5 9.5 4)"/>
           </g>
         </g>
         <g class="leg-foot" transform="translate(70 132)">
-          <rect x="0" y="0" width="14" height="13" fill="#D4A87A"/> <g class="hoof" transform="translate(0 13)">
+          <rect x="0" y="0" width="14" height="13" fill="#D4A87A"/>
+          <g class="hoof" transform="translate(0 13)">
              <ellipse cx="4.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(-5 4.5 4)"/>
              <ellipse cx="9.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(5 9.5 4)"/>
           </g>
         </g>
         <g class="leg-foot" transform="translate(88 132)">
-          <rect x="0" y="0" width="14" height="13" fill="#D4A87A"/> <g class="hoof" transform="translate(0 13)">
+          <rect x="0" y="0" width="14" height="13" fill="#D4A87A"/>
+          <g class="hoof" transform="translate(0 13)">
              <ellipse cx="4.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(-5 4.5 4)"/>
              <ellipse cx="9.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(5 9.5 4)"/>
           </g>
         </g>
         <g class="leg-foot" transform="translate(94 130)">
-          <rect x="0" y="0" width="14" height="15" fill="#D4A87A"/> <g class="hoof" transform="translate(0 15)">
+          <rect x="0" y="0" width="14" height="15" fill="#D4A87A"/>
+          <g class="hoof" transform="translate(0 15)">
              <ellipse cx="4.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(-5 4.5 4)"/>
              <ellipse cx="9.5" cy="4" rx="2.5" ry="5" fill="#D4A87A" transform="rotate(5 9.5 4)"/>
           </g>
@@ -538,75 +551,65 @@
       </svg>
     </div>
   </footer>
-	
-	<script>
+
+  <script>
+    // --- 1. Day / Night Cycle ---
+    function setPastureTime() {
+      const hour = new Date().getHours();
+      const root = document.documentElement;
+      const body = document.body;
+
+      body.classList.remove('night-mode');
+
+      if (hour >= 6 && hour < 12) {
+        // Morning
+        root.style.setProperty('--cream', '#FFF8EE');
+        root.style.setProperty('--ink', '#2B2118');
+        root.style.setProperty('--card-bg', '#FFFDF7');
+        root.style.setProperty('--mist', '#F3EAD8');
+      } else if (hour >= 12 && hour < 17) {
+        // Afternoon
+        root.style.setProperty('--cream', '#FDF5E6'); 
+        root.style.setProperty('--ink', '#2B2118');
+        root.style.setProperty('--card-bg', '#FFFFFF');
+        root.style.setProperty('--mist', '#F2E6D0');
+      } else if (hour >= 17 && hour < 20) {
+        // Sunset
+        root.style.setProperty('--cream', '#FBE5D6'); 
+        root.style.setProperty('--ink', '#3A2618');
+        root.style.setProperty('--card-bg', '#FFF6F0');
+        root.style.setProperty('--mist', '#EAD1C1');
+      } else {
+        // Night
+        root.style.setProperty('--cream', '#1E2233'); 
+        root.style.setProperty('--ink', '#F3EAD8'); 
+        root.style.setProperty('--card-bg', '#2A2E42'); 
+        root.style.setProperty('--mist', '#3A405A'); 
+        body.classList.add('night-mode');
+      }
+    }
+
+    setPastureTime();
+    setInterval(setPastureTime, 600000); // Check every 10 mins
+
+    // --- 2. Card Animation Fix ---
     document.querySelectorAll('.tool-card').forEach(card => {
-      // 1. If the load animation finishes normally, turn it off so it doesn't loop
+      // Prevent load animation from looping if it finishes naturally
       card.addEventListener('animationend', (e) => {
         if (e.animationName === 'fadeUp') {
           card.style.animation = 'none';
           card.style.opacity = '1';
         }
       });
-
-      // 2. If an impatient llama hovers early, instantly kill the load animation
+      // Instantly kill load animation if hovered early
       card.addEventListener('mouseenter', () => {
         if (card.style.animation !== 'none') {
           card.style.animation = 'none';
           card.style.opacity = '1';
         }
-      }, { once: true }); // The '{ once: true }' ensures this intercept only fires one time
+      }, { once: true });
     });
   </script>
-	
-  <script>
-    function setPastureTime() {
-      const hour = new Date().getHours();
-      const root = document.documentElement;
-      const body = document.body;
 
-      // Remove night mode by default, add it back if it's nighttime
-      body.classList.remove('night-mode');
-
-      if (hour >= 6 && hour < 12) {
-        // 🌅 MORNING (6 AM to Noon): Soft and fresh
-        root.style.setProperty('--cream', '#FFF8EE');
-        root.style.setProperty('--ink', '#2B2118');
-        root.style.setProperty('--card-bg', '#FFFDF7');
-        root.style.setProperty('--mist', '#F3EAD8');
-        
-      } else if (hour >= 12 && hour < 17) {
-        // ☀️ AFTERNOON (Noon to 5 PM): Bright and sunny
-        root.style.setProperty('--cream', '#FDF5E6'); 
-        root.style.setProperty('--ink', '#2B2118');
-        root.style.setProperty('--card-bg', '#FFFFFF');
-        root.style.setProperty('--mist', '#F2E6D0');
-        
-      } else if (hour >= 17 && hour < 20) {
-        // 🌇 SUNSET (5 PM to 8 PM): Warm, peachy, golden hour
-        root.style.setProperty('--cream', '#FBE5D6'); 
-        root.style.setProperty('--ink', '#3A2618');
-        root.style.setProperty('--card-bg', '#FFF6F0');
-        root.style.setProperty('--mist', '#EAD1C1');
-        
-      } else {
-        // 🌌 NIGHT (8 PM to 6 AM): Sleepy pasture
-        root.style.setProperty('--cream', '#1E2233'); 
-        root.style.setProperty('--ink', '#F3EAD8'); 
-        root.style.setProperty('--card-bg', '#2A2E42'); 
-        root.style.setProperty('--mist', '#3A405A'); 
-        
-        // Tells the CSS to close the llama's eyes and start the Zzzs!
-        body.classList.add('night-mode');
-      }
-    }
-
-    // Run immediately on load
-    setPastureTime();
-    
-    // Check the time every 10 minutes
-    setInterval(setPastureTime, 600000); 
-  </script>
-	
 </body>
 </html>
