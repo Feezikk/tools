@@ -42,6 +42,8 @@
       color: var(--ink);
       min-height: 100vh;
       overflow-x: hidden;
+      /* Add this line to smooth out the background and text color changes */
+      transition: background-color 3s ease, color 3s ease; 
     }
 
     /* ─── BACKGROUND TEXTURE & DUST ──────────────────────────────── */
@@ -218,7 +220,8 @@
       padding: 28px;
       border: 2px solid transparent;
       box-shadow: 0 4px 20px var(--shadow);
-      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      
+		transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background 3s ease, color 3s ease;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -367,6 +370,32 @@
       75%  { transform: translateY(-5px) scale(1.01) rotate(-0.5deg); }
       100% { transform: translateY(-5px) scale(1.01) rotate(0deg); }
     }
+	  
+	/* ─── SLEEPING LLAMA ANIMATIONS ──────────────────────────────── */
+    /* By default, hide the closed eyes and Zzzs */
+    .eyes-closed, .zzzs { 
+      opacity: 0; 
+      transition: opacity 0.5s ease;
+    }
+    .eyes-open {
+      transition: opacity 0.5s ease;
+    }
+
+    /* When night mode triggers, swap them! */
+    body.night-mode .eyes-open { opacity: 0; }
+    body.night-mode .eyes-closed { opacity: 1; }
+    body.night-mode .zzzs { opacity: 1; }
+
+    /* The floating Zzz animation */
+    @keyframes floatZ {
+      0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+      50%  { opacity: 1; transform: translateY(-8px) scale(1.1); }
+      100% { opacity: 0; transform: translateY(-16px) scale(0.9); }
+    }
+
+    body.night-mode .z1 { animation: floatZ 3s infinite linear; }
+    body.night-mode .z2 { animation: floatZ 3s infinite linear 1s; }
+    body.night-mode .z3 { animation: floatZ 3s infinite linear 2s; }
   </style>
 </head>
 <body>
@@ -439,16 +468,29 @@
 
     <div class="mascot-wrap">
       <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" width="160" height="160" aria-label="Llama mascot">
-        <ellipse cx="80" cy="112" rx="38" ry="28" fill="#E8C9A0"/>
+        
+	  <ellipse cx="80" cy="112" rx="38" ry="28" fill="#E8C9A0"/>
         <rect x="66" y="68" width="28" height="46" rx="14" fill="#E8C9A0"/>
         <ellipse cx="80" cy="62" rx="24" ry="22" fill="#F0D5B0"/>
         <ellipse cx="80" cy="74" rx="12" ry="8" fill="#F5DFC5"/>
-        <circle cx="71" cy="58" r="4" fill="#2B2118"/>
-        <circle cx="89" cy="58" r="4" fill="#2B2118"/>
-        <circle cx="72.5" cy="56.5" r="1.5" fill="#fff"/>
-        <circle cx="90.5" cy="56.5" r="1.5" fill="#fff"/>
-        <ellipse cx="76" cy="76" rx="2.5" ry="2" fill="#C9A07A"/>
-        <ellipse cx="84" cy="76" rx="2.5" ry="2" fill="#C9A07A"/>
+        
+		 <g class="eyes-open">
+          <circle cx="71" cy="58" r="4" fill="#2B2118"/>
+          <circle cx="89" cy="58" r="4" fill="#2B2118"/>
+          <circle cx="72.5" cy="56.5" r="1.5" fill="#fff"/>
+          <circle cx="90.5" cy="56.5" r="1.5" fill="#fff"/>
+        </g>
+        
+        <g class="eyes-closed">
+          <path d="M68 59 Q71 63 74 59" stroke="#2B2118" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M86 59 Q89 63 92 59" stroke="#2B2118" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        </g>
+
+        <g class="zzzs">
+          <text x="100" y="45" font-family="var(--font-display)" font-weight="900" font-size="12" fill="#3D9BE9" class="z1">Z</text>
+          <text x="115" y="30" font-family="var(--font-display)" font-weight="900" font-size="16" fill="#3D9BE9" class="z2">Z</text>
+          <text x="135" y="15" font-family="var(--font-display)" font-weight="900" font-size="20" fill="#3D9BE9" class="z3">Z</text>
+        </g>
         
         <g class="ear-left" transform-origin="62 50">
           <ellipse cx="62" cy="44" rx="7" ry="12" fill="#E8C9A0" transform="rotate(-12 62 44)"/>
@@ -515,6 +557,55 @@
         }
       }, { once: true }); // The '{ once: true }' ensures this intercept only fires one time
     });
+  </script>
+	
+  <script>
+    function setPastureTime() {
+      const hour = new Date().getHours();
+      const root = document.documentElement;
+      const body = document.body;
+
+      // Remove night mode by default, add it back if it's nighttime
+      body.classList.remove('night-mode');
+
+      if (hour >= 6 && hour < 12) {
+        // 🌅 MORNING (6 AM to Noon): Soft and fresh
+        root.style.setProperty('--cream', '#FFF8EE');
+        root.style.setProperty('--ink', '#2B2118');
+        root.style.setProperty('--card-bg', '#FFFDF7');
+        root.style.setProperty('--mist', '#F3EAD8');
+        
+      } else if (hour >= 12 && hour < 17) {
+        // ☀️ AFTERNOON (Noon to 5 PM): Bright and sunny
+        root.style.setProperty('--cream', '#FDF5E6'); 
+        root.style.setProperty('--ink', '#2B2118');
+        root.style.setProperty('--card-bg', '#FFFFFF');
+        root.style.setProperty('--mist', '#F2E6D0');
+        
+      } else if (hour >= 17 && hour < 20) {
+        // 🌇 SUNSET (5 PM to 8 PM): Warm, peachy, golden hour
+        root.style.setProperty('--cream', '#FBE5D6'); 
+        root.style.setProperty('--ink', '#3A2618');
+        root.style.setProperty('--card-bg', '#FFF6F0');
+        root.style.setProperty('--mist', '#EAD1C1');
+        
+      } else {
+        // 🌌 NIGHT (8 PM to 6 AM): Sleepy pasture
+        root.style.setProperty('--cream', '#1E2233'); 
+        root.style.setProperty('--ink', '#F3EAD8'); 
+        root.style.setProperty('--card-bg', '#2A2E42'); 
+        root.style.setProperty('--mist', '#3A405A'); 
+        
+        // Tells the CSS to close the llama's eyes and start the Zzzs!
+        body.classList.add('night-mode');
+      }
+    }
+
+    // Run immediately on load
+    setPastureTime();
+    
+    // Check the time every 10 minutes
+    setInterval(setPastureTime, 600000); 
   </script>
 	
 </body>
