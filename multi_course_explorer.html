@@ -541,8 +541,8 @@ function handleBatchScan(files) {
 
     availableCoursesFromScan.clear();
     
+    // Track both the highest numeric version AND the cbimport version
     const courseVersionsTracker = new Map(); 
-    // UPDATED REGEX: Matches _vXX, _cb_import, or cbimport
     const versionFolderRegex = /(_v(\d+)|_?cbimport)$/i;
 
     for (let i = 0; i < files.length; i++) {
@@ -550,6 +550,7 @@ function handleBatchScan(files) {
         const pathParts = (file.webkitRelativePath || file.name).split('/');
         
         let versionFolderIndex = -1;
+        let isCbImport = false;
         let versionWeight = -1;
         let displayVersion = "";
         
@@ -557,12 +558,11 @@ function handleBatchScan(files) {
             const match = pathParts[j].match(versionFolderRegex);
             if (match) {
                 versionFolderIndex = j;
-                // Check if the match contains 'cbimport' (with or without underscore)
+                // Determine if it's an import or a standard version
                 if (match[0].toLowerCase().includes('cbimport')) {
-                    versionWeight = 999;
+                    isCbImport = true;
                     displayVersion = "cbimport";
                 } else {
-                    // Standard _vXX logic
                     versionWeight = parseInt(match[2], 10);
                     displayVersion = `v${versionWeight}`;
                 }
@@ -574,30 +574,56 @@ function handleBatchScan(files) {
             const folderName = pathParts[versionFolderIndex];
             const courseName = folderName.replace(versionFolderRegex, '');
             
-            let currentBest = courseVersionsTracker.get(courseName);
+            // Initialize tracker for this course if it doesn't exist
+            if (!courseVersionsTracker.has(courseName)) {
+                courseVersionsTracker.set(courseName, { bestNumeric: null, cbImport: null });
+            }
             
-            if (!currentBest || versionWeight > currentBest.weight) {
-                currentBest = { weight: versionWeight, display: displayVersion, fileMap: new Map() };
-                courseVersionsTracker.set(courseName, currentBest);
-            } else if (versionWeight < currentBest.weight) {
-                continue;
+            const tracker = courseVersionsTracker.get(courseName);
+            let activeTarget = null;
+            
+            if (isCbImport) {
+                if (!tracker.cbImport) {
+                    tracker.cbImport = { display: displayVersion, fileMap: new Map() };
+                }
+                activeTarget = tracker.cbImport;
+            } else {
+                // Check if this numeric version is higher than our current best numeric version
+                if (!tracker.bestNumeric || versionWeight > tracker.bestNumeric.weight) {
+                    tracker.bestNumeric = { weight: versionWeight, display: displayVersion, fileMap: new Map() };
+                }
+                
+                // If it belongs to our highest tracked numeric version, point activeTarget to it
+                if (versionWeight === tracker.bestNumeric.weight) {
+                    activeTarget = tracker.bestNumeric;
+                } else {
+                    // It's an older numeric version, skip it
+                    continue;
+                }
             }
 
             const relativePathInsideCourse = pathParts.slice(versionFolderIndex + 1).join('/');
             
             if (relativePathInsideCourse.includes('global/') || relativePathInsideCourse.includes('content/') || relativePathInsideCourse.includes('data/') || relativePathInsideCourse === 'sitemap.json') {
-                currentBest.fileMap.set(relativePathInsideCourse, file);
+                activeTarget.fileMap.set(relativePathInsideCourse, file);
                 
                 if (!relativePathInsideCourse.includes('interactives/')) {
-                    currentBest.fileMap.set(file.name, file);
+                    activeTarget.fileMap.set(file.name, file);
                 }
             }
         }
     }
 
+    // Add surviving versions to the available course list
     courseVersionsTracker.forEach((data, courseName) => {
-        if (data.fileMap.has('sitemap.json') || data.fileMap.has('global/sitemap.json')) {
-            availableCoursesFromScan.set(`${courseName} (${data.display})`, data.fileMap);
+        // Validate and add the best numeric version
+        if (data.bestNumeric && (data.bestNumeric.fileMap.has('sitemap.json') || data.bestNumeric.fileMap.has('global/sitemap.json'))) {
+            availableCoursesFromScan.set(`${courseName} (${data.bestNumeric.display})`, data.bestNumeric.fileMap);
+        }
+        
+        // Validate and add the cbimport version
+        if (data.cbImport && (data.cbImport.fileMap.has('sitemap.json') || data.cbImport.fileMap.has('global/sitemap.json'))) {
+            availableCoursesFromScan.set(`${courseName} (${data.cbImport.display})`, data.cbImport.fileMap);
         }
     });
 
