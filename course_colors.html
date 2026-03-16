@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Colors v2.00</title>
+  <style>
+    /* ===== SHARED TOKENS ===== */
+    :root {
+      --primary:       #2c5530;
+      --primary-hover: #1e3d21;
+      --accent-blue:   #007bff;
+      --accent-blue-h: #0069d9;
+      --accent-orange: #bc3908;
+      --accent-orange-h:#d96208;
+      --accent-purple: #6f42c1;
+      --accent-purple-h:#5936a2;
+      --accent-gray:   #6c757d;
+      --accent-gray-h: #5a6268;
+      --success:       #28a745;
+      --success-h:     #218838;
+      --danger:        #dc3545;
+      --danger-h:      #c82333;
+      --success-bg:    #d4edda;
+      --border:        #ddd;
+      --text:          #333;
+      --bg:            #f5f5f5;
+      --white:         #ffffff;
+      --shadow:        0 2px 8px rgba(0,0,0,.1);
+      --shadow-h:      0 4px 8px rgba(0,0,0,.15);
+      --combination-bg:#ffffff;
+    }
+
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    /* ===== APP SHELL ===== */
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;
+      padding: 14px 20px; background: var(--white); border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; flex: 1; }
+    .header-center { display: flex; justify-content: center; gap: 8px; flex: 1; }
+    .header-right { display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex: 1; position: relative; }
+    
+    .app-title { font-size: 18px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+    .tab-btn {
+      padding: 8px 22px; border: 2px solid var(--border); background: var(--white);
+      border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;
+      color: var(--accent-gray); transition: all .2s; white-space: nowrap;
+    }
+    .tab-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
+    .tab-btn:not(.active):hover { border-color: var(--primary); color: var(--primary); }
+
+    /* Header Controls Container */
+    #combination-header-controls { display: flex; gap: 8px; }
+    
+    /* Neutral Header Select Dropdown */
+    .header-select {
+      padding: 8px 32px 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background-color: var(--white);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px;
+      appearance: none;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .header-select:hover, .header-select:focus { border-color: var(--primary); }
+
+    /* Help Button */
+    .help-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--accent-gray);
+      background: var(--white); color: var(--accent-gray); font-weight: 700; font-size: 16px;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-left: 5px;
+    }
+    .help-btn:hover { background: var(--accent-gray); color: var(--white); border-color: var(--accent-gray); }
+
+    /* ===== MODAL SYSTEM ===== */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: var(--white); border-radius: 8px; width: 100%; max-width: 600px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(-20px);
+      transition: transform 0.3s ease; max-height: 90vh; display: flex; flex-direction: column;
+    }
+    .modal-backdrop.show .modal-box { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border); }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--primary); margin: 0; }
+    .modal-close { background: none; border: none; font-size: 26px; cursor: pointer; color: var(--accent-gray); line-height: 1; padding: 0; margin: 0; transition: color 0.2s; }
+    .modal-close:hover { color: var(--danger); }
+    .modal-body { padding: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; color: var(--text); }
+    .modal-body h4 { margin: 20px 0 8px 0; color: var(--text); font-size: 15px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; display: inline-block; }
+    .modal-body h4:first-child { margin-top: 0; }
+    .modal-body ul { padding-left: 20px; margin-bottom: 15px; }
+    .modal-body li { margin-bottom: 8px; }
+    .modal-body p { margin-bottom: 15px; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ===== SHARED LAYOUT ===== */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    .card {
+      background: var(--white); border-radius: 8px;
+      box-shadow: var(--shadow); padding: 25px; margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    .card.compact { padding: 15px 20px; }
+
+    /* Collapsible Panel Transitions */
+    .collapsible-wrapper {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease-out;
+      pointer-events: none;
+    }
+    .collapsible-wrapper.open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .collapsible-inner {
+      overflow: hidden;
+    }
+
+    /* ===== SHARED BUTTON SYSTEM ===== */
+    .btn {
+      border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;
+      font-size: 14px; font-weight: 500; transition: all .2s ease; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .btn-sm  { padding: 6px 14px; font-size: 12px; }
+    .btn-primary  { background: var(--primary);       color: var(--white); }
+    .btn-primary:hover  { background: var(--primary-hover); }
+    .btn-primary.active { background: var(--primary-hover); box-shadow: inset 0 2px 4px rgba(0,0,0,.2); }
+    .btn-blue    { background: var(--accent-blue);   color: var(--white); }
+    .btn-blue:hover    { background: var(--accent-blue-h); }
+    .btn-orange  { background: var(--accent-orange); color: var(--white); }
+    .btn-orange:hover  { background: var(--accent-orange-h); }
+    .btn-purple  { background: var(--accent-purple); color: var(--white); }
+    .btn-purple:hover  { background: var(--accent-purple-h); }
+    .btn-gray    { background: var(--accent-gray);   color: var(--white); }
+    .btn-gray:hover    { background: var(--accent-gray-h); }
+    .btn-success { background: var(--success);       color: var(--white); }
+    .btn-success:hover { background: var(--success-h); }
+    .btn-danger  { background: var(--danger);        color: var(--white); }
+    .btn-danger:hover  { background: var(--danger-h); }
+    .btn-secondary { background: var(--accent-gray); color: var(--white); }
+    .btn-secondary:hover { background: var(--accent-gray-h); }
+
+    /* ===== SEGMENTED CONTROL (Mode Switch) ===== */
+    .segmented-control { display: inline-flex; background: #e9ecef; border-radius: 6px; padding: 4px; }
+    .seg-btn {
+      border: none; background: transparent; padding: 8px 16px; font-size: 13px; font-weight: 600; 
+      cursor: pointer; border-radius: 4px; color: var(--accent-gray); transition: all 0.2s; white-space: nowrap;
+    }
+    .seg-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .seg-btn:hover:not(.active) { color: var(--text); }
+
+    /* ===== SHARED TOGGLE SWITCH ===== */
+    .toggle-row { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+    .toggle-switch { position: relative; display: inline-block; width: 46px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: #ccc; transition: .35s; border-radius: 22px; }
+    .slider::before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: var(--white); transition: .35s; border-radius: 50%; }
+    input:checked + .slider { background: var(--primary); }
+    input:checked + .slider::before { transform: translateX(24px); }
+
+    /* ===== SHARED COLOR GRID ===== */
+    .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 7px; }
+    .color-option {
+      display: flex; flex-direction: column; align-items: center; padding: 5px;
+      border-radius: 6px; background: #f9f9f9; cursor: pointer;
+      transition: all .2s ease; border: 2px solid transparent;
+    }
+    .color-option:hover { background: #e9e9e9; transform: translateY(-2px); box-shadow: var(--shadow-h); }
+    .color-option.selected { border-color: var(--success); background: var(--success-bg); }
+    .color-swatch   { width: 30px; height: 30px; border-radius: 4px; margin-bottom: 4px; border: 1px solid var(--text); }
+    .border-swatch  { width: 30px; height: 30px; border-radius: 4px; margin-bottom: 4px; background: var(--white); border-width: 2px; border-style: solid; }
+
+    /* ===== SHARED FILE CONTROLS ===== */
+    .file-status { position: absolute; top: 100%; right: 0; margin-top: 10px; padding: 7px 12px; border-radius: 4px; font-size: 13px; text-align: center; white-space: nowrap; box-shadow: var(--shadow); z-index: 50; }
+    .file-status.success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+    .file-status.error   { background: #f8d7da; color: var(--danger);  border: 1px solid var(--danger); }
+
+    /* ===== LOCALIZED COPY NOTIFICATION ===== */
+    .copy-btn, .single-color-copy {
+      background: transparent; border: none; cursor: pointer; padding: 2px 6px; min-width: 24px;
+      border-radius: 4px; font-size: 12px; opacity: .6; transition: all .2s ease; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .copy-btn:hover, .single-color-copy:hover { opacity: 1; background: rgba(0,0,0,.1); }
+
+    .hidden { display: none !important; }
+
+    /* =============================================
+       VIEW 1 — COLOR COMBINATIONS
+    ============================================= */
+    #view-combinations .mode-bar {
+      display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: center;
+    }
+
+    /* Border/Font/BG panels */
+    #border-panel   { background: rgba(255,219,87,.25); margin-bottom: 20px; }
+    #font-panel     { background: rgba(244,237,208,1); margin-bottom: 20px; }
+    #background-panel { background: rgba(253,181,59,.25); margin-bottom: 20px; }
+
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+    .panel-label { font-size: 15px; font-weight: 700; color: var(--text); }
+
+    /* border width slider */
+    .slider-row { display: flex; align-items: center; gap: 14px; padding: 12px 15px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 18px; }
+    .slider-label { font-size: 13px; font-weight: 700; min-width: 95px; }
+    .range-slider { width: 150px; height: 8px; border-radius: 4px; background: #ddd; outline: none; opacity: .8; transition: opacity .2s; }
+    .range-slider:hover { opacity: 1; }
+    .range-slider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+    .range-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; }
+    .range-display { font-size: 15px; font-weight: 700; min-width: 34px; text-align: center; background: var(--white); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); }
+
+    /* two-col sections for panels */
+    .two-col-section { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; }
+
+    /* border/font selected preview */
+    .selected-preview {
+      background: var(--success-bg); border: 2px solid var(--success); border-radius: 10px;
+      padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+      min-width: 160px; box-shadow: var(--shadow);
+    }
+    .selected-preview.hidden { display: none; }
+    .preview-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .selected-border-swatch { width: 48px; height: 48px; border-radius: 8px; border-style: solid; background: var(--white); box-shadow: var(--shadow-h); }
+    .preview-name { font-size: 12px; font-weight: 700; text-align: center; word-break: break-word; max-width: 140px; }
+
+    /* font panel */
+    .font-input-row { display: flex; align-items: center; gap: 12px; padding: 12px 15px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; }
+    .font-input-label { font-size: 13px; font-weight: 700; min-width: 120px; }
+    input[type="color"].color-picker { width: 46px; height: 36px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: none; padding: 0; }
+    input[type="color"].color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"].color-picker::-webkit-color-swatch { border: none; border-radius: 3px; }
+    input.hex-text { font-family: monospace; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 4px; width: 85px; text-align: center; background: var(--white); }
+    input.hex-text:focus { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+    .font-preview-box { background: var(--success-bg); border: 2px solid var(--success); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 180px; box-shadow: var(--shadow); }
+    .font-preview-swatch { height: 56px; border-radius: 7px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.12); border: 1px solid var(--border); width: 100%; }
+    .dark-preview-bg  { background: #ffffff; }
+    .light-preview-bg { background: #2c2c2c; }
+    .font-preview-text { font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
+    .font-contrast-info { font-size: 11px; font-weight: normal; margin-top: 2px; }
+
+    /* background panel */
+    .bg-row { display: flex; align-items: center; gap: 14px; padding: 12px 15px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+    .bg-label { font-size: 13px; font-weight: 700; min-width: 120px; }
+
+    /* selector card */
+    .two-color-mode { display: flex; gap: 28px; width: 100%; position: relative; }
+    .two-color-mode > div { flex: 1; }
+    .two-color-mode::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--border); }
+    .single-color-mode { text-align: center; }
+    .single-color-mode .color-grid { max-width: 580px; margin: 0 auto; }
+    .selector-label { font-size: 15px; font-weight: 700; display: block; margin-bottom: 12px; }
+
+    /* combination display container */
+    .combination-display { display: none; }
+    .combination-display.show { display: block; }
+    .combination-card { background: var(--white); } /* Keeps main card white */
+    .combination-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+    .combination-title { font-size: 15px; font-weight: 700; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Two Colors Layout fixes */
+    .two-color-grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+    .combo-column-wrapper {
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      background-color: var(--combination-bg); /* Dynamic Background applied INSIDE */
+      transition: background-color 0.3s ease;
+    }
+    .combo-column-grid { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+    .combo-preview-small { width: 220px; height: 120px; display: flex; flex-direction: column; border-radius: 6px; overflow: hidden; flex-shrink: 0; box-shadow: var(--shadow); }
+    
+    .combo-info-stacked { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; }
+    .color-info-compact { display: flex; align-items: center; gap: 8px; font-size: 13px; background: var(--white); padding: 8px 12px; border-radius: 5px; border: 1px solid var(--border); }
+    .swatch-dot { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); flex-shrink: 0; }
+    .color-info-compact .name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .color-info-compact .hex { font-family: monospace; color: #555; margin-left: auto; }
+
+    .color-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; position: relative; padding: 4px; }
+    .sample-text { text-align: center; line-height: 1.1; margin: 2px 0; }
+
+    /* single color combos fixes */
+    .single-color-combinations { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .single-combination { 
+      display: flex; align-items: stretch; border-radius: 8px; overflow: hidden; 
+      border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.1);
+      background-color: var(--combination-bg); /* Dynamic Background applied INSIDE */
+      transition: background-color 0.3s ease;
+    }
+    .single-preview { display: flex; flex-direction: column; width: 120px; flex-shrink: 0; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
+    .single-color-half { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; padding: 6px; }
+    .single-color-info { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+
+    /* =============================================
+       VIEW 2 — PALETTE EDITOR
+    ============================================= */
+    #view-editor .drop-zone {
+      border: 2px dashed #3498db; border-radius: 10px; padding: 28px;
+      text-align: center; background: #ebf5fb; margin-bottom: 24px;
+      transition: all .3s; cursor: pointer;
+    }
+    #view-editor .drop-zone.dragover { background: #d4eaf7; border-color: #2980b9; transform: scale(1.01); }
+    #view-editor .drop-zone p { color: #2980b9; font-weight: 500; margin-bottom: 4px; }
+    #view-editor .drop-zone span { font-size: 11px; color: #7f8c8d; }
+
+    .editor-controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
+
+    .palette-selector-row { margin-bottom: 22px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .palette-selector-row select { padding: 7px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
+
+    .palette-name-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 15px; margin-bottom: 20px; }
+
+    .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .editor-section { background: var(--white); padding: 18px; border-radius: 8px; box-shadow: var(--shadow); }
+    .editor-section h3 { margin-bottom: 13px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; font-size: 15px; }
+
+    .color-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .color-item input[type="text"] { flex: 1; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+    .color-item input[type="color"] { width: 38px; height: 28px; border: none; border-radius: 4px; cursor: pointer; }
+    .color-preview { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+    .remove-btn { background: var(--danger); color: var(--white); border: none; padding: 3px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+
+    .preview-section { grid-column: 1 / -1; background: var(--white); padding: 18px; border-radius: 8px; box-shadow: var(--shadow); }
+    .preview-section h3 { margin-bottom: 13px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; font-size: 15px; }
+    .palette-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 12px; }
+    .border-colors-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; grid-column: 1 / -1; }
+    .preview-item { display: flex; align-items: center; gap: 10px; padding: 7px 11px; border: 1px solid #e0e0e0; border-radius: 6px; background: var(--white); }
+    .preview-item .color-swatch { width: 30px; height: 30px; border-radius: 4px; border: 2px solid var(--border); flex-shrink: 0; }
+    .contrast-ratios { display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: monospace; margin-left: auto; }
+    .contrast-item { display: flex; align-items: center; gap: 3px; padding: 2px 5px; border-radius: 3px; background: var(--white); border: 1px solid var(--border); }
+    .contrast-sample { width: 11px; height: 11px; border-radius: 2px; border: 1px solid #ccc; }
+    .contrast-pass { color: #27ae60; font-weight: 700; }
+    .contrast-fail { color: var(--danger); font-weight: 700; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 850px) {
+      .two-color-grid-container { grid-template-columns: 1fr; }
+      .single-color-combinations { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .app-header { flex-direction: column; align-items: stretch; }
+      .header-left, .header-center, .header-right { justify-content: center; }
+      .two-col-section { grid-template-columns: 1fr; }
+      .editor-grid { grid-template-columns: 1fr; }
+      .border-colors-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .two-color-mode { flex-direction: column; }
+      .two-color-mode::after { display: none; }
+      .combo-preview-small { width: 100%; max-width: 300px; }
+      .single-combination { flex-direction: column; }
+      .single-preview { width: 100%; height: 96px; flex-direction: row; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-left">
+    <span class="app-title">Course Colors v2.00</span>
+  </div>
+  <div class="header-center">
+    <button class="tab-btn active" data-tab="combinations">Color Combinations</button>
+    <button class="tab-btn"        data-tab="editor">Palette Editor</button>
+  </div>
+  <div class="header-right">
+    <div id="combination-header-controls">
+      <select id="palette-selector" class="header-select"></select>
+      <label for="palette-file-input" class="btn btn-primary">Load Palette File</label>
+      <input type="file" id="palette-file-input" accept=".js" style="display:none">
+    </div>
+    <button id="global-help-btn" class="help-btn" title="Help">?</button>
+    <div id="file-status" class="file-status hidden"></div>
+  </div>
+</header>
+
+<div class="modal-backdrop" id="help-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title" id="help-modal-title">Help Guide</h3>
+      <button class="modal-close" id="help-modal-close" title="Close Modal">&times;</button>
+    </div>
+    <div class="modal-body" id="help-modal-body">
+      </div>
+  </div>
+</div>
+
+<div id="view-combinations" class="view active">
+  <div class="container">
+
+    <div class="card compact">
+      <div class="mode-bar">
+        
+        <div class="segmented-control" id="color-mode-toggle">
+          <button class="seg-btn active" data-mode="two-color">Two Colors</button>
+          <button class="seg-btn" data-mode="single-color">Single Color</button>
+        </div>
+
+        <div style="width: 1px; height: 24px; background: var(--border); margin: 0 10px;"></div>
+
+        <div class="toggle-row"><span>Border:</span><label class="toggle-switch"><input type="checkbox" id="border-panel-toggle"><span class="slider"></span></label></div>
+        <div class="toggle-row"><span>Font:</span>  <label class="toggle-switch"><input type="checkbox" id="font-panel-toggle">  <span class="slider"></span></label></div>
+        <div class="toggle-row"><span>Background:</span><label class="toggle-switch"><input type="checkbox" id="background-panel-toggle"><span class="slider"></span></label></div>
+      </div>
+    </div>
+
+    <div class="collapsible-wrapper" id="border-panel-wrapper">
+      <div class="collapsible-inner">
+        <div class="card" id="border-panel">
+          <div class="panel-header">
+            <span class="panel-label">Border Color Options:</span>
+            <button class="btn btn-danger btn-sm" id="clear-border-btn">Clear Border</button>
+          </div>
+          <div class="two-col-section">
+            <div>
+              <div class="slider-row">
+                <span class="slider-label">Border Width:</span>
+                <input type="range" min="0" max="5" value="5" class="range-slider" id="border-width-slider">
+                <span class="range-display" id="border-width-display">5px</span>
+              </div>
+              <div class="color-grid" id="border-color-grid"></div>
+            </div>
+            <div class="selected-preview hidden" id="selected-border-display">
+              <span class="preview-title">Selected Border</span>
+              <div class="selected-border-swatch" id="selected-border-swatch"></div>
+              <div class="preview-name" id="selected-border-name"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible-wrapper" id="font-panel-wrapper">
+      <div class="collapsible-inner">
+        <div class="card" id="font-panel">
+          <div class="panel-header">
+            <span class="panel-label">Font Color Options:</span>
+            <button class="btn btn-danger btn-sm" id="reset-font-btn">Reset to Default</button>
+          </div>
+          <div class="two-col-section">
+            <div>
+              <div class="font-input-row">
+                <label for="dark-font-input" class="font-input-label">Dark Font Color:</label>
+                <input type="color" id="dark-font-input" class="color-picker" value="#000000">
+                <input type="text"  id="dark-font-text"  class="hex-text" value="#000000">
+              </div>
+              <div class="font-input-row">
+                <label for="light-font-input" class="font-input-label">Light Font Color:</label>
+                <input type="color" id="light-font-input" class="color-picker" value="#ffffff">
+                <input type="text"  id="light-font-text"  class="hex-text" value="#ffffff">
+              </div>
+            </div>
+            <div class="font-preview-box">
+              <span class="preview-title">Preview</span>
+              <div class="font-preview-swatch dark-preview-bg">
+                <span class="font-preview-text" id="dark-preview-text">ede_color-dark</span>
+              </div>
+              <div class="font-preview-swatch light-preview-bg">
+                <span class="font-preview-text" id="light-preview-text">ede_color-light</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible-wrapper" id="background-panel-wrapper">
+      <div class="collapsible-inner">
+        <div class="card" id="background-panel">
+          <div class="panel-header">
+            <span class="panel-label">Combination Card Background:</span>
+            <button class="btn btn-danger btn-sm" id="reset-background-btn">Reset to Default</button>
+          </div>
+          <div class="bg-row">
+            <label class="bg-label">Background Color:</label>
+            <input type="color" id="background-input" class="color-picker" value="#ffffff">
+            <input type="text"  id="background-text"  class="hex-text" value="#ffffff">
+            <button class="btn btn-primary btn-sm" id="apply-background-btn" style="margin-left:auto;">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="selector-panel">
+      <div id="two-color-selector" class="two-color-mode">
+        <div>
+          <label class="selector-label">Select First Color:</label>
+          <div class="color-grid" id="color-grid-1"></div>
+        </div>
+        <div>
+          <label class="selector-label">Select Second Color:</label>
+          <div class="color-grid" id="color-grid-2"></div>
+        </div>
+      </div>
+      <div id="single-color-selector" class="single-color-mode hidden">
+        <label class="selector-label">Select a Color to Compare with All Others:</label>
+        <div class="color-grid" id="color-grid-single"></div>
+      </div>
+    </div>
+
+    <div class="card combination-display combination-card" id="combination-display">
+      <div class="combination-header">
+        <span class="combination-title" id="combination-title">Color Combination</span>
+        <div class="btn-group" id="two-color-buttons">
+          <button class="btn btn-primary btn-sm" id="switch-colors-btn">Switch Colors</button>
+          <button class="btn btn-primary btn-sm hidden" id="border-show-btn">Hide Border</button>
+        </div>
+        <div class="btn-group hidden" id="single-color-buttons">
+          <button class="btn btn-primary btn-sm" id="reverse-colors-btn">Reverse Colors</button>
+          <button class="btn btn-primary btn-sm hidden" id="single-border-show-btn">Hide Border</button>
+        </div>
+      </div>
+      <div class="combination-content" id="two-color-content">
+        </div>
+      <div class="single-color-combinations" id="single-color-content"></div>
+    </div>
+
+  </div></div><div id="view-editor" class="view">
+  <div class="container">
+
+    <div id="dropZone" class="drop-zone">
+      <p>Drag &amp; Drop SCSS/CSS files here (Values + Mappings)</p>
+      <span>_ede.scss and _vars.scss are the typically files needed.</span>
+    </div>
+
+    <div class="editor-controls">
+      <button class="btn btn-primary"   onclick="newPalette()">New Manual Palette</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('editorFileInput').click()">Load JS File</button>
+      <button class="btn btn-success"   onclick="exportAllPalettes()">Save Changes (.js)</button>
+    </div>
+    <input type="file" id="editorFileInput" class="hidden" accept=".js" onchange="loadPalettesFromFile(event)">
+
+    <div class="palette-selector-row">
+      <label style="font-weight:600;">Current Palette:</label>
+      <select id="paletteSelect" onchange="loadPalette()">
+        <option value="">Select a palette...</option>
+      </select>
+      <button class="btn btn-danger btn-sm" onclick="deletePalette()">Delete</button>
+    </div>
+
+    <input type="text" id="paletteName" class="palette-name-input" placeholder="Enter palette name…" onchange="updatePaletteName()">
+
+    <div class="editor-grid">
+      <div class="editor-section">
+        <h3>Main Colors</h3>
+        <div id="colorsSection"></div>
+        <button class="btn btn-success btn-sm" style="margin-top:8px;" onclick="addColorItem('colors')">+ Add Color</button>
+      </div>
+
+      <div class="editor-section">
+        <h3>Border Colors</h3>
+        <div id="borderColorsSection"></div>
+        <button class="btn btn-success btn-sm" style="margin-top:8px;" onclick="addColorItem('borderColors')">+ Add Border Color</button>
+      </div>
+      <div class="editor-section">
+        <h3>Font Colors</h3>
+        <div id="fontColorsSection"></div>
+      </div>
+      <div class="editor-section">
+        <h3>Default Background</h3>
+        <div class="color-item">
+          <input type="text" id="defaultBackground" placeholder="Hex without #" onchange="updateDefaultBackground(this.value)">
+          <input type="color" id="defaultBackgroundPicker" onchange="updateDefaultBackgroundFromPicker(this)">
+          <div class="color-preview" id="defaultBackgroundPreview"></div>
+        </div>
+      </div>
+      <div class="preview-section">
+        <h3>Palette Preview &amp; Contrast Check</h3>
+        <div class="palette-preview" id="palettePreview"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   SHARED UTILITIES
+============================================================ */
+function hexToRgb(hex) {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? { r: parseInt(r[1],16), g: parseInt(r[2],16), b: parseInt(r[3],16) } : null;
+}
+function getLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return [r,g,b].reduce((acc, c, i) => {
+    const v = c/255;
+    const lin = v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+    return acc + lin * [0.2126, 0.7152, 0.0722][i];
+  }, 0);
+}
+function getContrastRatio(c1, c2) {
+  const [hi, lo] = [getLuminance(c1), getLuminance(c2)].sort((a,b) => b-a);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function normHex(h) { return h.startsWith('#') ? h : '#' + h; }
+const HEX6 = /^#[0-9A-Fa-f]{6}$/;
+
+/* clipboard with localized feedback */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn, .single-color-copy');
+  if (btn) {
+    const text = btn.dataset.color;
+    navigator.clipboard.writeText(text).catch(() => {
+      const ta = document.createElement('textarea'); ta.value = text;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    });
+
+    // Save original styles
+    const originalText = btn.innerHTML;
+    const originalBg = btn.style.backgroundColor;
+    const originalColor = btn.style.color;
+    
+    // Apply temporary success feedback
+    btn.innerHTML = '✓';
+    btn.style.backgroundColor = 'var(--success)';
+    btn.style.color = 'var(--white)';
+    btn.style.opacity = '1';
+    
+    // Revert after 1.5s
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.backgroundColor = originalBg;
+      btn.style.color = originalColor;
+      btn.style.opacity = '';
+    }, 1500);
+  }
+});
+
+/* ============================================================
+   HELP MODAL LOGIC
+============================================================ */
+const helpData = {
+  combinations: {
+    title: "Color Combinations Guide",
+    content: `
+      <h4>Purpose</h4>
+      <p>Test and visualize how different colors from your palette interact with each other to ensure good contrast, readability, and aesthetics.</p>
+      
+      <h4>How to Use</h4>
+      <ul>
+        <li><strong>Two Colors Mode:</strong> Select two distinct colors to see how they look stacked on top of each other. The preview automatically calculates text contrast ratios.</li>
+        <li><strong>Single Color Mode:</strong> Select one base color to instantly compare it against <em>all</em> other colors in your palette simultaneously.</li>
+        <li><strong>Customizing Previews:</strong> Use the toggle switches (Border, Font, Background) to enable styling panels. You can add a simulated border to your combinations or change the background canvas to see how colors look in context.</li>
+        <li><strong>Copying Colors:</strong> Click the copy icon (⎘) next to any color hex or name to instantly copy it to your clipboard.</li>
+      </ul>
+    `
+  },
+  editor: {
+    title: "Palette Editor Guide",
+    content: `
+      <h4>Purpose</h4>
+      <p>Create, edit, import, and export custom color palettes used throughout the application.</p>
+      
+      <h4>How to Use</h4>
+      <ul>
+        <li><strong>Importing:</strong> Drag & drop your SCSS/CSS files (typically <code>_vars.scss</code> or <code>_ede.scss</code>) into the dashed drop zone to automatically extract color variables and mappings.</li>
+        <li><strong>Managing Palettes:</strong> Use the top controls to create a "New Manual Palette", switch between loaded palettes via the dropdown, or "Delete" the current one.</li>
+        <li><strong>Editing Colors:</strong> Use the text fields to rename colors, or the hex inputs/color pickers to change the color values. Add new entries using the "+ Add Color" buttons.</li>
+        <li><strong>Contrast Check:</strong> As you build your palette, the "Palette Preview" section at the bottom will automatically verify if your colors meet accessibility standards against your chosen light and dark font colors.</li>
+        <li><strong>Saving:</strong> Click "Save Changes (.js)" to download your palette file for future use. You can load this file back into the app later via the main menu.</li>
+      </ul>
+    `
+  }
+};
+
+const helpBtn = document.getElementById('global-help-btn');
+const helpModal = document.getElementById('help-modal');
+const helpClose = document.getElementById('help-modal-close');
+const helpTitle = document.getElementById('help-modal-title');
+const helpBody = document.getElementById('help-modal-body');
+
+function openHelpModal() {
+  // Find which tab is active
+  const activeTabBtn = document.querySelector('.tab-btn.active');
+  if (!activeTabBtn) return;
+  
+  const activeTab = activeTabBtn.dataset.tab;
+  const data = helpData[activeTab];
+  
+  if (data) {
+    helpTitle.textContent = data.title;
+    helpBody.innerHTML = data.content;
+    helpModal.classList.add('show');
+  }
+}
+
+function closeHelpModal() {
+  helpModal.classList.remove('show');
+}
+
+helpBtn.addEventListener('click', openHelpModal);
+helpClose.addEventListener('click', closeHelpModal);
+
+// Close modal when clicking on the backdrop
+helpModal.addEventListener('click', (e) => {
+  if (e.target === helpModal) {
+    closeHelpModal();
+  }
+});
+
+// Close modal when pressing Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && helpModal.classList.contains('show')) {
+    closeHelpModal();
+  }
+});
+
+/* ============================================================
+   TAB SWITCHING
+============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.tab).classList.add('active');
+    
+    // Toggle combination-specific header controls
+    const headerControls = document.getElementById('combination-header-controls');
+    if(headerControls) {
+      headerControls.style.display = btn.dataset.tab === 'combinations' ? 'flex' : 'none';
+    }
+  });
+});
+
+/* ============================================================
+   VIEW 1 — COLOR COMBINATIONS
+============================================================ */
+class ColorSelector {
+  constructor() {
+    this.colors = {};
+    this.borderColors = {};
+    this.defaultBackground = '#ffffff';
+    this.fontColors = {};
+    this.state = {
+      selectedColor1: null, selectedColor2: null,
+      selectedSingleColor: null, selectedBorderColor: null,
+      borderWidth: 5, darkFontColor: '#000000', lightFontColor: '#ffffff',
+      combinationBordersVisible: true, 
+      currentMode: 'two-color', singleColorReversed: false,
+      combinationBackgroundColor: '#ffffff',
+      borderPanelVisible: false, fontPanelVisible: false,
+      backgroundPanelVisible: false,
+    };
+    this.el = this._getElements();
+    this._loadDefaultPalettes();
+    this._init();
+  }
+
+  _getElements() {
+    return {
+      modeBtns:              document.querySelectorAll('#color-mode-toggle .seg-btn'),
+      borderPanelToggle:     document.getElementById('border-panel-toggle'),
+      borderPanelWrapper:    document.getElementById('border-panel-wrapper'),
+      fontPanelToggle:       document.getElementById('font-panel-toggle'),
+      fontPanelWrapper:      document.getElementById('font-panel-wrapper'),
+      backgroundPanelToggle: document.getElementById('background-panel-toggle'),
+      backgroundPanelWrapper:document.getElementById('background-panel-wrapper'),
+      borderWidthSlider:     document.getElementById('border-width-slider'),
+      borderWidthDisplay:    document.getElementById('border-width-display'),
+      clearBorderBtn:        document.getElementById('clear-border-btn'),
+      resetFontBtn:          document.getElementById('reset-font-btn'),
+      resetBackgroundBtn:    document.getElementById('reset-background-btn'),
+      applyBackgroundBtn:    document.getElementById('apply-background-btn'),
+      darkFontInput:         document.getElementById('dark-font-input'),
+      lightFontInput:        document.getElementById('light-font-input'),
+      darkFontText:          document.getElementById('dark-font-text'),
+      lightFontText:         document.getElementById('light-font-text'),
+      backgroundInput:       document.getElementById('background-input'),
+      backgroundText:        document.getElementById('background-text'),
+      darkPreviewText:       document.getElementById('dark-preview-text'),
+      lightPreviewText:      document.getElementById('light-preview-text'),
+      selectedBorderDisplay: document.getElementById('selected-border-display'),
+      selectedBorderSwatch:  document.getElementById('selected-border-swatch'),
+      selectedBorderName:    document.getElementById('selected-border-name'),
+      twoColorSelector:      document.getElementById('two-color-selector'),
+      singleColorSelector:   document.getElementById('single-color-selector'),
+      twoColorButtons:       document.getElementById('two-color-buttons'),
+      singleColorButtons:    document.getElementById('single-color-buttons'),
+      twoColorContent:       document.getElementById('two-color-content'),
+      singleColorContent:    document.getElementById('single-color-content'),
+      combinationDisplay:    document.getElementById('combination-display'),
+      combinationTitle:      document.getElementById('combination-title'),
+      switchColorsBtn:       document.getElementById('switch-colors-btn'),
+      borderShowBtn:         document.getElementById('border-show-btn'),
+      singleBorderShowBtn:   document.getElementById('single-border-show-btn'),
+      reverseColorsBtn:      document.getElementById('reverse-colors-btn'),
+    };
+  }
+
+  _loadDefaultPalettes() {
+    window.PALETTES = [{
+      name: "Default Palette",
+      colors: { "Red":"ff0000","Green":"00ff00","Blue":"0000ff","Yellow":"ffff00","Cyan":"00ffff","Magenta":"ff00ff","Black":"000000","White":"ffffff" },
+      borderColors: { "Dark Gray":"333333","Light Gray":"cccccc","Black":"000000" },
+      fontColors: { dark:"000000", light:"ffffff" },
+      defaultBackground: "ffffff"
+    }];
+  }
+
+  _init() {
+    this._loadPalettes();
+    this._attachListeners();
+    this._initFileLoading();
+    this.state.borderWidth = parseInt(this.el.borderWidthSlider.value);
+    this._updateBorderWidthDisplay();
+    this._updateFontPreview();
+  }
+
+  /* ---- file loading ---- */
+  _initFileLoading() {
+    document.getElementById('palette-file-input').addEventListener('change', e => this._handleFileLoad(e));
+  }
+
+  _handleFileLoad(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const existing = document.getElementById('_dyn-palette');
+        if (existing) existing.remove();
+        const s = document.createElement('script');
+        s.id = '_dyn-palette'; s.textContent = e.target.result;
+        document.head.appendChild(s);
+        if (!window.PALETTES || !Array.isArray(window.PALETTES)) throw new Error('PALETTES array not found');
+        document.getElementById('palette-selector').innerHTML = '';
+        this._loadPalettes();
+        this._showFileStatus('File loaded successfully!', 'success');
+      } catch(err) { this._showFileStatus('Error: ' + err.message, 'error'); }
+    };
+    reader.readAsText(file);
+  }
+
+  _showFileStatus(msg, type) {
+    const el = document.getElementById('file-status');
+    el.textContent = msg; el.className = 'file-status ' + type;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 3000);
+  }
+
+  /* ---- palettes ---- */
+  _loadPalettes() {
+    const sel = document.getElementById('palette-selector');
+    PALETTES.forEach((p, i) => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = p.name; sel.appendChild(opt);
+    });
+    this._applyPalette(PALETTES[0]);
+    sel.addEventListener('change', e => this._applyPalette(PALETTES[parseInt(e.target.value)]));
+  }
+
+  _applyPalette(p) {
+    this.colors = Object.fromEntries(Object.entries(p.colors).map(([k,v]) => [k, '#'+v]));
+    this.borderColors = Object.fromEntries(Object.entries(p.borderColors).map(([k,v]) => [k, '#'+v]));
+    this.fontColors = Object.fromEntries(Object.entries(p.fontColors).map(([k,v]) => [k, '#'+v]));
+    this.defaultBackground = '#' + p.defaultBackground;
+
+    Object.assign(this.state, {
+      selectedColor1: null, selectedColor2: null, selectedSingleColor: null,
+      selectedBorderColor: null, singleColorReversed: false,
+      darkFontColor: this.fontColors.dark || '#000000',
+      lightFontColor: this.fontColors.light || '#ffffff',
+      combinationBackgroundColor: this.defaultBackground,
+    });
+
+    const { el } = this;
+    el.darkFontInput.value  = this.state.darkFontColor;
+    el.lightFontInput.value = this.state.lightFontColor;
+    el.darkFontText.value   = this.state.darkFontColor;
+    el.lightFontText.value  = this.state.lightFontColor;
+    el.backgroundInput.value = this.defaultBackground;
+    el.backgroundText.value  = this.defaultBackground;
+    document.documentElement.style.setProperty('--combination-bg', this.defaultBackground);
+
+    el.combinationDisplay.classList.remove('show');
+    el.selectedBorderDisplay.classList.add('hidden');
+    el.borderShowBtn.classList.add('hidden');
+    el.singleBorderShowBtn.classList.add('hidden');
+    el.reverseColorsBtn.textContent = 'Reverse Colors';
+    document.querySelectorAll('.color-option.selected').forEach(o => o.classList.remove('selected'));
+
+    ['color-grid-1','color-grid-2','color-grid-single','border-color-grid'].forEach(id => document.getElementById(id).innerHTML = '');
+    this._buildColorGrids();
+    this._updateFontPreview();
+    this._updateDisplay();
+  }
+
+  /* ---- event listeners ---- */
+  _attachListeners() {
+    const { el } = this;
+    
+    el.modeBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this._setMode(e.target.dataset.mode);
+      });
+    });
+
+    el.borderPanelToggle.addEventListener('change', () => { 
+      this.state.borderPanelVisible = el.borderPanelToggle.checked; 
+      el.borderPanelWrapper.classList.toggle('open', this.state.borderPanelVisible); 
+    });
+    el.fontPanelToggle.addEventListener('change', () => { 
+      this.state.fontPanelVisible = el.fontPanelToggle.checked; 
+      el.fontPanelWrapper.classList.toggle('open', this.state.fontPanelVisible); 
+    });
+    el.backgroundPanelToggle.addEventListener('change', () => { 
+      this.state.backgroundPanelVisible = el.backgroundPanelToggle.checked; 
+      el.backgroundPanelWrapper.classList.toggle('open', this.state.backgroundPanelVisible); 
+    });
+    
+    el.borderWidthSlider.addEventListener('input', e => { this.state.borderWidth = parseInt(e.target.value); this._updateBorderWidthDisplay(); this._updateSelectedBorderDisplay(); this._updateDisplay(); });
+    el.clearBorderBtn.addEventListener('click', () => this._clearBorder());
+    el.resetFontBtn.addEventListener('click', () => this._resetFontColors());
+    el.resetBackgroundBtn.addEventListener('click', () => this._resetBgColor());
+    el.applyBackgroundBtn.addEventListener('click', () => document.documentElement.style.setProperty('--combination-bg', this.state.combinationBackgroundColor));
+    el.darkFontInput.addEventListener('input', e => this._setFontColor('dark', e.target.value, true));
+    el.lightFontInput.addEventListener('input', e => this._setFontColor('light', e.target.value, true));
+    el.darkFontText.addEventListener('input', e => this._setFontColor('dark', normHex(e.target.value), false));
+    el.lightFontText.addEventListener('input', e => this._setFontColor('light', normHex(e.target.value), false));
+    el.backgroundInput.addEventListener('input', e => this._setBgColor(e.target.value, true));
+    el.backgroundText.addEventListener('input', e => this._setBgColor(normHex(e.target.value), false));
+    el.switchColorsBtn.addEventListener('click', () => this._switchColors());
+    el.borderShowBtn.addEventListener('click', () => { this.state.combinationBordersVisible = !this.state.combinationBordersVisible; el.borderShowBtn.textContent = this.state.combinationBordersVisible ? 'Hide Border' : 'Show Border'; this._updateDisplay(); });
+    el.singleBorderShowBtn.addEventListener('click', () => { this.state.combinationBordersVisible = !this.state.combinationBordersVisible; el.singleBorderShowBtn.textContent = this.state.combinationBordersVisible ? 'Hide Border' : 'Show Border'; this._updateDisplay(); });
+    el.reverseColorsBtn.addEventListener('click', () => { this.state.singleColorReversed = !this.state.singleColorReversed; el.reverseColorsBtn.textContent = this.state.singleColorReversed ? 'Normal Order' : 'Reverse Colors'; this._updateDisplay(); });
+  }
+
+  /* ---- mode ---- */
+  _setMode(mode) {
+    this.state.currentMode = mode;
+    
+    // Update active class on the segmented control buttons
+    this.el.modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+    const s = this.state.currentMode;
+    const { el } = this;
+    
+    // Toggle container visibilities
+    el.twoColorSelector.classList.toggle('hidden', s !== 'two-color');
+    el.singleColorSelector.classList.toggle('hidden', s !== 'single-color');
+    el.twoColorButtons.classList.toggle('hidden', s !== 'two-color');
+    el.singleColorButtons.classList.toggle('hidden', s !== 'single-color');
+    el.twoColorContent.classList.toggle('hidden', s !== 'two-color');
+    el.singleColorContent.classList.toggle('hidden', s !== 'single-color');
+    
+    if (s === 'two-color') el.combinationTitle.textContent = 'Color Combination';
+    if (s === 'single-color') { this.state.singleColorReversed = false; el.reverseColorsBtn.textContent = 'Reverse Colors'; }
+    
+    this._updateDisplay();
+  }
+
+  /* ---- border/font/bg ---- */
+  _updateBorderWidthDisplay() { this.el.borderWidthDisplay.textContent = this.state.borderWidth + 'px'; }
+  _clearBorder() {
+    this.state.selectedBorderColor = null;
+    this.state.combinationBordersVisible = true;
+    this._updateSelectedBorderDisplay();
+    this.el.borderShowBtn.classList.add('hidden');
+    this.el.singleBorderShowBtn.classList.add('hidden');
+    document.querySelectorAll('#border-color-grid .color-option').forEach(o => o.classList.remove('selected'));
+    this._updateDisplay();
+  }
+  _updateSelectedBorderDisplay() {
+    const { el, state } = this;
+    if (state.selectedBorderColor) {
+      const hex = this.borderColors[state.selectedBorderColor];
+      el.selectedBorderDisplay.classList.remove('hidden');
+      el.selectedBorderSwatch.style.borderColor = hex;
+      el.selectedBorderSwatch.style.borderWidth = state.borderWidth + 'px';
+      el.selectedBorderName.innerHTML = `${state.selectedBorderColor} <button class="copy-btn" data-color="${state.selectedBorderColor}" title="Copy">⎘</button>`;
+    } else {
+      el.selectedBorderDisplay.classList.add('hidden');
+    }
+  }
+  _setFontColor(type, color, fromPicker) {
+    if (!HEX6.test(color)) return;
+    if (type === 'dark') { this.state.darkFontColor = color; (fromPicker ? this.el.darkFontText : this.el.darkFontInput).value = color; }
+    else { this.state.lightFontColor = color; (fromPicker ? this.el.lightFontText : this.el.lightFontInput).value = color; }
+    this._updateFontPreview(); this._updateDisplay();
+  }
+  _resetFontColors() {
+    this.state.darkFontColor = '#000000'; this.state.lightFontColor = '#ffffff';
+    ['darkFontInput','darkFontText'].forEach(k => this.el[k].value = '#000000');
+    ['lightFontInput','lightFontText'].forEach(k => this.el[k].value = '#ffffff');
+    this._updateFontPreview(); this._updateDisplay();
+  }
+  _updateFontPreview() {
+    const dc = getContrastRatio('#ffffff', this.state.darkFontColor);
+    const lc = getContrastRatio('#000000', this.state.lightFontColor);
+    this.el.darkPreviewText.style.color = this.state.darkFontColor;
+    this.el.lightPreviewText.style.color = this.state.lightFontColor;
+    this.el.darkPreviewText.innerHTML  = `ede_color-dark<div class="font-contrast-info">${dc.toFixed(2)}:1</div>`;
+    this.el.lightPreviewText.innerHTML = `ede_color-light<div class="font-contrast-info">${lc.toFixed(2)}:1</div>`;
+  }
+  _setBgColor(color, fromPicker) {
+    if (!HEX6.test(color)) return;
+    this.state.combinationBackgroundColor = color;
+    (fromPicker ? this.el.backgroundText : this.el.backgroundInput).value = color;
+  }
+  _resetBgColor() {
+    this.state.combinationBackgroundColor = this.defaultBackground;
+    this.el.backgroundInput.value = this.el.backgroundText.value = this.defaultBackground;
+    document.documentElement.style.setProperty('--combination-bg', this.defaultBackground);
+  }
+
+  /* ---- grids ---- */
+  _buildColorGrids() {
+    ['color-grid-1','color-grid-2','color-grid-single'].forEach(id => this._buildColorGrid(id));
+    this._buildBorderGrid();
+  }
+  _buildColorGrid(id) {
+    const frag = document.createDocumentFragment();
+    Object.entries(this.colors).forEach(([name, hex]) => {
+      const opt = document.createElement('div'); opt.className = 'color-option'; opt.dataset.color = name;
+      opt.addEventListener('click', () => this._selectColor(name, id));
+      const sw = document.createElement('div'); sw.className = 'color-swatch'; sw.style.backgroundColor = hex;
+      opt.appendChild(sw); frag.appendChild(opt);
+    });
+    document.getElementById(id).appendChild(frag);
+  }
+  _buildBorderGrid() {
+    const frag = document.createDocumentFragment();
+    Object.entries(this.borderColors).forEach(([name, hex]) => {
+      const opt = document.createElement('div'); opt.className = 'color-option'; opt.dataset.borderColor = name;
+      opt.addEventListener('click', () => this._selectBorderColor(name));
+      const sw = document.createElement('div'); sw.className = 'border-swatch'; sw.style.borderColor = hex;
+      opt.appendChild(sw); frag.appendChild(opt);
+    });
+    document.getElementById('border-color-grid').appendChild(frag);
+  }
+  _clearGridSelection(gridId) { document.querySelectorAll(`#${gridId} .color-option`).forEach(o => o.classList.remove('selected')); }
+  _selectColor(name, gridId) {
+    this._clearGridSelection(gridId);
+    document.querySelector(`#${gridId} [data-color="${name}"]`)?.classList.add('selected');
+    if (gridId === 'color-grid-1') this.state.selectedColor1 = name;
+    else if (gridId === 'color-grid-2') this.state.selectedColor2 = name;
+    else this.state.selectedSingleColor = name;
+    this._updateDisplay();
+  }
+  _selectBorderColor(name) {
+    this._clearGridSelection('border-color-grid');
+    document.querySelector(`#border-color-grid [data-border-color="${name}"]`)?.classList.add('selected');
+    this.state.selectedBorderColor = name;
+    this.state.combinationBordersVisible = true;
+    this._updateSelectedBorderDisplay();
+    const btn = this.state.currentMode === 'two-color' ? this.el.borderShowBtn : this.el.singleBorderShowBtn;
+    btn.classList.remove('hidden'); btn.textContent = 'Hide Border';
+    this._updateDisplay();
+  }
+  _switchColors() {
+    if (!this.state.selectedColor1 || !this.state.selectedColor2) return;
+    [this.state.selectedColor1, this.state.selectedColor2] = [this.state.selectedColor2, this.state.selectedColor1];
+    ['color-grid-1','color-grid-2'].forEach((id, i) => {
+      this._clearGridSelection(id);
+      document.querySelector(`#${id} [data-color="${i===0?this.state.selectedColor1:this.state.selectedColor2}"]`)?.classList.add('selected');
+    });
+    this._showTwoColorCombination();
+  }
+
+  /* ---- display ---- */
+  _getTextInfo(bg) {
+    const dc = getContrastRatio(bg, this.state.darkFontColor);
+    const lc = getContrastRatio(bg, this.state.lightFontColor);
+    return {
+      dark:  { contrast: dc, meetsThreshold: dc >= 4.5, color: this.state.darkFontColor },
+      light: { contrast: lc, meetsThreshold: lc >= 4.5, color: this.state.lightFontColor },
+    };
+  }
+  _textHtml(info) {
+    return [
+      info.dark.meetsThreshold  ? `<div class="sample-text" style="color:${info.dark.color}">ede_color-dark<br>${info.dark.contrast.toFixed(2)}:1</div>`  : '',
+      info.light.meetsThreshold ? `<div class="sample-text" style="color:${info.light.color}">ede_color-light<br>${info.light.contrast.toFixed(2)}:1</div>` : '',
+    ].join('');
+  }
+  _getBorderStyle() {
+    return (this.state.selectedBorderColor && this.state.combinationBordersVisible)
+      ? `border:${this.state.borderWidth}px solid ${this.borderColors[this.state.selectedBorderColor]};` : '';
+  }
+  _updateDisplay() {
+    const { state, el } = this;
+    if (state.currentMode === 'two-color' && state.selectedColor1 && state.selectedColor2) this._showTwoColorCombination();
+    else if (state.currentMode === 'single-color' && state.selectedSingleColor) this._showSingleColorCombinations();
+    else el.combinationDisplay.classList.remove('show');
+  }
+  
+  _showTwoColorCombination() {
+    const { state, el } = this;
+    const h1 = this.colors[state.selectedColor1], h2 = this.colors[state.selectedColor2];
+    const name1 = state.selectedColor1, name2 = state.selectedColor2;
+    const bs = this._getBorderStyle();
+
+    const copyBtn = n => `<button class="copy-btn" data-color="${n}" title="Copy">⎘</button>`;
+
+    const makeComboColumn = (topHex, bottomHex, topName, bottomName) => `
+      <div class="combo-column-wrapper">
+        <div class="combo-column-grid">
+          <div class="combo-preview-small" style="${bs}">
+            <div class="color-half" style="background-color:${topHex}">${this._textHtml(this._getTextInfo(topHex))}</div>
+            <div class="color-half" style="background-color:${bottomHex}">${this._textHtml(this._getTextInfo(bottomHex))}</div>
+          </div>
+          <div class="combo-info-stacked">
+            <div class="color-info-compact">
+              <span class="swatch-dot" style="background-color:${topHex}"></span>
+              <span class="name" title="${topName}">${topName}</span>
+              <span class="hex">${topHex}</span>
+              ${copyBtn(topName)}
+            </div>
+            <div class="color-info-compact">
+              <span class="swatch-dot" style="background-color:${bottomHex}"></span>
+              <span class="name" title="${bottomName}">${bottomName}</span>
+              <span class="hex">${bottomHex}</span>
+              ${copyBtn(bottomName)}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    el.twoColorContent.innerHTML = `
+      <div class="two-color-grid-container">
+        ${makeComboColumn(h1, h2, name1, name2)}
+        ${makeComboColumn(h2, h1, name2, name1)}
+      </div>
+    `;
+    
+    el.combinationDisplay.classList.add('show');
+  }
+  
+  _showSingleColorCombinations() {
+    const { state } = this;
+    const selHex = this.colors[state.selectedSingleColor];
+    const bStyle = state.selectedBorderColor && state.combinationBordersVisible
+      ? `border:${state.borderWidth}px solid ${this.borderColors[state.selectedBorderColor]};` : '';
+    const frag = document.createDocumentFragment();
+
+    Object.entries(this.colors).forEach(([name, hex]) => {
+      if (name === state.selectedSingleColor) return;
+      const [fHex, sHex, fName, sName] = state.singleColorReversed
+        ? [hex, selHex, name, state.selectedSingleColor]
+        : [selHex, hex, state.selectedSingleColor, name];
+      const fInfo = this._getTextInfo(fHex), sInfo = this._getTextInfo(sHex);
+      const div = document.createElement('div'); div.className = 'single-combination';
+      const copyBtn = n => `<button class="single-color-copy" data-color="${n}" title="Copy">⎘</button>`;
+      div.innerHTML = `
+        <div class="single-preview" style="${bStyle}">
+          <div class="single-color-half" style="background:${fHex}">${this._singleTextHtml(fInfo)}</div>
+          <div class="single-color-half" style="background:${sHex}">${this._singleTextHtml(sInfo)}</div>
+        </div>
+        <div class="single-color-info">
+          <div class="color-info-compact">
+            <span class="swatch-dot" style="background-color:${fHex}"></span>
+            <span class="name" title="${fName}">${fName}</span>
+            <span class="hex">${fHex}</span>
+            ${copyBtn(fName)}
+          </div>
+          <div class="color-info-compact" style="margin-top: 8px;">
+            <span class="swatch-dot" style="background-color:${sHex}"></span>
+            <span class="name" title="${sName}">${sName}</span>
+            <span class="hex">${sHex}</span>
+            ${copyBtn(sName)}
+          </div>
+        </div>`;
+      frag.appendChild(div);
+    });
+
+    this.el.singleColorContent.innerHTML = '';
+    this.el.singleColorContent.appendChild(frag);
+    this.el.combinationTitle.textContent = state.singleColorReversed
+      ? `All Other Colors with ${state.selectedSingleColor}`
+      : `${state.selectedSingleColor} with All Other Colors`;
+    this.el.combinationDisplay.classList.add('show');
+  }
+  _singleTextHtml(info) {
+    return [
+      info.dark.meetsThreshold  ? `<div style="color:${info.dark.color};line-height:1.2">ede_color-dark<br>${info.dark.contrast.toFixed(1)}:1</div>`  : '',
+      info.light.meetsThreshold ? `<div style="color:${info.light.color};line-height:1.2">ede_color-light<br>${info.light.contrast.toFixed(1)}:1</div>` : '',
+    ].join('');
+  }
+}
+
+/* ============================================================
+   VIEW 2 — PALETTE EDITOR
+============================================================ */
+let palettes = [];
+let currentPaletteIndex = -1;
+let fileImportBuffer = { vars: {}, mappings: {} };
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', async e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  for (const file of e.dataTransfer.files) {
+    const text = await file.text();
+    const varRe = /--([\w-]+)\s*:\s*#([A-Fa-f0-9]{3,6})/g, mapRe = /\.([\w-]+)\s*\{[^}]*var\(--([\w-]+)\)/g;
+    let m;
+    while ((m = varRe.exec(text)) !== null) fileImportBuffer.vars[m[1]] = m[2];
+    while ((m = mapRe.exec(text)) !== null) fileImportBuffer.mappings[m[1]] = m[2];
+  }
+  _processFileImport();
+});
+
+function _processFileImport() {
+  if (!Object.keys(fileImportBuffer.vars).length || !Object.keys(fileImportBuffer.mappings).length) return;
+  const p = { name:"Imported Palette "+(palettes.length+1), colors:{}, borderColors:{}, fontColors:{dark:"000000",light:"FFFFFF"}, defaultBackground:"FFFFFF" };
+  Object.entries(fileImportBuffer.mappings).forEach(([ede, varName]) => {
+    const hex = fileImportBuffer.vars[varName]; if (!hex) return;
+    if (ede.startsWith('ede_borderColor') || ede.startsWith('ede_otherBorderColor')) {
+      p.borderColors[ede] = hex;
+      if (ede.startsWith('ede_borderColor')) { const n = ede.match(/\d+$/); if (n) p.colors[`ede_backgroundColor${n[0]}`] = hex; }
+    } else if (ede.startsWith('ede_otherColor')) { p.colors[ede] = hex; }
+  });
+  if (Object.keys(p.colors).length || Object.keys(p.borderColors).length) {
+    palettes.push(p); currentPaletteIndex = palettes.length-1;
+    fileImportBuffer = { vars:{}, mappings:{} };
+    updatePaletteSelector(); document.getElementById('paletteSelect').value = currentPaletteIndex; renderCurrentPalette();
+  }
+}
+
+function updatePaletteSelector() {
+  const sel = document.getElementById('paletteSelect');
+  sel.innerHTML = '<option value="">Select a palette…</option>';
+  palettes.forEach((p,i) => { const o = document.createElement('option'); o.value=i; o.textContent=p.name; sel.appendChild(o); });
+}
+function newPalette() {
+  palettes.push({ name:"New Palette", colors:{}, borderColors:{}, fontColors:{dark:"000000",light:"FFFFFF"}, defaultBackground:"FFFFFF" });
+  currentPaletteIndex = palettes.length-1;
+  updatePaletteSelector(); document.getElementById('paletteSelect').value = currentPaletteIndex; renderCurrentPalette();
+}
+function loadPalette() {
+  const v = document.getElementById('paletteSelect').value;
+  currentPaletteIndex = parseInt(v); if (currentPaletteIndex >= 0) renderCurrentPalette();
+}
+function renderCurrentPalette() {
+  if (currentPaletteIndex < 0) return;
+  const p = palettes[currentPaletteIndex];
+  document.getElementById('paletteName').value = p.name;
+  renderColorSection('colors', p.colors);
+  renderColorSection('borderColors', p.borderColors);
+  renderFontColors(p.fontColors);
+  document.getElementById('defaultBackground').value = p.defaultBackground;
+  document.getElementById('defaultBackgroundPicker').value = '#' + p.defaultBackground;
+  updateColorPreview('defaultBackground', p.defaultBackground);
+  updatePreview();
+}
+function renderColorSection(section, colors) {
+  const el = document.getElementById(section + 'Section'); el.innerHTML = '';
+  Object.keys(colors).sort((a,b) => a.localeCompare(b,undefined,{numeric:true}))
+    .forEach(name => el.appendChild(createColorItem(section, name, colors[name])));
+}
+function renderFontColors(fc) {
+  const el = document.getElementById('fontColorsSection'); el.innerHTML = '';
+  Object.entries(fc).forEach(([n,c]) => el.appendChild(createColorItem('fontColors',n,c)));
+}
+function createColorItem(section, name, color) {
+  const div = document.createElement('div'); div.className = 'color-item';
+  const ro = section === 'fontColors' ? 'readonly' : '';
+  div.innerHTML = `
+    <input type="text" value="${name}" ${ro} onchange="updateColorName('${section}',this,'${name}')">
+    <input type="text" value="${color}" onchange="updateColor('${section}','${name}',this.value)">
+    <input type="color" value="#${color}" onchange="updateFromColorPicker('${section}','${name}',this)">
+    <div class="color-preview" style="background:#${color}"></div>
+    ${section!=='fontColors' ? `<button class="remove-btn" onclick="removeColorItem('${section}','${name}')">✕</button>` : ''}`;
+  return div;
+}
+function updateColor(section, name, color) {
+  color = color.replace('#',''); palettes[currentPaletteIndex][section][name] = color; renderCurrentPalette();
+}
+function updateFromColorPicker(section, name, picker) { updateColor(section, name, picker.value.substring(1)); }
+function updateColorName(section, input, oldName) {
+  const p = palettes[currentPaletteIndex], val = input.value.trim();
+  if (!val || val === oldName) return;
+  const entries = Object.entries(p[section]);
+  p[section] = Object.fromEntries(entries.map(([k,v]) => [k===oldName ? val : k, v]));
+  renderCurrentPalette();
+}
+function removeColorItem(section, name) {
+  delete palettes[currentPaletteIndex][section][name]; renderCurrentPalette();
+}
+function addColorItem(section) {
+  const base = section === 'borderColors' ? 'New Border' : 'New Color';
+  let name = base, i = 1;
+  while (palettes[currentPaletteIndex][section][name]) name = base + ' ' + (++i);
+  palettes[currentPaletteIndex][section][name] = 'cccccc'; renderCurrentPalette();
+}
+function updateDefaultBackground(color) { palettes[currentPaletteIndex].defaultBackground = color.replace('#',''); renderCurrentPalette(); }
+function updateDefaultBackgroundFromPicker(picker) { updateDefaultBackground(picker.value); }
+function updateColorPreview(fieldName, color) { const el = document.getElementById(fieldName+'Preview'); if (el) el.style.backgroundColor = '#'+color; }
+function updatePaletteName() { palettes[currentPaletteIndex].name = document.getElementById('paletteName').value; updatePaletteSelector(); document.getElementById('paletteSelect').value = currentPaletteIndex; }
+function deletePalette() {
+  if (currentPaletteIndex >= 0 && confirm('Delete this palette?')) {
+    palettes.splice(currentPaletteIndex,1); currentPaletteIndex=-1; updatePaletteSelector(); renderCurrentPalette();
+  }
+}
+function exportAllPalettes() {
+  const blob = new Blob([`const PALETTES = ${JSON.stringify(palettes,null,2)};`],{type:'text/javascript'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'my_palettes.js'; a.click();
+}
+function loadPalettesFromFile(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const m = e.target.result.match(/(?:const|var|let)\s+PALETTES\s*=\s*(\[[\s\S]*?\]);/);
+    if (m) { palettes = JSON.parse(m[1]); updatePaletteSelector(); alert('Loaded successfully!'); }
+  };
+  reader.readAsText(file);
+}
+function updatePreview() {
+  if (currentPaletteIndex < 0) return;
+  const p = palettes[currentPaletteIndex];
+  const preview = document.getElementById('palettePreview'); preview.innerHTML = '';
+  Object.entries(p.colors).forEach(([name, color]) => {
+    const dr = _calcContrast(color, p.fontColors.dark), lr = _calcContrast(color, p.fontColors.light);
+    const item = document.createElement('div'); item.className = 'preview-item';
+    item.innerHTML = `
+      <div class="color-swatch" style="background:#${color}"></div>
+      <div style="flex:1"><div style="font-weight:700;font-size:13px">${name}</div><div style="font-family:monospace;font-size:11px;color:#666">#${color}</div></div>
+      <div class="contrast-ratios">
+        <div class="contrast-item"><span class="contrast-sample" style="background:#${p.fontColors.dark}"></span> <span class="${dr>=4.5?'contrast-pass':'contrast-fail'}">${dr.toFixed(2)}</span></div>
+        <div class="contrast-item"><span class="contrast-sample" style="background:#${p.fontColors.light}"></span> <span class="${lr>=4.5?'contrast-pass':'contrast-fail'}">${lr.toFixed(2)}</span></div>
+      </div>`;
+    preview.appendChild(item);
+  });
+  if (Object.keys(p.borderColors).length) {
+    const hdr = document.createElement('div'); hdr.style.cssText = 'grid-column:1/-1;padding:8px 0;font-weight:700'; hdr.textContent = 'Border Colors'; preview.appendChild(hdr);
+    const bg = document.createElement('div'); bg.className = 'border-colors-grid';
+    Object.entries(p.borderColors).forEach(([name,color]) => {
+      const bi = document.createElement('div'); bi.className = 'preview-item';
+      bi.innerHTML = `<div class="color-swatch" style="background:#${color}"></div><div style="font-size:12px"><b>${name}</b><br>#${color}</div>`;
+      bg.appendChild(bi);
+    });
+    preview.appendChild(bg);
+  }
+}
+function _calcContrast(c1, c2) {
+  function L(hex) { let r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255; return 0.2126*_lin(r)+0.7152*_lin(g)+0.0722*_lin(b); }
+  function _lin(v) { return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }
+  const [hi,lo] = [L(c1),L(c2)].sort((a,b)=>b-a); return (hi+0.05)/(lo+0.05);
+}
+
+/* ============================================================
+   BOOT
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => { new ColorSelector(); });
+</script>
+</body>
+</html>
