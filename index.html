@@ -605,22 +605,30 @@
     <h1>Llama<span class="accent">Tools</span></h1>
     <p class="tagline">A cozy collection of handy tools, growing one llama-step at a time.</p>
     
-    <div class="divider">
-      <svg class="mountain-divider" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg">
-        
-        <circle class="celestial-orb" cx="160" cy="30" r="10" />
-        
-        <g id="cloud-layer-back"></g>
+   <div class="divider">
+	  <svg class="mountain-divider" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg">
 
-        <path class="mtn-back" d="M 30 50 L 80 16 L 130 50 L 190 12 L 250 50 Z" />
-        
-        <path class="mtn-front" d="M 50 50 L 105 32 L 150 50 L 210 26 L 275 50 Z" />
-        
-        <g id="cloud-layer-front"></g>
+		<defs>
+		  <clipPath id="horizon-clip">
+			<rect x="0" y="0" width="320" height="50" />
+		  </clipPath>
+		</defs>
 
-        <line class="mtn-line" x1="0" y1="50" x2="320" y2="50" stroke-width="2" stroke-linecap="round" />
-      </svg>
-    </div>
+		<g clip-path="url(#horizon-clip)">
+		  <circle class="celestial-orb" cx="160" cy="30" r="10" />
+		</g>
+
+		<g id="cloud-layer-back"></g>
+
+		<path class="mtn-back" d="M 30 50 L 80 16 L 130 50 L 190 12 L 250 50 Z" />
+
+		<path class="mtn-front" d="M 50 50 L 105 32 L 150 50 L 210 26 L 275 50 Z" />
+
+		<g id="cloud-layer-front"></g>
+
+		<line class="mtn-line" x1="0" y1="50" x2="320" y2="50" stroke-width="2" stroke-linecap="round" />
+	  </svg>
+</div>
   </header>
 
   <main>
