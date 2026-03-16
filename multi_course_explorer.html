@@ -193,7 +193,7 @@
                 <div>
                     <h1 id="main-title" style="display:flex; align-items:center; gap:10px;">
                         Multi-Course Search
-                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v2.3</span>
+                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v2.4</span>
                     </h1>
                     <div class="header-subtitle" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Content &amp; Standards Tool</div>
                 </div>
@@ -542,20 +542,30 @@ function handleBatchScan(files) {
     availableCoursesFromScan.clear();
     
     const courseVersionsTracker = new Map(); 
-    const versionFolderRegex = /_v(\d+)$/i;
+    // UPDATED REGEX: Matches _vXX, _cb_import, or cbimport
+    const versionFolderRegex = /(_v(\d+)|_?cbimport)$/i;
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const pathParts = (file.webkitRelativePath || file.name).split('/');
         
         let versionFolderIndex = -1;
-        let versionNumber = -1;
+        let versionWeight = -1;
+        let displayVersion = "";
         
         for(let j = 0; j < pathParts.length; j++) {
             const match = pathParts[j].match(versionFolderRegex);
             if (match) {
                 versionFolderIndex = j;
-                versionNumber = parseInt(match[1], 10); 
+                // Check if the match contains 'cbimport' (with or without underscore)
+                if (match[0].toLowerCase().includes('cbimport')) {
+                    versionWeight = 999;
+                    displayVersion = "cbimport";
+                } else {
+                    // Standard _vXX logic
+                    versionWeight = parseInt(match[2], 10);
+                    displayVersion = `v${versionWeight}`;
+                }
                 break;
             }
         }
@@ -566,10 +576,10 @@ function handleBatchScan(files) {
             
             let currentBest = courseVersionsTracker.get(courseName);
             
-            if (!currentBest || versionNumber > currentBest.version) {
-                currentBest = { version: versionNumber, fileMap: new Map() };
+            if (!currentBest || versionWeight > currentBest.weight) {
+                currentBest = { weight: versionWeight, display: displayVersion, fileMap: new Map() };
                 courseVersionsTracker.set(courseName, currentBest);
-            } else if (versionNumber < currentBest.version) {
+            } else if (versionWeight < currentBest.weight) {
                 continue;
             }
 
@@ -587,12 +597,12 @@ function handleBatchScan(files) {
 
     courseVersionsTracker.forEach((data, courseName) => {
         if (data.fileMap.has('sitemap.json') || data.fileMap.has('global/sitemap.json')) {
-            availableCoursesFromScan.set(`${courseName} (v${data.version})`, data.fileMap);
+            availableCoursesFromScan.set(`${courseName} (${data.display})`, data.fileMap);
         }
     });
 
     if (availableCoursesFromScan.size === 0) {
-        elements.status.innerHTML = `<span style="color:#dc3545">${SVGS.x} Error: No valid course folders ending in _vXX with sitemaps were found.</span>`;
+        elements.status.innerHTML = `<span style="color:#dc3545">${SVGS.x} Error: No valid course folders found.</span>`;
         elements.setupArea.style.display = 'block';
         return;
     }
