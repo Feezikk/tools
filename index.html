@@ -902,7 +902,7 @@
 
         // Slow drift (25s - 45s) with a random stagger start so they don't spawn clumped
         const startDelay = Math.random() * 8; 
-        cloud.style.animation = `driftAcross ${Math.random() * 20 + 25}s linear ${startDelay}s forwards`; 
+        cloud.style.animation = `driftAcross ${Math.random() * 20 + 25}s linear ${startDelay}s both`; 
         
         targetLayer.appendChild(cloud);
         
