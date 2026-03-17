@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Course Colors v2.00</title>
+  <title>Course Colors v2.13</title>
   <style>
     /* ===== SHARED TOKENS ===== */
     :root {
@@ -22,6 +22,7 @@
       --danger:        #dc3545;
       --danger-h:      #c82333;
       --success-bg:    #d4edda;
+      --danger-bg:     #f8d7da;
       --border:        #ddd;
       --text:          #333;
       --bg:            #f5f5f5;
@@ -55,25 +56,15 @@
     .tab-btn:not(.active):hover { border-color: var(--primary); color: var(--primary); }
 
     /* Header Controls Container */
-    #combination-header-controls { display: flex; gap: 8px; }
+    #combination-header-controls { display: flex; gap: 8px; align-items: center; }
     
     /* Neutral Header Select Dropdown */
     .header-select {
-      padding: 8px 32px 8px 14px;
-      border: 1px solid var(--border);
-      border-radius: 5px;
+      padding: 8px 32px 8px 14px; border: 1px solid var(--border); border-radius: 5px;
       background-color: var(--white);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 14px;
-      appearance: none;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.2s;
+      background-repeat: no-repeat; background-position: right 10px center; background-size: 14px;
+      appearance: none; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; outline: none; transition: border-color 0.2s;
     }
     .header-select:hover, .header-select:focus { border-color: var(--primary); }
 
@@ -87,17 +78,9 @@
     .help-btn:hover { background: var(--accent-gray); color: var(--white); border-color: var(--accent-gray); }
 
     /* ===== MODAL SYSTEM ===== */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;
-      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .modal-backdrop.show { opacity: 1; pointer-events: auto; }
-    .modal-box {
-      background: var(--white); border-radius: 8px; width: 100%; max-width: 600px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(-20px);
-      transition: transform 0.3s ease; max-height: 90vh; display: flex; flex-direction: column;
-    }
+    .modal-box { background: var(--white); border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(-20px); transition: transform 0.3s ease; max-height: 90vh; display: flex; flex-direction: column; }
     .modal-backdrop.show .modal-box { transform: translateY(0); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border); }
     .modal-title { font-size: 18px; font-weight: 700; color: var(--primary); margin: 0; }
@@ -113,63 +96,69 @@
     .view { display: none; }
     .view.active { display: block; }
 
+    /* ===== CUSTOM TOOLTIPS ===== */
+    [data-tooltip] { position: relative; }
+    [data-tooltip]::after {
+      content: attr(data-tooltip); position: absolute; background: rgba(0,0,0,0.85); color: var(--white);
+      padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: all 0.2s ease; z-index: 1000; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    /* Default Top Position */
+    [data-tooltip]:not([data-tooltip-pos="bottom"])::after {
+      bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-4px);
+    }
+    [data-tooltip]:not([data-tooltip-pos="bottom"]):hover::after {
+      opacity: 1; transform: translateX(-50%) translateY(-8px);
+    }
+    /* Bottom Position */
+    [data-tooltip-pos="bottom"]::after {
+      top: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
+    }
+    [data-tooltip-pos="bottom"]:hover::after {
+      opacity: 1; transform: translateX(-50%) translateY(8px);
+    }
+
     /* ===== SHARED LAYOUT ===== */
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-
-    .card {
-      background: var(--white); border-radius: 8px;
-      box-shadow: var(--shadow); padding: 25px; margin-bottom: 20px;
-      border: 1px solid var(--border);
-    }
+    .card { background: var(--white); border-radius: 8px; box-shadow: var(--shadow); padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); }
     .card.compact { padding: 15px 20px; }
 
+    /* Empty State UI */
+    .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border: 2px dashed var(--border); border-radius: 8px; color: var(--accent-gray); box-shadow: var(--shadow); margin-top: 20px;}
+    .empty-state svg { color: var(--border); margin-bottom: 15px; }
+    .empty-state h2 { color: var(--primary); margin-bottom: 8px; font-size: 20px; }
+    .empty-state p { font-size: 15px; max-width: 450px; margin: 0 auto; }
+
     /* Collapsible Panel Transitions */
-    .collapsible-wrapper {
-      display: grid;
-      grid-template-rows: 0fr;
-      opacity: 0;
-      transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease-out;
-      pointer-events: none;
-    }
-    .collapsible-wrapper.open {
-      grid-template-rows: 1fr;
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .collapsible-inner {
-      overflow: hidden;
-    }
+    .collapsible-wrapper { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease-out; pointer-events: none; }
+    .collapsible-wrapper.open { grid-template-rows: 1fr; opacity: 1; pointer-events: auto; }
+    .collapsible-inner { overflow: hidden; }
 
     /* ===== SHARED BUTTON SYSTEM ===== */
-    .btn {
-      border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;
-      font-size: 14px; font-weight: 500; transition: all .2s ease; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-    }
-    .btn-sm  { padding: 6px 14px; font-size: 12px; }
-    .btn-primary  { background: var(--primary);       color: var(--white); }
+    .btn { border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all .2s ease; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; justify-content: center; }
+    .btn svg { flex-shrink: 0; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .btn-sm  { padding: 6px 14px; font-size: 12px; margin: 0; }
+    .btn-icon-only { padding: 6px; width: 30px; height: 30px; }
+    .btn-primary  { background: var(--primary); color: var(--white); }
     .btn-primary:hover  { background: var(--primary-hover); }
     .btn-primary.active { background: var(--primary-hover); box-shadow: inset 0 2px 4px rgba(0,0,0,.2); }
-    .btn-blue    { background: var(--accent-blue);   color: var(--white); }
+    .btn-blue    { background: var(--accent-blue); color: var(--white); }
     .btn-blue:hover    { background: var(--accent-blue-h); }
     .btn-orange  { background: var(--accent-orange); color: var(--white); }
     .btn-orange:hover  { background: var(--accent-orange-h); }
-    .btn-purple  { background: var(--accent-purple); color: var(--white); }
-    .btn-purple:hover  { background: var(--accent-purple-h); }
-    .btn-gray    { background: var(--accent-gray);   color: var(--white); }
+    .btn-gray    { background: var(--accent-gray); color: var(--white); }
     .btn-gray:hover    { background: var(--accent-gray-h); }
-    .btn-success { background: var(--success);       color: var(--white); }
+    .btn-success { background: var(--success); color: var(--white); }
     .btn-success:hover { background: var(--success-h); }
-    .btn-danger  { background: var(--danger);        color: var(--white); }
+    .btn-danger  { background: var(--danger); color: var(--white); }
     .btn-danger:hover  { background: var(--danger-h); }
-    .btn-secondary { background: var(--accent-gray); color: var(--white); }
-    .btn-secondary:hover { background: var(--accent-gray-h); }
+    .btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--bg); border-color: var(--accent-gray); }
 
     /* ===== SEGMENTED CONTROL (Mode Switch) ===== */
     .segmented-control { display: inline-flex; background: #e9ecef; border-radius: 6px; padding: 4px; }
-    .seg-btn {
-      border: none; background: transparent; padding: 8px 16px; font-size: 13px; font-weight: 600; 
-      cursor: pointer; border-radius: 4px; color: var(--accent-gray); transition: all 0.2s; white-space: nowrap;
-    }
+    .seg-btn { border: none; background: transparent; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 4px; color: var(--accent-gray); transition: all 0.2s; white-space: nowrap; }
     .seg-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .seg-btn:hover:not(.active) { color: var(--text); }
 
@@ -184,11 +173,7 @@
 
     /* ===== SHARED COLOR GRID ===== */
     .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 7px; }
-    .color-option {
-      display: flex; flex-direction: column; align-items: center; padding: 5px;
-      border-radius: 6px; background: #f9f9f9; cursor: pointer;
-      transition: all .2s ease; border: 2px solid transparent;
-    }
+    .color-option { display: flex; flex-direction: column; align-items: center; padding: 5px; border-radius: 6px; background: #f9f9f9; cursor: pointer; transition: all .2s ease; border: 2px solid transparent; }
     .color-option:hover { background: #e9e9e9; transform: translateY(-2px); box-shadow: var(--shadow-h); }
     .color-option.selected { border-color: var(--success); background: var(--success-bg); }
     .color-swatch   { width: 30px; height: 30px; border-radius: 4px; margin-bottom: 4px; border: 1px solid var(--text); }
@@ -200,10 +185,7 @@
     .file-status.error   { background: #f8d7da; color: var(--danger);  border: 1px solid var(--danger); }
 
     /* ===== LOCALIZED COPY NOTIFICATION ===== */
-    .copy-btn, .single-color-copy {
-      background: transparent; border: none; cursor: pointer; padding: 2px 6px; min-width: 24px;
-      border-radius: 4px; font-size: 12px; opacity: .6; transition: all .2s ease; display: inline-flex; align-items: center; justify-content: center;
-    }
+    .copy-btn, .single-color-copy { background: transparent; border: none; cursor: pointer; padding: 2px 6px; min-width: 24px; border-radius: 4px; font-size: 12px; opacity: .6; transition: all .2s ease; display: inline-flex; align-items: center; justify-content: center; color: currentColor; }
     .copy-btn:hover, .single-color-copy:hover { opacity: 1; background: rgba(0,0,0,.1); }
 
     .hidden { display: none !important; }
@@ -211,49 +193,33 @@
     /* =============================================
        VIEW 1 — COLOR COMBINATIONS
     ============================================= */
-    #view-combinations .mode-bar {
-      display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: center;
-    }
-
-    /* Border/Font/BG panels */
+    #view-combinations .mode-bar { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: center; }
     #border-panel   { background: rgba(255,219,87,.25); margin-bottom: 20px; }
     #font-panel     { background: rgba(244,237,208,1); margin-bottom: 20px; }
     #background-panel { background: rgba(253,181,59,.25); margin-bottom: 20px; }
-
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
     .panel-label { font-size: 15px; font-weight: 700; color: var(--text); }
-
-    /* border width slider */
     .slider-row { display: flex; align-items: center; gap: 14px; padding: 12px 15px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 18px; }
     .slider-label { font-size: 13px; font-weight: 700; min-width: 95px; }
     .range-slider { width: 150px; height: 8px; border-radius: 4px; background: #ddd; outline: none; opacity: .8; transition: opacity .2s; }
     .range-slider:hover { opacity: 1; }
     .range-slider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; }
     .range-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--primary); cursor: pointer; border: none; }
-    .range-display { font-size: 15px; font-weight: 700; min-width: 34px; text-align: center; background: var(--white); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); }
-
-    /* two-col sections for panels */
+    .range-display { font-size: 15px; font-weight: 700; min-width: 44px; text-align: center; background: var(--white); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); }
     .two-col-section { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; }
-
-    /* border/font selected preview */
-    .selected-preview {
-      background: var(--success-bg); border: 2px solid var(--success); border-radius: 10px;
-      padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;
-      min-width: 160px; box-shadow: var(--shadow);
-    }
+    .selected-preview { background: var(--success-bg); border: 2px solid var(--success); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 160px; box-shadow: var(--shadow); }
     .selected-preview.hidden { display: none; }
     .preview-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
     .selected-border-swatch { width: 48px; height: 48px; border-radius: 8px; border-style: solid; background: var(--white); box-shadow: var(--shadow-h); }
-    .preview-name { font-size: 12px; font-weight: 700; text-align: center; word-break: break-word; max-width: 140px; }
-
-    /* font panel */
+    .preview-name { font-size: 12px; font-weight: 700; text-align: center; word-break: break-word; max-width: 140px; display: flex; align-items: center; gap: 4px;}
+    
     .font-input-row { display: flex; align-items: center; gap: 12px; padding: 12px 15px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; }
     .font-input-label { font-size: 13px; font-weight: 700; min-width: 120px; }
-    input[type="color"].color-picker { width: 46px; height: 36px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: none; padding: 0; }
-    input[type="color"].color-picker::-webkit-color-swatch-wrapper { padding: 0; }
-    input[type="color"].color-picker::-webkit-color-swatch { border: none; border-radius: 3px; }
-    input.hex-text { font-family: monospace; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 4px; width: 85px; text-align: center; background: var(--white); }
-    input.hex-text:focus { outline: 2px solid var(--primary); outline-offset: -2px; }
+    .color-picker { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: none; padding: 0; }
+    .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+    .color-picker::-webkit-color-swatch { border: none; border-radius: 3px; }
+    .hex-text { font-family: monospace; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 4px; width: 85px; text-align: center; background: var(--white); }
+    .hex-text:focus { outline: 2px solid var(--primary); outline-offset: -2px; }
 
     .font-preview-box { background: var(--success-bg); border: 2px solid var(--success); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 180px; box-shadow: var(--shadow); }
     .font-preview-swatch { height: 56px; border-radius: 7px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.12); border: 1px solid var(--border); width: 100%; }
@@ -262,102 +228,140 @@
     .font-preview-text { font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
     .font-contrast-info { font-size: 11px; font-weight: normal; margin-top: 2px; }
 
-    /* background panel */
     .bg-row { display: flex; align-items: center; gap: 14px; padding: 12px 15px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
     .bg-label { font-size: 13px; font-weight: 700; min-width: 120px; }
 
-    /* selector card */
     .two-color-mode { display: flex; gap: 28px; width: 100%; position: relative; }
     .two-color-mode > div { flex: 1; }
     .two-color-mode::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--border); }
-    .single-color-mode { text-align: center; }
-    .single-color-mode .color-grid { max-width: 580px; margin: 0 auto; }
+    .single-color-mode, .custom-color-mode { text-align: center; }
+    .single-color-mode .color-grid, .custom-color-mode .color-grid { max-width: 580px; margin: 0 auto; }
     .selector-label { font-size: 15px; font-weight: 700; display: block; margin-bottom: 12px; }
 
-    /* combination display container */
     .combination-display { display: none; }
     .combination-display.show { display: block; }
-    .combination-card { background: var(--white); } /* Keeps main card white */
+    .combination-card { background: var(--white); } 
     .combination-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
     .combination-title { font-size: 15px; font-weight: 700; }
     .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    /* Two Colors Layout fixes */
     .two-color-grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
-    .combo-column-wrapper {
-      padding: 15px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-      background-color: var(--combination-bg); /* Dynamic Background applied INSIDE */
-      transition: background-color 0.3s ease;
-    }
+    .combo-column-wrapper { padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); background-color: var(--combination-bg); transition: background-color 0.3s ease; }
     .combo-column-grid { display: flex; flex-direction: column; gap: 15px; align-items: center; }
     .combo-preview-small { width: 220px; height: 120px; display: flex; flex-direction: column; border-radius: 6px; overflow: hidden; flex-shrink: 0; box-shadow: var(--shadow); }
-    
     .combo-info-stacked { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; }
     .color-info-compact { display: flex; align-items: center; gap: 8px; font-size: 13px; background: var(--white); padding: 8px 12px; border-radius: 5px; border: 1px solid var(--border); }
     .swatch-dot { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); flex-shrink: 0; }
     .color-info-compact .name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .color-info-compact .hex { font-family: monospace; color: #555; margin-left: auto; }
-
     .color-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; position: relative; padding: 4px; }
     .sample-text { text-align: center; line-height: 1.1; margin: 2px 0; }
 
-    /* single color combos fixes */
     .single-color-combinations { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .single-combination { 
-      display: flex; align-items: stretch; border-radius: 8px; overflow: hidden; 
-      border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.1);
-      background-color: var(--combination-bg); /* Dynamic Background applied INSIDE */
-      transition: background-color 0.3s ease;
-    }
+    .single-combination { display: flex; align-items: stretch; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.1); background-color: var(--combination-bg); transition: background-color 0.3s ease; }
     .single-preview { display: flex; flex-direction: column; width: 120px; flex-shrink: 0; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
     .single-color-half { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; padding: 6px; }
     .single-color-info { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 
+    .custom-builder-layout { display: flex; gap: 30px; flex-wrap: wrap; background-color: var(--combination-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); transition: background-color 0.3s ease; }
+    .custom-preview-area { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; border-right: 1px solid var(--border); padding-right: 30px; min-width: 300px; }
+    .custom-stack-wrapper { border-radius: 6px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: width 0.3s ease; background-color: #fff; }
+    .custom-layer { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; padding: 4px; position: relative; border-bottom: 1px solid rgba(0,0,0,0.05); transition: background-color 0.3s ease, height 0.3s ease; }
+    .custom-layer:last-child { border-bottom: none; }
+    .custom-layer .sample-text { pointer-events: none; }
+    
+    .custom-controls-area { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 12px; }
+    .layer-control-row { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,.05); transition: all 0.2s; cursor: pointer; }
+    .layer-control-row.active { border-color: var(--success); background: var(--success-bg); box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+    .layer-control-row input[type="radio"] { margin: 0; cursor: pointer; transform: scale(1.2); }
+    .layer-control-name { font-weight: 700; font-size: 14px; min-width: 60px; }
+    .layer-height-input { width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; text-align: center; font-size: 13px; }
+    .layer-action-btn { background: transparent; border: 1px solid var(--border); border-radius: 4px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text); font-size: 14px; transition: all 0.2s; }
+    .layer-action-btn:hover:not(:disabled) { background: var(--accent-gray); color: var(--white); border-color: var(--accent-gray); }
+    .layer-action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .layer-action-btn.delete-btn:hover:not(:disabled) { background: var(--danger); color: var(--white); border-color: var(--danger); }
+    
+    /* Modified custom color info area */
+    .custom-color-info { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; font-size: 13px; background: rgba(0,0,0,0.04); padding: 4px 8px; border-radius: 4px; margin-left: 4px; }
+    .custom-color-info .swatch-dot { width: 14px; height: 14px; flex-shrink: 0; }
+    .custom-color-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: auto; }
+
     /* =============================================
-       VIEW 2 — PALETTE EDITOR
+       VIEW 2 — PALETTE EDITOR (OVERHAULED ALIGNMENT)
     ============================================= */
-    #view-editor .drop-zone {
-      border: 2px dashed #3498db; border-radius: 10px; padding: 28px;
-      text-align: center; background: #ebf5fb; margin-bottom: 24px;
-      transition: all .3s; cursor: pointer;
+    .editor-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px; 
+      background: var(--white); border: 1px solid var(--border); border-radius: 8px; 
+      margin-bottom: 24px; box-shadow: var(--shadow); flex-wrap: wrap;
     }
-    #view-editor .drop-zone.dragover { background: #d4eaf7; border-color: #2980b9; transform: scale(1.01); }
-    #view-editor .drop-zone p { color: #2980b9; font-weight: 500; margin-bottom: 4px; }
-    #view-editor .drop-zone span { font-size: 11px; color: #7f8c8d; }
+    .editor-toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; }
 
-    .editor-controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
+    #dropZoneContainer { display: none; margin-bottom: 15px; }
+    #dropZoneContainer.show { display: block; }
+    .drop-zone { border: 2px dashed #3498db; border-radius: 8px; padding: 28px; text-align: center; background: #ebf5fb; transition: all .3s; cursor: pointer; }
+    .drop-zone.dragover { background: #d4eaf7; border-color: #2980b9; transform: scale(1.01); }
+    .drop-zone p { color: #2980b9; font-weight: 500; margin-bottom: 4px; }
+    .drop-zone span { font-size: 11px; color: #7f8c8d; }
 
-    .palette-selector-row { margin-bottom: 22px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
-    .palette-selector-row select { padding: 7px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
-
-    .palette-name-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 15px; margin-bottom: 20px; }
-
-    .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-    .editor-section { background: var(--white); padding: 18px; border-radius: 8px; box-shadow: var(--shadow); }
-    .editor-section h3 { margin-bottom: 13px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; font-size: 15px; }
-
-    .color-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-    .color-item input[type="text"] { flex: 1; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
-    .color-item input[type="color"] { width: 38px; height: 28px; border: none; border-radius: 4px; cursor: pointer; }
-    .color-preview { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
-    .remove-btn { background: var(--danger); color: var(--white); border: none; padding: 3px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; }
-
-    .preview-section { grid-column: 1 / -1; background: var(--white); padding: 18px; border-radius: 8px; box-shadow: var(--shadow); }
-    .preview-section h3 { margin-bottom: 13px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; font-size: 15px; }
-    .palette-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 12px; }
-    .border-colors-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; grid-column: 1 / -1; }
-    .preview-item { display: flex; align-items: center; gap: 10px; padding: 7px 11px; border: 1px solid #e0e0e0; border-radius: 6px; background: var(--white); }
-    .preview-item .color-swatch { width: 30px; height: 30px; border-radius: 4px; border: 2px solid var(--border); flex-shrink: 0; }
-    .contrast-ratios { display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: monospace; margin-left: auto; }
-    .contrast-item { display: flex; align-items: center; gap: 3px; padding: 2px 5px; border-radius: 3px; background: var(--white); border: 1px solid var(--border); }
-    .contrast-sample { width: 11px; height: 11px; border-radius: 2px; border: 1px solid #ccc; }
-    .contrast-pass { color: #27ae60; font-weight: 700; }
-    .contrast-fail { color: var(--danger); font-weight: 700; }
+    .editor-lists-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .editor-section { background: var(--white); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    
+    /* Matches h3 and summary height */
+    .editor-section h3 { margin-bottom: 15px; color: #2c3e50; font-size: 16px; display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
+    
+    /* Input formatting for Name card */
+    .palette-name-input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; font-family: inherit; }
+    .palette-name-input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+    
+    /* Collapsible Editor Section (Details/Summary) */
+    details.editor-section summary { list-style: none; outline: none; cursor: pointer; display: block; margin: -20px; padding: 20px; border-radius: 8px; }
+    details.editor-section summary::-webkit-details-marker { display: none; }
+    details.editor-section summary h3 { margin-bottom: 0; pointer-events: none; }
+    details.editor-section[open] summary h3 { margin-bottom: 15px; }
+    details.editor-section summary h3::after { content: '▼'; font-size: 12px; transition: transform 0.2s; color: var(--accent-gray); float: right; margin-top: 4px;}
+    details.editor-section[open] summary h3::after { transform: rotate(180deg); }
+    
+    /* Full-width Color Item Rows */
+    .color-item-row { 
+      display: flex; align-items: center; gap: 8px; padding: 6px; 
+      border: 1px solid transparent; border-radius: 6px; transition: all 0.2s;
+      background: var(--white); margin-bottom: 4px; width: 100%;
+    }
+    .color-item-row:hover { border-color: var(--border); background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .color-item-row.dragging { opacity: 0.4; background: var(--success-bg); border: 1px dashed var(--success); }
+    
+    /* Reveal actions on hover */
+    .color-item-actions { display: flex; align-items: center; gap: 4px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .color-item-row:hover .color-item-actions { opacity: 1; pointer-events: auto; }
+    
+    .drag-handle { color: #aaa; cursor: grab; padding: 0 4px; display: flex; align-items: center; }
+    .drag-handle:hover { color: var(--text); }
+    .drag-handle:active { cursor: grabbing; }
+    
+    /* Flex 1 to use full space */
+    .color-name-input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-weight: 500; min-width: 0; }
+    .color-name-label { flex: 1; padding: 6px 10px; font-size: 13px; font-weight: 600; color: var(--text); min-width: 0; }
+    
+    .hex-input-wrapper { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 4px; background: var(--white); overflow: hidden; flex-shrink: 0; }
+    .hex-input-wrapper .hash-prefix { padding: 6px 0 6px 8px; color: #888; font-size: 13px; font-family: monospace; background: var(--white); }
+    .color-hex-input { width: 65px; padding: 6px; border: none; font-size: 13px; font-family: monospace; outline: none; }
+    
+    /* Redesigned Inline Contrast Badges */
+    .inline-contrast { display: flex; gap: 6px; flex-shrink: 0; }
+    .contrast-box { 
+      display: flex; align-items: center; gap: 4px; 
+      padding: 3px 6px; border: 1px solid var(--border); 
+      border-radius: 4px; background: var(--white); 
+      font-size: 12px; font-weight: 700; font-family: monospace; 
+    }
+    .contrast-swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+    .contrast-text.pass { color: #009688; } /* Teal/Green color */
+    .contrast-text.fail { color: var(--danger); }
 
     /* ===== RESPONSIVE ===== */
+    @media (max-width: 950px) {
+      .editor-lists-grid { grid-template-columns: 1fr; }
+    }
     @media (max-width: 850px) {
       .two-color-grid-container { grid-template-columns: 1fr; }
       .single-color-combinations { grid-template-columns: 1fr; }
@@ -365,9 +369,30 @@
     @media (max-width: 768px) {
       .app-header { flex-direction: column; align-items: stretch; }
       .header-left, .header-center, .header-right { justify-content: center; }
+      #combination-header-controls { flex-direction: column; width: 100%; align-items: stretch; }
+      .header-select { width: 100%; }
       .two-col-section { grid-template-columns: 1fr; }
-      .editor-grid { grid-template-columns: 1fr; }
-      .border-colors-grid { grid-template-columns: 1fr 1fr; }
+      .custom-builder-layout { flex-direction: column; }
+      .custom-preview-area { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 20px; }
+      
+      .editor-toolbar { flex-direction: column; align-items: stretch; }
+      .editor-toolbar-left { flex-direction: column; width: 100%; }
+      .editor-toolbar .btn { width: 100%; justify-content: center; margin: 0 !important; }
+
+      .color-item-row { flex-wrap: wrap; }
+      .color-item-actions { opacity: 1; pointer-events: auto; width: 100%; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 4px; }
+    }
+    @media (max-width: 600px) {
+      .color-item-row { flex-wrap: wrap; padding: 12px 10px; }
+      .drag-handle { margin-right: 2px; }
+      .color-picker-wrapper { margin-right: 6px; }
+      .color-name-input, .color-name-label { flex: 1; min-width: 140px; font-size: 14px; }
+      .hex-input-wrapper { width: 100%; order: 4; margin-top: 10px; }
+      .color-hex-input { flex: 1; font-size: 14px; }
+      .inline-contrast { width: 100%; order: 5; margin-top: 10px; gap: 8px; }
+      .contrast-box { flex: 1; justify-content: center; padding: 6px; font-size: 13px; }
+      .color-item-actions { width: 100%; order: 6; opacity: 1; pointer-events: auto; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); justify-content: space-evenly; }
+      .color-item-actions .layer-action-btn { width: auto; flex: 1; max-width: none; height: 36px; }
     }
     @media (max-width: 540px) {
       .two-color-mode { flex-direction: column; }
@@ -382,7 +407,7 @@
 
 <header class="app-header">
   <div class="header-left">
-    <span class="app-title">Course Colors v2.00</span>
+    <span class="app-title">Course Colors v2.13</span>
   </div>
   <div class="header-center">
     <button class="tab-btn active" data-tab="combinations">Color Combinations</button>
@@ -391,7 +416,10 @@
   <div class="header-right">
     <div id="combination-header-controls">
       <select id="palette-selector" class="header-select"></select>
-      <label for="palette-file-input" class="btn btn-primary">Load Palette File</label>
+      <label for="palette-file-input" class="btn btn-primary btn-sm" style="margin: 0; cursor: pointer;" data-tooltip="Load Palette from file" data-tooltip-pos="bottom">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Load Palette
+      </label>
       <input type="file" id="palette-file-input" accept=".js" style="display:none">
     </div>
     <button id="global-help-btn" class="help-btn" title="Help">?</button>
@@ -405,193 +433,269 @@
       <h3 class="modal-title" id="help-modal-title">Help Guide</h3>
       <button class="modal-close" id="help-modal-close" title="Close Modal">&times;</button>
     </div>
-    <div class="modal-body" id="help-modal-body">
-      </div>
+    <div class="modal-body" id="help-modal-body"></div>
   </div>
 </div>
 
 <div id="view-combinations" class="view active">
   <div class="container">
-
-    <div class="card compact">
-      <div class="mode-bar">
-        
-        <div class="segmented-control" id="color-mode-toggle">
-          <button class="seg-btn active" data-mode="two-color">Two Colors</button>
-          <button class="seg-btn" data-mode="single-color">Single Color</button>
-        </div>
-
-        <div style="width: 1px; height: 24px; background: var(--border); margin: 0 10px;"></div>
-
-        <div class="toggle-row"><span>Border:</span><label class="toggle-switch"><input type="checkbox" id="border-panel-toggle"><span class="slider"></span></label></div>
-        <div class="toggle-row"><span>Font:</span>  <label class="toggle-switch"><input type="checkbox" id="font-panel-toggle">  <span class="slider"></span></label></div>
-        <div class="toggle-row"><span>Background:</span><label class="toggle-switch"><input type="checkbox" id="background-panel-toggle"><span class="slider"></span></label></div>
-      </div>
+    
+    <div id="combinations-empty-state" class="empty-state">
+      <svg viewBox="0 0 24 24" width="64" height="64" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <h2>No Palette Loaded</h2>
+      <p>Please load a palette file using the button in the header, or switch to the Palette Editor to create a new one.</p>
     </div>
 
-    <div class="collapsible-wrapper" id="border-panel-wrapper">
-      <div class="collapsible-inner">
-        <div class="card" id="border-panel">
-          <div class="panel-header">
-            <span class="panel-label">Border Color Options:</span>
-            <button class="btn btn-danger btn-sm" id="clear-border-btn">Clear Border</button>
+    <div id="combinations-workspace" class="hidden">
+      <div class="card compact">
+        <div class="mode-bar">
+          
+          <div class="segmented-control" id="color-mode-toggle">
+            <button class="seg-btn" data-mode="single-color">Single Color</button>
+            <button class="seg-btn active" data-mode="two-color">Two Colors</button>
+            <button class="seg-btn" data-mode="custom">Custom</button>
           </div>
-          <div class="two-col-section">
-            <div>
-              <div class="slider-row">
-                <span class="slider-label">Border Width:</span>
-                <input type="range" min="0" max="5" value="5" class="range-slider" id="border-width-slider">
-                <span class="range-display" id="border-width-display">5px</span>
-              </div>
-              <div class="color-grid" id="border-color-grid"></div>
-            </div>
-            <div class="selected-preview hidden" id="selected-border-display">
-              <span class="preview-title">Selected Border</span>
-              <div class="selected-border-swatch" id="selected-border-swatch"></div>
-              <div class="preview-name" id="selected-border-name"></div>
-            </div>
-          </div>
+
+          <div style="width: 1px; height: 24px; background: var(--border); margin: 0 10px;"></div>
+
+          <div class="toggle-row"><span>Border:</span><label class="toggle-switch"><input type="checkbox" id="border-panel-toggle"><span class="slider"></span></label></div>
+          <div class="toggle-row"><span>Font:</span>  <label class="toggle-switch"><input type="checkbox" id="font-panel-toggle">  <span class="slider"></span></label></div>
+          <div class="toggle-row"><span>Background:</span><label class="toggle-switch"><input type="checkbox" id="background-panel-toggle"><span class="slider"></span></label></div>
         </div>
       </div>
-    </div>
 
-    <div class="collapsible-wrapper" id="font-panel-wrapper">
-      <div class="collapsible-inner">
-        <div class="card" id="font-panel">
-          <div class="panel-header">
-            <span class="panel-label">Font Color Options:</span>
-            <button class="btn btn-danger btn-sm" id="reset-font-btn">Reset to Default</button>
-          </div>
-          <div class="two-col-section">
-            <div>
-              <div class="font-input-row">
-                <label for="dark-font-input" class="font-input-label">Dark Font Color:</label>
-                <input type="color" id="dark-font-input" class="color-picker" value="#000000">
-                <input type="text"  id="dark-font-text"  class="hex-text" value="#000000">
-              </div>
-              <div class="font-input-row">
-                <label for="light-font-input" class="font-input-label">Light Font Color:</label>
-                <input type="color" id="light-font-input" class="color-picker" value="#ffffff">
-                <input type="text"  id="light-font-text"  class="hex-text" value="#ffffff">
-              </div>
+      <div class="collapsible-wrapper" id="border-panel-wrapper">
+        <div class="collapsible-inner">
+          <div class="card" id="border-panel">
+            <div class="panel-header">
+              <span class="panel-label">Border Color Options:</span>
+              <button class="btn btn-danger btn-sm" id="clear-border-btn">Clear Border</button>
             </div>
-            <div class="font-preview-box">
-              <span class="preview-title">Preview</span>
-              <div class="font-preview-swatch dark-preview-bg">
-                <span class="font-preview-text" id="dark-preview-text">ede_color-dark</span>
+            <div class="two-col-section">
+              <div>
+                <div class="slider-row" style="margin-bottom: 18px;">
+                  <span class="slider-label">Border Width:</span>
+                  <input type="range" min="0" max="5" value="5" class="range-slider" id="border-width-slider">
+                  <span class="range-display" id="border-width-display">5px</span>
+                </div>
+                <div class="color-grid" id="border-color-grid"></div>
               </div>
-              <div class="font-preview-swatch light-preview-bg">
-                <span class="font-preview-text" id="light-preview-text">ede_color-light</span>
+              <div class="selected-preview hidden" id="selected-border-display">
+                <span class="preview-title">Selected Border</span>
+                <div class="selected-border-swatch" id="selected-border-swatch"></div>
+                <div class="preview-name" id="selected-border-name"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="collapsible-wrapper" id="background-panel-wrapper">
-      <div class="collapsible-inner">
-        <div class="card" id="background-panel">
-          <div class="panel-header">
-            <span class="panel-label">Combination Card Background:</span>
-            <button class="btn btn-danger btn-sm" id="reset-background-btn">Reset to Default</button>
+      <div class="collapsible-wrapper" id="font-panel-wrapper">
+        <div class="collapsible-inner">
+          <div class="card" id="font-panel">
+            <div class="panel-header">
+              <span class="panel-label">Font Color Options:</span>
+              <button class="btn btn-danger btn-sm" id="reset-font-btn">Reset to Default</button>
+            </div>
+            <div class="two-col-section">
+              <div>
+                <div class="font-input-row">
+                  <label for="dark-font-input" class="font-input-label">Dark Font Color:</label>
+                  <input type="color" id="dark-font-input" class="color-picker" value="#000000">
+                  <input type="text"  id="dark-font-text"  class="hex-text" value="#000000">
+                </div>
+                <div class="font-input-row">
+                  <label for="light-font-input" class="font-input-label">Light Font Color:</label>
+                  <input type="color" id="light-font-input" class="color-picker" value="#ffffff">
+                  <input type="text"  id="light-font-text"  class="hex-text" value="#ffffff">
+                </div>
+              </div>
+              <div class="font-preview-box">
+                <span class="preview-title">Preview</span>
+                <div class="font-preview-swatch dark-preview-bg"><span class="font-preview-text" id="dark-preview-text">ede_color-dark</span></div>
+                <div class="font-preview-swatch light-preview-bg"><span class="font-preview-text" id="light-preview-text">ede_color-light</span></div>
+              </div>
+            </div>
           </div>
-          <div class="bg-row">
-            <label class="bg-label">Background Color:</label>
-            <input type="color" id="background-input" class="color-picker" value="#ffffff">
-            <input type="text"  id="background-text"  class="hex-text" value="#ffffff">
-            <button class="btn btn-primary btn-sm" id="apply-background-btn" style="margin-left:auto;">Apply</button>
+        </div>
+      </div>
+
+      <div class="collapsible-wrapper" id="background-panel-wrapper">
+        <div class="collapsible-inner">
+          <div class="card" id="background-panel">
+            <div class="panel-header">
+              <span class="panel-label">Combination Card Background:</span>
+              <button class="btn btn-danger btn-sm" id="reset-background-btn">Reset to Default</button>
+            </div>
+            <div class="bg-row">
+              <label class="bg-label">Background Color:</label>
+              <input type="color" id="background-input" class="color-picker" value="#ffffff">
+              <input type="text"  id="background-text"  class="hex-text" value="#ffffff">
+              <button class="btn btn-primary btn-sm" id="apply-background-btn" style="margin-left:auto;">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="selector-panel">
+        <div id="two-color-selector" class="two-color-mode">
+          <div>
+            <label class="selector-label">Select First Color:</label>
+            <div class="color-grid" id="color-grid-1"></div>
+          </div>
+          <div>
+            <label class="selector-label">Select Second Color:</label>
+            <div class="color-grid" id="color-grid-2"></div>
+          </div>
+        </div>
+        <div id="single-color-selector" class="single-color-mode hidden">
+          <label class="selector-label">Select a Color to Compare with All Others:</label>
+          <div class="color-grid" id="color-grid-single"></div>
+        </div>
+        <div id="custom-color-selector" class="custom-color-mode hidden">
+          <label class="selector-label">Select Color for Active Layer:</label>
+          <div class="color-grid" id="color-grid-custom"></div>
+        </div>
+      </div>
+
+      <div class="card combination-display combination-card" id="combination-display">
+        <div class="combination-header">
+          <span class="combination-title" id="combination-title">Color Combination</span>
+          <div class="btn-group" id="two-color-buttons">
+            <button class="btn btn-secondary btn-sm" id="switch-colors-btn"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg> Switch Colors</button>
+            <button class="btn btn-primary btn-sm hidden" id="border-show-btn">Hide Border</button>
+          </div>
+          <div class="btn-group hidden" id="single-color-buttons">
+            <button class="btn btn-secondary btn-sm" id="reverse-colors-btn"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg> Reverse Colors</button>
+            <button class="btn btn-primary btn-sm hidden" id="single-border-show-btn">Hide Border</button>
+          </div>
+          <div class="btn-group hidden" id="custom-color-buttons">
+            <button class="btn btn-primary btn-sm hidden" id="custom-border-show-btn">Hide Border</button>
+          </div>
+        </div>
+        <div class="combination-content" id="two-color-content"></div>
+        <div class="single-color-combinations hidden" id="single-color-content"></div>
+        <div class="custom-builder-layout hidden" id="custom-color-content">
+          <div class="custom-preview-area">
+            <div class="slider-row" style="margin-bottom: 20px;">
+              <label class="slider-label">Stack Width:</label>
+              <input type="range" id="custom-width-slider" min="200" max="400" value="250" step="5" class="range-slider">
+              <span class="range-display" id="custom-width-display">250px</span>
+            </div>
+            <div class="custom-stack-wrapper" id="custom-stack-preview"></div>
+          </div>
+          <div class="custom-controls-area">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+              <span style="font-weight: 700; font-size: 14px;">Layer Order & Size</span>
+              <button class="btn btn-success btn-sm" id="add-custom-layer-btn"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Layer</button>
+            </div>
+            <div id="custom-layers-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card" id="selector-panel">
-      <div id="two-color-selector" class="two-color-mode">
-        <div>
-          <label class="selector-label">Select First Color:</label>
-          <div class="color-grid" id="color-grid-1"></div>
-        </div>
-        <div>
-          <label class="selector-label">Select Second Color:</label>
-          <div class="color-grid" id="color-grid-2"></div>
-        </div>
-      </div>
-      <div id="single-color-selector" class="single-color-mode hidden">
-        <label class="selector-label">Select a Color to Compare with All Others:</label>
-        <div class="color-grid" id="color-grid-single"></div>
-      </div>
-    </div>
+  </div>
+</div>
 
-    <div class="card combination-display combination-card" id="combination-display">
-      <div class="combination-header">
-        <span class="combination-title" id="combination-title">Color Combination</span>
-        <div class="btn-group" id="two-color-buttons">
-          <button class="btn btn-primary btn-sm" id="switch-colors-btn">Switch Colors</button>
-          <button class="btn btn-primary btn-sm hidden" id="border-show-btn">Hide Border</button>
-        </div>
-        <div class="btn-group hidden" id="single-color-buttons">
-          <button class="btn btn-primary btn-sm" id="reverse-colors-btn">Reverse Colors</button>
-          <button class="btn btn-primary btn-sm hidden" id="single-border-show-btn">Hide Border</button>
-        </div>
-      </div>
-      <div class="combination-content" id="two-color-content">
-        </div>
-      <div class="single-color-combinations" id="single-color-content"></div>
-    </div>
-
-  </div></div><div id="view-editor" class="view">
+<div id="view-editor" class="view">
   <div class="container">
 
-    <div id="dropZone" class="drop-zone">
-      <p>Drag &amp; Drop SCSS/CSS files here (Values + Mappings)</p>
-      <span>_ede.scss and _vars.scss are the typically files needed.</span>
+    <div class="editor-toolbar">
+      <div class="editor-toolbar-left">
+        <button class="btn btn-primary btn-sm" onclick="newPalette()" data-tooltip="Create a blank palette" data-tooltip-pos="bottom">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 
+          New Palette
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('editorFileInput').click()" data-tooltip="Load palette from a .js file" data-tooltip-pos="bottom">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Load JS File
+        </button>
+        <button class="btn btn-secondary btn-sm" id="toggle-import-btn" onclick="toggleDropZone()" data-tooltip="Import variables from a SCSS file" data-tooltip-pos="bottom">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 16 12 20 8 16"></polyline><line x1="12" y1="12" x2="12" y2="20"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 20 8 16"></polyline></svg>
+          Import SCSS
+        </button>
+      </div>
+      <button class="btn btn-success btn-sm" onclick="exportAllPalettes()" data-tooltip="Save all palettes to your computer" data-tooltip-pos="bottom">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Save Changes (.js)
+      </button>
     </div>
-
-    <div class="editor-controls">
-      <button class="btn btn-primary"   onclick="newPalette()">New Manual Palette</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('editorFileInput').click()">Load JS File</button>
-      <button class="btn btn-success"   onclick="exportAllPalettes()">Save Changes (.js)</button>
-    </div>
+    
     <input type="file" id="editorFileInput" class="hidden" accept=".js" onchange="loadPalettesFromFile(event)">
 
-    <div class="palette-selector-row">
-      <label style="font-weight:600;">Current Palette:</label>
-      <select id="paletteSelect" onchange="loadPalette()">
-        <option value="">Select a palette...</option>
-      </select>
-      <button class="btn btn-danger btn-sm" onclick="deletePalette()">Delete</button>
+    <div id="dropZoneContainer">
+      <div id="dropZone" class="drop-zone">
+        <p>Drag &amp; Drop SCSS/CSS files here (Values + Mappings)</p>
+        <span>_ede.scss and _vars.scss are the typical files needed.</span>
+      </div>
     </div>
 
-    <input type="text" id="paletteName" class="palette-name-input" placeholder="Enter palette name…" onchange="updatePaletteName()">
+    <div class="editor-lists-grid" style="margin-bottom: 24px;">
+      
+      <div class="editor-section" style="padding: 12px 20px; display: flex; align-items: center; gap: 10px;">
+        <label style="font-weight: 700; color: var(--accent-gray);">Edit:</label>
+        <select id="paletteSelect" class="header-select" style="flex: 1; margin: 0;" onchange="loadPalette()">
+          <option value="">Select a palette...</option>
+        </select>
+      </div>
+      
+      <div id="active-palette-name-card" class="editor-section hidden" style="padding: 12px 20px; display: flex; align-items: center; gap: 10px;">
+        <label style="font-weight: 700; color: var(--accent-gray);">Name:</label>
+        <input type="text" id="paletteName" class="palette-name-input" style="flex: 1; margin: 0;" placeholder="Enter palette name…" onchange="updatePaletteName()">
+        <button class="btn btn-danger btn-sm" onclick="deletePalette()" data-tooltip="Delete Palette" data-tooltip-pos="bottom">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Delete
+        </button>
+      </div>
+      
+    </div>
 
-    <div class="editor-grid">
-      <div class="editor-section">
-        <h3>Main Colors</h3>
-        <div id="colorsSection"></div>
-        <button class="btn btn-success btn-sm" style="margin-top:8px;" onclick="addColorItem('colors')">+ Add Color</button>
-      </div>
+    <div id="editor-empty-state" class="empty-state">
+      <svg viewBox="0 0 24 24" width="64" height="64" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      <h2>No Palette Selected</h2>
+      <p>Create a new palette, load a file, or select an existing one from the dropdown menu above to begin editing.</p>
+    </div>
 
-      <div class="editor-section">
-        <h3>Border Colors</h3>
-        <div id="borderColorsSection"></div>
-        <button class="btn btn-success btn-sm" style="margin-top:8px;" onclick="addColorItem('borderColors')">+ Add Border Color</button>
-      </div>
-      <div class="editor-section">
-        <h3>Font Colors</h3>
-        <div id="fontColorsSection"></div>
-      </div>
-      <div class="editor-section">
-        <h3>Default Background</h3>
-        <div class="color-item">
-          <input type="text" id="defaultBackground" placeholder="Hex without #" onchange="updateDefaultBackground(this.value)">
-          <input type="color" id="defaultBackgroundPicker" onchange="updateDefaultBackgroundFromPicker(this)">
-          <div class="color-preview" id="defaultBackgroundPreview"></div>
+    <div id="editor-workspace" class="hidden">
+      
+      <div class="editor-lists-grid">
+        
+        <details class="editor-section" id="font-colors-details">
+          <summary><h3>Font Colors</h3></summary>
+          <div id="fontColorsSection" style="display:flex; flex-direction:column;"></div>
+        </details>
+
+        <details class="editor-section" id="course-bg-details">
+          <summary><h3>Course Background</h3></summary>
+          <div class="color-item-row" style="margin-top: 4px;">
+            <label class="color-picker-wrapper" style="cursor:pointer; display:flex;">
+               <input type="color" id="defaultBackgroundPicker" class="color-picker" onchange="updateDefaultBackgroundFromPicker(this)">
+            </label>
+            <span class="color-name-label">Course Background</span>
+            <div class="hex-input-wrapper">
+               <span class="hash-prefix">#</span>
+               <input type="text" id="defaultBackground" class="color-hex-input" placeholder="ffffff" onchange="updateDefaultBackground(this.value)">
+            </div>
+          </div>
+        </details>
+
+        <div class="editor-section">
+          <h3>
+            Main Colors
+            <button class="btn btn-success btn-sm" onclick="addColorItem('colors')"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Color</button>
+          </h3>
+          <div id="colorsSection" style="display:flex; flex-direction:column;"></div>
         </div>
-      </div>
-      <div class="preview-section">
-        <h3>Palette Preview &amp; Contrast Check</h3>
-        <div class="palette-preview" id="palettePreview"></div>
+
+        <div class="editor-section">
+          <h3>
+            Border Colors
+            <button class="btn btn-success btn-sm" onclick="addColorItem('borderColors')"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Border</button>
+          </h3>
+          <div id="borderColorsSection" style="display:flex; flex-direction:column;"></div>
+        </div>
+
       </div>
     </div>
 
@@ -628,21 +732,19 @@ document.addEventListener('click', e => {
     const text = btn.dataset.color;
     navigator.clipboard.writeText(text).catch(() => {
       const ta = document.createElement('textarea'); ta.value = text;
+
       document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     });
 
-    // Save original styles
     const originalText = btn.innerHTML;
     const originalBg = btn.style.backgroundColor;
     const originalColor = btn.style.color;
     
-    // Apply temporary success feedback
     btn.innerHTML = '✓';
     btn.style.backgroundColor = 'var(--success)';
     btn.style.color = 'var(--white)';
     btn.style.opacity = '1';
     
-    // Revert after 1.5s
     setTimeout(() => {
       btn.innerHTML = originalText;
       btn.style.backgroundColor = originalBg;
@@ -661,13 +763,12 @@ const helpData = {
     content: `
       <h4>Purpose</h4>
       <p>Test and visualize how different colors from your palette interact with each other to ensure good contrast, readability, and aesthetics.</p>
-      
       <h4>How to Use</h4>
       <ul>
-        <li><strong>Two Colors Mode:</strong> Select two distinct colors to see how they look stacked on top of each other. The preview automatically calculates text contrast ratios.</li>
         <li><strong>Single Color Mode:</strong> Select one base color to instantly compare it against <em>all</em> other colors in your palette simultaneously.</li>
-        <li><strong>Customizing Previews:</strong> Use the toggle switches (Border, Font, Background) to enable styling panels. You can add a simulated border to your combinations or change the background canvas to see how colors look in context.</li>
-        <li><strong>Copying Colors:</strong> Click the copy icon (⎘) next to any color hex or name to instantly copy it to your clipboard.</li>
+        <li><strong>Two Colors Mode:</strong> Select two distinct colors to see how they look stacked on top of each other. The preview automatically calculates text contrast ratios.</li>
+        <li><strong>Custom Mode:</strong> Build your own stack of up to 6 custom color boxes. Select a layer to assign its color, adjust its height, and modify the overall stack width.</li>
+        <li><strong>Customizing Previews:</strong> Use the toggle switches (Border, Font, Background) to enable styling panels.</li>
       </ul>
     `
   },
@@ -676,14 +777,13 @@ const helpData = {
     content: `
       <h4>Purpose</h4>
       <p>Create, edit, import, and export custom color palettes used throughout the application.</p>
-      
       <h4>How to Use</h4>
       <ul>
-        <li><strong>Importing:</strong> Drag & drop your SCSS/CSS files (typically <code>_vars.scss</code> or <code>_ede.scss</code>) into the dashed drop zone to automatically extract color variables and mappings.</li>
-        <li><strong>Managing Palettes:</strong> Use the top controls to create a "New Manual Palette", switch between loaded palettes via the dropdown, or "Delete" the current one.</li>
-        <li><strong>Editing Colors:</strong> Use the text fields to rename colors, or the hex inputs/color pickers to change the color values. Add new entries using the "+ Add Color" buttons.</li>
-        <li><strong>Contrast Check:</strong> As you build your palette, the "Palette Preview" section at the bottom will automatically verify if your colors meet accessibility standards against your chosen light and dark font colors.</li>
-        <li><strong>Saving:</strong> Click "Save Changes (.js)" to download your palette file for future use. You can load this file back into the app later via the main menu.</li>
+        <li><strong>Importing:</strong> Click "Import SCSS" to reveal the drop zone. Drag & drop your SCSS files to extract colors automatically.</li>
+        <li><strong>Managing Palettes:</strong> Use the top control bar to switch palettes, rename them, or delete them.</li>
+        <li><strong>Editing Colors:</strong> Change names or hex values directly in the rows. Contrast scores (against Dark/Light fonts) calculate instantly.</li>
+        <li><strong>Reordering:</strong> Click and drag the handle (≡) on any color row to rearrange its position in the list.</li>
+        <li><strong>Saving:</strong> Click "Save Changes (.js)" to download your palette file.</li>
       </ul>
     `
   }
@@ -696,40 +796,17 @@ const helpTitle = document.getElementById('help-modal-title');
 const helpBody = document.getElementById('help-modal-body');
 
 function openHelpModal() {
-  // Find which tab is active
   const activeTabBtn = document.querySelector('.tab-btn.active');
   if (!activeTabBtn) return;
-  
-  const activeTab = activeTabBtn.dataset.tab;
-  const data = helpData[activeTab];
-  
-  if (data) {
-    helpTitle.textContent = data.title;
-    helpBody.innerHTML = data.content;
-    helpModal.classList.add('show');
-  }
+  const data = helpData[activeTabBtn.dataset.tab];
+  if (data) { helpTitle.textContent = data.title; helpBody.innerHTML = data.content; helpModal.classList.add('show'); }
 }
-
-function closeHelpModal() {
-  helpModal.classList.remove('show');
-}
+function closeHelpModal() { helpModal.classList.remove('show'); }
 
 helpBtn.addEventListener('click', openHelpModal);
 helpClose.addEventListener('click', closeHelpModal);
-
-// Close modal when clicking on the backdrop
-helpModal.addEventListener('click', (e) => {
-  if (e.target === helpModal) {
-    closeHelpModal();
-  }
-});
-
-// Close modal when pressing Escape
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && helpModal.classList.contains('show')) {
-    closeHelpModal();
-  }
-});
+helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHelpModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && helpModal.classList.contains('show')) closeHelpModal(); });
 
 /* ============================================================
    TAB SWITCHING
@@ -741,10 +818,14 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('view-' + btn.dataset.tab).classList.add('active');
     
-    // Toggle combination-specific header controls
     const headerControls = document.getElementById('combination-header-controls');
     if(headerControls) {
       headerControls.style.display = btn.dataset.tab === 'combinations' ? 'flex' : 'none';
+      if(btn.dataset.tab === 'combinations' && window.colorSelectorInstance) {
+          // Sync changes from editor back to Combinations
+          window.PALETTES = JSON.parse(JSON.stringify(palettes)); // Sync global
+          window.colorSelectorInstance._loadPalettes();
+      }
     }
   });
 });
@@ -759,81 +840,68 @@ class ColorSelector {
     this.defaultBackground = '#ffffff';
     this.fontColors = {};
     this.state = {
-      selectedColor1: null, selectedColor2: null,
-      selectedSingleColor: null, selectedBorderColor: null,
+      selectedColor1: null, selectedColor2: null, selectedSingleColor: null, selectedBorderColor: null,
       borderWidth: 5, darkFontColor: '#000000', lightFontColor: '#ffffff',
-      combinationBordersVisible: true, 
-      currentMode: 'two-color', singleColorReversed: false,
+      combinationBordersVisible: true, currentMode: 'two-color', singleColorReversed: false,
       combinationBackgroundColor: '#ffffff',
-      borderPanelVisible: false, fontPanelVisible: false,
-      backgroundPanelVisible: false,
+      custom: { width: 250, layers: [ { id: 'l1', colorName: null, height: 60 }, { id: 'l2', colorName: null, height: 60 } ], activeLayerId: 'l1', nextId: 3 }
     };
     this.el = this._getElements();
     this._loadDefaultPalettes();
     this._init();
+    window.colorSelectorInstance = this;
   }
 
   _getElements() {
     return {
+      combinationsWorkspace: document.getElementById('combinations-workspace'),
+      combinationsEmptyState: document.getElementById('combinations-empty-state'),
       modeBtns:              document.querySelectorAll('#color-mode-toggle .seg-btn'),
-      borderPanelToggle:     document.getElementById('border-panel-toggle'),
-      borderPanelWrapper:    document.getElementById('border-panel-wrapper'),
-      fontPanelToggle:       document.getElementById('font-panel-toggle'),
-      fontPanelWrapper:      document.getElementById('font-panel-wrapper'),
-      backgroundPanelToggle: document.getElementById('background-panel-toggle'),
-      backgroundPanelWrapper:document.getElementById('background-panel-wrapper'),
-      borderWidthSlider:     document.getElementById('border-width-slider'),
-      borderWidthDisplay:    document.getElementById('border-width-display'),
-      clearBorderBtn:        document.getElementById('clear-border-btn'),
-      resetFontBtn:          document.getElementById('reset-font-btn'),
-      resetBackgroundBtn:    document.getElementById('reset-background-btn'),
-      applyBackgroundBtn:    document.getElementById('apply-background-btn'),
-      darkFontInput:         document.getElementById('dark-font-input'),
-      lightFontInput:        document.getElementById('light-font-input'),
-      darkFontText:          document.getElementById('dark-font-text'),
-      lightFontText:         document.getElementById('light-font-text'),
-      backgroundInput:       document.getElementById('background-input'),
-      backgroundText:        document.getElementById('background-text'),
-      darkPreviewText:       document.getElementById('dark-preview-text'),
-      lightPreviewText:      document.getElementById('light-preview-text'),
-      selectedBorderDisplay: document.getElementById('selected-border-display'),
-      selectedBorderSwatch:  document.getElementById('selected-border-swatch'),
-      selectedBorderName:    document.getElementById('selected-border-name'),
-      twoColorSelector:      document.getElementById('two-color-selector'),
-      singleColorSelector:   document.getElementById('single-color-selector'),
-      twoColorButtons:       document.getElementById('two-color-buttons'),
-      singleColorButtons:    document.getElementById('single-color-buttons'),
-      twoColorContent:       document.getElementById('two-color-content'),
-      singleColorContent:    document.getElementById('single-color-content'),
-      combinationDisplay:    document.getElementById('combination-display'),
-      combinationTitle:      document.getElementById('combination-title'),
-      switchColorsBtn:       document.getElementById('switch-colors-btn'),
-      borderShowBtn:         document.getElementById('border-show-btn'),
-      singleBorderShowBtn:   document.getElementById('single-border-show-btn'),
-      reverseColorsBtn:      document.getElementById('reverse-colors-btn'),
+      borderPanelToggle:     document.getElementById('border-panel-toggle'), borderPanelWrapper:    document.getElementById('border-panel-wrapper'),
+      fontPanelToggle:       document.getElementById('font-panel-toggle'), fontPanelWrapper:      document.getElementById('font-panel-wrapper'),
+      backgroundPanelToggle: document.getElementById('background-panel-toggle'), backgroundPanelWrapper:document.getElementById('background-panel-wrapper'),
+      borderWidthSlider:     document.getElementById('border-width-slider'), borderWidthDisplay:    document.getElementById('border-width-display'),
+      clearBorderBtn:        document.getElementById('clear-border-btn'), resetFontBtn:          document.getElementById('reset-font-btn'),
+      resetBackgroundBtn:    document.getElementById('reset-background-btn'), applyBackgroundBtn:    document.getElementById('apply-background-btn'),
+      darkFontInput:         document.getElementById('dark-font-input'), lightFontInput:        document.getElementById('light-font-input'),
+      darkFontText:          document.getElementById('dark-font-text'), lightFontText:         document.getElementById('light-font-text'),
+      backgroundInput:       document.getElementById('background-input'), backgroundText:        document.getElementById('background-text'),
+      darkPreviewText:       document.getElementById('dark-preview-text'), lightPreviewText:      document.getElementById('light-preview-text'),
+      selectedBorderDisplay: document.getElementById('selected-border-display'), selectedBorderSwatch:  document.getElementById('selected-border-swatch'), selectedBorderName:    document.getElementById('selected-border-name'),
+      twoColorSelector:      document.getElementById('two-color-selector'), singleColorSelector:   document.getElementById('single-color-selector'), customColorSelector:   document.getElementById('custom-color-selector'),
+      twoColorButtons:       document.getElementById('two-color-buttons'), singleColorButtons:    document.getElementById('single-color-buttons'), customColorButtons:    document.getElementById('custom-color-buttons'),
+      twoColorContent:       document.getElementById('two-color-content'), singleColorContent:    document.getElementById('single-color-content'), customColorContent:    document.getElementById('custom-color-content'),
+      combinationDisplay:    document.getElementById('combination-display'), combinationTitle:      document.getElementById('combination-title'),
+      switchColorsBtn:       document.getElementById('switch-colors-btn'), borderShowBtn:         document.getElementById('border-show-btn'),
+      singleBorderShowBtn:   document.getElementById('single-border-show-btn'), customBorderShowBtn:   document.getElementById('custom-border-show-btn'), reverseColorsBtn:      document.getElementById('reverse-colors-btn'),
+      customWidthSlider:     document.getElementById('custom-width-slider'), customWidthDisplay:    document.getElementById('custom-width-display'),
+      customStackPreview:    document.getElementById('custom-stack-preview'), customLayersList:      document.getElementById('custom-layers-list'), addCustomLayerBtn:     document.getElementById('add-custom-layer-btn'),
     };
   }
 
   _loadDefaultPalettes() {
-    window.PALETTES = [{
-      name: "Default Palette",
-      colors: { "Red":"ff0000","Green":"00ff00","Blue":"0000ff","Yellow":"ffff00","Cyan":"00ffff","Magenta":"ff00ff","Black":"000000","White":"ffffff" },
-      borderColors: { "Dark Gray":"333333","Light Gray":"cccccc","Black":"000000" },
-      fontColors: { dark:"000000", light:"ffffff" },
-      defaultBackground: "ffffff"
-    }];
+    window.PALETTES = [];
   }
 
   _init() {
     this._loadPalettes();
     this._attachListeners();
-    this._initFileLoading();
     this.state.borderWidth = parseInt(this.el.borderWidthSlider.value);
     this._updateBorderWidthDisplay();
     this._updateFontPreview();
   }
 
-  /* ---- file loading ---- */
+  _showWorkspace() {
+    this.el.combinationsWorkspace.classList.remove('hidden');
+    this.el.combinationsEmptyState.classList.add('hidden');
+  }
+
+  _showEmptyState() {
+    this.el.combinationsWorkspace.classList.add('hidden');
+    this.el.combinationsEmptyState.classList.remove('hidden');
+    this.el.combinationDisplay.classList.remove('show');
+  }
+
   _initFileLoading() {
     document.getElementById('palette-file-input').addEventListener('change', e => this._handleFileLoad(e));
   }
@@ -843,16 +911,28 @@ class ColorSelector {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const existing = document.getElementById('_dyn-palette');
-        if (existing) existing.remove();
-        const s = document.createElement('script');
-        s.id = '_dyn-palette'; s.textContent = e.target.result;
-        document.head.appendChild(s);
-        if (!window.PALETTES || !Array.isArray(window.PALETTES)) throw new Error('PALETTES array not found');
-        document.getElementById('palette-selector').innerHTML = '';
-        this._loadPalettes();
-        this._showFileStatus('File loaded successfully!', 'success');
+        const m = e.target.result.match(/(?:const|var|let)\s+PALETTES\s*=\s*(\[[\s\S]*?\]);/);
+        if (m) {
+          const parsedPalettes = JSON.parse(m[1]);
+          window.PALETTES = parsedPalettes;
+          palettes = parsedPalettes; // sync editor internal state
+          
+          // Rebuild combination UI
+          this._loadPalettes();
+          this._showFileStatus('File loaded successfully!', 'success');
+          
+          // Rebuild editor UI silently
+          updatePaletteSelector();
+          if(palettes.length > 0) {
+              currentPaletteIndex = 0;
+              document.getElementById('paletteSelect').value = "0";
+              renderCurrentPalette();
+          }
+        } else {
+          throw new Error("Invalid format. Missing PALETTES array.");
+        }
       } catch(err) { this._showFileStatus('Error: ' + err.message, 'error'); }
+      event.target.value = ''; // Reset input to allow clicking same file again
     };
     reader.readAsText(file);
   }
@@ -864,15 +944,16 @@ class ColorSelector {
     setTimeout(() => el.classList.add('hidden'), 3000);
   }
 
-  /* ---- palettes ---- */
   _loadPalettes() {
     const sel = document.getElementById('palette-selector');
-    PALETTES.forEach((p, i) => {
-      const opt = document.createElement('option');
-      opt.value = i; opt.textContent = p.name; sel.appendChild(opt);
-    });
-    this._applyPalette(PALETTES[0]);
-    sel.addEventListener('change', e => this._applyPalette(PALETTES[parseInt(e.target.value)]));
+    sel.innerHTML = '';
+    if (window.PALETTES && window.PALETTES.length > 0) {
+      window.PALETTES.forEach((p, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = p.name; sel.appendChild(opt); });
+      sel.value = "0";
+      this._applyPalette(window.PALETTES[0]);
+    } else {
+      this._showEmptyState();
+    }
   }
 
   _applyPalette(p) {
@@ -882,107 +963,86 @@ class ColorSelector {
     this.defaultBackground = '#' + p.defaultBackground;
 
     Object.assign(this.state, {
-      selectedColor1: null, selectedColor2: null, selectedSingleColor: null,
-      selectedBorderColor: null, singleColorReversed: false,
-      darkFontColor: this.fontColors.dark || '#000000',
-      lightFontColor: this.fontColors.light || '#ffffff',
-      combinationBackgroundColor: this.defaultBackground,
+      selectedColor1: null, selectedColor2: null, selectedSingleColor: null, selectedBorderColor: null, singleColorReversed: false,
+      darkFontColor: this.fontColors.dark || '#000000', lightFontColor: this.fontColors.light || '#ffffff', combinationBackgroundColor: this.defaultBackground,
     });
+    this.state.custom.layers.forEach(l => l.colorName = null);
 
     const { el } = this;
-    el.darkFontInput.value  = this.state.darkFontColor;
-    el.lightFontInput.value = this.state.lightFontColor;
-    el.darkFontText.value   = this.state.darkFontColor;
-    el.lightFontText.value  = this.state.lightFontColor;
-    el.backgroundInput.value = this.defaultBackground;
-    el.backgroundText.value  = this.defaultBackground;
+    el.darkFontInput.value  = this.state.darkFontColor; el.lightFontInput.value = this.state.lightFontColor;
+    el.darkFontText.value   = this.state.darkFontColor; el.lightFontText.value  = this.state.lightFontColor;
+    el.backgroundInput.value = this.defaultBackground;  el.backgroundText.value  = this.defaultBackground;
     document.documentElement.style.setProperty('--combination-bg', this.defaultBackground);
 
-    el.combinationDisplay.classList.remove('show');
-    el.selectedBorderDisplay.classList.add('hidden');
-    el.borderShowBtn.classList.add('hidden');
-    el.singleBorderShowBtn.classList.add('hidden');
-    el.reverseColorsBtn.textContent = 'Reverse Colors';
-    document.querySelectorAll('.color-option.selected').forEach(o => o.classList.remove('selected'));
-
-    ['color-grid-1','color-grid-2','color-grid-single','border-color-grid'].forEach(id => document.getElementById(id).innerHTML = '');
+    el.combinationDisplay.classList.remove('show'); el.selectedBorderDisplay.classList.add('hidden');
+    el.borderShowBtn.classList.add('hidden'); el.singleBorderShowBtn.classList.add('hidden'); el.customBorderShowBtn.classList.add('hidden');
+    el.reverseColorsBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg> Reverse Colors';
+    
     this._buildColorGrids();
     this._updateFontPreview();
     this._updateDisplay();
+    this._showWorkspace();
   }
 
-  /* ---- event listeners ---- */
   _attachListeners() {
-    const { el } = this;
-    
-    el.modeBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        this._setMode(e.target.dataset.mode);
-      });
+    this._initFileLoading();
+    document.getElementById('palette-selector').addEventListener('change', e => {
+      this._applyPalette(window.PALETTES[parseInt(e.target.value)]);
     });
 
-    el.borderPanelToggle.addEventListener('change', () => { 
-      this.state.borderPanelVisible = el.borderPanelToggle.checked; 
-      el.borderPanelWrapper.classList.toggle('open', this.state.borderPanelVisible); 
-    });
-    el.fontPanelToggle.addEventListener('change', () => { 
-      this.state.fontPanelVisible = el.fontPanelToggle.checked; 
-      el.fontPanelWrapper.classList.toggle('open', this.state.fontPanelVisible); 
-    });
-    el.backgroundPanelToggle.addEventListener('change', () => { 
-      this.state.backgroundPanelVisible = el.backgroundPanelToggle.checked; 
-      el.backgroundPanelWrapper.classList.toggle('open', this.state.backgroundPanelVisible); 
-    });
-    
+    const { el } = this;
+    el.modeBtns.forEach(btn => btn.addEventListener('click', (e) => this._setMode(e.target.dataset.mode)));
+    el.borderPanelToggle.addEventListener('change', () => { this.state.borderPanelVisible = el.borderPanelToggle.checked; el.borderPanelWrapper.classList.toggle('open', this.state.borderPanelVisible); });
+    el.fontPanelToggle.addEventListener('change', () => { this.state.fontPanelVisible = el.fontPanelToggle.checked; el.fontPanelWrapper.classList.toggle('open', this.state.fontPanelVisible); });
+    el.backgroundPanelToggle.addEventListener('change', () => { this.state.backgroundPanelVisible = el.backgroundPanelToggle.checked; el.backgroundPanelWrapper.classList.toggle('open', this.state.backgroundPanelVisible); });
     el.borderWidthSlider.addEventListener('input', e => { this.state.borderWidth = parseInt(e.target.value); this._updateBorderWidthDisplay(); this._updateSelectedBorderDisplay(); this._updateDisplay(); });
     el.clearBorderBtn.addEventListener('click', () => this._clearBorder());
-    el.resetFontBtn.addEventListener('click', () => this._resetFontColors());
-    el.resetBackgroundBtn.addEventListener('click', () => this._resetBgColor());
+    el.resetFontBtn.addEventListener('click', () => this._resetFontColors()); el.resetBackgroundBtn.addEventListener('click', () => this._resetBgColor());
     el.applyBackgroundBtn.addEventListener('click', () => document.documentElement.style.setProperty('--combination-bg', this.state.combinationBackgroundColor));
-    el.darkFontInput.addEventListener('input', e => this._setFontColor('dark', e.target.value, true));
-    el.lightFontInput.addEventListener('input', e => this._setFontColor('light', e.target.value, true));
-    el.darkFontText.addEventListener('input', e => this._setFontColor('dark', normHex(e.target.value), false));
-    el.lightFontText.addEventListener('input', e => this._setFontColor('light', normHex(e.target.value), false));
-    el.backgroundInput.addEventListener('input', e => this._setBgColor(e.target.value, true));
-    el.backgroundText.addEventListener('input', e => this._setBgColor(normHex(e.target.value), false));
+    el.darkFontInput.addEventListener('input', e => this._setFontColor('dark', e.target.value, true)); el.lightFontInput.addEventListener('input', e => this._setFontColor('light', e.target.value, true));
+    el.darkFontText.addEventListener('input', e => this._setFontColor('dark', normHex(e.target.value), false)); el.lightFontText.addEventListener('input', e => this._setFontColor('light', normHex(e.target.value), false));
+    el.backgroundInput.addEventListener('input', e => this._setBgColor(e.target.value, true)); el.backgroundText.addEventListener('input', e => this._setBgColor(normHex(e.target.value), false));
     el.switchColorsBtn.addEventListener('click', () => this._switchColors());
-    el.borderShowBtn.addEventListener('click', () => { this.state.combinationBordersVisible = !this.state.combinationBordersVisible; el.borderShowBtn.textContent = this.state.combinationBordersVisible ? 'Hide Border' : 'Show Border'; this._updateDisplay(); });
-    el.singleBorderShowBtn.addEventListener('click', () => { this.state.combinationBordersVisible = !this.state.combinationBordersVisible; el.singleBorderShowBtn.textContent = this.state.combinationBordersVisible ? 'Hide Border' : 'Show Border'; this._updateDisplay(); });
-    el.reverseColorsBtn.addEventListener('click', () => { this.state.singleColorReversed = !this.state.singleColorReversed; el.reverseColorsBtn.textContent = this.state.singleColorReversed ? 'Normal Order' : 'Reverse Colors'; this._updateDisplay(); });
+    
+    const toggleBorderFn = (btnElement) => { this.state.combinationBordersVisible = !this.state.combinationBordersVisible; btnElement.textContent = this.state.combinationBordersVisible ? 'Hide Border' : 'Show Border'; this._updateDisplay(); };
+    el.borderShowBtn.addEventListener('click', () => toggleBorderFn(el.borderShowBtn)); el.singleBorderShowBtn.addEventListener('click', () => toggleBorderFn(el.singleBorderShowBtn)); el.customBorderShowBtn.addEventListener('click', () => toggleBorderFn(el.customBorderShowBtn));
+    el.reverseColorsBtn.addEventListener('click', () => { this.state.singleColorReversed = !this.state.singleColorReversed; el.reverseColorsBtn.innerHTML = this.state.singleColorReversed ? '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg> Normal Order' : '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg> Reverse Colors'; this._updateDisplay(); });
+
+    // Custom Mode Listeners
+    el.customWidthSlider.addEventListener('input', (e) => { this.state.custom.width = parseInt(e.target.value); el.customWidthDisplay.textContent = this.state.custom.width + 'px'; this._updateDisplay(); });
+    el.addCustomLayerBtn.addEventListener('click', () => this._addCustomLayer());
+    el.customLayersList.addEventListener('click', (e) => {
+      const target = e.target; const row = target.closest('.layer-control-row'); if (!row) return; const id = row.dataset.id;
+      if (target.closest('.delete-btn')) { this._removeCustomLayer(id); } 
+      else if (target.closest('.copy-btn')) { return; } 
+      else if (!target.closest('.layer-height-input')) { this._setCustomActiveLayer(id); }
+    });
+    el.customLayersList.addEventListener('input', (e) => { if (e.target.classList.contains('layer-height-input')) { const id = e.target.closest('.layer-control-row').dataset.id; this._setCustomLayerHeight(id, e.target.value); } });
+    el.customLayersList.addEventListener('change', (e) => { if (e.target.classList.contains('layer-height-input')) { const id = e.target.closest('.layer-control-row').dataset.id; const layer = this.state.custom.layers.find(l => l.id === id); if (layer) { layer.height = Math.max(10, parseInt(e.target.value) || 10); this._updateDisplay(); } } });
   }
 
-  /* ---- mode ---- */
   _setMode(mode) {
     this.state.currentMode = mode;
-    
-    // Update active class on the segmented control buttons
     this.el.modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-
-    const s = this.state.currentMode;
-    const { el } = this;
+    const s = this.state.currentMode; const { el } = this;
     
-    // Toggle container visibilities
-    el.twoColorSelector.classList.toggle('hidden', s !== 'two-color');
-    el.singleColorSelector.classList.toggle('hidden', s !== 'single-color');
-    el.twoColorButtons.classList.toggle('hidden', s !== 'two-color');
-    el.singleColorButtons.classList.toggle('hidden', s !== 'single-color');
-    el.twoColorContent.classList.toggle('hidden', s !== 'two-color');
-    el.singleColorContent.classList.toggle('hidden', s !== 'single-color');
+    el.twoColorSelector.classList.toggle('hidden', s !== 'two-color'); el.singleColorSelector.classList.toggle('hidden', s !== 'single-color'); el.customColorSelector.classList.toggle('hidden', s !== 'custom');
+    el.twoColorButtons.classList.toggle('hidden', s !== 'two-color'); el.singleColorButtons.classList.toggle('hidden', s !== 'single-color'); el.customColorButtons.classList.toggle('hidden', s !== 'custom');
+    el.twoColorContent.classList.toggle('hidden', s !== 'two-color'); el.singleColorContent.classList.toggle('hidden', s !== 'single-color'); el.customColorContent.classList.toggle('hidden', s !== 'custom');
     
     if (s === 'two-color') el.combinationTitle.textContent = 'Color Combination';
-    if (s === 'single-color') { this.state.singleColorReversed = false; el.reverseColorsBtn.textContent = 'Reverse Colors'; }
+    if (s === 'single-color') { this.state.singleColorReversed = false; el.reverseColorsBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="14" x2="21" y2="3"></line><polyline points="8 21 3 21 3 16"></polyline><line x1="20" y1="10" x2="3" y2="21"></line></svg> Reverse Colors'; }
+    if (s === 'custom') { el.combinationTitle.textContent = 'Custom Multi-Layer Combination'; this._updateCustomGridSelection(); }
     
+    this._updateBorderShowButtonState();
     this._updateDisplay();
   }
 
-  /* ---- border/font/bg ---- */
   _updateBorderWidthDisplay() { this.el.borderWidthDisplay.textContent = this.state.borderWidth + 'px'; }
   _clearBorder() {
-    this.state.selectedBorderColor = null;
-    this.state.combinationBordersVisible = true;
+    this.state.selectedBorderColor = null; this.state.combinationBordersVisible = true;
     this._updateSelectedBorderDisplay();
-    this.el.borderShowBtn.classList.add('hidden');
-    this.el.singleBorderShowBtn.classList.add('hidden');
+    this.el.borderShowBtn.classList.add('hidden'); this.el.singleBorderShowBtn.classList.add('hidden'); this.el.customBorderShowBtn.classList.add('hidden');
     document.querySelectorAll('#border-color-grid .color-option').forEach(o => o.classList.remove('selected'));
     this._updateDisplay();
   }
@@ -990,14 +1050,15 @@ class ColorSelector {
     const { el, state } = this;
     if (state.selectedBorderColor) {
       const hex = this.borderColors[state.selectedBorderColor];
-      el.selectedBorderDisplay.classList.remove('hidden');
-      el.selectedBorderSwatch.style.borderColor = hex;
-      el.selectedBorderSwatch.style.borderWidth = state.borderWidth + 'px';
-      el.selectedBorderName.innerHTML = `${state.selectedBorderColor} <button class="copy-btn" data-color="${state.selectedBorderColor}" title="Copy">⎘</button>`;
-    } else {
-      el.selectedBorderDisplay.classList.add('hidden');
-    }
+      el.selectedBorderDisplay.classList.remove('hidden'); el.selectedBorderSwatch.style.borderColor = hex; el.selectedBorderSwatch.style.borderWidth = state.borderWidth + 'px';
+      el.selectedBorderName.innerHTML = `${state.selectedBorderColor} <button class="copy-btn btn-icon-only" data-color="${state.selectedBorderColor}" title="Copy"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>`;
+    } else { el.selectedBorderDisplay.classList.add('hidden'); }
   }
+  _updateBorderShowButtonState() {
+    const btn = this.state.currentMode === 'two-color' ? this.el.borderShowBtn : (this.state.currentMode === 'single-color' ? this.el.singleBorderShowBtn : this.el.customBorderShowBtn);
+    if (this.state.selectedBorderColor) { btn.classList.remove('hidden'); btn.textContent = this.state.combinationBordersVisible ? 'Hide Border' : 'Show Border'; } else { btn.classList.add('hidden'); }
+  }
+
   _setFontColor(type, color, fromPicker) {
     if (!HEX6.test(color)) return;
     if (type === 'dark') { this.state.darkFontColor = color; (fromPicker ? this.el.darkFontText : this.el.darkFontInput).value = color; }
@@ -1006,33 +1067,21 @@ class ColorSelector {
   }
   _resetFontColors() {
     this.state.darkFontColor = '#000000'; this.state.lightFontColor = '#ffffff';
-    ['darkFontInput','darkFontText'].forEach(k => this.el[k].value = '#000000');
-    ['lightFontInput','lightFontText'].forEach(k => this.el[k].value = '#ffffff');
+    ['darkFontInput','darkFontText'].forEach(k => this.el[k].value = '#000000'); ['lightFontInput','lightFontText'].forEach(k => this.el[k].value = '#ffffff');
     this._updateFontPreview(); this._updateDisplay();
   }
   _updateFontPreview() {
-    const dc = getContrastRatio('#ffffff', this.state.darkFontColor);
-    const lc = getContrastRatio('#000000', this.state.lightFontColor);
-    this.el.darkPreviewText.style.color = this.state.darkFontColor;
-    this.el.lightPreviewText.style.color = this.state.lightFontColor;
+    const dc = getContrastRatio('#ffffff', this.state.darkFontColor), lc = getContrastRatio('#000000', this.state.lightFontColor);
+    this.el.darkPreviewText.style.color = this.state.darkFontColor; this.el.lightPreviewText.style.color = this.state.lightFontColor;
     this.el.darkPreviewText.innerHTML  = `ede_color-dark<div class="font-contrast-info">${dc.toFixed(2)}:1</div>`;
     this.el.lightPreviewText.innerHTML = `ede_color-light<div class="font-contrast-info">${lc.toFixed(2)}:1</div>`;
   }
-  _setBgColor(color, fromPicker) {
-    if (!HEX6.test(color)) return;
-    this.state.combinationBackgroundColor = color;
-    (fromPicker ? this.el.backgroundText : this.el.backgroundInput).value = color;
-  }
-  _resetBgColor() {
-    this.state.combinationBackgroundColor = this.defaultBackground;
-    this.el.backgroundInput.value = this.el.backgroundText.value = this.defaultBackground;
-    document.documentElement.style.setProperty('--combination-bg', this.defaultBackground);
-  }
+  _setBgColor(color, fromPicker) { if (!HEX6.test(color)) return; this.state.combinationBackgroundColor = color; (fromPicker ? this.el.backgroundText : this.el.backgroundInput).value = color; }
+  _resetBgColor() { this.state.combinationBackgroundColor = this.defaultBackground; this.el.backgroundInput.value = this.el.backgroundText.value = this.defaultBackground; document.documentElement.style.setProperty('--combination-bg', this.defaultBackground); }
 
-  /* ---- grids ---- */
   _buildColorGrids() {
-    ['color-grid-1','color-grid-2','color-grid-single'].forEach(id => this._buildColorGrid(id));
-    this._buildBorderGrid();
+    ['color-grid-1','color-grid-2','color-grid-single', 'color-grid-custom'].forEach(id => { document.getElementById(id).innerHTML = ''; this._buildColorGrid(id); });
+    document.getElementById('border-color-grid').innerHTML = ''; this._buildBorderGrid();
   }
   _buildColorGrid(id) {
     const frag = document.createDocumentFragment();
@@ -1055,152 +1104,118 @@ class ColorSelector {
     document.getElementById('border-color-grid').appendChild(frag);
   }
   _clearGridSelection(gridId) { document.querySelectorAll(`#${gridId} .color-option`).forEach(o => o.classList.remove('selected')); }
+  
   _selectColor(name, gridId) {
     this._clearGridSelection(gridId);
     document.querySelector(`#${gridId} [data-color="${name}"]`)?.classList.add('selected');
     if (gridId === 'color-grid-1') this.state.selectedColor1 = name;
     else if (gridId === 'color-grid-2') this.state.selectedColor2 = name;
-    else this.state.selectedSingleColor = name;
+    else if (gridId === 'color-grid-single') this.state.selectedSingleColor = name;
+    else if (gridId === 'color-grid-custom') { const layer = this.state.custom.layers.find(l => l.id === this.state.custom.activeLayerId); if (layer) layer.colorName = name; }
     this._updateDisplay();
   }
+  
   _selectBorderColor(name) {
     this._clearGridSelection('border-color-grid');
     document.querySelector(`#border-color-grid [data-border-color="${name}"]`)?.classList.add('selected');
-    this.state.selectedBorderColor = name;
-    this.state.combinationBordersVisible = true;
-    this._updateSelectedBorderDisplay();
-    const btn = this.state.currentMode === 'two-color' ? this.el.borderShowBtn : this.el.singleBorderShowBtn;
-    btn.classList.remove('hidden'); btn.textContent = 'Hide Border';
-    this._updateDisplay();
+    this.state.selectedBorderColor = name; this.state.combinationBordersVisible = true;
+    this._updateSelectedBorderDisplay(); this._updateBorderShowButtonState(); this._updateDisplay();
   }
+  
   _switchColors() {
     if (!this.state.selectedColor1 || !this.state.selectedColor2) return;
     [this.state.selectedColor1, this.state.selectedColor2] = [this.state.selectedColor2, this.state.selectedColor1];
-    ['color-grid-1','color-grid-2'].forEach((id, i) => {
-      this._clearGridSelection(id);
-      document.querySelector(`#${id} [data-color="${i===0?this.state.selectedColor1:this.state.selectedColor2}"]`)?.classList.add('selected');
-    });
+    ['color-grid-1','color-grid-2'].forEach((id, i) => { this._clearGridSelection(id); document.querySelector(`#${id} [data-color="${i===0?this.state.selectedColor1:this.state.selectedColor2}"]`)?.classList.add('selected'); });
     this._showTwoColorCombination();
   }
 
-  /* ---- display ---- */
-  _getTextInfo(bg) {
-    const dc = getContrastRatio(bg, this.state.darkFontColor);
-    const lc = getContrastRatio(bg, this.state.lightFontColor);
-    return {
-      dark:  { contrast: dc, meetsThreshold: dc >= 4.5, color: this.state.darkFontColor },
-      light: { contrast: lc, meetsThreshold: lc >= 4.5, color: this.state.lightFontColor },
-    };
-  }
-  _textHtml(info) {
-    return [
-      info.dark.meetsThreshold  ? `<div class="sample-text" style="color:${info.dark.color}">ede_color-dark<br>${info.dark.contrast.toFixed(2)}:1</div>`  : '',
-      info.light.meetsThreshold ? `<div class="sample-text" style="color:${info.light.color}">ede_color-light<br>${info.light.contrast.toFixed(2)}:1</div>` : '',
-    ].join('');
-  }
-  _getBorderStyle() {
-    return (this.state.selectedBorderColor && this.state.combinationBordersVisible)
-      ? `border:${this.state.borderWidth}px solid ${this.borderColors[this.state.selectedBorderColor]};` : '';
-  }
+  _addCustomLayer() { if (this.state.custom.layers.length >= 6) return; const newId = 'l' + this.state.custom.nextId++; this.state.custom.layers.push({ id: newId, colorName: null, height: 60 }); this._setCustomActiveLayer(newId); }
+  _removeCustomLayer(id) { if (this.state.custom.layers.length <= 2) return; this.state.custom.layers = this.state.custom.layers.filter(l => l.id !== id); if (this.state.custom.activeLayerId === id) { this._setCustomActiveLayer(this.state.custom.layers[0].id); } else { this._updateDisplay(); } }
+  _setCustomLayerHeight(id, valString) { const layer = this.state.custom.layers.find(l => l.id === id); if (layer) { let h = parseInt(valString); if (!isNaN(h)) { layer.height = h; this._updateCustomStackPreview(); } } }
+  _setCustomActiveLayer(id) { this.state.custom.activeLayerId = id; this._updateCustomGridSelection(); this._updateDisplay(); }
+  _updateCustomGridSelection() { this._clearGridSelection('color-grid-custom'); const activeLayer = this.state.custom.layers.find(l => l.id === this.state.custom.activeLayerId); if (activeLayer && activeLayer.colorName) { document.querySelector(`#color-grid-custom [data-color="${activeLayer.colorName}"]`)?.classList.add('selected'); } }
+
+  _getTextInfo(bg) { const dc = getContrastRatio(bg, this.state.darkFontColor), lc = getContrastRatio(bg, this.state.lightFontColor); return { dark:  { contrast: dc, meetsThreshold: dc >= 4.5, color: this.state.darkFontColor }, light: { contrast: lc, meetsThreshold: lc >= 4.5, color: this.state.lightFontColor } }; }
+  _textHtml(info) { return [ info.dark.meetsThreshold  ? `<div class="sample-text" style="color:${info.dark.color}">ede_color-dark<br>${info.dark.contrast.toFixed(2)}:1</div>`  : '', info.light.meetsThreshold ? `<div class="sample-text" style="color:${info.light.color}">ede_color-light<br>${info.light.contrast.toFixed(2)}:1</div>` : '' ].join(''); }
+  _getBorderStyle() { return (this.state.selectedBorderColor && this.state.combinationBordersVisible) ? `border:${this.state.borderWidth}px solid ${this.borderColors[this.state.selectedBorderColor]};` : ''; }
+
   _updateDisplay() {
     const { state, el } = this;
-    if (state.currentMode === 'two-color' && state.selectedColor1 && state.selectedColor2) this._showTwoColorCombination();
-    else if (state.currentMode === 'single-color' && state.selectedSingleColor) this._showSingleColorCombinations();
-    else el.combinationDisplay.classList.remove('show');
+    if (state.currentMode === 'two-color' && state.selectedColor1 && state.selectedColor2) { this._showTwoColorCombination(); } 
+    else if (state.currentMode === 'single-color' && state.selectedSingleColor) { this._showSingleColorCombinations(); } 
+    else if (state.currentMode === 'custom') { this._showCustomCombination(); } 
+    else { el.combinationDisplay.classList.remove('show'); }
   }
   
   _showTwoColorCombination() {
-    const { state, el } = this;
-    const h1 = this.colors[state.selectedColor1], h2 = this.colors[state.selectedColor2];
-    const name1 = state.selectedColor1, name2 = state.selectedColor2;
-    const bs = this._getBorderStyle();
-
-    const copyBtn = n => `<button class="copy-btn" data-color="${n}" title="Copy">⎘</button>`;
-
+    const { state, el } = this; const h1 = this.colors[state.selectedColor1], h2 = this.colors[state.selectedColor2]; const name1 = state.selectedColor1, name2 = state.selectedColor2; const bs = this._getBorderStyle();
+    const copyBtn = n => `<button class="copy-btn btn-icon-only" data-color="${n}" title="Copy Color"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>`;
     const makeComboColumn = (topHex, bottomHex, topName, bottomName) => `
-      <div class="combo-column-wrapper">
-        <div class="combo-column-grid">
-          <div class="combo-preview-small" style="${bs}">
-            <div class="color-half" style="background-color:${topHex}">${this._textHtml(this._getTextInfo(topHex))}</div>
-            <div class="color-half" style="background-color:${bottomHex}">${this._textHtml(this._getTextInfo(bottomHex))}</div>
-          </div>
-          <div class="combo-info-stacked">
-            <div class="color-info-compact">
-              <span class="swatch-dot" style="background-color:${topHex}"></span>
-              <span class="name" title="${topName}">${topName}</span>
-              <span class="hex">${topHex}</span>
-              ${copyBtn(topName)}
-            </div>
-            <div class="color-info-compact">
-              <span class="swatch-dot" style="background-color:${bottomHex}"></span>
-              <span class="name" title="${bottomName}">${bottomName}</span>
-              <span class="hex">${bottomHex}</span>
-              ${copyBtn(bottomName)}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    el.twoColorContent.innerHTML = `
-      <div class="two-color-grid-container">
-        ${makeComboColumn(h1, h2, name1, name2)}
-        ${makeComboColumn(h2, h1, name2, name1)}
-      </div>
-    `;
-    
+      <div class="combo-column-wrapper"><div class="combo-column-grid"><div class="combo-preview-small" style="${bs}"><div class="color-half" style="background-color:${topHex}">${this._textHtml(this._getTextInfo(topHex))}</div><div class="color-half" style="background-color:${bottomHex}">${this._textHtml(this._getTextInfo(bottomHex))}</div></div>
+      <div class="combo-info-stacked"><div class="color-info-compact"><span class="swatch-dot" style="background-color:${topHex}"></span><span class="name" title="${topName}">${topName}</span><span class="hex">${topHex}</span>${copyBtn(topName)}</div>
+      <div class="color-info-compact"><span class="swatch-dot" style="background-color:${bottomHex}"></span><span class="name" title="${bottomName}">${bottomName}</span><span class="hex">${bottomHex}</span>${copyBtn(bottomName)}</div></div></div></div>`;
+    el.twoColorContent.innerHTML = `<div class="two-color-grid-container">${makeComboColumn(h1, h2, name1, name2)}${makeComboColumn(h2, h1, name2, name1)}</div>`;
     el.combinationDisplay.classList.add('show');
   }
   
   _showSingleColorCombinations() {
-    const { state } = this;
-    const selHex = this.colors[state.selectedSingleColor];
-    const bStyle = state.selectedBorderColor && state.combinationBordersVisible
-      ? `border:${state.borderWidth}px solid ${this.borderColors[state.selectedBorderColor]};` : '';
-    const frag = document.createDocumentFragment();
-
+    const { state } = this; const selHex = this.colors[state.selectedSingleColor]; const bStyle = state.selectedBorderColor && state.combinationBordersVisible ? `border:${state.borderWidth}px solid ${this.borderColors[state.selectedBorderColor]};` : ''; const frag = document.createDocumentFragment();
     Object.entries(this.colors).forEach(([name, hex]) => {
       if (name === state.selectedSingleColor) return;
-      const [fHex, sHex, fName, sName] = state.singleColorReversed
-        ? [hex, selHex, name, state.selectedSingleColor]
-        : [selHex, hex, state.selectedSingleColor, name];
+      const [fHex, sHex, fName, sName] = state.singleColorReversed ? [hex, selHex, name, state.selectedSingleColor] : [selHex, hex, state.selectedSingleColor, name];
       const fInfo = this._getTextInfo(fHex), sInfo = this._getTextInfo(sHex);
       const div = document.createElement('div'); div.className = 'single-combination';
-      const copyBtn = n => `<button class="single-color-copy" data-color="${n}" title="Copy">⎘</button>`;
-      div.innerHTML = `
-        <div class="single-preview" style="${bStyle}">
-          <div class="single-color-half" style="background:${fHex}">${this._singleTextHtml(fInfo)}</div>
-          <div class="single-color-half" style="background:${sHex}">${this._singleTextHtml(sInfo)}</div>
-        </div>
-        <div class="single-color-info">
-          <div class="color-info-compact">
-            <span class="swatch-dot" style="background-color:${fHex}"></span>
-            <span class="name" title="${fName}">${fName}</span>
-            <span class="hex">${fHex}</span>
-            ${copyBtn(fName)}
-          </div>
-          <div class="color-info-compact" style="margin-top: 8px;">
-            <span class="swatch-dot" style="background-color:${sHex}"></span>
-            <span class="name" title="${sName}">${sName}</span>
-            <span class="hex">${sHex}</span>
-            ${copyBtn(sName)}
-          </div>
-        </div>`;
+      const copyBtn = n => `<button class="single-color-copy btn-icon-only" data-color="${n}" title="Copy Color"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg></button>`;
+      div.innerHTML = `<div class="single-preview" style="${bStyle}"><div class="single-color-half" style="background:${fHex}">${this._singleTextHtml(fInfo)}</div><div class="single-color-half" style="background:${sHex}">${this._singleTextHtml(sInfo)}</div></div>
+        <div class="single-color-info"><div class="color-info-compact"><span class="swatch-dot" style="background-color:${fHex}"></span><span class="name" title="${fName}">${fName}</span><span class="hex">${fHex}</span>${copyBtn(fName)}</div>
+        <div class="color-info-compact" style="margin-top: 8px;"><span class="swatch-dot" style="background-color:${sHex}"></span><span class="name" title="${sName}">${sName}</span><span class="hex">${sHex}</span>${copyBtn(sName)}</div></div>`;
       frag.appendChild(div);
     });
-
-    this.el.singleColorContent.innerHTML = '';
-    this.el.singleColorContent.appendChild(frag);
-    this.el.combinationTitle.textContent = state.singleColorReversed
-      ? `All Other Colors with ${state.selectedSingleColor}`
-      : `${state.selectedSingleColor} with All Other Colors`;
+    this.el.singleColorContent.innerHTML = ''; this.el.singleColorContent.appendChild(frag);
+    this.el.combinationTitle.textContent = state.singleColorReversed ? `All Other Colors with ${state.selectedSingleColor}` : `${state.selectedSingleColor} with All Other Colors`;
     this.el.combinationDisplay.classList.add('show');
   }
-  _singleTextHtml(info) {
-    return [
-      info.dark.meetsThreshold  ? `<div style="color:${info.dark.color};line-height:1.2">ede_color-dark<br>${info.dark.contrast.toFixed(1)}:1</div>`  : '',
-      info.light.meetsThreshold ? `<div style="color:${info.light.color};line-height:1.2">ede_color-light<br>${info.light.contrast.toFixed(1)}:1</div>` : '',
-    ].join('');
+  _singleTextHtml(info) { return [ info.dark.meetsThreshold  ? `<div style="color:${info.dark.color};line-height:1.2">ede_color-dark<br>${info.dark.contrast.toFixed(1)}:1</div>`  : '', info.light.meetsThreshold ? `<div style="color:${info.light.color};line-height:1.2">ede_color-light<br>${info.light.contrast.toFixed(1)}:1</div>` : '' ].join(''); }
+
+  _updateCustomStackPreview() {
+    const { state, el } = this; const cState = state.custom; const bStyle = this._getBorderStyle();
+    el.customStackPreview.style.cssText = `width: ${cState.width}px; ${bStyle}`;
+    el.customStackPreview.innerHTML = cState.layers.map(layer => {
+      const hex = layer.colorName ? this.colors[layer.colorName] : 'transparent';
+      const content = layer.colorName ? this._textHtml(this._getTextInfo(hex)) : '<span style="color:#aaa;font-weight:normal;">No Color</span>';
+      return `<div class="custom-layer" style="height:${layer.height}px; background-color:${hex};">${content}</div>`;
+    }).join('');
+  }
+  
+  _showCustomCombination() {
+    const { state, el } = this; const cState = state.custom;
+    el.addCustomLayerBtn.disabled = cState.layers.length >= 6;
+    this._updateCustomStackPreview();
+    
+    el.customLayersList.innerHTML = cState.layers.map((layer, index) => {
+      const isActive = layer.id === cState.activeLayerId;
+      const hex = layer.colorName ? this.colors[layer.colorName] : null;
+      const colorInfoHtml = hex ? `
+        <div class="custom-color-info">
+          <span class="swatch-dot" style="background-color:${hex}"></span>
+          <span class="custom-color-name" title="${layer.colorName}">${layer.colorName}</span>
+          <button class="copy-btn btn-icon-only" data-color="${layer.colorName}" title="Copy Color Name"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+        </div>` : '<div class="custom-color-info"><span style="color:#888; font-style:italic;">Select color...</span></div>';
+        
+      return `
+        <div class="layer-control-row ${isActive ? 'active' : ''}" data-id="${layer.id}">
+          <input type="radio" name="custom-active-layer" ${isActive ? 'checked' : ''}>
+          <div class="layer-control-name">Layer ${index + 1}</div>
+          <input type="number" class="layer-height-input" value="${layer.height}" step="5" min="10" title="Height in px">
+          ${colorInfoHtml}
+          <div style="display:flex; gap:4px; margin-left:auto;">
+            <button class="layer-action-btn delete-btn" title="Delete Layer" ${cState.layers.length <= 2 ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    el.combinationDisplay.classList.add('show');
   }
 }
 
@@ -1208,8 +1223,13 @@ class ColorSelector {
    VIEW 2 — PALETTE EDITOR
 ============================================================ */
 let palettes = [];
-let currentPaletteIndex = -1;
+let currentPaletteIndex = -1; // Start Empty
 let fileImportBuffer = { vars: {}, mappings: {} };
+
+function toggleDropZone() {
+  const container = document.getElementById('dropZoneContainer');
+  container.classList.toggle('show');
+}
 
 const dropZone = document.getElementById('dropZone');
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -1239,58 +1259,203 @@ function _processFileImport() {
   if (Object.keys(p.colors).length || Object.keys(p.borderColors).length) {
     palettes.push(p); currentPaletteIndex = palettes.length-1;
     fileImportBuffer = { vars:{}, mappings:{} };
+    
+    // Sync to combinations 
+    window.PALETTES = JSON.parse(JSON.stringify(palettes));
+    
     updatePaletteSelector(); document.getElementById('paletteSelect').value = currentPaletteIndex; renderCurrentPalette();
+    document.getElementById('dropZoneContainer').classList.remove('show');
+    
+    // update combo UI if initialized
+    if(window.colorSelectorInstance) {
+        document.getElementById('palette-selector').innerHTML = '';
+        window.colorSelectorInstance._loadPalettes();
+    }
   }
+}
+
+function loadPalettesFromFile(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const m = e.target.result.match(/(?:const|var|let)\s+PALETTES\s*=\s*(\[[\s\S]*?\]);/);
+      if (m) { 
+        const parsed = JSON.parse(m[1]);
+        palettes = parsed;
+        window.PALETTES = parsed; // sync combinations
+        
+        // Update Editor
+        updatePaletteSelector(); 
+        if(palettes.length > 0) {
+            currentPaletteIndex = 0;
+            document.getElementById('paletteSelect').value = "0";
+            renderCurrentPalette();
+        }
+        alert('Loaded successfully!');
+        
+        // Update Combinations
+        if(window.colorSelectorInstance) {
+            document.getElementById('palette-selector').innerHTML = '';
+            window.colorSelectorInstance._loadPalettes();
+        }
+      } else {
+        alert('Invalid file format.');
+      }
+    } catch(err) { alert('Error: ' + err.message); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function updatePaletteSelector() {
   const sel = document.getElementById('paletteSelect');
   sel.innerHTML = '<option value="">Select a palette…</option>';
+  // Use window.PALETTES to ensure the dropdown populates even if the editor hasn't loaded a specific one yet
+  if(palettes.length === 0 && window.PALETTES && window.PALETTES.length > 0) {
+     palettes = JSON.parse(JSON.stringify(window.PALETTES));
+  }
   palettes.forEach((p,i) => { const o = document.createElement('option'); o.value=i; o.textContent=p.name; sel.appendChild(o); });
 }
+
 function newPalette() {
   palettes.push({ name:"New Palette", colors:{}, borderColors:{}, fontColors:{dark:"000000",light:"FFFFFF"}, defaultBackground:"FFFFFF" });
   currentPaletteIndex = palettes.length-1;
+  
+  // Sync to combinations 
+  window.PALETTES = JSON.parse(JSON.stringify(palettes));
+  if(window.colorSelectorInstance) {
+      window.colorSelectorInstance._loadPalettes();
+  }
+  
   updatePaletteSelector(); document.getElementById('paletteSelect').value = currentPaletteIndex; renderCurrentPalette();
 }
+
 function loadPalette() {
   const v = document.getElementById('paletteSelect').value;
-  currentPaletteIndex = parseInt(v); if (currentPaletteIndex >= 0) renderCurrentPalette();
+  if (v === "") {
+    currentPaletteIndex = -1;
+    toggleEditorWorkspace();
+  } else {
+    currentPaletteIndex = parseInt(v); 
+    renderCurrentPalette();
+  }
 }
+
+function toggleEditorWorkspace() {
+  const workspace = document.getElementById('editor-workspace');
+  const emptyState = document.getElementById('editor-empty-state');
+  const nameCard = document.getElementById('active-palette-name-card');
+  
+  if (currentPaletteIndex < 0) {
+    workspace.classList.add('hidden');
+    nameCard.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+  } else {
+    workspace.classList.remove('hidden');
+    nameCard.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+  }
+}
+
 function renderCurrentPalette() {
+  toggleEditorWorkspace();
   if (currentPaletteIndex < 0) return;
   const p = palettes[currentPaletteIndex];
   document.getElementById('paletteName').value = p.name;
-  renderColorSection('colors', p.colors);
-  renderColorSection('borderColors', p.borderColors);
+  
+  // Render Settings
   renderFontColors(p.fontColors);
   document.getElementById('defaultBackground').value = p.defaultBackground;
   document.getElementById('defaultBackgroundPicker').value = '#' + p.defaultBackground;
-  updateColorPreview('defaultBackground', p.defaultBackground);
-  updatePreview();
+  
+  // Render Lists
+  renderColorSection('colors', p.colors);
+  renderColorSection('borderColors', p.borderColors);
 }
+
+function getInlineContrastBadgesHTML(hexColor) {
+  if (!hexColor || currentPaletteIndex < 0) return '';
+  const p = palettes[currentPaletteIndex];
+  const dr = getContrastRatio('#'+hexColor, '#'+p.fontColors.dark);
+  const lr = getContrastRatio('#'+hexColor, '#'+p.fontColors.light);
+  
+  const dPass = dr >= 4.5 ? 'pass' : 'fail';
+  const lPass = lr >= 4.5 ? 'pass' : 'fail';
+  
+  return `
+    <div class="contrast-box" title="Dark Font Contrast: ${dr.toFixed(2)}">
+      <span class="contrast-swatch" style="background-color: #${p.fontColors.dark}"></span>
+      <span class="contrast-text ${dPass}">${dr.toFixed(2)}</span>
+    </div>
+    <div class="contrast-box" title="Light Font Contrast: ${lr.toFixed(2)}">
+      <span class="contrast-swatch" style="background-color: #${p.fontColors.light}"></span>
+      <span class="contrast-text ${lPass}">${lr.toFixed(2)}</span>
+    </div>
+  `;
+}
+
 function renderColorSection(section, colors) {
   const el = document.getElementById(section + 'Section'); el.innerHTML = '';
-  Object.keys(colors).sort((a,b) => a.localeCompare(b,undefined,{numeric:true}))
-    .forEach(name => el.appendChild(createColorItem(section, name, colors[name])));
+  const keys = Object.keys(colors);
+  keys.forEach((name, index) => el.appendChild(createColorItem(section, name, colors[name], index, keys.length)));
 }
 function renderFontColors(fc) {
   const el = document.getElementById('fontColorsSection'); el.innerHTML = '';
-  Object.entries(fc).forEach(([n,c]) => el.appendChild(createColorItem('fontColors',n,c)));
+  Object.entries(fc).forEach(([n,c]) => el.appendChild(createColorItem('fontColors',n,c, 0, 1)));
 }
-function createColorItem(section, name, color) {
-  const div = document.createElement('div'); div.className = 'color-item';
+
+function createColorItem(section, name, color, index, totalItems) {
+  const div = document.createElement('div'); div.className = 'color-item-row';
   const ro = section === 'fontColors' ? 'readonly' : '';
+  const isGlobal = section === 'fontColors';
+  
+  let actionsHtml = '';
+  if (!isGlobal) {
+    div.draggable = true;
+    div.dataset.name = name;
+    div.dataset.section = section;
+    
+    div.addEventListener('dragstart', (e) => {
+      div.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      if(e.dataTransfer) e.dataTransfer.setData('text/plain', name);
+    });
+    
+    div.addEventListener('dragend', () => {
+      div.classList.remove('dragging');
+      _reorderPaletteFromDOM(section);
+    });
+
+    actionsHtml = `
+      <div class="color-item-actions">
+        <button class="layer-action-btn delete-btn" title="Delete" onclick="removeColorItem('${section}','${name}')">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      </div>`;
+  }
+  
+  const contrastHtml = isGlobal ? '' : `<div class="inline-contrast" id="contrast-${section}-${name}">${getInlineContrastBadgesHTML(color)}</div>`;
+
   div.innerHTML = `
-    <input type="text" value="${name}" ${ro} onchange="updateColorName('${section}',this,'${name}')">
-    <input type="text" value="${color}" onchange="updateColor('${section}','${name}',this.value)">
-    <input type="color" value="#${color}" onchange="updateFromColorPicker('${section}','${name}',this)">
-    <div class="color-preview" style="background:#${color}"></div>
-    ${section!=='fontColors' ? `<button class="remove-btn" onclick="removeColorItem('${section}','${name}')">✕</button>` : ''}`;
+    ${!isGlobal ? `<div class="drag-handle" title="Drag to reorder"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>` : ''}
+    <label class="color-picker-wrapper" style="cursor:pointer; display:flex;">
+      <input type="color" value="#${color}" class="color-picker" onchange="updateFromColorPicker('${section}','${name}',this)">
+    </label>
+    <input type="text" class="color-name-input" value="${name}" ${ro} onchange="updateColorName('${section}',this,'${name}')">
+    <div class="hex-input-wrapper">
+      <span class="hash-prefix">#</span>
+      <input type="text" class="color-hex-input" value="${color}" onchange="updateColor('${section}','${name}',this.value)">
+    </div>
+    ${contrastHtml}
+    ${actionsHtml}
+  `;
   return div;
 }
+
 function updateColor(section, name, color) {
-  color = color.replace('#',''); palettes[currentPaletteIndex][section][name] = color; renderCurrentPalette();
+  color = color.replace('#',''); palettes[currentPaletteIndex][section][name] = color; 
+  renderCurrentPalette();
 }
 function updateFromColorPicker(section, name, picker) { updateColor(section, name, picker.value.substring(1)); }
 function updateColorName(section, input, oldName) {
@@ -1311,63 +1476,100 @@ function addColorItem(section) {
 }
 function updateDefaultBackground(color) { palettes[currentPaletteIndex].defaultBackground = color.replace('#',''); renderCurrentPalette(); }
 function updateDefaultBackgroundFromPicker(picker) { updateDefaultBackground(picker.value); }
-function updateColorPreview(fieldName, color) { const el = document.getElementById(fieldName+'Preview'); if (el) el.style.backgroundColor = '#'+color; }
 function updatePaletteName() { palettes[currentPaletteIndex].name = document.getElementById('paletteName').value; updatePaletteSelector(); document.getElementById('paletteSelect').value = currentPaletteIndex; }
 function deletePalette() {
   if (currentPaletteIndex >= 0 && confirm('Delete this palette?')) {
-    palettes.splice(currentPaletteIndex,1); currentPaletteIndex=-1; updatePaletteSelector(); renderCurrentPalette();
+    palettes.splice(currentPaletteIndex,1); currentPaletteIndex=-1; 
+    window.PALETTES = JSON.parse(JSON.stringify(palettes)); // sync to combinations
+    document.getElementById('paletteName').value = '';
+    document.getElementById('colorsSection').innerHTML = '';
+    document.getElementById('borderColorsSection').innerHTML = '';
+    updatePaletteSelector();
+    toggleEditorWorkspace();
+    
+    if(window.colorSelectorInstance) {
+        window.colorSelectorInstance._loadPalettes();
+    }
   }
 }
 function exportAllPalettes() {
   const blob = new Blob([`const PALETTES = ${JSON.stringify(palettes,null,2)};`],{type:'text/javascript'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'my_palettes.js'; a.click();
 }
-function loadPalettesFromFile(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const m = e.target.result.match(/(?:const|var|let)\s+PALETTES\s*=\s*(\[[\s\S]*?\]);/);
-    if (m) { palettes = JSON.parse(m[1]); updatePaletteSelector(); alert('Loaded successfully!'); }
-  };
-  reader.readAsText(file);
-}
-function updatePreview() {
+
+// Rebuilds the palette object order based on current DOM sequence
+function _reorderPaletteFromDOM(section) {
   if (currentPaletteIndex < 0) return;
+  const container = document.getElementById(section + 'Section');
+  const rows = container.querySelectorAll('.color-item-row');
   const p = palettes[currentPaletteIndex];
-  const preview = document.getElementById('palettePreview'); preview.innerHTML = '';
-  Object.entries(p.colors).forEach(([name, color]) => {
-    const dr = _calcContrast(color, p.fontColors.dark), lr = _calcContrast(color, p.fontColors.light);
-    const item = document.createElement('div'); item.className = 'preview-item';
-    item.innerHTML = `
-      <div class="color-swatch" style="background:#${color}"></div>
-      <div style="flex:1"><div style="font-weight:700;font-size:13px">${name}</div><div style="font-family:monospace;font-size:11px;color:#666">#${color}</div></div>
-      <div class="contrast-ratios">
-        <div class="contrast-item"><span class="contrast-sample" style="background:#${p.fontColors.dark}"></span> <span class="${dr>=4.5?'contrast-pass':'contrast-fail'}">${dr.toFixed(2)}</span></div>
-        <div class="contrast-item"><span class="contrast-sample" style="background:#${p.fontColors.light}"></span> <span class="${lr>=4.5?'contrast-pass':'contrast-fail'}">${lr.toFixed(2)}</span></div>
-      </div>`;
-    preview.appendChild(item);
+  const newObj = {};
+  
+  rows.forEach(row => {
+    const name = row.dataset.name;
+    if (name && p[section][name] !== undefined) {
+      newObj[name] = p[section][name];
+    }
   });
-  if (Object.keys(p.borderColors).length) {
-    const hdr = document.createElement('div'); hdr.style.cssText = 'grid-column:1/-1;padding:8px 0;font-weight:700'; hdr.textContent = 'Border Colors'; preview.appendChild(hdr);
-    const bg = document.createElement('div'); bg.className = 'border-colors-grid';
-    Object.entries(p.borderColors).forEach(([name,color]) => {
-      const bi = document.createElement('div'); bi.className = 'preview-item';
-      bi.innerHTML = `<div class="color-swatch" style="background:#${color}"></div><div style="font-size:12px"><b>${name}</b><br>#${color}</div>`;
-      bg.appendChild(bi);
-    });
-    preview.appendChild(bg);
-  }
+  
+  p[section] = newObj;
+  renderCurrentPalette(); 
 }
-function _calcContrast(c1, c2) {
-  function L(hex) { let r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255; return 0.2126*_lin(r)+0.7152*_lin(g)+0.0722*_lin(b); }
-  function _lin(v) { return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }
-  const [hi,lo] = [L(c1),L(c2)].sort((a,b)=>b-a); return (hi+0.05)/(lo+0.05);
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.color-item-row:not(.dragging)')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 /* ============================================================
    BOOT
 ============================================================ */
-document.addEventListener('DOMContentLoaded', () => { new ColorSelector(); });
+document.addEventListener('DOMContentLoaded', () => { 
+  new ColorSelector(); 
+  
+  // Pre-load the dropdown in the editor, but do not select it
+  updatePaletteSelector();
+  toggleEditorWorkspace();
+  
+  // Link the Font Colors and Course Background <details> toggles
+  const fontDetails = document.getElementById('font-colors-details');
+  const bgDetails = document.getElementById('course-bg-details');
+  if (fontDetails && bgDetails) {
+    fontDetails.addEventListener('toggle', () => {
+      if (bgDetails.open !== fontDetails.open) bgDetails.open = fontDetails.open;
+    });
+    bgDetails.addEventListener('toggle', () => {
+      if (fontDetails.open !== bgDetails.open) fontDetails.open = bgDetails.open;
+    });
+  }
+  
+  // Initialize Drag and Drop logic on the editor containers
+  ['colorsSection', 'borderColorsSection'].forEach(id => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    
+    container.addEventListener('dragover', e => {
+      e.preventDefault(); // Necessary to allow dropping
+      const draggable = document.querySelector('.dragging');
+      if (!draggable || draggable.dataset.section !== id.replace('Section', '')) return;
+
+      const afterElement = getDragAfterElement(container, e.clientY);
+      if (afterElement == null) {
+        container.appendChild(draggable);
+      } else {
+        container.insertBefore(draggable, afterElement);
+      }
+    });
+  });
+});
 </script>
 </body>
 </html>
