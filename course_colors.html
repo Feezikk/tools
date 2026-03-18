@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Course Colors v2.13</title>
+  <title>Course Colors v2.14</title>
   <style>
     /* ===== SHARED TOKENS ===== */
     :root {
@@ -273,6 +273,13 @@
     .custom-controls-area { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 12px; }
     .layer-control-row { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,.05); transition: all 0.2s; cursor: pointer; }
     .layer-control-row.active { border-color: var(--success); background: var(--success-bg); box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+    
+    /* Custom Layer Drag & Drop */
+    .layer-control-row.dragging { opacity: 0.5; background: var(--success-bg); border: 1px dashed var(--success); }
+    .layer-drag-handle { color: #aaa; cursor: grab; padding: 0 4px; display: flex; align-items: center; }
+    .layer-drag-handle:hover { color: var(--text); }
+    .layer-drag-handle:active { cursor: grabbing; }
+
     .layer-control-row input[type="radio"] { margin: 0; cursor: pointer; transform: scale(1.2); }
     .layer-control-name { font-weight: 700; font-size: 14px; min-width: 60px; }
     .layer-height-input { width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; text-align: center; font-size: 13px; }
@@ -407,7 +414,7 @@
 
 <header class="app-header">
   <div class="header-left">
-    <span class="app-title">Course Colors v2.13</span>
+    <span class="app-title">Course Colors v2.14</span>
   </div>
   <div class="header-center">
     <button class="tab-btn active" data-tab="combinations">Color Combinations</button>
@@ -516,6 +523,7 @@
                 <div class="font-preview-swatch light-preview-bg"><span class="font-preview-text" id="light-preview-text">ede_color-light</span></div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -1019,6 +1027,43 @@ class ColorSelector {
     });
     el.customLayersList.addEventListener('input', (e) => { if (e.target.classList.contains('layer-height-input')) { const id = e.target.closest('.layer-control-row').dataset.id; this._setCustomLayerHeight(id, e.target.value); } });
     el.customLayersList.addEventListener('change', (e) => { if (e.target.classList.contains('layer-height-input')) { const id = e.target.closest('.layer-control-row').dataset.id; const layer = this.state.custom.layers.find(l => l.id === id); if (layer) { layer.height = Math.max(10, parseInt(e.target.value) || 10); this._updateDisplay(); } } });
+
+    // Custom Layers Drag and Drop
+    el.customLayersList.addEventListener('dragstart', (e) => {
+      const row = e.target.closest('.layer-control-row');
+      if (!row) return;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', row.dataset.id); // Required for Firefox
+    });
+
+    el.customLayersList.addEventListener('dragover', (e) => {
+      e.preventDefault(); // Necessary to allow dropping
+      const draggable = el.customLayersList.querySelector('.dragging');
+      if (!draggable) return;
+      
+      const afterElement = getDragAfterElement(el.customLayersList, e.clientY, '.layer-control-row:not(.dragging)');
+      if (afterElement == null) {
+        el.customLayersList.appendChild(draggable);
+      } else {
+        el.customLayersList.insertBefore(draggable, afterElement);
+      }
+    });
+
+    el.customLayersList.addEventListener('dragend', (e) => {
+      const row = e.target.closest('.layer-control-row');
+      if (!row) return;
+      row.classList.remove('dragging');
+      
+      // Read the new order from the DOM
+      const newOrderIds = [...el.customLayersList.querySelectorAll('.layer-control-row')].map(r => r.dataset.id);
+      
+      // Reorder the internal state array to match
+      this.state.custom.layers.sort((a, b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+      
+      // Re-render to update the stack preview and row numbers
+      this._updateDisplay(); 
+    });
   }
 
   _setMode(mode) {
@@ -1203,7 +1248,10 @@ class ColorSelector {
         </div>` : '<div class="custom-color-info"><span style="color:#888; font-style:italic;">Select color...</span></div>';
         
       return `
-        <div class="layer-control-row ${isActive ? 'active' : ''}" data-id="${layer.id}">
+        <div class="layer-control-row ${isActive ? 'active' : ''}" data-id="${layer.id}" draggable="true">
+          <div class="layer-drag-handle" title="Drag to reorder">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </div>
           <input type="radio" name="custom-active-layer" ${isActive ? 'checked' : ''}>
           <div class="layer-control-name">Layer ${index + 1}</div>
           <input type="number" class="layer-height-input" value="${layer.height}" step="5" min="10" title="Height in px">
@@ -1366,6 +1414,7 @@ function renderCurrentPalette() {
   
   // Render Settings
   renderFontColors(p.fontColors);
+
   document.getElementById('defaultBackground').value = p.defaultBackground;
   document.getElementById('defaultBackgroundPicker').value = '#' + p.defaultBackground;
   
@@ -1516,8 +1565,8 @@ function _reorderPaletteFromDOM(section) {
   renderCurrentPalette(); 
 }
 
-function getDragAfterElement(container, y) {
-  const draggableElements = [...container.querySelectorAll('.color-item-row:not(.dragging)')];
+function getDragAfterElement(container, y, selector = '.color-item-row:not(.dragging)') {
+  const draggableElements = [...container.querySelectorAll(selector)];
   return draggableElements.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
     const offset = y - box.top - box.height / 2;
@@ -1561,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const draggable = document.querySelector('.dragging');
       if (!draggable || draggable.dataset.section !== id.replace('Section', '')) return;
 
-      const afterElement = getDragAfterElement(container, e.clientY);
+      const afterElement = getDragAfterElement(container, e.clientY, '.color-item-row:not(.dragging)');
       if (afterElement == null) {
         container.appendChild(draggable);
       } else {

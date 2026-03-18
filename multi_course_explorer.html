@@ -135,6 +135,7 @@
         .snippet-item { font-size: 0.95rem; line-height: 1.5; color: var(--text); font-family: Georgia, serif; padding-left: 12px; border-left: 3px solid var(--border); word-wrap: break-word; }
         .snippet-item.code-view { font-family: var(--code-font); font-size: 0.85rem; background: #f6f8fa; border-left: 3px solid #0366d6; padding: 10px; border-radius: 4px; white-space: pre-wrap; }
         .highlight { background-color: var(--highlight); padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #ffeeba; }
+        .highlight-ml { background-color: #e8d5f0; border-bottom: 2px solid #8e44ad; color: #4a148c; }
         .separator { border-top: 1px dashed var(--border); margin: 5px 0; opacity: 0.5; }
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(28, 53, 94, 0.1); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -193,7 +194,7 @@
                 <div>
                     <h1 id="main-title" style="display:flex; align-items:center; gap:10px;">
                         Multi-Course Search
-                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v2.4</span>
+                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v2.8</span>
                     </h1>
                     <div class="header-subtitle" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Content &amp; Standards Tool</div>
                 </div>
@@ -692,7 +693,7 @@ window.confirmCourseSelection = function() {
 }
 // --- END OF PART 2 ---
 </script>
-	
+
 <script>
 // --- START OF PART 3: Multi-Course Indexing ---
 
@@ -822,8 +823,24 @@ function readFileAsText(file) {
     });
 }
 
+function checkForMLData(obj) {
+    if (!obj) return false;
+    if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+            if (checkForMLData(obj[i])) return true;
+        }
+    } else if (typeof obj === 'object') {
+        if (obj.hasOwnProperty('ml') || obj.hasOwnProperty('chatHistory')) return true;
+        for (const key in obj) {
+            if (checkForMLData(obj[key])) return true;
+        }
+    }
+    return false;
+}
+
 function extractContentRecursive(obj, skipStandards = false) {
     const cleanParts = [], rawParts = [];
+    const mlCleanParts = [], mlRawParts = [];
     const ignoreKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'src', 'href', 'version', 'notes']);
     
     if (skipStandards) {
@@ -833,24 +850,44 @@ function extractContentRecursive(obj, skipStandards = false) {
 
     const hasTags = /<[^>]+>/; 
 
-    function traverse(o) {
+    function traverse(o, isInsideML = false) {
         if (!o) return;
-        if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) traverse(o[i]); } 
+        if (Array.isArray(o)) { 
+            for (let i = 0; i < o.length; i++) traverse(o[i], isInsideML); 
+        } 
         else if (typeof o === 'object') {
             for (const key in o) {
                 if (ignoreKeys.has(key)) continue;
+                
+                // Track if we are currently inside an ML or chatHistory node
+                const currentIsML = isInsideML || key === 'ml' || key === 'chatHistory';
                 const val = o[key];
+                
                 if (typeof val === 'string') {
                     if (val.trim() !== '') {
-                        rawParts.push(val);
-                        cleanParts.push(hasTags.test(val) ? stripHtml(val) : val);
+                        const cleanVal = hasTags.test(val) ? stripHtml(val) : val;
+                        if (currentIsML) {
+                            mlRawParts.push(val);
+                            mlCleanParts.push(cleanVal);
+                        } else {
+                            rawParts.push(val);
+                            cleanParts.push(cleanVal);
+                        }
                     }
-                } else traverse(val);
+                } else {
+                    traverse(val, currentIsML);
+                }
             }
         }
     }
-    traverse(obj);
-    return { clean: cleanParts.join(" "), raw: rawParts.join(" ") };
+    traverse(obj, false);
+    
+    return { 
+        clean: cleanParts.join(" "), 
+        raw: rawParts.join(" "),
+        mlClean: mlCleanParts.join(" "),
+        mlRaw: mlRawParts.join(" ")
+    };
 }
 
 function findInteractivesPaths(obj, found = []) {
@@ -870,15 +907,21 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
         
         const extractedWithout = extractContentRecursive(json, true);
         const extractedWith = extractContentRecursive(json, false);
+        const hasMLData = checkForMLData(json);
         
-        if (extractedWithout.clean.trim().length > 0 || extractedWithout.raw.trim().length > 0 || extractedWith.clean.trim().length > 0) {
+        if (extractedWithout.clean.trim().length > 0 || extractedWithout.raw.trim().length > 0 || extractedWith.clean.trim().length > 0 || extractedWithout.mlClean.trim().length > 0) {
             globalCourseIndex.push({ 
                 courseName, courseFullName, breadcrumb, locationId, filename, fileMap,
                 cleanContent: extractedWithout.clean, 
                 rawContent: extractedWithout.raw,
                 cleanContentWithStds: extractedWith.clean,
                 rawContentWithStds: extractedWith.raw,
-                isInteractive: false
+                mlCleanContent: extractedWithout.mlClean, 
+                mlRawContent: extractedWithout.mlRaw,
+                mlCleanContentWithStds: extractedWith.mlClean,
+                mlRawContentWithStds: extractedWith.mlRaw,
+                isInteractive: false,
+                hasML: hasMLData
             });
         }
 
@@ -932,20 +975,26 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
                     
                     const extractedIntWithout = extractContentRecursive(intJson, true);
                     const extractedIntWith = extractContentRecursive(intJson, false);
+                    const intHasMLData = checkForMLData(intJson);
                     
                     const parts = fileKey.split('/');
                     const folderName = parts.length > 1 ? parts[parts.length - 2] : "Interactive";
                     const intBreadcrumb = `${breadcrumb} > Interactive (${folderName})`;
                     const intLocationId = `${locationId}.INT-${intCounter++}`;
 
-                    if (extractedIntWithout.clean.trim().length > 0 || extractedIntWithout.raw.trim().length > 0 || extractedIntWith.clean.trim().length > 0) {
+                    if (extractedIntWithout.clean.trim().length > 0 || extractedIntWithout.raw.trim().length > 0 || extractedIntWith.clean.trim().length > 0 || extractedIntWithout.mlClean.trim().length > 0) {
                         globalCourseIndex.push({ 
                             courseName, courseFullName, breadcrumb: intBreadcrumb, locationId: intLocationId, filename: fileKey, fileMap,
                             cleanContent: extractedIntWithout.clean, 
                             rawContent: extractedIntWithout.raw,
                             cleanContentWithStds: extractedIntWith.clean,
                             rawContentWithStds: extractedIntWith.raw,
-                            isInteractive: true
+                            mlCleanContent: extractedIntWithout.mlClean, 
+                            mlRawContent: extractedIntWithout.mlRaw,
+                            mlCleanContentWithStds: extractedIntWith.mlClean,
+                            mlRawContentWithStds: extractedIntWith.mlRaw,
+                            isInteractive: true,
+                            hasML: intHasMLData
                         });
                     }
                 } catch (e) { }
@@ -958,7 +1007,6 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
 
 <script>
 // --- START OF PART 4: Content Search & Filter Logic ---
-
 
 window.clearAllSearchFilters = function() {
     activeSearchCourses.clear();
@@ -1136,43 +1184,60 @@ function runSearch(query) {
             const itemModNum = item.locationId.split('.')[0];
             if (activeSearchModules.size > 0 && !activeSearchModules.has(itemModNum)) return; 
             
-            let textToSearch = "";
+            let normalText = "", mlText = "";
             if (item.isInteractive) {
                 if (activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
-                textToSearch = isHtmlMode ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
+                normalText = isHtmlMode ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
+                mlText = isHtmlMode ? (activeSearchIncludeStandards ? item.mlRawContentWithStds : item.mlRawContent) : (activeSearchIncludeStandards ? item.mlCleanContentWithStds : item.mlCleanContent);
             } else {
                 const wantsPages = activeSearchTypes.has('page');
                 const wantsStds = activeSearchIncludeStandards;
                 if (activeSearchTypes.size > 0 && !wantsPages && !wantsStds) return; 
                 const effectivelyWantsPages = activeSearchTypes.size === 0 || wantsPages;
 
-                if (effectivelyWantsPages && wantsStds) textToSearch = isHtmlMode ? item.rawContentWithStds : item.cleanContentWithStds;
-                else if (effectivelyWantsPages && !wantsStds) textToSearch = isHtmlMode ? item.rawContent : item.cleanContent;
-                else if (!effectivelyWantsPages && wantsStds) {
+                if (effectivelyWantsPages && wantsStds) {
+                    normalText = isHtmlMode ? item.rawContentWithStds : item.cleanContentWithStds;
+                    mlText = isHtmlMode ? item.mlRawContentWithStds : item.mlCleanContentWithStds;
+                } else if (effectivelyWantsPages && !wantsStds) {
+                    normalText = isHtmlMode ? item.rawContent : item.cleanContent;
+                    mlText = isHtmlMode ? item.mlRawContent : item.mlCleanContent;
+                } else if (!effectivelyWantsPages && wantsStds) {
                     const pageStds = globalStandardsList.filter(s => s.locationId === item.locationId && s.courseName === item.courseName);
                     if (pageStds.length === 0) return; 
-                    textToSearch = pageStds.map(s => `${s.code} ${s.statement}`).join(' ');
+                    normalText = pageStds.map(s => `${s.code} ${s.statement}`).join(' ');
                 }
             }
 
-
-            if (!textToSearch) return; 
+            if (!normalText && !mlText) return; 
             const locId = item.locationId ? (isCaseSensitive ? item.locationId : item.locationId.toLowerCase()) : "";
             const isIdMatch = locId.includes(queryForId);
 
-            fileRegex.lastIndex = 0; 
-            let firstMatch = fileRegex.exec(textToSearch);
-            if (!firstMatch && !isIdMatch) return; 
-            
-            let contentMatches = [];
-            if (firstMatch) {
-                contentMatches.push(firstMatch.index);
+            let normalMatches = [];
+            if (normalText) {
+                fileRegex.lastIndex = 0; 
                 let match;
-                while ((match = fileRegex.exec(textToSearch)) !== null) { contentMatches.push(match.index); if (contentMatches.length >= MAX_MATCH_COUNT) break; }
+                while ((match = fileRegex.exec(normalText)) !== null) { normalMatches.push(match.index); if (normalMatches.length >= MAX_MATCH_COUNT) break; }
             }
+
+            let mlMatches = [];
+            if (mlText) {
+                fileRegex.lastIndex = 0; 
+                let match;
+                while ((match = fileRegex.exec(mlText)) !== null) { mlMatches.push(match.index); if (mlMatches.length >= MAX_MATCH_COUNT) break; }
+            }
+
+            if (normalMatches.length === 0 && mlMatches.length === 0 && !isIdMatch) return; 
             
-            totalHitsCount += (isIdMatch && contentMatches.length === 0) ? 1 : contentMatches.length;
-            currentSearchResults.push({ locationId: item.locationId, courseName: item.courseName, courseFullName: item.courseFullName, breadcrumb: item.breadcrumb, filename: item.filename, textToSearch: textToSearch, matchIndices: contentMatches, isIdMatch: isIdMatch, originalItem: item });
+            let combinedCount = normalMatches.length + mlMatches.length;
+            totalHitsCount += (isIdMatch && combinedCount === 0) ? 1 : combinedCount;
+            
+            currentSearchResults.push({ 
+                locationId: item.locationId, courseName: item.courseName, courseFullName: item.courseFullName, 
+                breadcrumb: item.breadcrumb, filename: item.filename, 
+                normalText: normalText, mlText: mlText, 
+                normalMatches: normalMatches, mlMatches: mlMatches, 
+                isIdMatch: isIdMatch, originalItem: item 
+            });
             matchCount++;
         });
         
@@ -1201,7 +1266,7 @@ function renderSearchBatch() {
     
     for (let i = start; i < end; i++) {
         const res = currentSearchResults[i];
-        fragment.appendChild(createResultCard(res.originalItem, res.matchIndices, currentSearchQuery, res.isIdMatch, currentSearchIsHtmlMode, MAX_MATCH_COUNT, i, res.textToSearch));
+        fragment.appendChild(createResultCard(res, currentSearchQuery, res.isIdMatch, currentSearchIsHtmlMode, MAX_MATCH_COUNT, i));
     }
     
     const oldBtn = document.getElementById('load-more-search-btn');
@@ -1221,38 +1286,45 @@ function renderSearchBatch() {
     }
 }
 
-function createResultCard(item, matchIndices, query, isIdMatch, isHtmlMode, maxCap, index, specificSearchText) {
+function createResultCard(res, query, isIdMatch, isHtmlMode, maxCap, index) {
     const card = document.createElement('div');
     card.className = 'result-card'; card.dataset.index = index; 
     
     let snippetsHtml = '';
-    const sourceText = specificSearchText; 
+    let allDisplayMatches = [];
     
-    if (isIdMatch && matchIndices.length === 0) {
-        snippetsHtml = `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(sourceText, 0, 0, query, isHtmlMode)}</div>`;
+    // Consolidate both types of matches to loop over them for rendering
+    res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, isML: false, text: res.normalText }));
+    res.mlMatches.forEach(idx => allDisplayMatches.push({ idx, isML: true, text: res.mlText }));
+    
+    let totalMatches = allDisplayMatches.length;
+    
+    if (isIdMatch && totalMatches === 0) {
+        snippetsHtml = `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(res.normalText || res.mlText, 0, 0, query, isHtmlMode, false)}</div>`;
     } else {
         const maxDisplay = 10;
-        const displayIndices = matchIndices.slice(0, maxDisplay);
-        displayIndices.forEach((idx, i) => {
-            snippetsHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(sourceText, idx, query.length, query, isHtmlMode)}</div>`;
+        const displayIndices = allDisplayMatches.slice(0, maxDisplay);
+        displayIndices.forEach((matchInfo, i) => {
+            // Added data-match-index="${i}" to the div below
+            snippetsHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">${getSnippet(matchInfo.text, matchInfo.idx, query.length, query, isHtmlMode, matchInfo.isML)}</div>`;
             if (i < displayIndices.length - 1) snippetsHtml += `<div class="separator"></div>`;
         });
-        if (matchIndices.length > maxDisplay) {
-            const plusMore = matchIndices.length === maxCap ? "+" : "";
-            snippetsHtml += `<div style="font-size:0.8rem; color:#999; padding-left:12px; margin-top:5px;">...and ${matchIndices.length - maxDisplay}${plusMore} more matches.</div>`;
+        if (totalMatches > maxDisplay) {
+            const plusMore = (res.normalMatches.length === 25 || res.mlMatches.length === 25) ? "+" : "";
+            snippetsHtml += `<div style="font-size:0.8rem; color:#999; padding-left:12px; margin-top:5px;">...and ${totalMatches - maxDisplay}${plusMore} more matches.</div>`;
         }
     }
     
-    let matchText = matchIndices.length > 0 ? (matchIndices.length === maxCap ? `Found ${maxCap}+` : `Found ${matchIndices.length}`) : `ID Match`;
+    let matchText = totalMatches > 0 ? (totalMatches >= maxCap ? `Found ${maxCap}+` : `Found ${totalMatches}`) : `ID Match`;
     
     card.innerHTML = `
         <div class="flex-between flex-wrap gap-10" style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
             <div>
-                <div class="course-badge" title="${escapeHtml(item.courseFullName || item.courseName)}">${escapeHtml(item.courseName)}</div>
-                <div class="breadcrumb" style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 4px;">${item.breadcrumb}</div>
+                <div class="course-badge" title="${escapeHtml(res.courseFullName || res.courseName)}">${escapeHtml(res.courseName)}</div>
+                <div class="breadcrumb" style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 4px;">${res.breadcrumb}</div>
                 <div class="flex-center gap-10" style="font-size:0.8rem; margin-top:5px; justify-content: flex-start;">
-                    <span class="id-number"># ${item.locationId}</span>
-                    <span class="flex-center gap-10" style="color:var(--primary);">${SVGS.fileText} ${item.filename}</span>
+                    <span class="id-number"># ${res.locationId}</span>
+                    <span class="flex-center gap-10" style="color:var(--primary);">${SVGS.fileText} ${res.filename}</span>
                 </div>
             </div>
             <div style="font-size:0.75rem; background:var(--primary); color:white; padding:4px 10px; border-radius:12px; height:fit-content; font-weight:600;">${matchText}</div>
@@ -1261,7 +1333,7 @@ function createResultCard(item, matchIndices, query, isIdMatch, isHtmlMode, maxC
     return card;
 }
 
-function getSnippet(fullText, index, length, query, isHtmlMode) {
+function getSnippet(fullText, index, length, query, isHtmlMode, isML) {
     let matchLength = isHtmlMode ? escapeHtml(query).length : query.length; 
     const padding = isHtmlMode ? 80 : 60; 
     const start = Math.max(0, index - padding);
@@ -1269,8 +1341,15 @@ function getSnippet(fullText, index, length, query, isHtmlMode) {
     let textPart = fullText.substring(start, end);
     
     if (isHtmlMode) textPart = escapeHtml(textPart);
-    if (matchLength > 0 && query && currentSearchHighlightRegex) textPart = textPart.replace(currentSearchHighlightRegex, '<span class="highlight">$1</span>');
-    return (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
+    
+    let highlightClass = isML ? "highlight highlight-ml" : "highlight";
+    if (matchLength > 0 && query && currentSearchHighlightRegex) {
+        textPart = textPart.replace(currentSearchHighlightRegex, `<span class="${highlightClass}">$1</span>`);
+    }
+    
+    let mlBadge = isML ? `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="This content was generated by the built in Machine Language tool and is only visible in the json code.">ML</span>` : '';
+    
+    return mlBadge + (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
 }
 
 // Result Card Click -> Open Modal View
@@ -1280,40 +1359,101 @@ elements.results.addEventListener('click', (e) => {
     const idx = card.dataset.index;
     if (idx == null) return;
     const res = currentSearchResults[idx];
-    if (res) openPageModal(res.originalItem, currentSearchQuery, currentSearchIsHtmlMode, elements.wholeWordToggle.checked, elements.caseSensitiveToggle.checked);
+    
+    // Check if they clicked a specific snippet, default to 0 if not
+    let startingMatchIndex = 0;
+    const snippet = e.target.closest('.snippet-item');
+    if (snippet && snippet.dataset.matchIndex != null) {
+        startingMatchIndex = parseInt(snippet.dataset.matchIndex, 10);
+    }
+    
+    if (res) openPageModal(res.originalItem, currentSearchQuery, currentSearchIsHtmlMode, elements.wholeWordToggle.checked, elements.caseSensitiveToggle.checked, startingMatchIndex);
 });
 
-window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCaseSensitive) {
-    let displayQuery = isHtmlMode ? escapeHtml(query) : query;
-    let fullText = ""; let isCodeView = isHtmlMode;
+window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCaseSensitive, startingMatchIndex = 0) {
+    let fullText = ""; 
+    let isCodeView = isHtmlMode;
+
+    // Prepare Regex for matching text blocks
+    let rawRegex = null;
+    let displayRegex = null;
+    
+    if (query && query.trim().length > 0) {
+        let rawPattern = escapeRegExp(query);
+        if (isWholeWord) rawPattern = `(?<=^|\\W)${rawPattern}(?=\\W|$)`;
+        const flags = isCaseSensitive ? 'g' : 'gi';
+        rawRegex = new RegExp(`(${rawPattern})`, flags);
+        
+        let displayPattern = escapeRegExp(isHtmlMode ? escapeHtml(query) : query);
+        if (isWholeWord) displayPattern = `(?<=^|\\W)${displayPattern}(?=\\W|$)`;
+        displayRegex = new RegExp(`(${displayPattern})`, flags);
+    }
 
     try {
         const file = item.fileMap.get(item.filename);
         if (file) {
             const rawText = await readFileAsText(file);
-            fullText = JSON.stringify(JSON.parse(rawText), null, 2);
+            
+            if (rawRegex) {
+                // Walk the JSON object and inject safe temporary tokens around matches
+                // so we know which ones belong to ML/chat nodes before stringifying
+                function injectTokens(o, isInsideML = false) {
+                    if (!o) return o;
+                    if (Array.isArray(o)) {
+                        return o.map(val => injectTokens(val, isInsideML));
+                    } else if (typeof o === 'object') {
+                        const newObj = {};
+                        for (const key in o) {
+                            const currentIsML = isInsideML || key === 'ml' || key === 'chatHistory';
+                            newObj[key] = injectTokens(o[key], currentIsML);
+                        }
+                        return newObj;
+                    } else if (typeof o === 'string') {
+                        if (isInsideML) {
+                            return o.replace(rawRegex, '@@@ML_START@@@$1@@@ML_END@@@');
+                        } else {
+                            return o.replace(rawRegex, '@@@NORM_START@@@$1@@@NORM_END@@@');
+                        }
+                    }
+                    return o;
+                }
+
+                const jsonObj = JSON.parse(rawText);
+                const tokenizedObj = injectTokens(jsonObj);
+                
+                // Format the JSON and escape HTML to make it safe for viewing
+                let stringified = JSON.stringify(tokenizedObj, null, 2);
+                stringified = escapeHtml(stringified);
+                
+                // Convert the safe tokens into the proper highlight HTML Spans
+                stringified = stringified.replace(/@@@ML_START@@@([\s\S]*?)@@@ML_END@@@/g, '<span class="highlight highlight-ml search-match">$1</span>');
+                stringified = stringified.replace(/@@@NORM_START@@@([\s\S]*?)@@@NORM_END@@@/g, '<span class="highlight search-match">$1</span>');
+                
+                fullText = stringified;
+            } else {
+                fullText = escapeHtml(JSON.stringify(JSON.parse(rawText), null, 2));
+            }
             isCodeView = true; 
         } else {
-            fullText = isHtmlMode 
-                ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) 
-                : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
-
+            throw new Error("No file available, fallback to text view");
         }
     } catch (e) { 
-        fullText = isHtmlMode 
-            ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) 
-            : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
-    }
+        // TEXT VIEW (Fallback or Interactives without JSON files)
+        let nText = isHtmlMode ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
+        let mText = isHtmlMode ? (activeSearchIncludeStandards ? item.mlRawContentWithStds : item.mlRawContent) : (activeSearchIncludeStandards ? item.mlCleanContentWithStds : item.mlCleanContent);
+        
+        nText = escapeHtml(nText);
+        mText = escapeHtml(mText);
 
-    fullText = escapeHtml(fullText);
-    if (!isHtmlMode) displayQuery = escapeHtml(displayQuery); 
+        if (displayRegex) {
+            nText = nText.replace(displayRegex, '<span class="highlight search-match">$1</span>');
+            if (mText) mText = mText.replace(displayRegex, '<span class="highlight highlight-ml search-match">$1</span>');
+        }
 
-    if (query && query.trim().length > 0) {
-        let pattern = escapeRegExp(displayQuery);
-        if (isWholeWord) pattern = `(?<=^|\\W)${pattern}(?=\\W|$)`;
-        const flags = isCaseSensitive ? 'g' : 'gi';
-        const regex = new RegExp(`(${pattern})`, flags);
-        fullText = fullText.replace(regex, '<span class="highlight search-match">$1</span>');
+        fullText = nText;
+        if (mText) fullText += "\n\n--- ML GENERATED CONTENT (Hidden in UI) ---\n\n" + mText;
+        
+        isCodeView = isHtmlMode;
     }
 
     document.getElementById('modal-header-content').innerHTML = `
@@ -1339,7 +1479,10 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
 
     const matches = document.querySelectorAll('#modal-body-content .search-match');
     if (matches.length > 0) {
-        let currentMatch = 0;
+        // Start at the clicked index (with a safety fallback)
+        let currentMatch = startingMatchIndex;
+        if (currentMatch >= matches.length) currentMatch = 0;
+
         document.getElementById('modal-match-controls').innerHTML = `
             <div class="flex-center gap-10" style="margin-top: 10px; font-size: 0.85rem; justify-content: flex-start;">
                 <button id="prev-match-btn" class="nav-btn btn-base" style="padding: 4px 8px;" disabled>${SVGS.arrowUp} Prev</button>
@@ -1361,7 +1504,9 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
         document.getElementById('prev-match-btn').addEventListener('click', (e) => { e.stopPropagation(); if (currentMatch > 0) { currentMatch--; updateMatchNav(); } });
         document.getElementById('next-match-btn').addEventListener('click', (e) => { e.stopPropagation(); if (currentMatch < matches.length - 1) { currentMatch++; updateMatchNav(); } });
         setTimeout(() => updateMatchNav(), 50);
-    } else document.getElementById('modal-body-content').scrollTop = 0;
+    } else {
+        document.getElementById('modal-body-content').scrollTop = 0;
+    }
 };
 
 window.closeSearchModal = function(e) {
@@ -1617,7 +1762,6 @@ window.runStdsSearch = function() {
     renderStdsBatch(); 
 };
 
-// --- FIX: Pass INDEX to Modal function to avoid massive string escaping JS Syntax Errors ---
 window.openStandardModal = function(index) {
     const stdData = window.currentGroupedStds[index];
     if (!stdData) return;
@@ -1629,7 +1773,6 @@ window.openStandardModal = function(index) {
         </h3>
     `;
     
-    // Injecting stdData.statement here directly instead of heavily escaping allows real HTML tags (like <ol> and <li>) inside standards to display cleanly as lists.
     document.getElementById('modal-body-content').innerHTML = `
         <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text); padding: 10px;">
             ${stdData.statement}
@@ -1685,7 +1828,6 @@ window.renderStdsBatch = function() {
             stdData.courses.forEach((locations, courseName) => {
                 const courseFullName = locations[0].courseFullName || courseName;
                 
-                // Deduplicate unique lessons for this display and format nicely
                 const uniqueLessons = new Map();
                 locations.forEach(loc => {
                     if(!uniqueLessons.has(loc.locationId)) {
@@ -1703,7 +1845,6 @@ window.renderStdsBatch = function() {
 
                 let totalHitsInCourse = locations.length;
                 
-                // --- FIX: Using the index (i) instead of passing the raw strings ---
                 rowHtml += `
                     <tr class="${rowClass} std-table-row" style="cursor: pointer; transition: background 0.2s;" onclick="openStandardModal(${i})">
                         <td><span style="font-size: 0.8rem; font-weight: bold; color: white; background: var(--primary); padding: 4px 8px; border-radius: 4px; font-family: var(--code-font); display: inline-block;">${displayState}</span></td>
@@ -1718,7 +1859,6 @@ window.renderStdsBatch = function() {
         if (tbody) tbody.insertAdjacentHTML('beforeend', rowHtml);
 
     } else {
-        // GRID VIEW
         const frag = document.createDocumentFragment();
         for (let i = start; i < end; i++) {
             const stdData = window.currentGroupedStds[i];
@@ -1726,8 +1866,6 @@ window.renderStdsBatch = function() {
             card.className = 'std-result-card';
             
             let displayCode = escapeHtml(stdData.code);
-            
-            // Grid view explicitly escapes the statement so the search highlight Regex works safely
             let displayState = escapeHtml(stdData.statement);
             
             if (window.currentStdsQuery) {
@@ -1818,7 +1956,7 @@ window.renderStdsBatch = function() {
 };
 // --- END OF PART 5 ---
 </script>
-	
+
 <script>
 // --- START OF PART 6: Exports & Final Utilities ---
 
@@ -1835,7 +1973,7 @@ window.exportSearchResults = function() {
         let resultsByCourse = {}; 
 
         currentSearchResults.forEach(res => {
-            let hitsInFile = (res.isIdMatch && res.matchIndices.length === 0) ? 1 : res.matchIndices.length;
+            let hitsInFile = (res.isIdMatch && res.normalMatches.length === 0 && res.mlMatches.length === 0) ? 1 : (res.normalMatches.length + res.mlMatches.length);
             totalHits += hitsInFile;
 
             let cName = res.courseName || "Unknown Course";
@@ -1880,18 +2018,25 @@ window.exportSearchResults = function() {
 
             sortedResults.forEach(res => {
                 const displayCourseName = res.courseFullName || res.courseName;
-                if (res.isIdMatch && res.matchIndices.length === 0) {
+                
+                let allMatches = [];
+                res.normalMatches.forEach(idx => allMatches.push({idx, isML: false, text: res.normalText}));
+                res.mlMatches.forEach(idx => allMatches.push({idx, isML: true, text: res.mlText}));
+
+                if (res.isIdMatch && allMatches.length === 0) {
                     rows.push([{v: displayCourseName, s: sText}, {v: res.locationId, s: sLocation}, {v: res.breadcrumb, s: sText}, {v: res.filename, s: sText}, {v: "[Matched by Location ID only]", s: sText}]);
                 } else {
-                    res.matchIndices.forEach(idx => {
+                    allMatches.forEach(matchInfo => {
                         const padding = currentSearchIsHtmlMode ? 80 : 60;
                         const matchLength = currentSearchQuery.length; 
-                        const start = Math.max(0, idx - padding);
-                        const end = Math.min(res.textToSearch.length, idx + matchLength + padding);
-                        let prefix = res.textToSearch.substring(start, idx);
-                        let exactMatch = res.textToSearch.substring(idx, idx + matchLength);
-                        let suffix = res.textToSearch.substring(idx + matchLength, end);
-                        let cleanSnippet = (start > 0 ? "..." : "") + prefix + " 【 " + exactMatch.toUpperCase() + " 】 " + suffix + (end < res.textToSearch.length ? "..." : "");
+                        const start = Math.max(0, matchInfo.idx - padding);
+                        const end = Math.min(matchInfo.text.length, matchInfo.idx + matchLength + padding);
+                        let prefix = matchInfo.text.substring(start, matchInfo.idx);
+                        let exactMatch = matchInfo.text.substring(matchInfo.idx, matchInfo.idx + matchLength);
+                        let suffix = matchInfo.text.substring(matchInfo.idx + matchLength, end);
+                        
+                        let centerBracket = matchInfo.isML ? " 【 ML: " : " 【 ";
+                        let cleanSnippet = (start > 0 ? "..." : "") + prefix + centerBracket + exactMatch.toUpperCase() + " 】 " + suffix + (end < matchInfo.text.length ? "..." : "");
                         
                         rows.push([{v: displayCourseName, s: sText}, {v: res.locationId, s: sLocation}, {v: res.breadcrumb, s: sText}, {v: res.filename, s: sText}, {v: cleanSnippet, s: sText}]);
                     });
