@@ -202,7 +202,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v3.5</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v3.8</span></div>
   <label class="cdn-label">
     Course Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -622,6 +622,13 @@ const RULES_DATA = {
       rationale:'These characters may not render correctly in all browsers or be read accurately by screen readers. Review each one and replace with the appropriate HTML entity or plain text equivalent.',
       fix:{description:'Review each character and replace with its HTML entity or a plain text equivalent.',
            snippet:'\u03b1  \u2192  &alpha;  or  "alpha"\n\u00bd  \u2192  &frac12;  or  "1/2"\n\u2192  \u2192  &rarr;  or  "to"\n\u00b2  \u2192  <sup>2</sup>'} },
+
+    { id:'replacement-char', category:'accessibility', severity:'error',
+      description:'Unicode replacement character \uFFFD found — original character was lost during encoding',
+      type:'replacement-char-check',
+      message:'Line {line} contains a Unicode replacement character \uFFFD (U+FFFD) — the original character was corrupted during copy/paste or file encoding.',
+      fix:{description:'The \uFFFD character means the source text had an encoding error. You must identify what the original character was from the source document and retype it correctly — it cannot be recovered automatically.',
+           snippet:'Look at the original source document to determine what character was intended,\nthen delete \uFFFD and retype the correct character or HTML entity.'} },
 
     { id:'font-tag-replace', category:'html-tags', severity:'error',
       description:'Font tags must be replaced with equivalent span style tags',
@@ -1302,6 +1309,18 @@ const AssessmentChecker = (() => {
         const m=line.match(/<font\b[^>]*>/gi);
         return m?[fail(rule,rule.message.replace('{line}',i+1),i+1,m[0])]:[];
       });
+    },
+
+    'replacement-char-check'(rule, qs, raw, lines) {
+      const REPL = '\uFFFD';
+      return lines.flatMap((line, i) => {
+        if (!line.includes(REPL)) return [];
+        // Count occurrences and build a context snippet showing surrounding text
+        const count = (line.match(/\uFFFD/g) || []).length;
+        const msg = rule.message.replace('{line}', i + 1) +
+          (count > 1 ? ' (' + count + ' occurrences on this line)' : '');
+        return [fail(rule, msg, i + 1, REPL)];
+      });
     }
   };
 
@@ -1430,7 +1449,19 @@ let uploadedText='';
 function handleFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>{uploadedText=ev.target.result;document.getElementById('upload-zone').style.display='none';document.getElementById('file-pill').style.display='flex';document.getElementById('file-name-label').textContent=file.name;};
+  reader.onload=ev=>{
+    const text=ev.target.result;
+    uploadedText=text;
+    // Load contents into the editor and switch to Paste Text tab for viewing/editing
+    ta.value=text;
+    const pasteTab=document.querySelectorAll('.tab')[0];
+    switchTab('paste',pasteTab);
+    requestAnimationFrame(()=>{cm.refresh();cm.scrollTo(0,0);});
+    // Reset upload zone for next use
+    document.getElementById('upload-zone').style.display='flex';
+    document.getElementById('file-pill').style.display='none';
+    document.getElementById('file-input').value='';
+  };
   reader.readAsText(file);
 }
 function clearFile(){
@@ -1582,8 +1613,7 @@ function loadSample(){
   requestAnimationFrame(()=>{cm.refresh();cm.focus();});
 }
 function runAudit(){
-  const isUpload=document.querySelector('.tab-content.active').id==='tab-upload';
-  const raw=(isUpload?uploadedText:ta.value).trim();
+  const raw=ta.value.trim();
   if(!raw){alert('Please paste content or upload a file first.');return;}
   document.getElementById('results-body').innerHTML='<div class="empty-state"><div class="spinner"></div><p>Running checks\u2026</p></div>';
   Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
@@ -1676,29 +1706,125 @@ function renderReport(report,lines){
     return;
   }
   const errLines=[],warnLines=[];
-  let html='';
-  for(const[catKey,catData] of Object.entries(report.grouped)){
-    const{failures:fails,passes,label}=catData;
-    if(!fails.length&&!passes.length) continue;
-    const errCount=fails.filter(f=>f.rule.severity==='error').length;
-    const warnCount=fails.filter(f=>f.rule.severity==='warning').length;
-    const allPass=fails.length===0;
-    const hCls=allPass?'all-pass':errCount?'has-errors':'has-warnings';
-    const badges=allPass?'<span class="cat-count cat-count-pass">✓</span>':
-      (errCount?'<span class="cat-count cat-count-error">'+errCount+'</span>':'')+
-      (warnCount?'<span class="cat-count cat-count-warn">'+warnCount+'</span>':'');
-    let items='';
-    for(const r of [...fails,...passes]){
-      items+=renderItem(r,lines);
-      if(r.lineNum)(r.rule.severity==='error'?errLines:warnLines).push(r.lineNum);
+
+  // ── Build a line→question map so we can assign errors to groups ──
+  const questions = report.questions;
+  // For each question, determine its line range [startLine, endLine)
+  const qRanges = questions.map((q, qi) => {
+    const start = q.startLine;
+    const end = qi + 1 < questions.length ? questions[qi+1].startLine - 1 : lines.length;
+    return { q, start, end };
+  });
+  function groupForLine(ln) {
+    if (!ln) return null;
+    for (const { q, start, end } of qRanges) {
+      if (ln >= start && ln <= end) return q.group;
     }
-    html+='<div class="category-section" id="cat-'+catKey+'">'+
-      '<button class="category-header '+hCls+'" onclick="toggleCat(\'cat-'+catKey+'\')">'+
-      '<span class="cat-chevron">'+CHEVRON+'</span>'+esc(label)+' '+badges+'</button>'+
+    return null;
+  }
+  function questionNumForLine(ln) {
+    if (!ln) return null;
+    for (const { q, start, end } of qRanges) {
+      if (ln >= start && ln <= end) return q.num;
+    }
+    return null;
+  }
+
+  // Collect all failures across all categories
+  const allFailures = [];
+  for (const catData of Object.values(report.grouped)) {
+    for (const r of catData.failures) allFailures.push(r);
+  }
+
+  // ── Assign each failure to a group bucket ──
+  // Strategy: prefer lineNum→group lookup; fall back to parsing message for "group:" or "Question N"
+  const byGroup = {}; // groupKey (number or 'general') → [{r, groupKey}]
+  for (const r of allFailures) {
+    let groupKey = null;
+
+    // 1. Try resolving via lineNum
+    if (r.lineNum) groupKey = groupForLine(r.lineNum);
+
+    // 2. If still null, try extra data (group-points-consistency, group-sequence carry group info)
+    if (groupKey === null && r.extra) {
+      if (r.extra.group != null) groupKey = parseInt(r.extra.group);
+      else if (r.extra.sequence) {
+        // group-sequence: find the first out-of-order group
+        const seq = r.extra.sequence;
+        let prev = 0;
+        for (const item of seq) {
+          if (item.group < prev) { groupKey = item.group; break; }
+          prev = item.group;
+        }
+      }
+    }
+
+    // 3. Try parsing "Question N" from the message to get group via qRanges
+    if (groupKey === null && r.message) {
+      const mQ = r.message.match(/[Qq]uestion\s+(\d+)/);
+      if (mQ) {
+        const qNum = parseInt(mQ[1]);
+        const found = questions.find(q => q.num === qNum);
+        if (found) groupKey = found.group;
+      }
+    }
+
+    const bucket = groupKey !== null ? groupKey : 'general';
+    if (!byGroup[bucket]) byGroup[bucket] = [];
+    byGroup[bucket].push(r);
+  }
+
+  // ── Sort group keys: numbered groups ascending, then 'general' ──
+  const groupKeys = Object.keys(byGroup).sort((a, b) => {
+    if (a === 'general') return 1;
+    if (b === 'general') return -1;
+    return parseInt(a) - parseInt(b);
+  });
+
+  let html = '';
+  for (const gk of groupKeys) {
+    const fails = byGroup[gk];
+    const errCount = fails.filter(f => f.rule.severity === 'error').length;
+    const warnCount = fails.filter(f => f.rule.severity === 'warning').length;
+    const hCls = errCount ? 'has-errors' : 'has-warnings';
+    const badges =
+      (errCount ? '<span class="cat-count cat-count-error">'+errCount+'</span>' : '') +
+      (warnCount ? '<span class="cat-count cat-count-warn">'+warnCount+'</span>' : '');
+
+    let label;
+    if (gk === 'general') {
+      label = '⚠ File-level / General Checks';
+    } else {
+      // Find question numbers in this group for the subtitle
+      const qNums = [...new Set(fails.map(r => {
+        const n = r.lineNum ? questionNumForLine(r.lineNum) : null;
+        if (n) return n;
+        // fall back: find questions with this group
+        const q = questions.find(q => q.group === parseInt(gk));
+        return q ? q.num : null;
+      }).filter(Boolean))].sort((a,b)=>a-b);
+      label = 'Group ' + gk;
+      if (qNums.length) label += ' <span style="font-weight:400;font-size:10px;opacity:.7">(Q' + qNums.join(', Q') + ')</span>';
+    }
+
+    let items = '';
+    // Sort within group: errors before warnings
+    const sorted = [...fails].sort((a, b) => {
+      const sev = s => s.rule.severity === 'error' ? 0 : 1;
+      return sev(a) - sev(b);
+    });
+    for (const r of sorted) {
+      items += renderItem(r, lines);
+      if (r.lineNum) (r.rule.severity === 'error' ? errLines : warnLines).push(r.lineNum);
+    }
+    const catId = 'grp-' + gk;
+    html += '<div class="category-section" id="'+catId+'">'+
+      '<button class="category-header '+hCls+'" onclick="toggleCat(\''+catId+'\')">'+
+      '<span class="cat-chevron">'+CHEVRON+'</span>'+label+' '+badges+'</button>'+
       '<div class="category-items">'+items+'</div></div>';
   }
-  document.getElementById('results-body').innerHTML=html;
-  highlightLines(errLines,warnLines);
+  document.getElementById('results-body').innerHTML = html;
+  highlightLines(errLines, warnLines);
 }
 
 function renderItem(r,lines){
