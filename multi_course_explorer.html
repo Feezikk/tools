@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Course Search</title>
+    <title>Multi-Course Explorer</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
         :root {
@@ -94,6 +94,23 @@
         #search-input:focus, #stds-search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(28, 53, 94, 0.1); }
         .main-search-clear { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; color: #aaa; cursor: pointer; padding: 0; line-height: 1; }
         .main-search-clear:hover { color: var(--primary); }
+		
+		/* --- Stats Styling --- */
+		.stats-container {
+			text-align: right; 
+			margin-top: 10px; 
+			margin-bottom: -10px; /* Pulls the results grid up slightly to tighten spacing */
+			padding-right: 5px;
+		}
+		.stats-text {
+			font-size: 0.85rem; 
+			font-weight: 600; 
+			color: var(--text-light); 
+			background: #e9ecef; /* Adds a subtle pill background */
+			padding: 4px 12px; 
+			border-radius: 12px;
+			border: 1px solid var(--border);
+		}
 
         /* --- Filters & Dropdowns --- */
         .controls-row { display: flex; align-items: center; margin-top: 12px; padding: 0 2px; gap: 15px; flex-wrap: wrap; }
@@ -193,8 +210,8 @@
                 <div class="header-logo-icon" id="svg-header-logo"></div>
                 <div>
                     <h1 id="main-title" style="display:flex; align-items:center; gap:10px;">
-                        Multi-Course Search
-                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v2.8</span>
+                        Multi-Course Explorer
+                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v3.01</span>
                     </h1>
                     <div class="header-subtitle" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Content &amp; Standards Tool</div>
                 </div>
@@ -226,7 +243,6 @@
    <div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
         <div class="white-card-header">
             <div class="main-search-wrapper">
-                <span id="search-stats" style="position: absolute; right: 5px; top: -14px; font-size: 0.75rem; font-weight: 700; color: var(--primary); display: none;"></span>
                 <input type="text" id="search-input" placeholder="Enter your search..." autocomplete="off">
                 <button id="search-clear-btn" class="main-search-clear" title="Clear search" style="display:none;">&times;</button>
             </div>
@@ -261,6 +277,10 @@
 
                 <button id="export-search-btn" class="action-btn btn-base" onclick="exportSearchResults()" style="display:none; margin-left: auto;"></button>
             </div>
+        </div>
+        
+        <div class="stats-container">
+            <span id="search-stats" class="stats-text" style="display: none;"></span>
         </div>
     </div>
     
@@ -307,14 +327,11 @@
                         <button id="export-stds-btn" class="action-btn btn-base" onclick="exportStdsSearchResults()" style="display:none;"></button>
                     </div>
                 </div>
+            </div> <div class="stats-container">
+                <span id="stds-stats" class="stats-text" style="display: none;"></span>
             </div>
-        </div>
-        
-        <div style="text-align: right; margin-top: 5px; margin-bottom: -5px; padding-right: 5px;">
-            <span id="stds-stats" style="font-size: 0.85rem; font-weight: 600; color: var(--text-light); display: none;"></span>
-        </div>
-        
-        <div id="stds-results-grid"></div>
+            
+        </div> <div id="stds-results-grid"></div>
     </div>
 
     <div id="search-modal" class="modal-overlay" onclick="closeSearchModal(event)">
@@ -358,6 +375,7 @@ const SVGS = {
     fileText: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
     check: `<svg class="svg-icon" viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
     x: `<svg class="svg-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    arrowUp: `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>`,
     arrowDown: `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`,
     logo: `<svg class="svg-icon" style="width: 28px; height: 28px;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>`,
     search: `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
@@ -421,7 +439,8 @@ let allKnownStandardStates = new Set();
 let activeSearchCourses = new Set();
 let activeSearchModules = new Set();
 let activeSearchTypes = new Set();
-let activeSearchIncludeStandards = false; 
+let activeSearchExcludeStandards = true;   // checked by default → standards excluded
+let activeSearchExcludeML = false;          // unchecked by default → ML included
 
 let currentSearchResults = [];
 let currentSearchQuery = "";
@@ -741,7 +760,8 @@ async function runMultiCourseIndexing() {
         activeSearchCourses = new Set();
         activeSearchModules = new Set();
         activeSearchTypes = new Set();
-        activeSearchIncludeStandards = false; 
+        activeSearchExcludeStandards = true;
+        activeSearchExcludeML = false;
 
         activeStdsCourses = new Set();
         activeStdsModules = new Set();
@@ -1012,7 +1032,8 @@ window.clearAllSearchFilters = function() {
     activeSearchCourses.clear();
     activeSearchModules.clear();
     activeSearchTypes.clear();
-    activeSearchIncludeStandards = false;
+    activeSearchExcludeStandards = true;
+    activeSearchExcludeML = false;
     renderSearchFilters();
     runSearch(elements.searchInput.value);
 };
@@ -1079,8 +1100,8 @@ window.renderSearchFilters = function() {
     if (typeContainer && typeBtn) {
         let typeHtml = `
             <div class="filter-actions-row">
-                <button class="filter-action-link" onclick="activeSearchTypes.add('page'); activeSearchTypes.add('interactive'); activeSearchIncludeStandards = true; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Select All</button>
-                <button class="filter-action-link" onclick="activeSearchTypes.clear(); activeSearchIncludeStandards = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Clear All</button>
+                <button class="filter-action-link" onclick="activeSearchTypes.add('page'); activeSearchTypes.add('interactive'); activeSearchExcludeStandards = true; activeSearchExcludeML = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Select All</button>
+                <button class="filter-action-link" onclick="activeSearchTypes.clear(); activeSearchExcludeStandards = true; activeSearchExcludeML = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Clear All</button>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">`;
         
@@ -1096,16 +1117,23 @@ window.renderSearchFilters = function() {
                         <span style="flex:1;">Interactives</span>
                     </label>`;
         
-        const isStdsChecked = activeSearchIncludeStandards ? 'checked' : '';
+        const isExclStdsChecked = activeSearchExcludeStandards ? 'checked' : '';
         typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text); border-top: 1px dashed var(--border); padding-top: 8px;">
-                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchIncludeStandards()" ${isStdsChecked}> 
-                        <span style="flex:1;">Search within Standards Info</span>
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeStandards()" ${isExclStdsChecked}> 
+                        <span style="flex:1;">Exclude Standards</span>
+                    </label>`;
+
+        const isExclMLChecked = activeSearchExcludeML ? 'checked' : '';
+        typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeML()" ${isExclMLChecked}> 
+                        <span style="flex:1;">Exclude ML</span>
                     </label></div>`;
                     
         typeContainer.innerHTML = typeHtml;
-        let selectedCount = activeSearchTypes.size + (activeSearchIncludeStandards ? 1 : 0);
-        typeBtn.innerHTML = selectedCount === 0 ? `Types (All) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>` : `Types (${selectedCount}) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`;
-        typeBtn.classList.toggle('filtered', selectedCount > 0);
+        // Button shows "Filtered" when anything deviates from the all-on default
+        const isNonDefault = activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML;
+        typeBtn.innerHTML = isNonDefault ? `Types (Filtered) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>` : `Types (All) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`;
+        typeBtn.classList.toggle('filtered', isNonDefault);
     }
 };
 
@@ -1127,8 +1155,14 @@ window.toggleSearchType = function(type) {
     if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
 };
 
-window.toggleSearchIncludeStandards = function() {
-    activeSearchIncludeStandards = !activeSearchIncludeStandards;
+window.toggleSearchExcludeStandards = function() {
+    activeSearchExcludeStandards = !activeSearchExcludeStandards;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeML = function() {
+    activeSearchExcludeML = !activeSearchExcludeML;
     renderSearchFilters();
     if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
 };
@@ -1187,20 +1221,20 @@ function runSearch(query) {
             let normalText = "", mlText = "";
             if (item.isInteractive) {
                 if (activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
-                normalText = isHtmlMode ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
-                mlText = isHtmlMode ? (activeSearchIncludeStandards ? item.mlRawContentWithStds : item.mlRawContent) : (activeSearchIncludeStandards ? item.mlCleanContentWithStds : item.mlCleanContent);
+                normalText = isHtmlMode ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds) : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
+                if (!activeSearchExcludeML) mlText = isHtmlMode ? (activeSearchExcludeStandards ? item.mlRawContent : item.mlRawContentWithStds) : (activeSearchExcludeStandards ? item.mlCleanContent : item.mlCleanContentWithStds);
             } else {
                 const wantsPages = activeSearchTypes.has('page');
-                const wantsStds = activeSearchIncludeStandards;
+                const wantsStds = !activeSearchExcludeStandards;
                 if (activeSearchTypes.size > 0 && !wantsPages && !wantsStds) return; 
                 const effectivelyWantsPages = activeSearchTypes.size === 0 || wantsPages;
 
                 if (effectivelyWantsPages && wantsStds) {
                     normalText = isHtmlMode ? item.rawContentWithStds : item.cleanContentWithStds;
-                    mlText = isHtmlMode ? item.mlRawContentWithStds : item.mlCleanContentWithStds;
+                    if (!activeSearchExcludeML) mlText = isHtmlMode ? item.mlRawContentWithStds : item.mlCleanContentWithStds;
                 } else if (effectivelyWantsPages && !wantsStds) {
                     normalText = isHtmlMode ? item.rawContent : item.cleanContent;
-                    mlText = isHtmlMode ? item.mlRawContent : item.mlCleanContent;
+                    if (!activeSearchExcludeML) mlText = isHtmlMode ? item.mlRawContent : item.mlCleanContent;
                 } else if (!effectivelyWantsPages && wantsStds) {
                     const pageStds = globalStandardsList.filter(s => s.locationId === item.locationId && s.courseName === item.courseName);
                     if (pageStds.length === 0) return; 
@@ -1242,14 +1276,14 @@ function runSearch(query) {
         });
         
         if (matchCount === 0) {
-            const hasFilters = activeSearchCourses.size > 0 || activeSearchModules.size > 0 || activeSearchTypes.size > 0 || activeSearchIncludeStandards;
+            const hasFilters = activeSearchCourses.size > 0 || activeSearchModules.size > 0 || activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML;
             let filterBtn = hasFilters ? `<button class="action-btn btn-base" style="margin: 15px auto 0 auto;" onclick="clearAllSearchFilters()">Clear Active Filters</button>` : '';
             elements.results.innerHTML = `<div style="text-align:center; padding:40px; background:#fff; border-radius:8px; border:1px solid var(--border);"><div class="flex-center" style="margin-bottom:10px; color:var(--text-light);">${SVGS.search}</div><p style="color:var(--text-light);">No matches found.</p>${filterBtn}</div>`;
             elements.exportSearchBtn.style.display = 'none'; elements.searchStats.style.display = 'none';
-        } else {
+       } else {
             renderSearchBatch(); 
             elements.exportSearchBtn.style.display = 'inline-flex';
-            elements.searchStats.innerHTML = `Found ${totalHitsCount} matches across ${matchCount} course locations`;
+            elements.searchStats.innerHTML = `Found ${totalHitsCount} match${totalHitsCount === 1 ? '' : 'es'} across ${matchCount} location${matchCount === 1 ? '' : 's'}`;
             elements.searchStats.style.display = 'inline-block';
         }
     } catch (err) { 
@@ -1396,7 +1430,11 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
             
             if (rawRegex) {
                 // Walk the JSON object and inject safe temporary tokens around matches
-                // so we know which ones belong to ML/chat nodes before stringifying
+                // so we know which ones belong to ML/chat nodes before stringifying.
+                // Skip keys that were excluded from the search to keep modal hits consistent.
+                const injectSkipKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version', 'notes']);
+                if (activeSearchExcludeStandards) { injectSkipKeys.add('standards'); injectSkipKeys.add('standard'); }
+
                 function injectTokens(o, isInsideML = false) {
                     if (!o) return o;
                     if (Array.isArray(o)) {
@@ -1404,6 +1442,8 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
                     } else if (typeof o === 'object') {
                         const newObj = {};
                         for (const key in o) {
+                            if (activeSearchExcludeML && (key === 'ml' || key === 'chatHistory')) { newObj[key] = o[key]; continue; }
+                            if (injectSkipKeys.has(key)) { newObj[key] = o[key]; continue; }
                             const currentIsML = isInsideML || key === 'ml' || key === 'chatHistory';
                             newObj[key] = injectTokens(o[key], currentIsML);
                         }
@@ -1439,8 +1479,8 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
         }
     } catch (e) { 
         // TEXT VIEW (Fallback or Interactives without JSON files)
-        let nText = isHtmlMode ? (activeSearchIncludeStandards ? item.rawContentWithStds : item.rawContent) : (activeSearchIncludeStandards ? item.cleanContentWithStds : item.cleanContent);
-        let mText = isHtmlMode ? (activeSearchIncludeStandards ? item.mlRawContentWithStds : item.mlRawContent) : (activeSearchIncludeStandards ? item.mlCleanContentWithStds : item.mlCleanContent);
+        let nText = isHtmlMode ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds) : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
+        let mText = activeSearchExcludeML ? '' : (isHtmlMode ? (activeSearchExcludeStandards ? item.mlRawContent : item.mlRawContentWithStds) : (activeSearchExcludeStandards ? item.mlCleanContent : item.mlCleanContentWithStds));
         
         nText = escapeHtml(nText);
         mText = escapeHtml(mText);
