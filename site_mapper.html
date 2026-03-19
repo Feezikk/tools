@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Course File Explorer & Auditor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        :root { --primary: #366092; --special: #C00000; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        /* Dashboard Stats & Controls */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; border-top: 4px solid var(--primary); }
+        .stat-card.special { border-top-color: var(--special); }
+        .stat-val { font-size: 24px; font-weight: bold; color: var(--primary); display: block; }
+
+        .dashboard-controls { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .course-title-display { margin: 0; color: var(--primary); font-size: 1.2rem; font-weight: bold; text-align: center; flex: 1; }
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; border: none; font-size: 14px; transition: 0.2s; }
+        .btn-reset { background: #e2e8f0; color: #475569; }
+        .btn-reset:hover { background: #cbd5e1; }
+        .btn-excel { background: #28a745; color: white; }
+        .btn-excel:hover { background: #218838; }
+
+        /* Explorer Layout */
+        .explorer { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 40px; }
+        .module-row { border-bottom: 1px solid #eee; }
+        .module-header { padding: 15px 20px; background: #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; transition: background 0.2s; user-select: none; }
+        .module-header:hover { background: #e2e2e2; }
+        .module-header.is-special { border-left: 6px solid var(--special); }
+        
+        /* Chevron Styling */
+        .arrow-icon { width: 18px; height: 18px; margin-right: 12px; transition: transform 0.2s ease; color: #666; }
+        .arrow-icon.rotated { transform: rotate(90deg); }
+        .header-left { display: flex; align-items: center; }
+
+        .lesson-list { display: none; padding: 10px 0; background: #fff; border-top: 1px solid #ddd; }
+        .lesson-item { padding: 10px 30px; border-bottom: 1px solid #f0f0f0; }
+        .lesson-title { display: block; margin-bottom: 12px; color: var(--primary); font-size: 15px; border-bottom: 1px solid #eef; padding-bottom: 5px; }
+        
+        /* Page Item: File-First Layout */
+        .page-item { 
+            padding: 6px 15px; 
+            font-size: 14px; 
+            display: grid; 
+            grid-template-columns: 180px 1fr 100px; 
+            gap: 20px;
+            align-items: center;
+            border-radius: 4px;
+        }
+        .page-item:hover { background: #f4f7fa; }
+        .file-name { font-family: 'Courier New', monospace; font-weight: 600; color: #d63384; }
+        .page-title { color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ref-code { font-family: monospace; font-weight: bold; text-align: right; background: #eef; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+        
+        /* Search & Drop Zone */
+        .search-container { margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; }
+        .search-box { width: 100%; padding: 15px; border: 2px solid var(--primary); border-radius: 8px; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); outline: none; box-sizing: border-box; }
+        .drop-zone { border: 3px dashed var(--primary); padding: 60px; text-align: center; border-radius: 12px; background: white; cursor: pointer; }
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #ddd; color: #444; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="setup-area">
+        <div class="drop-zone" id="drop-zone">
+            <h2>Course Sitemap Explorer</h2>
+            <p>Click to select the <strong>Course Folder</strong> to view the file-first dashboard.</p>
+            <input type="file" id="file-input" webkitdirectory directory style="display:none">
+            <p id="status-msg" style="color: #C00000; font-weight: bold; margin-top: 10px; display: none;"></p>
+        </div>
+    </div>
+
+    <div id="dashboard-area" class="hidden">
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <div class="dashboard-controls">
+            <button onclick="location.reload()" class="btn btn-reset">Start Over</button>
+            <div id="course-title" class="course-title-display">Course Site Map</div>
+            <button id="btn-export-excel" class="btn btn-excel">Export to Excel</button>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-box" placeholder="Search by filename, page title, or code (e.g. 01.03.02)...">
+        </div>
+
+        <div class="explorer" id="explorer"></div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const dashboard = document.getElementById('dashboard-area');
+    const explorer = document.getElementById('explorer');
+    const searchInput = document.getElementById('search-input');
+    const excelBtn = document.getElementById('btn-export-excel');
+    const titleDisplay = document.getElementById('course-title');
+    
+    let jsonData = null;
+    let courseName = "Course_Site_Map";
+
+    // SVG Chevron Icon
+    const chevronSVG = `<svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>`;
+
+    // Zero-padding helper
+    const pad = (num) => String(num).padStart(2, '0');
+
+    dropZone.onclick = () => fileInput.click();
+    
+    fileInput.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const statusMsg = document.getElementById('status-msg');
+        statusMsg.style.display = 'none'; // Reset error message
+
+        // 1. Look for sitemap.json
+        let sitemapFile = files.find(f => f.name === 'sitemap.json' && f.webkitRelativePath.includes('global/data/'));
+        if (!sitemapFile) {
+            sitemapFile = files.find(f => f.name === 'sitemap.json');
+        }
+
+        // 2. Look for settings.json to grab the course title
+        let settingsFile = files.find(f => f.name === 'settings.json' && f.webkitRelativePath.includes('global/data/'));
+        if (!settingsFile) {
+            settingsFile = files.find(f => f.name === 'settings.json');
+        }
+
+        if (sitemapFile) {
+            // Read settings if available
+            if (settingsFile) {
+                try {
+                    const settingsText = await settingsFile.text();
+                    const settingsData = JSON.parse(settingsText);
+                    if (settingsData.settings && settingsData.settings.course_title) {
+                        courseName = settingsData.settings.course_title;
+                    }
+                } catch (err) {
+                    console.warn("Could not parse settings.json to retrieve course title.", err);
+                }
+            }
+
+            titleDisplay.innerText = courseName;
+            handleFile(sitemapFile);
+        } else {
+            statusMsg.textContent = "Could not find sitemap.json in the selected folder.";
+            statusMsg.style.display = 'block';
+        }
+        
+        fileInput.value = "";
+    };
+
+    function handleFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                jsonData = JSON.parse(e.target.result);
+                document.getElementById('setup-area').classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                renderDashboard();
+            } catch(err) {
+                alert("Error parsing JSON file.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function renderDashboard() {
+        let totalPages = 0;
+        let lockPages = 0;
+        const modules = jsonData.modules || [];
+
+        modules.forEach(m => {
+            (m.lessons || []).forEach(l => {
+                (l.pages || []).forEach(p => {
+                    totalPages++;
+                    if (p.glKeys) lockPages++;
+                });
+            });
+        });
+
+        document.getElementById('stats-grid').innerHTML = `
+            <div class="stat-card"><span class="stat-val">${modules.length}</span>Modules</div>
+            <div class="stat-card"><span class="stat-val">${totalPages}</span>Total Pages</div>
+            <div class="stat-card" style="border-top-color:#ffa000"><span class="stat-val">${lockPages}</span>Locked Pages</div>
+        `;
+        renderTree("");
+    }
+
+    function renderTree(term) {
+        explorer.innerHTML = "";
+        (jsonData.modules || []).forEach(m => {
+            const isSpecial = ["Welcome", "Getting Started"].includes(m.title);
+            let mID = isSpecial ? (m.title === "Welcome" ? "wf" : "gs") : pad(m.mID);
+            
+            const mDiv = document.createElement('div');
+            mDiv.className = 'module-row';
+            
+            mDiv.innerHTML = `
+                <div class="module-header ${isSpecial ? 'is-special' : ''}">
+                    <div class="header-left">
+                        ${chevronSVG}
+                        <span>Module ${mID}: ${m.title}</span>
+                    </div>
+                    <span class="badge">${m.lessons ? m.lessons.length : 0} Lessons</span>
+                </div>
+                <div class="lesson-list"></div>
+            `;
+
+            const mHeader = mDiv.querySelector('.module-header');
+            const lList = mDiv.querySelector('.lesson-list');
+            const arrowIcon = mDiv.querySelector('.arrow-icon');
+            let moduleHasMatch = false;
+
+            // Toggle Expand/Collapse
+            mHeader.addEventListener('click', () => {
+                if (lList.style.display === 'block') {
+                    lList.style.display = 'none';
+                    arrowIcon.classList.remove('rotated');
+                } else {
+                    lList.style.display = 'block';
+                    arrowIcon.classList.add('rotated');
+                }
+            });
+
+            (m.lessons || []).forEach(l => {
+                const lID = pad(l.lID);
+                const lItem = document.createElement('div');
+                lItem.className = 'lesson-item';
+                lItem.innerHTML = `<span class="lesson-title"><strong>Lesson ${mID}.${lID}:</strong> ${l.title}</span>`;
+                
+                let lessonHasMatch = false;
+                (l.pages || []).forEach((p, idx) => {
+                    const pID = pad(idx + 1);
+                    const refCode = `${mID}.${lID}.${pID}`;
+                    const fileName = p.src || "no_file.json";
+                    
+                    if (!term || fileName.toLowerCase().includes(term) || p.title.toLowerCase().includes(term) || refCode.includes(term)) {
+                        moduleHasMatch = true;
+                        lessonHasMatch = true;
+                        const pItem = document.createElement('div');
+                        pItem.className = 'page-item';
+                        pItem.innerHTML = `
+                            <span class="file-name">${fileName}</span>
+                            <span class="page-title">${p.title}</span>
+                            <span class="ref-code">${refCode}</span>
+                        `;
+                        lItem.appendChild(pItem);
+                    }
+                });
+
+                if (lessonHasMatch) lList.appendChild(lItem);
+            });
+
+            if (moduleHasMatch || !term) {
+                if (term) {
+                    lList.style.display = 'block';
+                    arrowIcon.classList.add('rotated'); // Auto-rotate chevron on search
+                }
+                explorer.appendChild(mDiv);
+            }
+        });
+    }
+
+    searchInput.oninput = (e) => renderTree(e.target.value.toLowerCase().trim());
+
+    // --- Excel Generation Logic ---
+    excelBtn.onclick = async () => {
+        if (!jsonData) return;
+        
+        const originalText = excelBtn.innerText;
+        excelBtn.innerText = "Generating...";
+        excelBtn.disabled = true;
+
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const specialTitles = ["Welcome", "Getting Started"];
+            
+            const allModules = (jsonData.modules || []).map(m => {
+                if (specialTitles.includes(m.title)) {
+                    return {...m, mID: m.title === "Welcome" ? "wf" : "gs", isSpecial: true};
+                }
+                return {...m, isSpecial: false};
+            });
+
+            for (const module of allModules) {
+                const mID = pad(module.mID);
+                const sheet = workbook.addWorksheet(`Module ${mID}`);
+                sheet.columns = [
+                    { width: 15 }, { width: 18 }, { width: 50 }, { width: 30 }, { width: 10 }, { width: 30 }
+                ];
+
+                // Module Header Row
+                const headerRow = sheet.addRow([`Module ${mID}: ${module.title}`]);
+                sheet.mergeCells(1, 1, 1, 6);
+                headerRow.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+                headerRow.alignment = { horizontal: 'center' };
+                headerRow.getCell(1).fill = { 
+                    type: 'pattern', pattern: 'solid', 
+                    fgColor: { argb: module.isSpecial ? 'FFC00000' : 'FF366092' } 
+                };
+
+                // Column Headers
+                const colHeader = sheet.addRow(["Lesson", "Reference", "Page Title", "File Name", "Visible", "Unlock Keys"]);
+                colHeader.eachCell(cell => {
+                    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+                    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                    cell.alignment = { horizontal: 'center' };
+                });
+
+                // Lessons & Pages
+                (module.lessons || []).forEach(lesson => {
+                    const lIDStr = pad(lesson.lID);
+                    const lessonRow = sheet.addRow([`Lesson ${mID}.${lIDStr}: ${lesson.title}`]);
+                    sheet.mergeCells(lessonRow.number, 1, lessonRow.number, 6);
+                    lessonRow.font = { bold: true, italic: true };
+                    lessonRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+
+                    (lesson.pages || []).forEach((page, idx) => {
+                        const pIdx = pad(idx + 1);
+                        const unlock = page.glKeys ? JSON.stringify(page.glKeys).replace(/[{}]/g, '') : "";
+                        const fileName = page.src || "no_file.json";
+                        const isVisible = page.visible !== undefined ? String(page.visible) : "true";
+                        
+                        const row = sheet.addRow([
+                            `${mID}.${lIDStr}`, 
+                            `${mID}.${lIDStr}.${pIdx}`, 
+                            page.title, 
+                            fileName, 
+                            isVisible, 
+                            unlock
+                        ]);
+                        
+                        row.eachCell(cell => {
+                            cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                            cell.alignment = { wrapText: true, vertical: 'middle' };
+                        });
+                    });
+                    sheet.addRow([]); // Empty row for visual spacing between lessons
+                });
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            
+            // Clean the course name to make it file-system safe
+            const safeName = courseName.replace(/[^a-z0-9 _-]/gi, '').trim();
+            saveAs(new Blob([buffer]), `${safeName}_mapped.xlsx`);
+            
+        } catch (err) {
+            console.error(err);
+            alert("Error generating Excel document.");
+        } finally {
+            excelBtn.innerText = originalText;
+            excelBtn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>

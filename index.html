@@ -390,6 +390,38 @@
       background-position: center;
       transform: translateX(6px);
     }
+	  
+	/* ─── MINI CARDS (LESSER IMPORTANCE) ─────────────────────────── */
+    .mini-cards-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px; /* Matches the grid gap perfectly */
+    }
+
+    .tool-card.mini {
+      flex-direction: row;
+      align-items: center;
+      padding: 20px 24px;
+      flex: 1; /* Allows them to stretch and share the vertical space evenly */
+    }
+
+    .tool-card.mini .card-content {
+      flex: 1; /* Pushes the arrow to the right edge */
+    }
+
+    .tool-card.mini .card-name {
+      font-size: 1.15rem;
+    }
+
+    .tool-card.mini .card-desc {
+      font-size: 0.85rem;
+      margin-top: 2px;
+    }
+
+    .tool-card.mini .card-arrow {
+      margin-top: 0; /* Overrides the standard card's margin-top: auto */
+      flex-shrink: 0; /* Prevents the arrow circle from squishing */
+    }
 
     /* ─── IN DEV BADGE ───────────────────────────────────────────── */
     .dev-badge {
@@ -684,11 +716,31 @@
 		
 		
 
-      <div class="card-placeholder">
+     <div class="mini-cards-column">
+        <a class="tool-card mini" href="extract_objectives.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #81B29A; animation-delay: .70s;">
+          <div class="card-content">
+            <div class="card-name">Extract Objectives</div>
+            <div class="card-desc">Pull out learning objectives quickly and easily.</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </a>
+
+        <a class="tool-card mini" href="site_mapper.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #FFD166; animation-delay: .78s;">
+          <div class="card-content">
+            <div class="card-name">Sitemap Mapper</div>
+            <div class="card-desc">Map json file name to course page number.</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </a>
+      </div>
+
+      <div class="card-placeholder" style="animation-delay: .86s;">
         <span class="plus">＋</span>
         <p>More tools grazing<br>in the fields — coming soon.</p>
       </div>
 
+		
+		
     </div>
   </main>
 

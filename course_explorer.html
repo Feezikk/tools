@@ -301,8 +301,13 @@
         .result-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(28, 53, 94, 0.12); border-color: var(--primary-light); border-left-color: rgba(28, 53, 94, 0.7); }
         .snippet-item { font-size: 0.95rem; line-height: 1.5; color: var(--text); font-family: Georgia, serif; padding-left: 12px; border-left: 3px solid var(--border); word-wrap: break-word; }
         .snippet-item.code-view { font-family: var(--code-font); font-size: 0.85rem; color: #24292e; background: #f6f8fa; border-left: 3px solid #0366d6; padding: 10px; border-radius: 4px; white-space: pre-wrap; }
+        
+        /* New Highlight Styles */
         .highlight { background-color: var(--highlight); padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #ffeeba; }
         .highlight-ml { background-color: #e8d5f0; border-bottom: 2px solid #8e44ad; color: #4a148c; }
+        .highlight-std { background-color: #d0ebff; border-bottom: 2px solid #0d6efd; color: #084298; }
+        .highlight-note { background-color: #ffe8cc; border-bottom: 2px solid #fd7e14; color: #994a00; }
+        
         .separator { border-top: 1px dashed var(--border); margin: 5px 0; opacity: 0.5; }
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(28, 53, 94, 0.1); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -572,7 +577,7 @@
 	    }
     </style>
 </head>
-	
+
 <body>
 <div class="container">
     <div class="header-card">
@@ -581,7 +586,7 @@
                 <div class="header-logo-icon" id="svg-header-logo"></div>
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
-                    <div class="header-subtitle">Course Explorer Tool <span class="version-pill">v4.23</span></div>
+                    <div class="header-subtitle">Course Explorer Tool <span class="version-pill">v4.24</span></div>
                 </div>
             </div>
             
@@ -638,7 +643,7 @@
         <div id="status-area" style="margin-top:10px; font-weight:500;"></div>
     </div>
 
-<div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
+    <div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
         <div class="white-card-header" style="display: flex; flex-direction: column; gap: 15px;">
             
             <div class="main-search-wrapper">
@@ -763,63 +768,6 @@
         <div id="stds-results-grid"></div>
     </div>
     
-    <div id="results-area"></div>
-
-    <div id="stds-search-area" style="display:none; width: 100%; text-align: left;">
-        <div class="sticky-top-wrapper">
-            <div class="white-card-header" style="display: flex; flex-direction: column; gap: 15px;">
-                
-                <div class="main-search-wrapper">
-                    <input type="text" id="stds-search-input" placeholder="Search standard codes or descriptions..." autocomplete="off">
-                    <button id="stds-search-clear" class="main-search-clear" style="display:none;" title="Clear search">&times;</button>
-                </div>
-                
-              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 25px; width: 100%;">
-                    
-                    <div class="flex-center gap-10">
-                        <div class="filter-dropdown-wrapper">
-                            <button class="filter-btn btn-base" id="stds-mod-btn" onclick="toggleFilterDropdown('stds-mod-dropdown', event)">Modules <span id="svg-arrow-down-stds-mod"></span></button>
-                            <div id="stds-mod-dropdown" class="filter-dropdown-content" style="width: 350px;" onclick="event.stopPropagation()">
-                                <div class="filter-actions">
-                                    <button class="filter-action-btn" onclick="toggleAllStdsModules(false)">Clear All</button>
-                                </div>
-                                <div id="stds-module-dropdown-list" style="max-height: 250px; overflow-y: auto; overflow-x: hidden; padding-right: 5px;"></div>
-                            </div>
-                        </div>
-
-                        <div class="filter-dropdown-wrapper">
-                            <button class="filter-btn btn-base" id="stds-state-btn" onclick="toggleFilterDropdown('stds-state-dropdown', event)">States <span id="svg-arrow-down-stds-state"></span></button>
-                            <div id="stds-state-dropdown" class="filter-dropdown-content" style="width: 450px;" onclick="event.stopPropagation()">
-                                <div class="filter-actions">
-                                    <button class="filter-action-btn" onclick="toggleAllStdsStates(false)">Clear All</button>
-                                </div>
-                                <div id="stds-state-dropdown-list" style="max-height: 350px; overflow-y: auto; overflow-x: hidden; padding-right: 5px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex-center gap-15" style="flex-wrap: wrap;">
-                        <div class="segmented-control">
-                            <label><input type="radio" name="stds-view" value="page" onchange="setStdsView('page')"><span>Page View</span></label>
-                            <label><input type="radio" name="stds-view" value="lesson" checked onchange="setStdsView('lesson')"><span>Lesson View</span></label>
-                            <label><input type="radio" name="stds-view" value="table" onchange="setStdsView('table')"><span>Table View</span></label>
-                        </div>
-                        <div class="divider" style="height: 24px; margin: 0 5px;"></div>
-                        <label class="toggle-label" id="lbl-stds-group-toggle"><input type="checkbox" id="stds-group-toggle" onchange="runStdsSearch()"> Group Shared Standards</label>
-                    </div>
-
-                    <div class="flex-center gap-10" style="margin-left: auto;">
-                        <button id="fullscreen-stds-btn" class="action-btn btn-base" style="display:none;" onclick="openFullscreenTable()"></button>
-                        <button id="export-stds-btn" class="action-btn btn-base" style="display:none;" onclick="exportStdsSearchResults()"></button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="stds-stats" style="display:none; margin-top: 10px; padding-left: 5px; font-size: 0.85rem; font-weight: 600; color: var(--text-light);"></div>
-        </div>
-        
-        <div id="stds-results-grid"></div>
-    </div>
     <div id="media-area"></div> 
 
     <div id="media-modal" class="modal-overlay" onclick="closeMediaModal(event)">
@@ -1021,8 +969,8 @@
         mainTitle: document.getElementById('main-title'),
         gapToggle: document.getElementById('gap-toggle')
     };
-
-    // --- HTML SVG INJECTION & EVENT LISTENERS ---
+	
+	// --- HTML SVG INJECTION & EVENT LISTENERS ---
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('svg-header-logo').innerHTML = SVGS.logo;
         elements.selectCourseBtn.innerHTML = `${SVGS.folder} Select New Course`;
@@ -1233,8 +1181,9 @@
     // Content Search Filters
     let activeSearchModules = new Set();
     let activeSearchTypes = new Set(['page', 'interactive']);
-    let activeSearchExcludeStandards = true;  // checked by default → standards excluded
-    let activeSearchExcludeML = false;         // unchecked by default → ML included
+    let activeSearchExcludeStandards = true;  // checked by default
+    let activeSearchExcludeML = false;         // unchecked by default
+    let activeSearchExcludeNotes = true;       // NEW: checked by default (Notes excluded)
     
     let currentSearchResults = [];
     let currentSearchQuery = "";
@@ -1260,7 +1209,7 @@
     let fileNameIndex = new Map(); 
     let folderIndex = new Map(); 
     let searchRenderCount = 0;
-    const SEARCH_BATCH_SIZE = 100;
+    const SEARCH_BATCH_SIZE = 25;
 
     let courseStandardGroups = new Set();
     let activeStandardGroups = new Set();
@@ -1657,6 +1606,7 @@
             activeSearchTypes = new Set();
             activeSearchExcludeStandards = true;
             activeSearchExcludeML = false;
+            activeSearchExcludeNotes = true;
             
             currentSearchResults = []; 
             currentStdsSearchResults = []; 
@@ -1757,6 +1707,7 @@
             activeSearchTypes.clear();
             activeSearchExcludeStandards = true;
             activeSearchExcludeML = false;
+            activeSearchExcludeNotes = true;
             renderSearchFilters();
             
             activeStdsModules.clear();
@@ -1796,7 +1747,7 @@
         }
     }
 
-    async function buildIndexAndHydrate(sitemap) {
+	async function buildIndexAndHydrate(sitemap) {
         if (!sitemap.modules) return;
         
         fileNameIndex.clear(); folderIndex.clear();
@@ -1870,7 +1821,7 @@
         const mp3Regex = /(?:data-src|src|data-cbdisplay)=\\?["']([^"']+\.mp3)\\?["']/gi;
         let match; let seen = new Set();
         
-        while ((match = mp3Regex.exec(text)) !== null) {
+        while ((match = match = mp3Regex.exec(text)) !== null) {
             const fullPath = match[1];
             if (seen.has(fullPath)) continue; seen.add(fullPath);
 
@@ -1950,70 +1901,60 @@
             else { for (const key in o) { scan(o[key]); if (titlePriority === 2) return; } }
         }
         scan(obj); return meta;
-    }
-
-    function checkForMLData(obj) {
-        if (!obj) return false;
-        if (Array.isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                if (checkForMLData(obj[i])) return true;
-            }
-        } else if (typeof obj === 'object') {
-            if (obj.hasOwnProperty('ml') || obj.hasOwnProperty('chatHistory')) return true;
-            for (const key in obj) {
-                if (checkForMLData(obj[key])) return true;
-            }
-        }
-        return false;
-    }
-
-    function extractContentRecursive(obj, skipStandards = false) {
-        const cleanParts = [], rawParts = [];
-        const mlCleanParts = [], mlRawParts = [];
+    }						
+							
+    // UPDATED: Now categorizes content into Normal, ML, Standards, and Notes streams
+    function extractContentRecursive(obj) {
+        const streams = {
+            normal: { clean: [], raw: [] },
+            ml: { clean: [], raw: [] },
+            std: { clean: [], raw: [] },
+            note: { clean: [], raw: [] }
+        };
         
-        // Removed 'src' and 'href' so that file names and URLs are indexed for search
-        const ignoreKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version', 'notes']);
-        
-        if (skipStandards) {
-            ignoreKeys.add('standards');
-            ignoreKeys.add('standard');
-        }
-
+        const ignoreKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version']);
         const hasTags = /<[^>]+>/; 
 
-        function traverse(o, isInsideML = false) {
+        function traverse(o, currentContext) {
             if (!o) return;
-            if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) traverse(o[i], isInsideML); } 
-            else if (typeof o === 'object') {
+            if (Array.isArray(o)) { 
+                for (let i = 0; i < o.length; i++) traverse(o[i], currentContext); 
+            } else if (typeof o === 'object') {
                 for (const key in o) {
                     if (ignoreKeys.has(key)) continue;
-                    const currentIsML = isInsideML || key === 'ml' || key === 'chatHistory';
+                    
+                    let nextContext = currentContext;
+                    if (key === 'ml' || key === 'chatHistory') nextContext = 'ml';
+                    else if (key === 'standards' || key === 'standard') nextContext = 'std';
+                    else if (key === 'notes' || key === 'note') nextContext = 'note';
+                    
                     const val = o[key];
                     if (typeof val === 'string') {
                         if (val.trim() !== '') {
                             const cleanVal = hasTags.test(val) ? stripHtml(val) : val;
-                            if (currentIsML) {
-                                mlRawParts.push(val);
-                                mlCleanParts.push(cleanVal);
-                            } else {
-                                rawParts.push(val);
-                                cleanParts.push(cleanVal);
-                            }
+                            streams[nextContext].raw.push(val);
+                            streams[nextContext].clean.push(cleanVal);
                         }
-                    } else traverse(val, currentIsML);
+                    } else traverse(val, nextContext);
                 }
             }
         }
-        traverse(obj, false);
+        
+        traverse(obj, 'normal');
+        
         return { 
-            clean: cleanParts.join(" "), 
-            raw: rawParts.join(" "),
-            mlClean: mlCleanParts.join(" "),
-            mlRaw: mlRawParts.join(" ")
+            normalClean: streams.normal.clean.join(" "), 
+            normalRaw: streams.normal.raw.join(" "),
+            mlClean: streams.ml.clean.join(" "),
+            mlRaw: streams.ml.raw.join(" "),
+            stdClean: streams.std.clean.join(" "),
+            stdRaw: streams.std.raw.join(" "),
+            noteClean: streams.note.clean.join(" "),
+            noteRaw: streams.note.raw.join(" ")
         };
     }
-
-    function determineInteractiveType(rawJsonString) {
+						
+	function determineInteractiveType(rawJsonString) {
         const srcMatch = rawJsonString.match(/"src"\s*:\s*"([^"]+)"/i);
         if (srcMatch && srcMatch[1]) {
             const val = srcMatch[1].toLowerCase();
@@ -2044,23 +1985,26 @@
             const contentText = await readFileAsText(fileMap.get(filename));
             const json = JSON.parse(contentText);
             
-            const extractedWithout = extractContentRecursive(json, true);
-            const extractedWith = extractContentRecursive(json, false);
-            const hasMLData = checkForMLData(json);
+            // NEW: Use the updated multi-stream extractor
+            const extracted = extractContentRecursive(json);
+            const hasMLData = extracted.mlClean.trim().length > 0;
+            const hasNoteData = extracted.noteClean.trim().length > 0;
+            const hasStdData = extracted.stdClean.trim().length > 0;
             
-            if (extractedWithout.clean.trim().length > 0 || extractedWithout.raw.trim().length > 0 || extractedWith.clean.trim().length > 0 || extractedWithout.mlClean.trim().length > 0) {
+            if (extracted.normalClean.trim().length > 0 || extracted.normalRaw.trim().length > 0 || hasMLData || hasNoteData || hasStdData) {
                 courseIndex.push({ 
                     breadcrumb, locationId, filename, 
-                    cleanContent: extractedWithout.clean, 
-                    rawContent: extractedWithout.raw,
-                    cleanContentWithStds: extractedWith.clean,
-                    rawContentWithStds: extractedWith.raw,
-                    mlCleanContent: extractedWithout.mlClean,
-                    mlRawContent: extractedWithout.mlRaw,
-                    mlCleanContentWithStds: extractedWith.mlClean,
-                    mlRawContentWithStds: extractedWith.mlRaw,
+                    normalClean: extracted.normalClean, 
+                    normalRaw: extracted.normalRaw,
+                    mlClean: extracted.mlClean,
+                    mlRaw: extracted.mlRaw,
+                    stdClean: extracted.stdClean,
+                    stdRaw: extracted.stdRaw,
+                    noteClean: extracted.noteClean,
+                    noteRaw: extracted.noteRaw,
                     isInteractive: false,
-                    hasML: hasMLData
+                    hasML: hasMLData,
+                    hasNote: hasNoteData
                 });
             }
 
@@ -2118,28 +2062,30 @@
                         const intText = await readFileAsText(fileMap.get(fileKey));
                         const intJson = JSON.parse(intText);
                         
-                        const extractedIntWithout = extractContentRecursive(intJson, true);
-                        const extractedIntWith = extractContentRecursive(intJson, false);
-                        const intHasMLData = checkForMLData(intJson);
+                        const extractedInt = extractContentRecursive(intJson);
+                        const intHasMLData = extractedInt.mlClean.trim().length > 0;
+                        const intHasNoteData = extractedInt.noteClean.trim().length > 0;
+                        const intHasStdData = extractedInt.stdClean.trim().length > 0;
                         
                         const parts = fileKey.split('/');
                         const folderName = parts.length > 1 ? parts[parts.length - 2] : "Interactive";
                         const intBreadcrumb = `${breadcrumb} > Interactive (${folderName})`;
                         const intLocationId = `${locationId}.INT-${intCounter++}`;
 
-                        if (extractedIntWithout.clean.trim().length > 0 || extractedIntWithout.raw.trim().length > 0 || extractedIntWith.clean.trim().length > 0 || extractedIntWithout.mlClean.trim().length > 0) {
+                        if (extractedInt.normalClean.trim().length > 0 || extractedInt.normalRaw.trim().length > 0 || intHasMLData || intHasNoteData || intHasStdData) {
                             courseIndex.push({ 
                                 breadcrumb: intBreadcrumb, locationId: intLocationId, filename: fileKey, 
-                                cleanContent: extractedIntWithout.clean, 
-                                rawContent: extractedIntWithout.raw,
-                                cleanContentWithStds: extractedIntWith.clean,
-                                rawContentWithStds: extractedIntWith.raw,
-                                mlCleanContent: extractedIntWithout.mlClean,
-                                mlRawContent: extractedIntWithout.mlRaw,
-                                mlCleanContentWithStds: extractedIntWith.mlClean,
-                                mlRawContentWithStds: extractedIntWith.mlRaw,
+                                normalClean: extractedInt.normalClean, 
+                                normalRaw: extractedInt.normalRaw,
+                                mlClean: extractedInt.mlClean,
+                                mlRaw: extractedInt.mlRaw,
+                                stdClean: extractedInt.stdClean,
+                                stdRaw: extractedInt.stdRaw,
+                                noteClean: extractedInt.noteClean,
+                                noteRaw: extractedInt.noteRaw,
                                 isInteractive: true,
-                                hasML: intHasMLData
+                                hasML: intHasMLData,
+                                hasNote: intHasNoteData
                             });
                         }
 
@@ -2253,11 +2199,15 @@
                         <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeML()" ${activeSearchExcludeML ? 'checked' : ''}> 
                         <span style="flex:1;">Exclude ML</span>
                     </label>
+                    <label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text); margin-bottom: 4px; break-inside: avoid;">
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeNotes()" ${activeSearchExcludeNotes ? 'checked' : ''}> 
+                        <span style="flex:1;">Exclude Notes</span>
+                    </label>
                 </div>`;
                         
             // Button shows "Filtered" when anything deviates from the all-on default
             const isNonDefault = activeSearchTypes.size < 2 || activeSearchTypes.size === 0
-                || !activeSearchExcludeStandards || activeSearchExcludeML;
+                || !activeSearchExcludeStandards || activeSearchExcludeML || activeSearchExcludeNotes;
             typeBtn.innerHTML = isNonDefault ? `Filtered ${SVGS.arrowDown}` : `Types ${SVGS.arrowDown}`;
             typeBtn.classList.toggle('filtered', isNonDefault);
         }
@@ -2287,10 +2237,12 @@
             activeSearchTypes.add('interactive'); 
             activeSearchExcludeStandards = true;
             activeSearchExcludeML = false;
+            activeSearchExcludeNotes = true;
         } else { 
             activeSearchTypes.clear(); 
             activeSearchExcludeStandards = false;
             activeSearchExcludeML = false;
+            activeSearchExcludeNotes = false;
         }
         renderSearchFilters();
         if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
@@ -2304,6 +2256,12 @@
 
     window.toggleSearchExcludeML = function() {
         activeSearchExcludeML = !activeSearchExcludeML;
+        renderSearchFilters();
+        if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
+    };
+
+    window.toggleSearchExcludeNotes = function() {
+        activeSearchExcludeNotes = !activeSearchExcludeNotes;
         renderSearchFilters();
         if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
     };
@@ -2327,8 +2285,8 @@
     elements.searchClearBtn.addEventListener('click', () => {
         elements.searchInput.value = ''; elements.searchClearBtn.style.display = 'none'; elements.searchInput.focus(); runSearch('');
     });
-
-    window.openPageModal = async function(res, query, isHtmlMode, isWholeWord, isCaseSensitive, startingMatchIndex = 0) {
+						
+	window.openPageModal = async function(res, query, isHtmlMode, isWholeWord, isCaseSensitive, startingMatchIndex = 0) {
         const item = res ? res.originalItem : null;
         if (!item) return;
 
@@ -2349,85 +2307,75 @@
             if (file) {
                 const rawText = await readFileAsText(file);
                 const json = JSON.parse(rawText);
-                // Stringify first so we work on the plain text that will be displayed
                 const prettyJson = JSON.stringify(json, null, 2);
 
                 if (rawRegex) {
-                    // Strategy: walk the stringified text line by line.
-                    // For each line, determine if we are inside an ML key block by tracking
-                    // depth changes and key names, then apply the right highlight span.
-                    // Simpler and more reliable than injecting tokens through JSON.stringify.
+                    const NORM_O = '___MATCHNORMOPEN___';
+                    const NORM_C = '___MATCHNORMCLOSE___';
+                    const ML_O   = '___MATCHMLOPEN___';
+                    const ML_C   = '___MATCHMLCLOSE___';
+                    const STD_O  = '___MATCHSTDOPEN___';
+                    const STD_C  = '___MATCHSTDCLOSE___';
+                    const NOTE_O = '___MATCHNOTEOPEN___';
+                    const NOTE_C = '___MATCHNOTECLOSE___';
 
-                    // Build a set of line ranges that belong to ML context by walking the object.
-                    // We re-stringify with a custom replacer that injects safe ASCII sentinels
-                    // around ML-context string values BEFORE HTML-escaping.
+                    const injectSkipKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version']);
 
-                    // Safe sentinels: long strings unlikely to appear in course JSON
-                    const NORM_O = '___MATCHOPEN___';
-                    const NORM_C = '___MATCHCLOSE___';
-                    const ML_O   = '___MLOPEN___';
-                    const ML_C   = '___MLCLOSE___';
-
-                    // Build a set of keys to skip during highlight injection,
-                    // mirroring the same filter logic used in extractContentRecursive / runSearch.
-                    const injectSkipKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version', 'notes']);
-                    if (activeSearchExcludeStandards) {
-                        injectSkipKeys.add('standards');
-                        injectSkipKeys.add('standard');
-                    }
-
-                    function injectTokens(o, isInsideML) {
+                    function injectTokens(o, currentContext) {
                         if (o === null || o === undefined) return o;
-                        if (Array.isArray(o)) return o.map(v => injectTokens(v, isInsideML));
+                        if (Array.isArray(o)) return o.map(v => injectTokens(v, currentContext));
                         if (typeof o === 'object') {
                             const result = {};
                             for (const key in o) {
-                                // When Exclude ML is active, pass ml/chatHistory through unmodified
+                                // Respect exclusion filters for UI display rendering
                                 if (activeSearchExcludeML && (key === 'ml' || key === 'chatHistory')) { result[key] = o[key]; continue; }
-                                // Pass other skipped keys through unmodified — no highlights injected
+                                if (activeSearchExcludeStandards && (key === 'standards' || key === 'standard')) { result[key] = o[key]; continue; }
+                                if (activeSearchExcludeNotes && (key === 'notes' || key === 'note')) { result[key] = o[key]; continue; }
+                                
                                 if (injectSkipKeys.has(key)) { result[key] = o[key]; continue; }
-                                const childIsML = isInsideML || key === 'ml' || key === 'chatHistory';
-                                result[key] = injectTokens(o[key], childIsML);
+                                
+                                let nextContext = currentContext;
+                                if (key === 'ml' || key === 'chatHistory') nextContext = 'ml';
+                                else if (key === 'standards' || key === 'standard') nextContext = 'std';
+                                else if (key === 'notes' || key === 'note') nextContext = 'note';
+                                
+                                result[key] = injectTokens(o[key], nextContext);
                             }
                             return result;
                         }
                         if (typeof o === 'string') {
-                            // Replace matches with sentinels
                             rawRegex.lastIndex = 0;
-                            if (isInsideML) {
-                                return o.replace(rawRegex, `${ML_O}$1${ML_C}`);
-                            } else {
-                                return o.replace(rawRegex, `${NORM_O}$1${NORM_C}`);
-                            }
+                            if (currentContext === 'ml') return o.replace(rawRegex, `${ML_O}$1${ML_C}`);
+                            else if (currentContext === 'std') return o.replace(rawRegex, `${STD_O}$1${STD_C}`);
+                            else if (currentContext === 'note') return o.replace(rawRegex, `${NOTE_O}$1${NOTE_C}`);
+                            else return o.replace(rawRegex, `${NORM_O}$1${NORM_C}`);
                         }
                         return o;
                     }
 
-                    const tokenized = injectTokens(json, false);
-                    // Stringify the tokenized object
+                    const tokenized = injectTokens(json, 'normal');
                     const tokenStr = JSON.stringify(tokenized, null, 2);
-                    // HTML-escape the whole thing (sentinels are plain ASCII, survive escaping)
                     let escaped = escapeHtml(tokenStr);
-                    // Now swap sentinels for HTML spans
-                    // escapeHtml won't touch our sentinel strings since they have no special chars
+                    
                     escaped = escaped
                         .split(escapeHtml(NORM_O)).join('<span class="highlight search-match">')
                         .split(escapeHtml(NORM_C)).join('</span>')
                         .split(escapeHtml(ML_O)).join('<span class="highlight highlight-ml search-match">')
-                        .split(escapeHtml(ML_C)).join('</span>');
+                        .split(escapeHtml(ML_C)).join('</span>')
+                        .split(escapeHtml(STD_O)).join('<span class="highlight highlight-std search-match">')
+                        .split(escapeHtml(STD_C)).join('</span>')
+                        .split(escapeHtml(NOTE_O)).join('<span class="highlight highlight-note search-match">')
+                        .split(escapeHtml(NOTE_C)).join('</span>');
 
                     fullText = escaped;
                 } else {
                     fullText = escapeHtml(prettyJson);
                 }
             } else {
-                // Fallback: no file available, use indexed plain text
-                let text = isHtmlMode
-                    ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds)
-                    : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
+                // Fallback rendering 
+                let text = isHtmlMode ? item.normalRaw : item.normalClean;
                 fullText = escapeHtml(text || "");
                 if (rawRegex) {
-                    // Build an HTML-mode regex against the escaped text
                     let htmlPattern = escapeRegExp(escapeHtml(query));
                     if (isWholeWord) htmlPattern = `(?<=^|\\W)${htmlPattern}(?=\\W|$)`;
                     const htmlRegex = new RegExp(`(${htmlPattern})`, isCaseSensitive ? 'g' : 'gi');
@@ -2436,9 +2384,7 @@
                 isCodeView = false;
             }
         } catch(e) {
-            let text = isHtmlMode
-                ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds)
-                : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
+            let text = isHtmlMode ? item.normalRaw : item.normalClean;
             fullText = escapeHtml(text || "");
             isCodeView = false;
         }
@@ -2463,9 +2409,6 @@
         document.getElementById('media-modal').classList.add('active');
         document.body.style.overflow = 'hidden';
 
-        // Helper: scroll the modal body so the target element is centred in view.
-        // Uses offsetTop walk rather than scrollIntoView because the modal body is
-        // the scroll container and scrollIntoView can fight with the CSS animation.
         const modalBody = document.getElementById('modal-body-content');
         function scrollModalToElement(el) {
             let offsetTop = 0;
@@ -2493,10 +2436,22 @@
             const updateMatchNav = () => {
                 matches.forEach(m => { m.style.outline = 'none'; m.style.boxShadow = 'none'; });
                 const activeMatch = matches[currentMatch];
-                const isMLMatch = activeMatch.classList.contains('highlight-ml');
-                activeMatch.style.outline = isMLMatch ? '2px solid #8e44ad' : '2px solid var(--primary)';
-                activeMatch.style.boxShadow = isMLMatch ? '0 0 8px rgba(142, 68, 173, 0.5)' : '0 0 8px rgba(28, 53, 94, 0.4)';
+                
+                let outlineColor = 'var(--primary)';
+                let shadowColor = 'rgba(28, 53, 94, 0.4)';
+                
+                if (activeMatch.classList.contains('highlight-ml')) {
+                    outlineColor = '#8e44ad'; shadowColor = 'rgba(142, 68, 173, 0.5)';
+                } else if (activeMatch.classList.contains('highlight-std')) {
+                    outlineColor = '#0d6efd'; shadowColor = 'rgba(13, 110, 253, 0.5)';
+                } else if (activeMatch.classList.contains('highlight-note')) {
+                    outlineColor = '#fd7e14'; shadowColor = 'rgba(253, 126, 20, 0.5)';
+                }
+                
+                activeMatch.style.outline = `2px solid ${outlineColor}`;
+                activeMatch.style.boxShadow = `0 0 8px ${shadowColor}`;
                 scrollModalToElement(activeMatch);
+                
                 document.getElementById('match-counter').innerText = `${currentMatch + 1} of ${matches.length}`;
                 document.getElementById('prev-match-btn').disabled = currentMatch === 0;
                 document.getElementById('next-match-btn').disabled = currentMatch === matches.length - 1;
@@ -2511,7 +2466,6 @@
                 if (currentMatch < matches.length - 1) { currentMatch++; updateMatchNav(); }
             });
 
-            // Wait for modal animation (200ms) then jump to the target match
             setTimeout(() => updateMatchNav(), 250);
         } else {
             modalBody.scrollTop = 0;
@@ -2552,78 +2506,52 @@
                 if (activeSearchModules.size > 0 && !activeSearchModules.has(itemModNum)) return; 
                 
                 const isInteractive = item.locationId.includes('.INT-');
-                let normalText = "", mlText = "";
+                if (isInteractive && activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
+                if (!isInteractive && activeSearchTypes.size > 0 && !activeSearchTypes.has('page')) return;
                 
-                if (isInteractive) {
-                    if (activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
-                    normalText = isHtmlMode 
-                        ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds)
-                        : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
-                    if (!activeSearchExcludeML) {
-                        mlText = isHtmlMode
-                            ? (activeSearchExcludeStandards ? item.mlRawContent : item.mlRawContentWithStds)
-                            : (activeSearchExcludeStandards ? item.mlCleanContent : item.mlCleanContentWithStds);
-                    }
-                } else {
-                    const searchPage = activeSearchTypes.size === 0 || activeSearchTypes.has('page');
-                    const searchStds = !activeSearchExcludeStandards;
-                    
-                    if (activeSearchTypes.size > 0 && !searchPage && !searchStds) return; 
-                    
-                    if (searchPage && searchStds) {
-                        normalText = isHtmlMode ? item.rawContentWithStds : item.cleanContentWithStds;
-                        if (!activeSearchExcludeML) mlText = isHtmlMode ? item.mlRawContentWithStds : item.mlCleanContentWithStds;
-                    } else if (searchPage && !searchStds) {
-                        normalText = isHtmlMode ? item.rawContent : item.cleanContent;
-                        if (!activeSearchExcludeML) mlText = isHtmlMode ? item.mlRawContent : item.mlCleanContent;
-                    } else if (!searchPage && searchStds) {
-                        const pageStds = courseStandardsList.filter(s => s.locationId === item.locationId);
-                        if (pageStds.length === 0) return; 
-                        normalText = pageStds.map(s => `${s.code} ${s.statement}`).join(' ');
-                    }
-                }
-
-                if (!normalText && !mlText) return; 
+                let normalText = isHtmlMode ? item.normalRaw : item.normalClean;
+                let mlText = (!activeSearchExcludeML) ? (isHtmlMode ? item.mlRaw : item.mlClean) : "";
+                let stdText = (!activeSearchExcludeStandards) ? (isHtmlMode ? item.stdRaw : item.stdClean) : "";
+                let noteText = (!activeSearchExcludeNotes) ? (isHtmlMode ? item.noteRaw : item.noteClean) : "";
+                
+                if (!normalText && !mlText && !stdText && !noteText) return; 
                 
                 const locId = item.locationId ? (isCaseSensitive ? item.locationId : item.locationId.toLowerCase()) : "";
                 const isIdMatch = locId.includes(queryForId);
 
-                let normalMatches = [];
-                if (normalText) {
+                const getMatches = (text) => {
+                    let matches = [];
+                    if (!text) return matches;
                     fileRegex.lastIndex = 0;
                     let match;
-                    while ((match = fileRegex.exec(normalText)) !== null) {
-                        normalMatches.push(match.index);
-                        if (normalMatches.length >= MAX_MATCH_COUNT) break;
+                    while ((match = fileRegex.exec(text)) !== null) {
+                        matches.push(match.index);
+                        if (matches.length >= MAX_MATCH_COUNT) break;
                     }
-                }
+                    return matches;
+                };
 
-                let mlMatches = [];
-                if (mlText) {
-                    fileRegex.lastIndex = 0;
-                    let match;
-                    while ((match = fileRegex.exec(mlText)) !== null) {
-                        mlMatches.push(match.index);
-                        if (mlMatches.length >= MAX_MATCH_COUNT) break;
-                    }
-                }
+                let normalMatches = getMatches(normalText);
+                let mlMatches = getMatches(mlText);
+                let stdMatches = getMatches(stdText);
+                let noteMatches = getMatches(noteText);
                 
-                if (normalMatches.length === 0 && mlMatches.length === 0 && !isIdMatch) return; 
+                if (normalMatches.length === 0 && mlMatches.length === 0 && stdMatches.length === 0 && noteMatches.length === 0 && !isIdMatch) return; 
                 
-                let combinedCount = normalMatches.length + mlMatches.length;
+                let combinedCount = normalMatches.length + mlMatches.length + stdMatches.length + noteMatches.length;
                 let hitsInItem = (isIdMatch && combinedCount === 0) ? 1 : combinedCount;
                 totalHitsCount += hitsInItem;
 
                 currentSearchResults.push({ 
                     locationId: item.locationId, breadcrumb: item.breadcrumb, filename: item.filename, 
-                    normalText: normalText, mlText: mlText,
-                    normalMatches: normalMatches, mlMatches: mlMatches,
-                    isIdMatch: isIdMatch, originalItem: item 
+                    normalText, mlText, stdText, noteText,
+                    normalMatches, mlMatches, stdMatches, noteMatches,
+                    isIdMatch, originalItem: item 
                 });
                 matchCount++;
             });
-            
-            if (matchCount === 0) {
+			
+			if (matchCount === 0) {
                 elements.results.innerHTML = `<div style="text-align:center; padding:40px; color:#999;"><div class="flex-center" style="margin-bottom:10px; opacity:0.3;">${SVGS.search}</div><p>No matches found</p></div>`;
                 elements.exportSearchBtn.style.display = 'none';
                 elements.searchStats.style.display = 'none';
@@ -2675,33 +2603,49 @@
         let snippetsHtml = '';
         let allDisplayMatches = [];
 
-        res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, isML: false, text: res.normalText }));
-        res.mlMatches.forEach(idx => allDisplayMatches.push({ idx, isML: true, text: res.mlText }));
+        // Aggregate matches from all streams
+        res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'normal', text: res.normalText }));
+        res.mlMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'ml', text: res.mlText }));
+        res.stdMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'std', text: res.stdText }));
+        res.noteMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'note', text: res.noteText }));
 
         let totalMatches = allDisplayMatches.length;
 
         if (isIdMatch && totalMatches === 0) {
-            snippetsHtml = `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(res.normalText || res.mlText || '', 0, 0, query, isHtmlMode, false)}</div>`;
+            let fallbackText = res.normalText || res.mlText || res.stdText || res.noteText || '';
+            snippetsHtml = `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(fallbackText, 0, 0, query, isHtmlMode, 'normal')}</div>`;
         } else {
             const maxDisplay = 10;
             const displayIndices = allDisplayMatches.slice(0, maxDisplay);
             displayIndices.forEach((matchInfo, i) => {
-                snippetsHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">${getSnippet(matchInfo.text, matchInfo.idx, query.length, query, isHtmlMode, matchInfo.isML)}</div>`;
+                snippetsHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">${getSnippet(matchInfo.text, matchInfo.idx, query.length, query, isHtmlMode, matchInfo.type)}</div>`;
                 if (i < displayIndices.length - 1) snippetsHtml += `<div class="separator"></div>`;
             });
             if (totalMatches > maxDisplay) {
-                const plusMore = (res.normalMatches.length === 25 || res.mlMatches.length === 25) ? "+" : "";
+                const plusMore = (res.normalMatches.length === 25 || res.mlMatches.length === 25 || res.stdMatches.length === 25 || res.noteMatches.length === 25) ? "+" : "";
                 snippetsHtml += `<div style="font-size:0.8rem; color:#999; padding-left:12px; margin-top:5px;">...and ${totalMatches - maxDisplay}${plusMore} more matches.</div>`;
             }
         }
         
         let matchText = totalMatches > 0 ? (totalMatches >= maxCap ? `Found ${maxCap}+` : `Found ${totalMatches}`) : `ID Match`;
         const item = res.originalItem;
-        const mlIndicator = item.hasML ? `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight: 600;" title="This page contains ML/chatHistory content">ML</span>` : '';
+        
+        // Build badges to show context clues next to the breadcrumb ONLY if a match occurred in that stream
+        let contextBadges = '';
+        if (res.mlMatches && res.mlMatches.length > 0) {
+            contextBadges += `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight: 600;" title="Match found in ML/chatHistory content">ML</span>`;
+        }
+        if (res.stdMatches && res.stdMatches.length > 0) {
+            contextBadges += `<span style="font-size: 0.7rem; background: #0d6efd; color: white; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight: 600;" title="Match found in Standards content">STND</span>`;
+        }
+        if (res.noteMatches && res.noteMatches.length > 0) {
+            contextBadges += `<span style="font-size: 0.7rem; background: #fd7e14; color: white; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight: 600;" title="Match found in Notes content">NOTE</span>`;
+        }
+
         card.innerHTML = `
             <div class="flex-between flex-wrap gap-10" style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
                 <div>
-                    <div class="breadcrumb">${item.breadcrumb}${mlIndicator}</div>
+                    <div class="breadcrumb">${item.breadcrumb}${contextBadges}</div>
                     <div class="flex-center gap-10" style="font-size:0.8rem; margin-top:5px; justify-content: flex-start;">
                         <span class="id-number"># ${item.locationId}</span>
                         <span class="flex-center gap-10" style="color:var(--primary);">${SVGS.fileText} ${item.filename}</span>
@@ -2713,7 +2657,7 @@
         return card;
     }
 
-    function getSnippet(fullText, index, length, query, isHtmlMode, isML = false) {
+    function getSnippet(fullText, index, length, query, isHtmlMode, matchType = 'normal') {
         let matchLength = isHtmlMode ? escapeHtml(query).length : query.length; 
         const padding = isHtmlMode ? 80 : 60; 
         const start = Math.max(0, index - padding);
@@ -2721,11 +2665,58 @@
         let textPart = fullText.substring(start, end);
         
         if (isHtmlMode) textPart = escapeHtml(textPart);
-        let highlightClass = isML ? "highlight highlight-ml" : "highlight";
-        if (matchLength > 0 && query && currentSearchHighlightRegex) textPart = textPart.replace(currentSearchHighlightRegex, `<span class="${highlightClass}">$1</span>`);
         
-        let mlBadge = isML ? `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="This content was found inside an ML/chatHistory node and is only visible in the JSON.">ML</span>` : '';
-        return mlBadge + (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
+        // Determine the CSS class and prefix badge based on stream type
+        let highlightClass = "highlight";
+        let contextBadge = "";
+
+        if (matchType === 'ml') {
+            highlightClass = "highlight highlight-ml";
+            contextBadge = `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Found in ML/chatHistory node">ML</span>`;
+        } else if (matchType === 'std') {
+            highlightClass = "highlight highlight-std";
+            contextBadge = `<span style="font-size: 0.7rem; background: #0d6efd; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Found in Standards node">STND</span>`;
+        } else if (matchType === 'note') {
+            highlightClass = "highlight highlight-note";
+            contextBadge = `<span style="font-size: 0.7rem; background: #fd7e14; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Found in Notes node">NOTE</span>`;
+        }
+
+        if (matchLength > 0 && query && currentSearchHighlightRegex) {
+            textPart = textPart.replace(currentSearchHighlightRegex, `<span class="${highlightClass}">$1</span>`);
+        }
+        
+        return contextBadge + (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
+    }
+
+    function getSnippet(fullText, index, length, query, isHtmlMode, matchType = 'normal') {
+        let matchLength = isHtmlMode ? escapeHtml(query).length : query.length; 
+        const padding = isHtmlMode ? 80 : 60; 
+        const start = Math.max(0, index - padding);
+        const end = Math.min(fullText.length, index + matchLength + padding);
+        let textPart = fullText.substring(start, end);
+        
+        if (isHtmlMode) textPart = escapeHtml(textPart);
+        
+        // Determine the CSS class and prefix badge based on stream type
+        let highlightClass = "highlight";
+        let contextBadge = "";
+
+        if (matchType === 'ml') {
+            highlightClass = "highlight highlight-ml";
+            contextBadge = `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Found in ML/chatHistory node">ML</span>`;
+        } else if (matchType === 'std') {
+            highlightClass = "highlight highlight-std";
+            contextBadge = `<span style="font-size: 0.7rem; background: #0d6efd; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Found in Standards node">STND</span>`;
+        } else if (matchType === 'note') {
+            highlightClass = "highlight highlight-note";
+            contextBadge = `<span style="font-size: 0.7rem; background: #fd7e14; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Found in Notes node">NOTE</span>`;
+        }
+
+        if (matchLength > 0 && query && currentSearchHighlightRegex) {
+            textPart = textPart.replace(currentSearchHighlightRegex, `<span class="${highlightClass}">$1</span>`);
+        }
+        
+        return contextBadge + (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
     }
 
     window.renderStdsFilters = function() {
@@ -2760,8 +2751,8 @@
             stateBtn.classList.toggle('filtered', activeStdsStates.size > 0);
         }
     };
-
-    window.toggleStdsModule = function(modNum) {
+						
+	window.toggleStdsModule = function(modNum) {
         if (activeStdsModules.has(modNum)) activeStdsModules.delete(modNum); else activeStdsModules.add(modNum);
         renderStdsFilters(); runStdsSearch();
     };
@@ -2875,7 +2866,7 @@
             return true;
         });
 
-        // --- UPDATED LOGIC HERE: Apply lesson aggregation to Table View as well ---
+        // --- Apply lesson aggregation to Table View as well ---
         if (currentStdsView === 'lesson' || currentStdsView === 'table') {
             const lessonMap = new Map();
             results.forEach(std => {
@@ -2932,9 +2923,9 @@
         }
     };
 
-   let previousModalState = null;
+    let previousModalState = null;
 
-  	window.renderStdsTable = function() {
+    window.renderStdsTable = function() {
         const grid = document.getElementById('stds-results-grid');
         grid.innerHTML = ''; 
         
@@ -2963,14 +2954,8 @@
             sortedStates.forEach(state => {
                 tableHtml += `<td>`;
                 if (stdsByState[state]) {
-                    // Sort the standards first
                     stdsByState[state].sort((a, b) => a.code.localeCompare(b.code, undefined, {numeric: true}));
-                    
-                    // Bundle ALL standards in this cell into a single JSON payload array
                     const cellData = stdsByState[state].map(s => ({ code: s.code, statement: s.statement }));
-                    
-                    // FIX: encodeURIComponent does NOT encode single quotes. 
-                    // We must manually escape them with %27 so they don't break the onclick='' HTML wrappers!
                     const encCellData = encodeURIComponent(JSON.stringify(cellData)).replace(/'/g, "%27");
                     const encGroup = encodeURIComponent(state).replace(/'/g, "%27");
                     const encLoc = encodeURIComponent(group.locationId).replace(/'/g, "%27");
@@ -2982,7 +2967,6 @@
                             inlineStyle = `style="background-color: ${colors.bg}; color: ${colors.text}; border-color: ${colors.border};"`;
                         }
 
-                        // Call the updated modal function, passing the safely encoded cell payload
                         tableHtml += `<span class="clickable-std" ${inlineStyle} onclick="openStdCellModal('${encCellData}', '${encGroup}', '${encLoc}')">${escapeHtml(std.code)}</span>`;
                     });
                 } else {
@@ -3022,9 +3006,7 @@
         document.body.style.overflow = 'hidden'; 
     };
 
-  // Replaces openStdModal to handle rendering multiple standards simultaneously
     window.openStdCellModal = function(encCellData, encGroup, encLocationId) {
-        // Decode the JSON payload back into an array
         const cellData = JSON.parse(decodeURIComponent(encCellData));
         const group = decodeURIComponent(encGroup);
         const locationId = decodeURIComponent(encLocationId);
@@ -3046,7 +3028,6 @@
             backBtnHtml = `<button class="action-btn btn-base" style="margin-right: 15px; border-color: var(--primary); color: var(--primary);" onclick="returnToFullscreenTable(event)">${SVGS.back} Back to Table</button>`;
         }
 
-        // Updated header to show context for the entire cell
         modalHeader.innerHTML = `
             <div style="display: flex; align-items: center; width: 100%;">
                 ${backBtnHtml}
@@ -3071,16 +3052,13 @@
             const borderStyle = index < cellData.length - 1 ? 'border-bottom: 1px dashed var(--border); margin-bottom: 10px; padding-bottom: 10px;' : '';
             
             let displayCode = escapeHtml(std.code);
-            let displayState = std.statement; // Keep HTML tags intact for lists
+            let displayState = std.statement; 
 
-            // --- NEW: Apply Highlights safely if a search query is active ---
             if (window.currentStdsQuery) {
-                // 1. Highlight the Standard Code
                 if (window.currentStdsExactPattern) {
                     displayCode = displayCode.replace(window.currentStdsExactPattern, '<span class="highlight">$1</span>');
                 }
                 
-                // Determine which pattern to use (Fuzzy matching for multiple words, or Exact)
                 let activePattern = null;
                 if (window.currentStdsFuzzyPattern && window.currentStdsFuzzyPattern.test(std.statement)) {
                     activePattern = window.currentStdsFuzzyPattern;
@@ -3088,20 +3066,15 @@
                     activePattern = window.currentStdsExactPattern;
                 }
 
-                // 2. Highlight the Description (Safely ignoring HTML tags)
                 if (activePattern) {
-                    activePattern.lastIndex = 0; // Reset regex state
-                    
-                    // Split the text by HTML tags (e.g., <ol>, <li>). 
-                    // This puts readable text in Even array indexes, and HTML tags in Odd array indices.
+                    activePattern.lastIndex = 0; 
                     let parts = displayState.split(/(<[^>]+>)/g);
                     for (let i = 0; i < parts.length; i++) {
                         if (i % 2 === 0) { 
-                            // Only apply the yellow highlight span to the readable text nodes
                             parts[i] = parts[i].replace(activePattern, '<span class="highlight">$&</span>');
                         }
                     }
-                    displayState = parts.join(''); // Put it all back together
+                    displayState = parts.join(''); 
                 }
             }
 
@@ -3254,8 +3227,8 @@
         
         setTimeout(window.updateStickyHeaderOffset, 50);
     };
-
-    window.setMediaTab = function(tab) {
+						
+	window.setMediaTab = function(tab) {
         currentMediaTab = tab; activeMediaFilterTypes.clear(); activeMediaFilterMissingId = false; renderMediaDashboard();
     };
 
@@ -3748,481 +3721,9 @@
         previousModalState = null;
         setTimeout(() => { document.getElementById('modal-body-content').innerHTML = ''; document.getElementById('modal-header-content').innerHTML = ''; }, 200); 
     };
-
-    // --- EXPORTS ---
 						
-	// --- AUDIT CONFIGURATION ---
-    function showConfigScreen() {
-        const screen = elements.configScreen;
-        const tbody = document.getElementById('config-table-body');
-        screen.style.display = 'block'; 
-        tbody.innerHTML = ''; 
-        elements.status.innerHTML = ''; 
-
-        const savedName = localStorage.getItem(NAME_KEY) || "";
-        const displayName = extractedCourseTitle || savedName || selectedCourseName || "";
-        const safeDisplayName = displayName.replace(/"/g, '&quot;');
-
-        document.getElementById('config-header').innerHTML = `
-            <h2 class="flex-center gap-10" style="color: var(--primary);">
-                ${SVGS.config} Audit Configuration
-            </h2>
-            <div style="margin-bottom:15px;">
-                <input type="text" id="course-name-input" value="${safeDisplayName}" placeholder="Enter Course Name (Optional)" 
-                       style="padding:10px; width:300px; border:2px solid var(--border); border-radius:6px; font-size:1rem; outline:none;" autocomplete="off">
-            </div>
-            <p style="color:var(--text-light); margin-bottom:15px;">Determine if objectives or standards are required for the lesson.</p>
-        `;
-
-        if (!courseTree.modules) return;
-
-        let savedConfig = {};
-        try { savedConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; } catch(e) {}
-
-        const fragment = document.createDocumentFragment();
-
-        courseTree.modules.forEach(mod => {
-            if (!mod.lessons) return;
-            const modTitle = String(mod.title || "").toLowerCase();
-            const modID = String(mod.mID || "").toLowerCase();
-            if (IGNORE_TITLES.some(k => modTitle.includes(k)) || IGNORE_IDS.includes(modID)) return; 
-
-            const modRow = document.createElement('tr');
-            modRow.style.background = "#e9ecef"; 
-            modRow.innerHTML = `
-                <td style="padding:10px 15px; font-weight:bold; color:var(--primary); border-top:2px solid #fff;">Module ${padNum(mod.num)}: ${mod.title}</td>
-                <td colspan="2" style="border-top:2px solid #fff;"></td>
-            `;
-            fragment.appendChild(modRow);
-
-            mod.lessons.forEach(lesson => {
-                const tr = document.createElement('tr');
-                tr.style.borderBottom = "1px solid #eee";
-                
-                const storeKey = `${mod.mID}_${lesson.lID}`;
-                const rowID = `row-${mod.mID}-${lesson.lID}`;
-                
-                let defaultContent = true, defaultStd = true;
-                if (savedConfig[storeKey]) {
-                    defaultContent = savedConfig[storeKey].reqContent;
-                    defaultStd = savedConfig[storeKey].reqStd;
-                }
-
-                const fullID = `${padNum(mod.num)}.${padNum(lesson.num)}`;
-                const isMasterChecked = (defaultContent || defaultStd);
-                
-                tr.innerHTML = `
-                    <td style="padding:10px 15px; display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" title="Toggle Row" id="${rowID}-master" onchange="toggleLessonRow(this, '${rowID}')" ${isMasterChecked ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer;">
-                        <div><span class="id-number">${fullID}</span> ${lesson.title}</div>
-                    </td>
-                    <td style="text-align:center;"><input type="checkbox" id="${rowID}-content" class="cfg-content" data-mid="${mod.mID}" data-lid="${lesson.lID}" ${defaultContent ? 'checked' : ''} onchange="syncChecks(this, '${rowID}', 'content')"></td>
-                    <td style="text-align:center;"><input type="checkbox" id="${rowID}-std" class="cfg-std" data-lid="${lesson.lID}" ${defaultStd ? 'checked' : ''} onchange="syncChecks(this, '${rowID}', 'std')"></td>
-                `;
-                fragment.appendChild(tr);
-            });
-        });
-        
-        tbody.appendChild(fragment);
-    }
-
-    window.toggleLessonRow = function(masterCb, rowID) {
-        const contentCb = document.getElementById(rowID + '-content'), stdCb = document.getElementById(rowID + '-std');
-        if(contentCb) contentCb.checked = masterCb.checked; 
-        if(stdCb) stdCb.checked = masterCb.checked;
-    }
-
-    window.syncChecks = function(sourceCb, rowID, type) {
-        const contentCb = document.getElementById(rowID + '-content'), stdCb = document.getElementById(rowID + '-std'), masterCb = document.getElementById(rowID + '-master');
-        if (type === 'content' && !sourceCb.checked && stdCb) stdCb.checked = false;
-        if (masterCb && contentCb && stdCb) masterCb.checked = (contentCb.checked || stdCb.checked);
-    }
-
-    window.applyAuditConfig = function() {
-        const nameInput = document.getElementById('course-name-input');
-        if (nameInput) { 
-            customCourseName = nameInput.value.trim(); 
-            localStorage.setItem(NAME_KEY, customCourseName); 
-        }
-
-        if (customCourseName) { 
-            elements.mainTitle.textContent = `${customCourseName} Explorer`; 
-            document.title = `${customCourseName} Course Explorer`; 
-        } else { 
-            elements.mainTitle.textContent = "FLVS Course Explorer"; 
-            document.title = "FLVS Content & Audit Tool"; 
-        }
-
-        const configMap = new Map(); 
-        const saveToStore = {}; 
-        
-        document.querySelectorAll('.cfg-content').forEach((inp) => {
-            const mID = inp.dataset.mid, lID = inp.dataset.lid, reqContent = inp.checked;
-            const stdCb = document.getElementById(`row-${mID}-${lID}-std`);
-            const reqStd = stdCb ? stdCb.checked : false;
-            configMap.set(`${mID}_${lID}`, { reqContent, reqStd }); 
-            saveToStore[`${mID}_${lID}`] = { reqContent, reqStd };
-        });
-
-        localStorage.setItem(CONFIG_KEY, JSON.stringify(saveToStore));
-
-        courseTree.modules.forEach(mod => {
-            if(mod.lessons) {
-                mod.lessons.forEach(les => {
-                    const conf = configMap.get(`${mod.mID}_${les.lID}`);
-                    if(conf) { les._reqContent = conf.reqContent; les._reqStd = conf.reqStd; }
-                    else { les._reqContent = true; les._reqStd = true; }
-                });
-            }
-        });
-        hasRunAuditConfig = true; 
-        switchView('audit'); 
-    };
-
-    window.reconfigureAudit = function() { hasRunAuditConfig = false; switchView('audit'); };
-
-    function applyDefaultOrSavedConfig() {
-        let savedConfig = {}; 
-        try { savedConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; } catch(e) {}
-        
-        if (courseTree.modules) {
-            courseTree.modules.forEach(mod => {
-                if(mod.lessons) {
-                    mod.lessons.forEach(les => {
-                        const storeKey = `${mod.mID}_${les.lID}`;
-                        if(savedConfig[storeKey]) { 
-                            les._reqContent = savedConfig[storeKey].reqContent; 
-                            les._reqStd = savedConfig[storeKey].reqStd; 
-                        } else { 
-                            les._reqContent = true; 
-                            les._reqStd = true; 
-                        }
-                    });
-                }
-            });
-        }
-    }
-	
-	// --- DASHBOARD / HUB LOGIC ---
-    function buildValidModuleList() {
-        validModules = []; 
-        activeMediaModules.clear(); 
-        if (!courseTree.modules) return;
-        
-        courseTree.modules.forEach(mod => {
-            const modTitle = String(mod.title || "").toLowerCase();
-            const modID = String(mod.mID || "").toLowerCase();
-            if (!IGNORE_TITLES.some(k => modTitle.includes(k)) && !IGNORE_IDS.includes(modID)) {
-                validModules.push(mod); 
-            }
-        });
-    }
-
-    function renderDashboardGrid() {
-        elements.dashboardGrid.innerHTML = '';
-        if(validModules.length === 0) {
-             elements.dashboardGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">No modules found.</div>';
-             return;
-        }
-        
-        const fragment = document.createDocumentFragment();
-
-        validModules.forEach((mod, index) => {
-            const modNum = padNum(mod.num);
-            let lessonCount = mod.lessons ? mod.lessons.length : 0;
-            let pageCount = 0; 
-            let moduleHasIssues = false;
-
-            if (mod.lessons) {
-                for (const lesson of mod.lessons) {
-                    if(lesson.pages) pageCount += lesson.pages.length;
-                    if (lesson._reqContent !== false && (!lesson._topic || !lesson._parsedObjectives || lesson._parsedObjectives.length === 0)) moduleHasIssues = true;
-                    if (lesson._reqStd !== false && lesson.pages) {
-                        for (const p of lesson.pages) { if (!p._parsedStandards || p._parsedStandards.length === 0) moduleHasIssues = true; }
-                    }
-                }
-            }
-
-            const statusColor = moduleHasIssues ? "#dc3545" : "#28a745"; 
-            const statusIcon = moduleHasIssues ? `${SVGS.alert} Needs Attention` : `${SVGS.check} All Good`;
-            const statusBg = moduleHasIssues ? "#fff5f5" : "#e6f9e9";
-            const statusBorder = moduleHasIssues ? "#ffaeb5" : "#c3e6cb";
-
-            const card = document.createElement('div');
-            card.className = 'module-card'; 
-            card.onclick = () => openModuleDetail(index);
-            card.style.borderLeftColor = statusColor;
-            
-            card.innerHTML = `
-                <div class="flex-between" style="align-items:flex-start;">
-                    <div><div class="mc-header">Module ${modNum}</div><div class="mc-title">${mod.title}</div></div>
-                    <div class="flex-center gap-10" style="font-size:0.75rem; font-weight:bold; color:${statusColor}; background:${statusBg}; border:1px solid ${statusBorder}; padding:4px 8px; border-radius:12px; white-space:nowrap;">${statusIcon}</div>
-                </div>
-                <div class="mc-stats">
-                    <div class="flex-center gap-10" style="justify-content: flex-start;"><span style="color:var(--primary);">${SVGS.folder}</span> ${lessonCount} Lessons</div>
-                    <div class="flex-center gap-10" style="justify-content: flex-start;"><span style="color:var(--primary);">${SVGS.fileText}</span> ${pageCount} Pages</div>
-                </div>
-            `;
-            fragment.appendChild(card);
-        });
-        elements.dashboardGrid.appendChild(fragment);
-    }
-
-    window.openModuleDetail = function(index) {
-        currentModuleIndex = index; 
-        elements.dashboardGrid.style.display = 'none'; 
-        elements.auditTopBar.style.display = 'none'; 
-        elements.auditDetailArea.style.display = 'block';
-        renderModuleDetail(); 
-        window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        setTimeout(window.updateStickyHeaderOffset, 50); 
-        saveAppState(); 
-    }
-
-    window.navModule = function(direction) {
-        if (validModules.length === 0) return;
-        let newIndex = currentModuleIndex + direction;
-        if (newIndex < 0) newIndex = validModules.length - 1; 
-        else if (newIndex >= validModules.length) newIndex = 0;
-        
-        currentModuleIndex = newIndex; 
-        renderModuleDetail(); 
-        window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        setTimeout(window.updateStickyHeaderOffset, 50); 
-        saveAppState(); 
-    }
-
-    // --- CURRICULUM MAP DISPLAY LOGIC ---
-    function getGroupedAndSortedStandards(standards) {
-        if (!standards || standards.length === 0) return [];
-        let filtered = activeStandardGroups.size > 0 ? standards.filter(s => activeStandardGroups.has(s.group)) : standards;
-        const groups = {};
-        filtered.forEach(s => { 
-            if (!groups[s.group]) groups[s.group] = []; 
-            groups[s.group].push(s); 
-        });
-        
-        return Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(g => {
-            groups[g].sort((a, b) => {
-                const valA = (a.code !== "N/A" ? a.code : a.statement) || "";
-                const valB = (b.code !== "N/A" ? b.code : b.statement) || "";
-                return valA.localeCompare(valB, undefined, { numeric: true });
-            });
-            return { group: g, standards: groups[g] };
-        });
-    }
-
-    function renderStandardsTableHTML(rawStandards) {
-        const grouped = getGroupedAndSortedStandards(rawStandards);
-        if (grouped.length === 0) return '';
-        
-        return grouped.map(g => `
-            <details class="std-group-details" open>
-                <summary class="std-group-summary">📁 ${escapeHtml(g.group)}</summary>
-                <table class="standards-table status-good">
-                    ${g.standards.map(s => `<tr><td class="std-code-cell"><span class="std-code">${escapeHtml(s.code)}</span></td><td class="std-desc">${escapeHtml(s.statement)}</td><td class="std-grade" style="width: 85px;">${escapeHtml(s.grade)}</td></tr>`).join('')}
-                </table>
-            </details>
-        `).join('');
-    }
+	// --- EXPORTS ---
 						
-	function getModNavText(mod) {
-        let val = String(mod.num || "").trim();
-        // If it consists only of numbers, display as "Module 01", otherwise just return the text (e.g. "Collab")
-        if (/^\d+$/.test(val)) return `Module ${padNum(val)}`;
-        return val;
-    }					
-
-    function renderModuleDetail(autoExpand = true) {
-        const container = elements.auditDetailContent;
-        const openLessonIds = Array.from(container.querySelectorAll('details.audit-lesson[open]')).map(d => d.id);
-
-        container.innerHTML = '';
-        const fragment = document.createDocumentFragment();
-
-        if(autoExpand) {
-            isAllExpanded = false;
-            const gapToggle = elements.gapToggle;
-            if(gapToggle && gapToggle.checked) isAllExpanded = true;
-        }
-        updateToggleButton();
-        
-        const mod = validModules[currentModuleIndex];
-        const modNum = padNum(mod.num);
-
-        if (validModules.length > 0) {
-            const prevIndex = currentModuleIndex === 0 ? validModules.length - 1 : currentModuleIndex - 1;
-            const nextIndex = currentModuleIndex === validModules.length - 1 ? 0 : currentModuleIndex + 1;
-            
-            const btnPrev = document.getElementById('btn-prev-mod'); 
-            const btnNext = document.getElementById('btn-next-mod'); 
-            const lblCurr = document.getElementById('current-mod-label');
-            
-            const prevText = getModNavText(validModules[prevIndex]);
-            const nextText = getModNavText(validModules[nextIndex]);
-            const currText = getModNavText(mod);
-            
-            if(btnPrev) {
-                btnPrev.innerHTML = `${SVGS.back} <span class="nav-btn-truncate">${escapeHtml(prevText)}</span>`;
-                btnPrev.title = prevText; // Adds native tooltip on hover
-            }
-            if(btnNext) {
-                btnNext.innerHTML = `<span class="nav-btn-truncate">${escapeHtml(nextText)}</span> ${SVGS.forward}`;
-                btnNext.title = nextText; // Adds native tooltip on hover
-            }
-            if(lblCurr) lblCurr.innerHTML = `${escapeHtml(currText)}`;
-        }
-
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'module-detail-title'; 
-        titleDiv.innerHTML = `Module ${modNum}: ${mod.title}`;
-        fragment.appendChild(titleDiv);
-        
-        if (mod.lessons) mod.lessons.forEach(lesson => fragment.appendChild(renderLessonBlock(lesson, modNum)));
-        container.appendChild(fragment);
-        
-        if(autoExpand) applyExpansionState(isAllExpanded);
-        else openLessonIds.forEach(id => { const el = document.getElementById(id); if (el) el.open = true; });
-        
-        setTimeout(window.updateStickyHeaderOffset, 50);
-    }
-
-    function renderLessonBlock(lesson, modNum) {
-        const details = document.createElement('details');
-        const hasTopic = !!lesson._topic;
-        const hasObj = lesson._parsedObjectives && lesson._parsedObjectives.length > 0;
-        const contentPass = !lesson._reqContent || (hasTopic && hasObj); 
-        
-        let standardsPass = true;
-        if (lesson._reqStd) {
-            if (lesson.pages && lesson.pages.length > 0) {
-                lesson.pages.forEach(p => { if (!p._parsedStandards || p._parsedStandards.length === 0) standardsPass = false; });
-            } else standardsPass = false;
-        }
-        
-        details.className = (contentPass && standardsPass) ? 'audit-lesson lesson-complete' : 'audit-lesson lesson-has-gaps';
-        const fullLesID = `${modNum}.${padNum(lesson.num)}`;
-        details.id = `lesson-${fullLesID}`;
-        details.addEventListener('toggle', () => saveAppState());
-        
-        let hasAnyStandards = false;
-        if (lesson.pages && lesson.pages.length > 0) {
-            hasAnyStandards = lesson.pages.some(p => p._parsedStandards && p._parsedStandards.length > 0);
-        }
-
-        let healthBadges = `<div class="flex-center gap-10" style="margin-left: auto;">`;
-        if (courseStandardGroups.size > 1 && hasAnyStandards) {
-            healthBadges += `<button class="nav-btn btn-base" style="padding:2px 8px; font-size:0.75rem; margin-right:4px;" onclick="toggleFolderDetails(event, this)">Collapse States</button>`;
-        }
-
-        if (!lesson._reqContent && !lesson._reqStd) {
-            healthBadges += `<span class="status-badge neutral" style="margin-left:0;">NOT REQUIRED</span>`;
-        } else {
-            if (lesson._reqContent) {
-                healthBadges += hasTopic ? `<span class="status-badge present" style="margin-left:0;">TOPIC</span>` : `<span class="status-badge missing" style="margin-left:0;">NO TOPIC</span>`;
-                healthBadges += hasObj ? `<span class="status-badge present" style="margin-left:0;">OBJS</span>` : `<span class="status-badge missing" style="margin-left:0;">NO OBJS</span>`;
-            }
-            if (lesson._reqStd) {
-                healthBadges += standardsPass ? `<span class="status-badge present" style="margin-left:0;">STDS</span>` : `<span class="status-badge missing" style="margin-left:0;">NO STDS</span>`;
-            }
-        }
-        healthBadges += `</div>`;
-
-        const summary = document.createElement('summary');
-        summary.className = 'lesson-summary';
-        summary.innerHTML = `<span class="id-number">${fullLesID}</span> <span>${lesson.title}</span> ${healthBadges}`;
-                             
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'audit-lesson-content';
-        
-        const topicBox = document.createElement('div');
-        if (lesson._topic) {
-             topicBox.className = 'topic-box present status-good'; 
-             topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content">${lesson._topic}</div>`;
-        } else if (!lesson._reqContent) {
-             topicBox.className = 'topic-box neutral status-neutral'; 
-             topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content topic-neutral">Not required for this lesson.</div>`;
-        } else {
-             topicBox.className = 'topic-box missing'; 
-             topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content topic-missing">No topic listed.</div>`;
-        }
-        contentDiv.appendChild(topicBox);
-        
-        if (hasObj) {
-            const objBox = document.createElement('div');
-            objBox.className = 'objectives-box status-good';
-            objBox.innerHTML = `<div class="obj-title">Learning Objectives</div><ul class="obj-list">${lesson._parsedObjectives.map(o => `<li>${o}</li>`).join('')}</ul>`;
-            contentDiv.appendChild(objBox);
-        } else if (lesson._reqContent) {
-            const emptyBox = document.createElement('div');
-            emptyBox.className = 'objectives-box'; 
-            emptyBox.style.color = "#dc3545"; 
-            emptyBox.innerHTML = "<em>No objectives listed in sitemap</em>";
-            contentDiv.appendChild(emptyBox);
-        } 
-        
-        if(checkIdenticalStandards(lesson.pages)) {
-            const stdBox = document.createElement('div');
-            stdBox.className = 'standards-box status-good'; 
-            const firstPageStds = lesson.pages && lesson.pages.length > 0 ? lesson.pages[0]._parsedStandards : null;
-            
-            let stdHTML = '';
-            if(firstPageStds && firstPageStds.length > 0) {
-                const tableHtml = renderStandardsTableHTML(firstPageStds);
-                stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div>` + (tableHtml || `<div style="color:#666; font-style:italic;">No standards match the current state filter.</div>`);
-            } else if (!lesson._reqStd) {
-                stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#666; font-style:italic;">Standards not required for this lesson.</div>`;
-            } else {
-                stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#dc3545; font-weight:bold;">No standards found on any page.</div>`;
-            }
-            
-            stdBox.innerHTML = stdHTML; 
-            contentDiv.appendChild(stdBox);
-        } else {
-            if (lesson.pages) lesson.pages.forEach(page => contentDiv.appendChild(renderPageBlock(page, fullLesID, lesson._reqStd)));
-        }
-        
-        details.appendChild(summary); 
-        details.appendChild(contentDiv);
-        return details;
-    }
-
-    function renderPageBlock(page, parentID, reqStd) {
-        const div = document.createElement('div');
-        const rawStandards = page._parsedStandards;
-        const hasStandards = rawStandards && rawStandards.length > 0;
-        
-        div.className = (hasStandards || !reqStd) ? 'audit-page page-complete' : 'audit-page page-incomplete';
-        const fullPgID = `${parentID}.${padNum(Number(page.num) + 1)}`;
-        
-        let stdBadge = '';
-        if(!reqStd) stdBadge = `<span class="status-badge neutral">Not Required</span>`;
-        else if (hasStandards) stdBadge = `<span class="status-badge present">${rawStandards.length} Standards</span>`;
-        else stdBadge = `<span class="status-badge missing">No Standards</span>`;
-        
-        let html = '';
-        if (hasStandards) {
-            const tableHtml = renderStandardsTableHTML(rawStandards);
-            html = `<div class="page-header flex-wrap gap-10" style="justify-content:space-between;">
-                        <div class="flex-center gap-10"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>
-                    </div>` + (tableHtml || `<div style="color:#666; font-style:italic; margin-bottom: 10px; font-size:0.85rem;">No standards match the current state filter.</div>`);
-        } else {
-            html = `<div class="page-header flex-center gap-10" style="justify-content: flex-start;"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>`;
-        } 
-        
-        div.innerHTML = html; 
-        return div;
-    }
-
-    function checkIdenticalStandards(pages) {
-        if (!pages || pages.length === 0) return false;
-        const getCodes = (p) => (!p._parsedStandards || p._parsedStandards.length === 0) ? "NONE" : p._parsedStandards.map(s => s.code).sort().join('|');
-        const firstCodes = getCodes(pages[0]);
-        if(firstCodes === "NONE") return false; 
-        for (let i = 1; i < pages.length; i++) { if (getCodes(pages[i]) !== firstCodes) return false; }
-        return true;
-    }
-    
     // Shared Helper for parsing location and breadcrumb strings for exports
     function parseLocDetails(locationId, breadcrumb) {
         let locParts = locationId ? locationId.split('.') : [];
@@ -4254,7 +3755,7 @@
             let moduleBreakdown = {}, lessonBreakdown = {}, resultsByModule = {}; 
 
             currentSearchResults.forEach(res => {
-                let allMatches = (res.normalMatches || []).length + (res.mlMatches || []).length;
+                let allMatches = (res.normalMatches || []).length + (res.mlMatches || []).length + (res.stdMatches || []).length + (res.noteMatches || []).length;
                 let hitsInFile = (res.isIdMatch && allMatches === 0) ? 1 : allMatches;
                 totalHits += hitsInFile;
 
@@ -4278,6 +3779,7 @@
                 [{v: "HTML View Mode", s: sHeaderLeft}, {v: currentSearchIsHtmlMode ? "Enabled" : "Disabled", s: sText}],
                 [{v: "Exclude Standards", s: sHeaderLeft}, {v: activeSearchExcludeStandards ? "Yes" : "No", s: sText}],
                 [{v: "Exclude ML", s: sHeaderLeft}, {v: activeSearchExcludeML ? "Yes" : "No", s: sText}],
+                [{v: "Exclude Notes", s: sHeaderLeft}, {v: activeSearchExcludeNotes ? "Yes" : "No", s: sText}],
                 [{v: "Export Date", s: sHeaderLeft}, {v: new Date().toLocaleString(), s: sText}],
                 [],
                 [{v: "Breakdown by Module", s: sTitle}],
@@ -4301,7 +3803,7 @@
             const wsSummary = XLSX.utils.aoa_to_sheet(sumRows);
             wsSummary['!cols'] = [{wch: 25}, {wch: 45}, {wch: 15}, {wch: 15}]; 
             wsSummary['!views'] = [{showGridLines: false}];
-            wsSummary['!merges'] = [{s:{r:0, c:0}, e:{r:0, c:3}}, {s:{r:8, c:0}, e:{r:8, c:3}}, {s:{r:11 + Object.keys(moduleBreakdown).length, c:0}, e:{r:11 + Object.keys(moduleBreakdown).length, c:3}} ];
+            wsSummary['!merges'] = [{s:{r:0, c:0}, e:{r:0, c:3}}, {s:{r:9, c:0}, e:{r:9, c:3}}, {s:{r:12 + Object.keys(moduleBreakdown).length, c:0}, e:{r:12 + Object.keys(moduleBreakdown).length, c:3}} ];
             XLSX.utils.book_append_sheet(wb, wsSummary, safeSheetName("Search Summary"));
 
             const resultHeaders = [{v: "Location ID", s: sHeader}, {v: "Breadcrumb", s: sHeader}, {v: "Filename", s: sHeader}, {v: "Search Snippet", s: sHeader}];
@@ -4324,12 +3826,15 @@
                         merges.push({ s: { r: rows.length - 1, c: 0 }, e: { r: rows.length - 1, c: 3 } });
                     }
 
-                    if (res.isIdMatch && (res.normalMatches.length + res.mlMatches.length) === 0) {
+                    if (res.isIdMatch && (res.normalMatches.length + res.mlMatches.length + res.stdMatches.length + res.noteMatches.length) === 0) {
                         rows.push([{v: res.locationId, s: sLocation}, {v: res.breadcrumb, s: sText}, {v: res.filename, s: sText}, {v: "[Matched by Location ID only]", s: sText}]);
                     } else {
                         let allMatches = [];
-                        res.normalMatches.forEach(idx => allMatches.push({idx, isML: false, text: res.normalText}));
-                        res.mlMatches.forEach(idx => allMatches.push({idx, isML: true, text: res.mlText}));
+                        res.normalMatches.forEach(idx => allMatches.push({idx, type: 'normal', text: res.normalText}));
+                        res.mlMatches.forEach(idx => allMatches.push({idx, type: 'ml', text: res.mlText}));
+                        res.stdMatches.forEach(idx => allMatches.push({idx, type: 'std', text: res.stdText}));
+                        res.noteMatches.forEach(idx => allMatches.push({idx, type: 'note', text: res.noteText}));
+                        
                         allMatches.forEach(matchInfo => {
                             const padding = currentSearchIsHtmlMode ? 80 : 60;
                             const matchLength = currentSearchQuery.length; 
@@ -4338,7 +3843,12 @@
                             let prefix = matchInfo.text.substring(start, matchInfo.idx);
                             let exactMatch = matchInfo.text.substring(matchInfo.idx, matchInfo.idx + matchLength);
                             let suffix = matchInfo.text.substring(matchInfo.idx + matchLength, end);
-                            let centerBracket = matchInfo.isML ? " 【 ML: " : " 【 ";
+                            
+                            let centerBracket = " 【 ";
+                            if (matchInfo.type === 'ml') centerBracket = " 【 ML: ";
+                            else if (matchInfo.type === 'std') centerBracket = " 【 STND: ";
+                            else if (matchInfo.type === 'note') centerBracket = " 【 NOTE: ";
+                            
                             let cleanSnippet = (start > 0 ? "..." : "") + prefix + centerBracket + exactMatch.toUpperCase() + " 】 " + suffix + (end < matchInfo.text.length ? "..." : "");
                             rows.push([{v: res.locationId, s: sLocation}, {v: res.breadcrumb, s: sText}, {v: res.filename, s: sText}, {v: cleanSnippet, s: sText}]);
                         });
@@ -4755,8 +4265,480 @@
 
         } catch (e) { showToast("Export error: " + e.message, "error"); }
     }
+
+	// --- AUDIT CONFIGURATION ---
+    function showConfigScreen() {
+        const screen = elements.configScreen;
+        const tbody = document.getElementById('config-table-body');
+        screen.style.display = 'block'; 
+        tbody.innerHTML = ''; 
+        elements.status.innerHTML = ''; 
+
+        const savedName = localStorage.getItem(NAME_KEY) || "";
+        const displayName = extractedCourseTitle || savedName || selectedCourseName || "";
+        const safeDisplayName = displayName.replace(/"/g, '&quot;');
+
+        document.getElementById('config-header').innerHTML = `
+            <h2 class="flex-center gap-10" style="color: var(--primary);">
+                ${SVGS.config} Audit Configuration
+            </h2>
+            <div style="margin-bottom:15px;">
+                <input type="text" id="course-name-input" value="${safeDisplayName}" placeholder="Enter Course Name (Optional)" 
+                       style="padding:10px; width:300px; border:2px solid var(--border); border-radius:6px; font-size:1rem; outline:none;" autocomplete="off">
+            </div>
+            <p style="color:var(--text-light); margin-bottom:15px;">Determine if objectives or standards are required for the lesson.</p>
+        `;
+
+        if (!courseTree.modules) return;
+
+        let savedConfig = {};
+        try { savedConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; } catch(e) {}
+
+        const fragment = document.createDocumentFragment();
+
+        courseTree.modules.forEach(mod => {
+            if (!mod.lessons) return;
+            const modTitle = String(mod.title || "").toLowerCase();
+            const modID = String(mod.mID || "").toLowerCase();
+            if (IGNORE_TITLES.some(k => modTitle.includes(k)) || IGNORE_IDS.includes(modID)) return; 
+
+            const modRow = document.createElement('tr');
+            modRow.style.background = "#e9ecef"; 
+            modRow.innerHTML = `
+                <td style="padding:10px 15px; font-weight:bold; color:var(--primary); border-top:2px solid #fff;">Module ${padNum(mod.num)}: ${mod.title}</td>
+                <td colspan="2" style="border-top:2px solid #fff;"></td>
+            `;
+            fragment.appendChild(modRow);
+
+            mod.lessons.forEach(lesson => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px solid #eee";
+                
+                const storeKey = `${mod.mID}_${lesson.lID}`;
+                const rowID = `row-${mod.mID}-${lesson.lID}`;
+                
+                let defaultContent = true, defaultStd = true;
+                if (savedConfig[storeKey]) {
+                    defaultContent = savedConfig[storeKey].reqContent;
+                    defaultStd = savedConfig[storeKey].reqStd;
+                }
+
+                const fullID = `${padNum(mod.num)}.${padNum(lesson.num)}`;
+                const isMasterChecked = (defaultContent || defaultStd);
+                
+                tr.innerHTML = `
+                    <td style="padding:10px 15px; display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" title="Toggle Row" id="${rowID}-master" onchange="toggleLessonRow(this, '${rowID}')" ${isMasterChecked ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer;">
+                        <div><span class="id-number">${fullID}</span> ${lesson.title}</div>
+                    </td>
+                    <td style="text-align:center;"><input type="checkbox" id="${rowID}-content" class="cfg-content" data-mid="${mod.mID}" data-lid="${lesson.lID}" ${defaultContent ? 'checked' : ''} onchange="syncChecks(this, '${rowID}', 'content')"></td>
+                    <td style="text-align:center;"><input type="checkbox" id="${rowID}-std" class="cfg-std" data-lid="${lesson.lID}" ${defaultStd ? 'checked' : ''} onchange="syncChecks(this, '${rowID}', 'std')"></td>
+                `;
+                fragment.appendChild(tr);
+            });
+        });
+        
+        tbody.appendChild(fragment);
+    }
+
+    window.toggleLessonRow = function(masterCb, rowID) {
+        const contentCb = document.getElementById(rowID + '-content'), stdCb = document.getElementById(rowID + '-std');
+        if(contentCb) contentCb.checked = masterCb.checked; 
+        if(stdCb) stdCb.checked = masterCb.checked;
+    }
+
+    window.syncChecks = function(sourceCb, rowID, type) {
+        const contentCb = document.getElementById(rowID + '-content'), stdCb = document.getElementById(rowID + '-std'), masterCb = document.getElementById(rowID + '-master');
+        if (type === 'content' && !sourceCb.checked && stdCb) stdCb.checked = false;
+        if (masterCb && contentCb && stdCb) masterCb.checked = (contentCb.checked || stdCb.checked);
+    }
+
+    window.applyAuditConfig = function() {
+        const nameInput = document.getElementById('course-name-input');
+        if (nameInput) { 
+            customCourseName = nameInput.value.trim(); 
+            localStorage.setItem(NAME_KEY, customCourseName); 
+        }
+
+        if (customCourseName) { 
+            elements.mainTitle.textContent = `${customCourseName} Explorer`; 
+            document.title = `${customCourseName} Course Explorer`; 
+        } else { 
+            elements.mainTitle.textContent = "FLVS Course Explorer"; 
+            document.title = "FLVS Content & Audit Tool"; 
+        }
+
+        const configMap = new Map(); 
+        const saveToStore = {}; 
+        
+        document.querySelectorAll('.cfg-content').forEach((inp) => {
+            const mID = inp.dataset.mid, lID = inp.dataset.lid, reqContent = inp.checked;
+            const stdCb = document.getElementById(`row-${mID}-${lID}-std`);
+            const reqStd = stdCb ? stdCb.checked : false;
+            configMap.set(`${mID}_${lID}`, { reqContent, reqStd }); 
+            saveToStore[`${mID}_${lID}`] = { reqContent, reqStd };
+        });
+
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(saveToStore));
+
+        courseTree.modules.forEach(mod => {
+            if(mod.lessons) {
+                mod.lessons.forEach(les => {
+                    const conf = configMap.get(`${mod.mID}_${les.lID}`);
+                    if(conf) { les._reqContent = conf.reqContent; les._reqStd = conf.reqStd; }
+                    else { les._reqContent = true; les._reqStd = true; }
+                });
+            }
+        });
+        hasRunAuditConfig = true; 
+        switchView('audit'); 
+    };
+
+    window.reconfigureAudit = function() { hasRunAuditConfig = false; switchView('audit'); };
+
+    function applyDefaultOrSavedConfig() {
+        let savedConfig = {}; 
+        try { savedConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; } catch(e) {}
+        
+        if (courseTree.modules) {
+            courseTree.modules.forEach(mod => {
+                if(mod.lessons) {
+                    mod.lessons.forEach(les => {
+                        const storeKey = `${mod.mID}_${les.lID}`;
+                        if(savedConfig[storeKey]) { 
+                            les._reqContent = savedConfig[storeKey].reqContent; 
+                            les._reqStd = savedConfig[storeKey].reqStd; 
+                        } else { 
+                            les._reqContent = true; 
+                            les._reqStd = true; 
+                        }
+                    });
+                }
+            });
+        }
+    }
+	
+	// --- DASHBOARD / HUB LOGIC ---
+    function buildValidModuleList() {
+        validModules = []; 
+        activeMediaModules.clear(); 
+        if (!courseTree.modules) return;
+        
+        courseTree.modules.forEach(mod => {
+            const modTitle = String(mod.title || "").toLowerCase();
+            const modID = String(mod.mID || "").toLowerCase();
+            if (!IGNORE_TITLES.some(k => modTitle.includes(k)) && !IGNORE_IDS.includes(modID)) {
+                validModules.push(mod); 
+            }
+        });
+    }
+
+    function renderDashboardGrid() {
+        elements.dashboardGrid.innerHTML = '';
+        if(validModules.length === 0) {
+             elements.dashboardGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">No modules found.</div>';
+             return;
+        }
+        
+        const fragment = document.createDocumentFragment();
+
+        validModules.forEach((mod, index) => {
+            const modNum = padNum(mod.num);
+            let lessonCount = mod.lessons ? mod.lessons.length : 0;
+            let pageCount = 0; 
+            let moduleHasIssues = false;
+
+            if (mod.lessons) {
+                for (const lesson of mod.lessons) {
+                    if(lesson.pages) pageCount += lesson.pages.length;
+                    if (lesson._reqContent !== false && (!lesson._topic || !lesson._parsedObjectives || lesson._parsedObjectives.length === 0)) moduleHasIssues = true;
+                    if (lesson._reqStd !== false && lesson.pages) {
+                        for (const p of lesson.pages) { if (!p._parsedStandards || p._parsedStandards.length === 0) moduleHasIssues = true; }
+                    }
+                }
+            }
+
+            const statusColor = moduleHasIssues ? "#dc3545" : "#28a745"; 
+            const statusIcon = moduleHasIssues ? `${SVGS.alert} Needs Attention` : `${SVGS.check} All Good`;
+            const statusBg = moduleHasIssues ? "#fff5f5" : "#e6f9e9";
+            const statusBorder = moduleHasIssues ? "#ffaeb5" : "#c3e6cb";
+
+            const card = document.createElement('div');
+            card.className = 'module-card'; 
+            card.onclick = () => openModuleDetail(index);
+            card.style.borderLeftColor = statusColor;
+            
+            card.innerHTML = `
+                <div class="flex-between" style="align-items:flex-start;">
+                    <div><div class="mc-header">Module ${modNum}</div><div class="mc-title">${mod.title}</div></div>
+                    <div class="flex-center gap-10" style="font-size:0.75rem; font-weight:bold; color:${statusColor}; background:${statusBg}; border:1px solid ${statusBorder}; padding:4px 8px; border-radius:12px; white-space:nowrap;">${statusIcon}</div>
+                </div>
+                <div class="mc-stats">
+                    <div class="flex-center gap-10" style="justify-content: flex-start;"><span style="color:var(--primary);">${SVGS.folder}</span> ${lessonCount} Lessons</div>
+                    <div class="flex-center gap-10" style="justify-content: flex-start;"><span style="color:var(--primary);">${SVGS.fileText}</span> ${pageCount} Pages</div>
+                </div>
+            `;
+            fragment.appendChild(card);
+        });
+        elements.dashboardGrid.appendChild(fragment);
+    }
+				
+	window.openModuleDetail = function(index) {
+        currentModuleIndex = index; 
+        elements.dashboardGrid.style.display = 'none'; 
+        elements.auditTopBar.style.display = 'none'; 
+        elements.auditDetailArea.style.display = 'block';
+        renderModuleDetail(); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        setTimeout(window.updateStickyHeaderOffset, 50); 
+        saveAppState(); 
+    }
+
+    window.navModule = function(direction) {
+        if (validModules.length === 0) return;
+        let newIndex = currentModuleIndex + direction;
+        if (newIndex < 0) newIndex = validModules.length - 1; 
+        else if (newIndex >= validModules.length) newIndex = 0;
+        
+        currentModuleIndex = newIndex; 
+        renderModuleDetail(); 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        setTimeout(window.updateStickyHeaderOffset, 50); 
+        saveAppState(); 
+    }
+
+    // --- CURRICULUM MAP DISPLAY LOGIC ---
+    function getGroupedAndSortedStandards(standards) {
+        if (!standards || standards.length === 0) return [];
+        let filtered = activeStandardGroups.size > 0 ? standards.filter(s => activeStandardGroups.has(s.group)) : standards;
+        const groups = {};
+        filtered.forEach(s => { 
+            if (!groups[s.group]) groups[s.group] = []; 
+            groups[s.group].push(s); 
+        });
+        
+        return Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(g => {
+            groups[g].sort((a, b) => {
+                const valA = (a.code !== "N/A" ? a.code : a.statement) || "";
+                const valB = (b.code !== "N/A" ? b.code : b.statement) || "";
+                return valA.localeCompare(valB, undefined, { numeric: true });
+            });
+            return { group: g, standards: groups[g] };
+        });
+    }
+
+    function renderStandardsTableHTML(rawStandards) {
+        const grouped = getGroupedAndSortedStandards(rawStandards);
+        if (grouped.length === 0) return '';
+        
+        return grouped.map(g => `
+            <details class="std-group-details" open>
+                <summary class="std-group-summary">📁 ${escapeHtml(g.group)}</summary>
+                <table class="standards-table status-good">
+                    ${g.standards.map(s => `<tr><td class="std-code-cell"><span class="std-code">${escapeHtml(s.code)}</span></td><td class="std-desc">${escapeHtml(s.statement)}</td><td class="std-grade" style="width: 85px;">${escapeHtml(s.grade)}</td></tr>`).join('')}
+                </table>
+            </details>
+        `).join('');
+    }
+						
+	function getModNavText(mod) {
+        let val = String(mod.num || "").trim();
+        // If it consists only of numbers, display as "Module 01", otherwise just return the text (e.g. "Collab")
+        if (/^\d+$/.test(val)) return `Module ${padNum(val)}`;
+        return val;
+    }					
+
+    function renderModuleDetail(autoExpand = true) {
+        const container = elements.auditDetailContent;
+        const openLessonIds = Array.from(container.querySelectorAll('details.audit-lesson[open]')).map(d => d.id);
+
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        if(autoExpand) {
+            isAllExpanded = false;
+            const gapToggle = elements.gapToggle;
+            if(gapToggle && gapToggle.checked) isAllExpanded = true;
+        }
+        updateToggleButton();
+        
+        const mod = validModules[currentModuleIndex];
+        const modNum = padNum(mod.num);
+
+        if (validModules.length > 0) {
+            const prevIndex = currentModuleIndex === 0 ? validModules.length - 1 : currentModuleIndex - 1;
+            const nextIndex = currentModuleIndex === validModules.length - 1 ? 0 : currentModuleIndex + 1;
+            
+            const btnPrev = document.getElementById('btn-prev-mod'); 
+            const btnNext = document.getElementById('btn-next-mod'); 
+            const lblCurr = document.getElementById('current-mod-label');
+
+            
+            const prevText = getModNavText(validModules[prevIndex]);
+            const nextText = getModNavText(validModules[nextIndex]);
+            const currText = getModNavText(mod);
+            
+            if(btnPrev) {
+                btnPrev.innerHTML = `${SVGS.back} <span class="nav-btn-truncate">${escapeHtml(prevText)}</span>`;
+                btnPrev.title = prevText; // Adds native tooltip on hover
+            }
+            if(btnNext) {
+                btnNext.innerHTML = `<span class="nav-btn-truncate">${escapeHtml(nextText)}</span> ${SVGS.forward}`;
+                btnNext.title = nextText; // Adds native tooltip on hover
+            }
+            if(lblCurr) lblCurr.innerHTML = `${escapeHtml(currText)}`;
+        }
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'module-detail-title'; 
+        titleDiv.innerHTML = `Module ${modNum}: ${mod.title}`;
+        fragment.appendChild(titleDiv);
+        
+        if (mod.lessons) mod.lessons.forEach(lesson => fragment.appendChild(renderLessonBlock(lesson, modNum)));
+        container.appendChild(fragment);
+        
+        if(autoExpand) applyExpansionState(isAllExpanded);
+        else openLessonIds.forEach(id => { const el = document.getElementById(id); if (el) el.open = true; });
+        
+        setTimeout(window.updateStickyHeaderOffset, 50);
+    }
+
+    function renderLessonBlock(lesson, modNum) {
+        const details = document.createElement('details');
+        const hasTopic = !!lesson._topic;
+        const hasObj = lesson._parsedObjectives && lesson._parsedObjectives.length > 0;
+        const contentPass = !lesson._reqContent || (hasTopic && hasObj); 
+        
+        let standardsPass = true;
+        if (lesson._reqStd) {
+            if (lesson.pages && lesson.pages.length > 0) {
+                lesson.pages.forEach(p => { if (!p._parsedStandards || p._parsedStandards.length === 0) standardsPass = false; });
+            } else standardsPass = false;
+        }
+        
+        details.className = (contentPass && standardsPass) ? 'audit-lesson lesson-complete' : 'audit-lesson lesson-has-gaps';
+        const fullLesID = `${modNum}.${padNum(lesson.num)}`;
+        details.id = `lesson-${fullLesID}`;
+        details.addEventListener('toggle', () => saveAppState());
+        
+        let hasAnyStandards = false;
+        if (lesson.pages && lesson.pages.length > 0) {
+            hasAnyStandards = lesson.pages.some(p => p._parsedStandards && p._parsedStandards.length > 0);
+        }
+
+        let healthBadges = `<div class="flex-center gap-10" style="margin-left: auto;">`;
+        if (courseStandardGroups.size > 1 && hasAnyStandards) {
+            healthBadges += `<button class="nav-btn btn-base" style="padding:2px 8px; font-size:0.75rem; margin-right:4px;" onclick="toggleFolderDetails(event, this)">Collapse States</button>`;
+        }
+
+        if (!lesson._reqContent && !lesson._reqStd) {
+            healthBadges += `<span class="status-badge neutral" style="margin-left:0;">NOT REQUIRED</span>`;
+        } else {
+            if (lesson._reqContent) {
+                healthBadges += hasTopic ? `<span class="status-badge present" style="margin-left:0;">TOPIC</span>` : `<span class="status-badge missing" style="margin-left:0;">NO TOPIC</span>`;
+                healthBadges += hasObj ? `<span class="status-badge present" style="margin-left:0;">OBJS</span>` : `<span class="status-badge missing" style="margin-left:0;">NO OBJS</span>`;
+            }
+            if (lesson._reqStd) {
+                healthBadges += standardsPass ? `<span class="status-badge present" style="margin-left:0;">STNDS</span>` : `<span class="status-badge missing" style="margin-left:0;">NO STNDS</span>`;
+            }
+        }
+        healthBadges += `</div>`;
+
+        const summary = document.createElement('summary');
+        summary.className = 'lesson-summary';
+        summary.innerHTML = `<span class="id-number">${fullLesID}</span> <span>${lesson.title}</span> ${healthBadges}`;
+                             
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'audit-lesson-content';
+        
+        const topicBox = document.createElement('div');
+        if (lesson._topic) {
+             topicBox.className = 'topic-box present status-good'; 
+             topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content">${lesson._topic}</div>`;
+        } else if (!lesson._reqContent) {
+             topicBox.className = 'topic-box neutral status-neutral'; 
+             topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content topic-neutral">Not required for this lesson.</div>`;
+        } else {
+             topicBox.className = 'topic-box missing'; 
+             topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content topic-missing">No topic listed.</div>`;
+        }
+        contentDiv.appendChild(topicBox);
+        
+        if (hasObj) {
+            const objBox = document.createElement('div');
+            objBox.className = 'objectives-box status-good';
+            objBox.innerHTML = `<div class="obj-title">Learning Objectives</div><ul class="obj-list">${lesson._parsedObjectives.map(o => `<li>${o}</li>`).join('')}</ul>`;
+            contentDiv.appendChild(objBox);
+        } else if (lesson._reqContent) {
+            const emptyBox = document.createElement('div');
+            emptyBox.className = 'objectives-box'; 
+            emptyBox.style.color = "#dc3545"; 
+            emptyBox.innerHTML = "<em>No objectives listed in sitemap</em>";
+            contentDiv.appendChild(emptyBox);
+        } 
+        
+        if(checkIdenticalStandards(lesson.pages)) {
+            const stdBox = document.createElement('div');
+            stdBox.className = 'standards-box status-good'; 
+            const firstPageStds = lesson.pages && lesson.pages.length > 0 ? lesson.pages[0]._parsedStandards : null;
+            
+            let stdHTML = '';
+            if(firstPageStds && firstPageStds.length > 0) {
+                const tableHtml = renderStandardsTableHTML(firstPageStds);
+                stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div>` + (tableHtml || `<div style="color:#666; font-style:italic;">No standards match the current state filter.</div>`);
+            } else if (!lesson._reqStd) {
+                stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#666; font-style:italic;">Standards not required for this lesson.</div>`;
+            } else {
+                stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#dc3545; font-weight:bold;">No standards found on any page.</div>`;
+            }
+            
+            stdBox.innerHTML = stdHTML; 
+            contentDiv.appendChild(stdBox);
+        } else {
+            if (lesson.pages) lesson.pages.forEach(page => contentDiv.appendChild(renderPageBlock(page, fullLesID, lesson._reqStd)));
+        }
+        
+        details.appendChild(summary); 
+        details.appendChild(contentDiv);
+        return details;
+    }
+
+    function renderPageBlock(page, parentID, reqStd) {
+        const div = document.createElement('div');
+        const rawStandards = page._parsedStandards;
+        const hasStandards = rawStandards && rawStandards.length > 0;
+        
+        div.className = (hasStandards || !reqStd) ? 'audit-page page-complete' : 'audit-page page-incomplete';
+        const fullPgID = `${parentID}.${padNum(Number(page.num) + 1)}`;
+        
+        let stdBadge = '';
+        if(!reqStd) stdBadge = `<span class="status-badge neutral">Not Required</span>`;
+        else if (hasStandards) stdBadge = `<span class="status-badge present">${rawStandards.length} Standards</span>`;
+        else stdBadge = `<span class="status-badge missing">No Standards</span>`;
+        
+        let html = '';
+        if (hasStandards) {
+            const tableHtml = renderStandardsTableHTML(rawStandards);
+            html = `<div class="page-header flex-wrap gap-10" style="justify-content:space-between;">
+                        <div class="flex-center gap-10"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>
+                    </div>` + (tableHtml || `<div style="color:#666; font-style:italic; margin-bottom: 10px; font-size:0.85rem;">No standards match the current state filter.</div>`);
+        } else {
+            html = `<div class="page-header flex-center gap-10" style="justify-content: flex-start;"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>`;
+        } 
+        
+        div.innerHTML = html; 
+        return div;
+    }
+
+    function checkIdenticalStandards(pages) {
+        if (!pages || pages.length === 0) return false;
+        const getCodes = (p) => (!p._parsedStandards || p._parsedStandards.length === 0) ? "NONE" : p._parsedStandards.map(s => s.code).sort().join('|');
+        const firstCodes = getCodes(pages[0]);
+        if(firstCodes === "NONE") return false; 
+        for (let i = 1; i < pages.length; i++) { if (getCodes(pages[i]) !== firstCodes) return false; }
+        return true;
+    }
 </script>
 	<button id="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Back to Top"></button>
 </body>
 </html>
-	
