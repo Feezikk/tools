@@ -202,7 +202,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v3.8</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.3</span></div>
   <label class="cdn-label">
     Course Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -310,6 +310,7 @@ const RULES_DATA = {
     'images':             'Image Tag Integrity',
     'span-metadata':      'Span Metadata',
     'groups-points':      'Question Groups & Points',
+    'tables':             'Table Structure',
     'accessibility':      'Special Character Check'
   },
   rules: [
@@ -405,11 +406,11 @@ const RULES_DATA = {
            snippet:'<br />  (correct)\n<br>  <BR>  </br>  (wrong)'} },
 
     { id:'no-inline-styles', category:'html-tags', severity:'error',
-      description:'Inline style attributes are not allowed (except style="vertical-align:middle;" on images)',
+      description:'Inline style attributes are not allowed except on img (vertical-align:middle) and ol (list-style-type)',
       type:'inline-style-check',
-      message:'Line {line} has an inline style attribute.',
-      fix:{description:'Remove the style attribute. Exception: style="vertical-align:middle;" on img.',
-           snippet:'<img src="..." alt="..." style="vertical-align:middle;" />'} },
+      message:'Line {line} has a disallowed inline style attribute.',
+      fix:{description:'Remove the style attribute. Allowed exceptions: style="vertical-align:middle;" on img tags, and style="list-style-type:..." on ol tags.',
+           snippet:'<img src="..." alt="..." style="vertical-align:middle;" />\n<ol style="list-style-type: upper-roman;">'} },
 
     { id:'no-deprecated-tags', category:'html-tags', severity:'error',
       description:'Deprecated tags <b>, <i>, <u>, <s> must be replaced with semantic equivalents',
@@ -418,6 +419,13 @@ const RULES_DATA = {
       message:'Line {line} uses deprecated tag "{found}".',
       fix:{description:'Replace deprecated tags: <b>→<strong>, <i>→<em>, <u>→<span class="underline">, <s>→<del>. Remove <bold> and <italic> entirely.',
            snippet:'<strong>bold</strong>  <em>italic</em>  <del>struck</del>'} },
+
+    { id:'mark-tag', category:'html-tags', severity:'error',
+      description:'<mark> tags and remnants must be removed — not supported by the assessment player',
+      type:'mark-tag-check',
+      message:'Line {line} contains {found}.',
+      fix:{description:'Remove all <mark> opening tags, </mark> closing tags, and any partial remnants. Complete tags can be auto-removed with Apply Fix — partial remnants must be reviewed and removed manually.',
+           snippet:'<!-- Remove entirely -->\n<mark class="highlight">text</mark>  →  text\n\n<!-- Partial remnants also need removing -->\nmark class="highlight">  →  (delete)\n/mark>  →  (delete)'} },
 
     { id:'no-commented-code', category:'html-tags', severity:'error',
       description:'HTML comments containing code must be removed',
@@ -585,6 +593,13 @@ const RULES_DATA = {
       fix:{description:'The text inside the span must be (lesson complexity) matching the attributes.',
            snippet:'<!-- data-complexity="LC" data-associatedlessons="03.01R" -->\n<span ...>(03.01 LC)</span>'} },
 
+    { id:'span-self-closing', category:'span-metadata', severity:'error',
+      description:'Metadata <span> must not be self-closing — remove the stray / before the closing >',
+      type:'span-self-closing-check',
+      message:'Question {num} metadata span tag ends with /> instead of > — the / must be removed.',
+      fix:{description:'Remove the / from the opening span tag. A <span> is not a void element and must never be self-closed.',
+           snippet:'<!-- Wrong -->\n<span data-standard-florida="..." data-complexity="LC" data-associatedlessons="02.01R" />\n\n<!-- Correct -->\n<span data-standard-florida="..." data-complexity="LC" data-associatedlessons="02.01R">'} },
+
     { id:'matching-dash-separator', category:'question-structure', severity:'error',
       description:'Each matching answer must use a dash ( - ) to separate term from definition',
       type:'matching-format',
@@ -599,6 +614,56 @@ const RULES_DATA = {
       rationale:'Matching questions are typically scored one point per correct pair. If total points is not a multiple of the pair count, partial credit cannot be distributed evenly.',
       fix:{description:'Set points to a multiple of the pair count.',
            snippet:'3 pairs -> points:3 or points:6\n4 pairs -> points:4 or points:8'} },
+
+    { id:'matching-min-pairs', category:'question-structure', severity:'error',
+      description:'Matching questions must have at least 3 answer pairs',
+      type:'matching-min-pairs-check',
+      message:'Question {num} has only {count} matching pair(s) — a minimum of 3 is required.',
+      fix:{description:'Add more term-definition pairs so there are at least 3 matches.',
+           snippet:'term1-definition one\nterm2-definition two\nterm3-definition three'} },
+
+    { id:'span-lang-valid', category:'html-tags', severity:'error',
+      description:'<span lang="..."> tags must be well-formed with a valid, non-empty language code',
+      type:'span-lang-check',
+      message:'Line {line} has a <span lang> issue: {found}.',
+      fix:{description:'Ensure the lang attribute is present, non-empty, and uses a valid BCP-47 language tag.',
+           snippet:'<span lang="es">texto en español</span>\n<span lang="fr">texte en français</span>\n<span lang="zh-Hans">简体中文</span>'} },
+
+    { id:'ol-use-style-not-type', category:'html-tags', severity:'error',
+      description:'Ordered lists must use style="list-style-type:..." instead of the type attribute',
+      type:'ol-type-check',
+      message:'Line {line} uses <ol type="{found}"> — replace with equivalent inline style.',
+      fix:{description:'Replace the type attribute with the equivalent style="list-style-type:..." inline style.',
+           snippet:'<!-- Wrong -->\n<ol type="A">  <ol type="i">  <ol type="1">\n\n<!-- Correct -->\n<ol style="list-style-type: upper-alpha;">\n<ol style="list-style-type: lower-roman;">\n<ol style="list-style-type: decimal;">'} },
+
+    { id:'ol-missing-style', category:'html-tags', severity:'error',
+      description:'Ordered lists must include an explicit style="list-style-type:..." attribute',
+      type:'ol-missing-style-check',
+      message:'Line {line} has <ol> with no style attribute — list-style-type must be set explicitly.',
+      fix:{description:'Add a style attribute specifying the list-style-type to ensure consistent rendering across LMS platforms.',
+           snippet:'<ol style="list-style-type: decimal;">\n<ol style="list-style-type: upper-alpha;">\n<ol style="list-style-type: upper-roman;">'} },
+
+    { id:'bare-url-in-text', category:'html-tags', severity:'error',
+      description:'URLs in question text must be wrapped in <span></span> to prevent auto-linking',
+      type:'bare-url-check',
+      message:'Line {line} contains a bare URL "{found}" — wrap it in <span> to prevent auto-hyperlinking.',
+      rationale:'Some LMS platforms automatically convert plain URLs into clickable hyperlinks, which breaks assessment formatting. Wrapping in <span></span> prevents this.',
+      fix:{description:'Wrap the URL in a <span> tag.',
+           snippet:'<!-- Wrong -->\nhttps://www.example.com\n\n<!-- Correct -->\n<span>https://www.example.com</span>'} },
+
+    { id:'img-inline-needs-valign', category:'images', severity:'error',
+      description:'Images inline with text must have style="vertical-align:middle;"',
+      type:'img-inline-valign-check',
+      message:'Line {line} has an inline image without style="vertical-align:middle;" — add it or use align="absmiddle" replacement.',
+      fix:{description:'Add style="vertical-align:middle;" to any image that appears inline alongside text. Images on their own line (surrounded by <br />) do not need this.',
+           snippet:'<!-- Inline image (needs vertical-align) -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text\n\n<!-- Standalone image (no vertical-align needed) -->\n<br /><img src="..." alt="..." /><br />'} },
+
+    { id:'img-absmiddle', category:'images', severity:'error',
+      description:'align="absmiddle" on images is deprecated — replace with style="vertical-align:middle;"',
+      type:'img-absmiddle-check',
+      message:'Line {line} uses align="absmiddle" — replace with style="vertical-align:middle;".',
+      fix:{description:'Remove align="absmiddle" and replace with the correct inline style.',
+           snippet:'<img src="..." alt="..." style="vertical-align:middle;" />'} },
 
     { id:'accessible-symbols', category:'accessibility', severity:'warning',
       description:'Raw degree symbol (°) and math minus signs must use HTML entities',
@@ -629,6 +694,49 @@ const RULES_DATA = {
       message:'Line {line} contains a Unicode replacement character \uFFFD (U+FFFD) — the original character was corrupted during copy/paste or file encoding.',
       fix:{description:'The \uFFFD character means the source text had an encoding error. You must identify what the original character was from the source document and retype it correctly — it cannot be recovered automatically.',
            snippet:'Look at the original source document to determine what character was intended,\nthen delete \uFFFD and retype the correct character or HTML entity.'} },
+
+    { id:'table-tag-pairs', category:'tables', severity:'error',
+      description:'All table tags must have matching opening and closing tags in the correct order',
+      type:'table-check', subtype:'tag-pairs',
+      message:'Table at line {line}: {found}.',
+      fix:{description:'Ensure every table structural tag has a matching opening and closing tag. Check for missing </tr>, </td>, </th>, </thead>, or </tbody> tags.',
+           snippet:'<table>\n  <thead><tr><th>...</th></tr></thead>\n  <tbody><tr><td>...</td></tr></tbody>\n</table>'} },
+
+    { id:'table-required-sections', category:'tables', severity:'error',
+      description:'Tables must include both a <thead> with <th> headers and a <tbody>',
+      type:'table-check', subtype:'required-sections',
+      message:'Table at line {line}: {found}.',
+      fix:{description:'Every table must have a <thead> section containing <th> header cells, and a <tbody> section containing the data rows.',
+           snippet:'<table border="1" cellpadding="5">\n  <thead>\n    <tr><th scope="col">Header</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Data</td></tr>\n  </tbody>\n</table>'} },
+
+    { id:'table-border-cellpadding', category:'tables', severity:'error',
+      description:'Tables must have border="1" and cellpadding set to a number',
+      type:'table-check', subtype:'border-cellpadding',
+      message:'Table at line {line}: {found}.',
+      fix:{description:'The opening <table> tag must include border="1" and cellpadding="N" where N is a number (e.g. 5).',
+           snippet:'<table border="1" cellpadding="5">'} },
+
+    { id:'table-th-scope', category:'tables', severity:'warning',
+      description:'<th> tags should include a scope attribute (col, row, colgroup, or rowgroup)',
+      type:'table-check', subtype:'th-scope',
+      message:'Table at line {line}: {found}.',
+      rationale:'The scope attribute helps screen readers associate header cells with their data cells. Use scope="col" for column headers (in thead) and scope="row" for row headers (first cell of each tbody row).',
+      fix:{description:'Add scope="col" to <th> tags in the header row and scope="row" to <th> tags that act as row labels in the body.',
+           snippet:'<!-- Column headers -->\n<th scope="col">Name</th>\n\n<!-- Row header -->\n<th scope="row">Row Label</th>'} },
+
+    { id:'table-structure-malformed', category:'tables', severity:'error',
+      description:'Table row and cell structure must not be malformed — column counts must be consistent',
+      type:'table-check', subtype:'structure',
+      message:'Table at line {line}: {found}.',
+      fix:{description:'Each row should have the same effective number of columns (accounting for colspan/rowspan). Check for missing or extra cells.',
+           snippet:'<tr><td>Col 1</td><td>Col 2</td></tr>  <!-- 2 cols -->\n<tr><td colspan="2">Merged</td></tr>  <!-- also 2 cols, OK -->'} },
+
+    { id:'table-align-center', category:'tables', severity:'error',
+      description:'Tables must not use align="center" — use style="text-align: center;" instead',
+      type:'table-check', subtype:'align-center',
+      message:'Table at line {line}: {found} — use style="text-align: center;" instead.',
+      fix:{description:'Replace align="center" on any table element with the equivalent inline style.',
+           snippet:'<!-- Wrong -->\n<td align="center">text</td>\n\n<!-- Correct -->\n<td style="text-align: center;">text</td>'} },
 
     { id:'font-tag-replace', category:'html-tags', severity:'error',
       description:'Font tags must be replaced with equivalent span style tags',
@@ -814,11 +922,15 @@ const AssessmentChecker = (() => {
 
     'inline-style-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        // Strip the allowed style="vertical-align:middle;" from img tags before checking,
-        // normalising whitespace so variations like "vertical-align: middle;" also match
-        const clean = line.replace(/<img([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, pre, styleVal, post) => {
+        // Remove allowed style="vertical-align:middle;" from img tags
+        let clean = line.replace(/<img([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, pre, styleVal, post) => {
           const norm = styleVal.replace(/\s/g,'').toLowerCase();
           return (norm === 'vertical-align:middle;') ? '<img'+pre+post+'>' : match;
+        });
+        // Remove allowed list-style-type styles from ol tags
+        clean = clean.replace(/<ol([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, pre, styleVal, post) => {
+          const norm = styleVal.replace(/\s/g,'').toLowerCase();
+          return norm.startsWith('list-style-type:') ? '<ol'+pre+post+'>' : match;
         });
         const m = clean.match(/style\s*=\s*["'][^"']*["']/i);
         return m ? [fail(rule,rule.message.replace('{line}',i+1),i+1,m[0])] : [];
@@ -826,12 +938,9 @@ const AssessmentChecker = (() => {
     },
 
     'forbidden-html-tags'(rule, qs, raw, lines) {
-      // Build exact-match regex for each tag to avoid partial matches (e.g. <blockquote> matching <b>)
-      // and report every occurrence on the line, not just the first.
       return lines.flatMap((line, i) => {
         const results = [];
         for (const tag of rule.tags) {
-          // Escape the tag string for use in regex
           const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const re = new RegExp(escaped, 'gi');
           let m;
@@ -839,6 +948,47 @@ const AssessmentChecker = (() => {
             results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', m[0]), i+1, m[0]));
           }
         }
+        return results;
+      });
+    },
+
+    'mark-tag-check'(rule, qs, raw, lines) {
+      // Complete well-formed mark tags — safe to auto-remove
+      const COMPLETE_RE = /<mark\b[^>]*>|<\/mark>/gi;
+      // Partial/malformed remnants — angle bracket(s) missing, needs manual review
+      // Patterns: <mark (unclosed), mark class=..., /mark>, mark>, </mark (no closing >)
+      const PARTIAL_PATTERNS = [
+        { re: /<mark(?:\s[^>]*)?$/, label: 'unclosed <mark tag (missing >)' },
+        { re: /\bmark\s+class\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)?\s*>/, label: 'mark remnant (missing opening <)' },
+        { re: /\/mark>/, label: '/mark> remnant (missing opening <)' },
+        { re: /(?<![<\/\w])mark>/, label: 'mark> remnant (missing opening <)' },
+        { re: /<\/mark(?!>)/, label: '</mark remnant (missing closing >)' },
+      ];
+
+      return lines.flatMap((line, i) => {
+        const results = [];
+
+        // Check for complete tags first
+        const completeMatches = [...line.matchAll(/<mark\b[^>]*>|<\/mark>/gi)];
+        for (const m of completeMatches) {
+          results.push(fail(rule,
+            rule.message.replace('{line}', i+1).replace('{found}',
+              'complete ' + m[0] + ' tag — use Apply Fix to remove'),
+            i+1, m[0]));
+        }
+
+        // Check for partial remnants on a version of the line with complete tags already removed
+        const stripped = line.replace(COMPLETE_RE, '');
+        for (const { re, label } of PARTIAL_PATTERNS) {
+          const m = stripped.match(re);
+          if (m) {
+            results.push(fail(rule,
+              rule.message.replace('{line}', i+1).replace('{found}',
+                'partial mark remnant "' + m[0].trim().substring(0, 40) + '" (' + label + ') — remove manually'),
+              i+1, m[0].trim()));
+          }
+        }
+
         return results;
       });
     },
@@ -1093,6 +1243,12 @@ const AssessmentChecker = (() => {
       });
     },
 
+    'span-self-closing-check'(rule, qs) {
+      // A metadata span that ends with /> instead of > — the slash is invalid on non-void elements
+      return qs.filter(q => /<span\b[^>]*\/>/i.test(q.stem))
+        .map(q => fail(rule, rule.message.replace('{num}', q.num), q.startLine, '/>'));
+    },
+
     'span-missing-check'(rule, qs) {
       // Fire for any question with no <span at all in its stem
       return qs.filter(q => !q.stem.includes('<span')).map(q =>
@@ -1315,12 +1471,331 @@ const AssessmentChecker = (() => {
       const REPL = '\uFFFD';
       return lines.flatMap((line, i) => {
         if (!line.includes(REPL)) return [];
-        // Count occurrences and build a context snippet showing surrounding text
         const count = (line.match(/\uFFFD/g) || []).length;
         const msg = rule.message.replace('{line}', i + 1) +
           (count > 1 ? ' (' + count + ' occurrences on this line)' : '');
         return [fail(rule, msg, i + 1, REPL)];
       });
+    },
+
+    'matching-min-pairs-check'(rule, qs) {
+      return qs.filter(q => q.code === 'matching:label:').flatMap(q => {
+        const count = q.answers.length;
+        return count < 3
+          ? [fail(rule, rule.message.replace('{num}', q.num).replace('{count}', count), q.startLine)]
+          : [];
+      });
+    },
+
+    'span-lang-check'(rule, qs, raw, lines) {
+      // Valid BCP-47: primary subtag 2-3 letters, optional region/script subtags after hyphen
+      const VALID_LANG = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/;
+      return lines.flatMap((line, i) => {
+        const results = [];
+        // Find all <span ...> tags on this line
+        const spanRe = /<span\b([^>]*)>/gi;
+        let m;
+        while ((m = spanRe.exec(line)) !== null) {
+          const attrs = m[1];
+          // Only process spans that have a lang attribute at all
+          if (!/\blang\s*=/i.test(attrs)) continue;
+          const langMatch = attrs.match(/\blang\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+))/i);
+          if (!langMatch) {
+            // lang= present but malformed (no value/quotes)
+            results.push(fail(rule,
+              rule.message.replace('{line}', i+1).replace('{found}', 'malformed lang attribute — missing value or quotes'),
+              i+1, 'lang='));
+            continue;
+          }
+          const langVal = (langMatch[1] || langMatch[2] || langMatch[3] || '').trim();
+          if (!langVal) {
+            results.push(fail(rule,
+              rule.message.replace('{line}', i+1).replace('{found}', 'lang="" is empty — provide a valid language code'),
+              i+1, 'lang=""'));
+          } else if (!VALID_LANG.test(langVal)) {
+            results.push(fail(rule,
+              rule.message.replace('{line}', i+1).replace('{found}', '"'+langVal+'" is not a valid BCP-47 language code'),
+              i+1, langVal));
+          }
+        }
+        return results;
+      });
+    },
+
+    'ol-type-check'(rule, qs, raw, lines) {
+      // Map ol type= attribute values to their inline style equivalents
+      const TYPE_MAP = {
+        '1': 'decimal',
+        'a': 'lower-alpha',
+        'A': 'upper-alpha',
+        'i': 'lower-roman',
+        'I': 'upper-roman'
+      };
+      return lines.flatMap((line, i) => {
+        const olRe = /<ol\b([^>]*)>/gi;
+        let m;
+        const results = [];
+        while ((m = olRe.exec(line)) !== null) {
+          const attrs = m[1];
+          const typeMatch = attrs.match(/\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+          if (!typeMatch) continue;
+          const typeVal = (typeMatch[1] || typeMatch[2] || typeMatch[3] || '').trim();
+          const equivalent = TYPE_MAP[typeVal] || ('list-style-type: ' + typeVal);
+          results.push(fail(rule,
+            rule.message.replace('{line}', i+1).replace('{found}', typeVal),
+            i+1, 'type="'+typeVal+'"',
+            { type:'ol-type', typeVal, styleName: TYPE_MAP[typeVal] ? 'list-style-type: '+TYPE_MAP[typeVal]+';' : null }));
+        }
+        return results;
+      });
+    },
+
+    'ol-missing-style-check'(rule, qs, raw, lines) {
+      return lines.flatMap((line, i) => {
+        const olRe = /<ol\b([^>]*)>/gi;
+        let m;
+        const results = [];
+        while ((m = olRe.exec(line)) !== null) {
+          const attrs = m[1];
+          // Skip if already has a list-style-type style (well-formed)
+          const hasStyle = /\bstyle\s*=\s*"[^"]*list-style-type[^"]*"/i.test(attrs);
+          // Skip if it has type= — that's caught by ol-type-check
+          const hasType = /\btype\s*=/i.test(attrs);
+          if (!hasStyle && !hasType) {
+            results.push(fail(rule,
+              rule.message.replace('{line}', i+1),
+              i+1, '<ol>'));
+          }
+        }
+        return results;
+      });
+    },
+
+    'bare-url-check'(rule, qs, raw, lines) {
+      // Match URLs not inside HTML tag attributes (src=, href=, etc.) and not inside <span>...</span>
+      // Patterns: https?://, www., or bare domain like example.com
+      const URL_RE = /(?<![="'`])\b((?:https?:\/\/|www\.)[^\s<>"']+|[a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?)/g;
+      return lines.flatMap((line, i) => {
+        // Strip all HTML tags — we only want to find URLs in visible text
+        // But first, remove img src values so image URLs are not flagged
+        const noImgs = line.replace(/<img\b[^>]*>/gi, '');
+        // Remove content inside HTML tags (attribute values etc.)
+        const textOnly = noImgs.replace(/<[^>]+>/g, '\x00'); // replace tags with null byte placeholder
+        // Remove URLs already inside <span>...</span> — find spans in original and mark positions
+        // Strategy: collect character ranges that are inside <span>...</span> in the original line
+        const spanRanges = [];
+        const spanRe = /<span[^>]*>([\s\S]*?)<\/span>/gi;
+        let sm;
+        while ((sm = spanRe.exec(line)) !== null) {
+          spanRanges.push([sm.index, sm.index + sm[0].length]);
+        }
+        const results = [];
+        let um;
+        URL_RE.lastIndex = 0;
+        while ((um = URL_RE.exec(textOnly)) !== null) {
+          // Map index back to original line (null bytes are same length as removed tags characters... 
+          // not perfect, but for bare text URLs this is close enough since URLs won't span tags)
+          const idx = um.index;
+          // Check not inside an already-spanned region in original
+          const inSpan = spanRanges.some(([s, e]) => idx >= s && idx < e);
+          if (inSpan) continue;
+          const url = um[1];
+          results.push(fail(rule,
+            rule.message.replace('{line}', i+1).replace('{found}', url.length > 50 ? url.slice(0,50)+'…' : url),
+            i+1, url));
+        }
+        return results;
+      });
+    },
+
+    'img-inline-valign-check'(rule, qs, raw, lines) {
+      return lines.flatMap((line, i) => {
+        const imgs = line.match(/<img\b[^>]*>/gi) || [];
+        if (!imgs.length) return [];
+        const results = [];
+        for (const img of imgs) {
+          // Check if this image already has the correct style
+          const hasValign = /style\s*=\s*"[^"]*vertical-align\s*:\s*middle[^"]*"/i.test(img);
+          if (hasValign) continue;
+          // Determine if the image is inline (has text neighbours on the same line, not just <br /> tags)
+          // Strip this img tag from the line and see what remains
+          const lineWithoutImg = line.replace(img, '').replace(/<br\s*\/>/gi, '').replace(/<[^>]+>/g, '').trim();
+          // If there's visible text on the same line alongside the image, it's inline
+          if (lineWithoutImg.length > 0) {
+            results.push(fail(rule, rule.message.replace('{line}', i+1), i+1));
+          }
+        }
+        return results;
+      });
+    },
+
+    'img-absmiddle-check'(rule, qs, raw, lines) {
+      return lines.flatMap((line, i) => {
+        const imgs = line.match(/<img\b[^>]*>/gi) || [];
+        return imgs.filter(img => /\balign\s*=\s*["']?absmiddle["']?/i.test(img))
+          .map(() => fail(rule, rule.message.replace('{line}', i+1), i+1, 'align="absmiddle"'));
+      });
+    },
+
+    'table-check'(rule, qs, raw, lines) {
+      // ── Extract all table blocks (multi-line) with their starting line numbers ──
+      const tables = [];
+      let depth = 0, startLine = -1, buf = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const opens  = (line.match(/<table\b/gi)  || []).length;
+        const closes = (line.match(/<\/table>/gi) || []).length;
+        if (opens > 0 && depth === 0) { startLine = i + 1; buf = []; }
+        if (depth > 0 || opens > 0) buf.push(line);
+        depth += opens - closes;
+        if (depth <= 0 && buf.length > 0) {
+          tables.push({ startLine, html: buf.join('\n') });
+          buf = []; depth = 0;
+        }
+      }
+      if (!tables.length) return [];
+
+      const results = [];
+      const msg = (t, found) => rule.message.replace('{line}', t.startLine).replace('{found}', found);
+
+      for (const t of tables) {
+        const h = t.html;
+        const sl = t.startLine;
+
+        // ── sub: tag-pairs ──
+        if (rule.subtype === 'tag-pairs') {
+          const STRUCT = ['table','thead','tbody','tr','th','td','caption'];
+          for (const tag of STRUCT) {
+            const opens  = (h.match(new RegExp('<'+tag+'\\b','gi'))  || []).length;
+            const closes = (h.match(new RegExp('</'+tag+'>','gi')) || []).length;
+            if (opens === closes) continue;
+            const diff = opens > closes
+              ? (opens - closes) + ' unclosed <'+tag+'> (missing </'+tag+'>)'
+              : (closes - opens) + ' extra </'+tag+'> (no matching <'+tag+'>)';
+            results.push(fail(rule, msg(t, diff), sl, tag));
+          }
+          // Check nesting order — thead/tbody must be inside table, tr inside thead/tbody, cells inside tr
+          if (/<thead[\s\S]*?<tbody/i.test(h) === false && /<tbody/i.test(h) && /<thead/i.test(h)) {
+            // tbody appearing before thead
+            if (h.indexOf('<tbody') < h.indexOf('<thead')) {
+              results.push(fail(rule, msg(t, '<tbody> appears before <thead> — wrong order'), sl, 'order'));
+            }
+          }
+        }
+
+        // ── sub: required-sections ──
+        else if (rule.subtype === 'required-sections') {
+          if (!/<thead\b/i.test(h))
+            results.push(fail(rule, msg(t, 'missing <thead> section'), sl, '<thead>'));
+          if (!/<\/thead>/i.test(h) && /<thead\b/i.test(h))
+            results.push(fail(rule, msg(t, '<thead> is not closed with </thead>'), sl, '</thead>'));
+          if (!/<tbody\b/i.test(h))
+            results.push(fail(rule, msg(t, 'missing <tbody> section'), sl, '<tbody>'));
+          if (!/<th\b/i.test(h))
+            results.push(fail(rule, msg(t, 'no <th> header cells found — tables must have column or row headers'), sl, '<th>'));
+        }
+
+        // ── sub: border-cellpadding ──
+        else if (rule.subtype === 'border-cellpadding') {
+          const tableTag = h.match(/<table\b([^>]*)>/i);
+          if (tableTag) {
+            const attrs = tableTag[1];
+            if (!/\bborder\s*=\s*["']?1["']?/i.test(attrs))
+              results.push(fail(rule, msg(t, 'missing or incorrect border="1" on <table>'), sl, 'border'));
+            const cpMatch = attrs.match(/\bcellpadding\s*=\s*["']?(\d*)["']?/i);
+            if (!cpMatch)
+              results.push(fail(rule, msg(t, 'missing cellpadding attribute on <table>'), sl, 'cellpadding'));
+            else if (!cpMatch[1])
+              results.push(fail(rule, msg(t, 'cellpadding is empty — must be a number (e.g. cellpadding="5")'), sl, 'cellpadding=""'));
+          }
+        }
+
+        // ── sub: th-scope ──
+        else if (rule.subtype === 'th-scope') {
+          const VALID_SCOPE = ['col','row','colgroup','rowgroup'];
+
+          // Determine suggested scope from table structure
+          const theadBlock = h.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/i);
+          const tbodyBlock = h.match(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/i);
+          const theadHasTh = theadBlock ? /<th\b/i.test(theadBlock[1]) : false;
+          const tbodyHasTh = tbodyBlock  ? /<th\b/i.test(tbodyBlock[1])  : false;
+          let suggestedScope = null;
+          if      (theadHasTh && !tbodyHasTh) suggestedScope = 'col';
+          else if (!theadHasTh && tbodyHasTh)  suggestedScope = 'row';
+          // mixed = null → flag for review
+
+          const thRe = /<th\b([^>]*)>/gi;
+          let m;
+          while ((m = thRe.exec(h)) !== null) {
+            const attrs = m[1];
+            const scopeM = attrs.match(/\bscope\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+            if (!scopeM) {
+              const suggestion = suggestedScope
+                ? ' — suggested: scope="'+suggestedScope+'"'
+                : ' — review: could not auto-determine scope (mixed th placement)';
+              results.push(fail(rule, msg(t, '<th> missing scope attribute'+suggestion), sl, 'scope'));
+            } else {
+              const val = (scopeM[1] || scopeM[2] || '').trim().toLowerCase();
+              if (!val)
+                results.push(fail(rule, msg(t, '<th> has empty scope="" — must be col, row, colgroup, or rowgroup'), sl, 'scope=""'));
+              else if (!VALID_SCOPE.includes(val))
+                results.push(fail(rule, msg(t, '<th> has unrecognised scope="'+val+'" — valid values: col, row, colgroup, rowgroup'), sl, val));
+            }
+          }
+        }
+
+        // ── sub: structure ──
+        else if (rule.subtype === 'structure') {
+          // Determine column count from the header row (most reliable baseline)
+          const theadBlock = h.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/i);
+          let colCount = 0;
+          if (theadBlock) {
+            const firstRow = theadBlock[1].match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/i);
+            if (firstRow) {
+              const cells = firstRow[1].match(/<(?:th|td)\b[^>]*>/gi) || [];
+              colCount = cells.reduce((sum, c) => {
+                const cs = c.match(/colspan\s*=\s*["']?(\d+)["']?/i);
+                return sum + (cs ? parseInt(cs[1]) : 1);
+              }, 0);
+            }
+          }
+
+          if (colCount === 0) continue; // can't validate without a baseline
+
+          // Check every tbody row
+          const tbodyBlock = h.match(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/i);
+          if (!tbodyBlock) continue;
+          const rows = tbodyBlock[1].match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+          rows.forEach((row, ri) => {
+            const cells = row.match(/<(?:td|th)\b[^>]*>/gi) || [];
+            const effective = cells.reduce((sum, c) => {
+              const cs = c.match(/colspan\s*=\s*["']?(\d+)["']?/i);
+              return sum + (cs ? parseInt(cs[1]) : 1);
+            }, 0);
+            if (effective !== colCount) {
+              results.push(fail(rule,
+                msg(t, 'tbody row '+(ri+1)+' has '+effective+' effective column(s) but header has '+colCount+' — check for missing or extra cells'),
+                sl, 'row '+(ri+1)));
+            }
+          });
+        }
+
+        // ── sub: align-center ──
+        else if (rule.subtype === 'align-center') {
+          // Check <table>, <tr>, <td>, <th>, <caption> for align="center"
+          const TABLE_TAGS = /<(?:table|tr|td|th|caption)\b[^>]*>/gi;
+          let m;
+          while ((m = TABLE_TAGS.exec(h)) !== null) {
+            if (/\balign\s*=\s*["']?center["']?/i.test(m[0])) {
+              results.push(fail(rule,
+                msg(t, 'align="center" found on '+m[0].match(/<(\w+)/)[1]+' tag'),
+                sl, 'align="center"'));
+            }
+          }
+        }
+      }
+
+      return results;
     }
   };
 
@@ -1381,6 +1856,7 @@ const autoFixers={
     if(/alt/.test(attrs)) return match;
     return '<img'+attrs+' alt="[Describe image here]"'+close;
   }),
+  'span-self-closing':  text=>text.replace(/(<span\b[^>]*)\s*\/>/gi, '$1>'),
   'missing-lt-span':    text=>text.replace(/(mc:radio:|essay:|tf:|fib:|matching:label:):?span\b/gi,(_,code)=>code+'<span'),
   'lt-gt-entities':     text=>text.replace(/&gt;/gi,'<span>></span>').replace(/&lt;/gi,'<span><</span>'),
   'special-chars-auto': text=>text
@@ -1393,11 +1869,46 @@ const autoFixers={
     .replace(/\u00f7/g,'&divide;')
     .replace(/\u00a0/g,' '),
   'img-no-dimensions':  text=>text.replace(/<img([^>]*)>/gi,(_,a)=>'<img'+a.replace(/\s*\bwidth\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'').replace(/\s*\bheight\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'')+'>'),
+  'mark-tag':           text => text.replace(/<mark\b[^>]*>|<\/mark>/gi, ''),
+  'table-align-center': text => text.replace(/(<(?:table|tr|td|th|caption)\b[^>]*?)\s*\balign\s*=\s*["']?center["']?([^>]*>)/gi,
+    (match, pre, post) => {
+      // Add style="text-align: center;" if no style attr present, or merge into existing
+      const existing = pre.match(/\bstyle\s*=\s*"([^"]*)"/i);
+      if (existing) {
+        const merged = existing[1].replace(/text-align\s*:[^;]*(;|$)/i, '').trim().replace(/;$/, '');
+        return pre.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="text-align: center;' + (merged ? ' ' + merged + ';' : '') + '"') + post;
+      }
+      return pre + ' style="text-align: center;"' + post;
+    }),
   'font-tag-replace':   text=>text.replace(/<font\s+face\s*=\s*"([^"]*)"[^>]*>([\s\S]*?)<\/font>/gi,(_,face,inner)=>{
     const f=face.trim();
     const family=/courier\s*new/i.test(f)?"'Courier New', Courier, monospace":"'"+f+"'";
     return '<span style="font-family: '+family+';">'+inner+'</span>';
-  })
+  }),
+  'ol-use-style-not-type': text=>text.replace(/<ol\b([^>]*)\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))([^>]*)>/gi,
+    (match, pre, dq, sq, bare, post) => {
+      const TYPE_MAP = {'1':'decimal','a':'lower-alpha','A':'upper-alpha','i':'lower-roman','I':'upper-roman'};
+      const typeVal = (dq || sq || bare || '').trim();
+      const styleVal = TYPE_MAP[typeVal] || typeVal;
+      // Remove the type= attribute, add/merge style
+      const attrsNoType = (pre + post).replace(/\s*\btype\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, '').trim();
+      const existingStyle = attrsNoType.match(/\bstyle\s*=\s*"([^"]*)"/i);
+      if (existingStyle) {
+        return '<ol ' + attrsNoType.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="list-style-type: '+styleVal+'; '+existingStyle[1]+'"') + '>';
+      }
+      return '<ol' + (attrsNoType ? ' '+attrsNoType : '') + ' style="list-style-type: '+styleVal+';">';
+    }),
+  'img-absmiddle': text=>text.replace(/<img\b([^>]*)\balign\s*=\s*["']?absmiddle["']?([^>]*)>/gi,
+    (match, pre, post) => {
+      const attrsClean = (pre + post).replace(/\s*\balign\s*=\s*["']?absmiddle["']?/gi, '').trim();
+      const hasValign = /style\s*=\s*"[^"]*vertical-align\s*:\s*middle/i.test(attrsClean);
+      if (hasValign) return '<img ' + attrsClean + '>';
+      const existingStyle = attrsClean.match(/\bstyle\s*=\s*"([^"]*)"/i);
+      if (existingStyle) {
+        return '<img ' + attrsClean.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="vertical-align:middle; '+existingStyle[1]+'"') + '>';
+      }
+      return '<img' + (attrsClean ? ' '+attrsClean : '') + ' style="vertical-align:middle;">';
+    })
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -1489,7 +2000,7 @@ function clearAll(){
 }
 function loadSample(){
   ta.value = [
-    // Q1 — PASSES all checks. Correct single blank line follows.
+    // ── Q1 — PASSES all checks ──────────────────────────────────────────────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_value_scale.jpg" alt="A value scale showing gradual transition from white to black in seven steps." style="vertical-align:middle;" />Which element of art is shown in the image?',
     'Line',
     'Shape',
@@ -1498,7 +2009,7 @@ function loadSample(){
     'points:1',
     'group:1',
     '',
-    // Q2 — NO blank line before Q3 (spacing error)
+    // ── Q2 — No blank line before Q3 (question-spacing) ─────────────────────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Which principle of design involves repeating elements?',
     'Movement',
     'Proportion',
@@ -1506,9 +2017,7 @@ function loadSample(){
     'Variety',
     'points:1',
     'group:2',
-    // Q3 — immediately follows Q2 with no blank line (triggers spacing rule)
-    // Also: wrong group order (group:1 after group:2 = sequence error)
-    // Also: points before group is swapped
+    // ── Q3 — No blank line after Q2; group out of sequence; points/group swapped ──
     'mc:radio:<span data-standard-florida="VA.68.S.2.3" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />When using hatching, which area has the fewest lines?',
     'x-Highlight',
     'Middle Value',
@@ -1518,27 +2027,25 @@ function loadSample(){
     'points:1',
     '',
     '',
-    // Q4 — TWO blank lines before Q4 (spacing error)
-    // Also: tf with both true and false listed
+    // ── Q4 — Two blank lines (spacing); tf both true and false ───────────────
     'tf:You can use a Sharpie to smudge values in a drawing.',
     'false',
     'true',
     'points:2',
     'group:3',
     '',
-    // Q5 — tf with NO valid answer (triggers tf-answer-present)
+    // ── Q5 — tf no valid answer ──────────────────────────────────────────────
     'tf:Hatching uses curved lines.',
     'maybe',
     'points:1',
     'group:4',
     '',
-    // Q6 — essay with missing span < (missing-lt-span)
-    // Also: span content mismatch (02.02 vs 02.01)
+    // ── Q6 — missing < before span; span content mismatch ───────────────────
     'essay:span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.02R">(02.01 MC)</span><br /><br />Describe how value creates the illusion of dimension.',
     'points:5',
     'group:5',
     '',
-    // Q7 — image with bad alt text (contains symbol %), path wrong case, no CDN base
+    // ── Q7 — image alt has %; path uppercase; image inline without vertical-align ──
     'mc:radio:<span data-standard-florida="VA.68.S.2.3" data-complexity="HC" data-associatedlessons="02.03R">(02.03 HC)</span><br /><br /><img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_03_Chart.PNG" alt="A bar graph showing 75% correct responses." />Which technique is used most effectively in the artwork?',
     'Stippling',
     'Hatching',
@@ -1547,7 +2054,7 @@ function loadSample(){
     'points:3',
     'group:6',
     '',
-    // Q8 — matching with missing dash on one pair, and points not a multiple of pairs
+    // ── Q8 — matching: missing dash on one pair; points not multiple of pairs ─
     'matching:label:Match each shading technique with its description.',
     'hatching-parallel lines drawn close together to create value',
     'crosshatching-lines drawn in two directions to create darker value',
@@ -1555,7 +2062,7 @@ function loadSample(){
     'points:5',
     'group:7',
     '',
-    // Q9 — inline style not allowed, deprecated <b> tag, br format wrong
+    // ── Q9 — deprecated <b>; wrong <br> format; non-img inline style ─────────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><b>Look at the image below.</b><br><br>Which value is darkest?',
     'Highlight',
     'x-Core Shadow',
@@ -1564,7 +2071,7 @@ function loadSample(){
     'points:1',
     'group:8',
     '',
-    // Q10 — span data-complexity blank, data-associatedlessons format wrong (missing R/H)
+    // ── Q10 — data-complexity blank; data-associatedlessons missing R/H ───────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="" data-associatedlessons="02.01">(02.01 LC)</span><br /><br />Which tool is best for blending graphite?',
     'x-Tortillon',
     'Eraser',
@@ -1573,7 +2080,7 @@ function loadSample(){
     'points:1',
     'group:9',
     '',
-    // Q11 — no metadata span at all (triggers span-missing)
+    // ── Q11 — no metadata span at all ───────────────────────────────────────
     'mc:radio:Which color has the highest value on the value scale?',
     'Black',
     'x-White',
@@ -1582,7 +2089,7 @@ function loadSample(){
     'points:1',
     'group:10',
     '',
-    // Q12 — span opens but never closes (triggers span-unclosed)
+    // ── Q12 — span opened but never closed ───────────────────────────────────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)<br /><br />Which of the following is an example of low value?',
     'x-Dark gray',
     'Light yellow',
@@ -1591,7 +2098,7 @@ function loadSample(){
     'points:1',
     'group:11',
     '',
-    // Q13 — Tier 1 special chars: curly quotes, em dash, ellipsis (triggers special-chars-auto)
+    // ── Q13 — Tier 1 special chars: curly quotes, em dash, ellipsis ──────────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />\u201cWhich artist said\u2014\u2018value is everything\u2019?\u201d',
     'Leonardo da Vinci',
     'x-Unknown\u2026',
@@ -1600,14 +2107,121 @@ function loadSample(){
     'points:1',
     'group:12',
     '',
-    // Q14 — Tier 2 special chars: Greek letter, superscript digit, fraction (triggers special-chars-review)
+    // ── Q14 — Tier 2 special chars: Greek, superscript, fraction ─────────────
     'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.01R">(02.01 MC)</span><br /><br />If a canvas has an area of 2\u00b2 ft and uses \u00bd of its space for the subject, what element creates depth?',
     'Color',
     'x-Value',
     'Line',
     'Texture \u03b1',
     'points:2',
-    'group:13'
+    'group:13',
+    '',
+    // ── Q15 — self-closing <span /> ──────────────────────────────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R" />(02.01 LC)</span><br /><br />Which type of line creates a sense of calm?',
+    'Diagonal',
+    'x-Horizontal',
+    'Vertical',
+    'Zigzag',
+    'points:1',
+    'group:14',
+    '',
+    // ── Q16 — span lang: one empty, one invalid BCP-47 code ──────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />The Spanish word <span lang="">forma</span> means shape. The term <span lang="english">contorno</span> means outline. Which best describes contour drawing?',
+    'x-Drawing the outline of a subject',
+    'Shading with parallel lines',
+    'Blending with a tortillon',
+    'Using geometric shapes only',
+    'points:1',
+    'group:15',
+    '',
+    // ── Q17 — bare URLs in question text ─────────────────────────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Visit the museum website at https://www.moma.org or go to moma.org for more information. Which art movement is featured this month?',
+    'Impressionism',
+    'x-Surrealism',
+    'Cubism',
+    'Dadaism',
+    'points:1',
+    'group:16',
+    '',
+    // ── Q18 — <ol type="A"> should use inline style instead ──────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Which list correctly shows the steps for contour drawing?<br /><br /><ol type="A"><li>Observe the subject carefully</li><li>Draw the outline slowly</li><li>Do not lift your pencil</li></ol>',
+    'x-Steps A through C above',
+    'None of the above',
+    'Only step A',
+    'Steps B and C only',
+    'points:1',
+    'group:17',
+    '',
+    // ── Q19 — <ol> with no style attribute at all ─────────────────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Rank these values from lightest to darkest:<br /><br /><ol><li>Highlight</li><li>Midtone</li><li>Core Shadow</li></ol>',
+    'x-Highlight, Midtone, Core Shadow',
+    'Core Shadow, Midtone, Highlight',
+    'Midtone, Highlight, Core Shadow',
+    'Core Shadow, Highlight, Midtone',
+    'points:1',
+    'group:18',
+    '',
+    // ── Q20 — align="absmiddle" on image ─────────────────────────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_pencil.jpg" alt="A pencil held at an angle." align="absmiddle" />Which grip is shown?',
+    'Overhand grip',
+    'x-Underhand grip',
+    'Two-finger grip',
+    'Vertical grip',
+    'points:1',
+    'group:19',
+    '',
+    // ── Q21 — <mark> complete tags + partial /mark> remnant ──────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><mark class="highlight">Value</mark> refers to lightness or darkness. /mark>Which term describes the lightest area?',
+    'Core Shadow',
+    'Midtone',
+    'x-Highlight',
+    'Reflected Light',
+    'points:1',
+    'group:20',
+    '',
+    // ── Q22 — matching with only 2 pairs (minimum 3 required) ────────────────
+    'matching:label:Match the term to its definition.',
+    'hue-the pure color itself',
+    'value-the lightness or darkness of a color',
+    'points:2',
+    'group:21',
+    '',
+    // ── Q23 — Unicode replacement character \uFFFD ────────────────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />The term \uFFFDchiaroscuro\uFFFD refers to the contrast between light and dark. Which artist mastered this technique?',
+    'Monet',
+    'x-Caravaggio',
+    'Warhol',
+    'Pollock',
+    'points:1',
+    'group:22',
+    '',
+    // ── Q24 — <code> tag permitted, should PASS ───────────────────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />A student writes <code>filter: grayscale(100%);</code> in their CSS. What effect does this produce?',
+    'Increases contrast',
+    'Adds a blur',
+    'x-Removes all color',
+    'Inverts colors',
+    'points:1',
+    'group:23',
+    '',
+    // ── Q25 — Well-formed table, should PASS all table checks ────────────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.01R">(02.01 MC)</span><br /><br />Use the table below to answer the question.<br /><br /><table border="1" cellpadding="5"><caption>Value Scale Reference</caption><thead><tr><th scope="col">Level</th><th scope="col">Description</th><th scope="col">Example</th></tr></thead><tbody><tr><td>1</td><td>Lightest</td><td>Highlight</td></tr><tr><td>5</td><td>Middle</td><td>Midtone</td></tr><tr><td>9</td><td>Darkest</td><td>Core Shadow</td></tr></tbody></table><br /><br />Which level represents the midtone?',
+    'Level 1',
+    'Level 3',
+    'x-Level 5',
+    'Level 9',
+    'points:2',
+    'group:24',
+    '',
+    // ── Q26 — Table with errors: no border/cellpadding; align=center on td; ───
+    //          missing th scope; extra cell in row 2 (structure malformed) ──────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.01R">(02.01 MC)</span><br /><br /><table><thead><tr><th>Technique</th><th>Description</th></tr></thead><tbody><tr><td align="center">Hatching</td><td>Parallel lines</td></tr><tr><td>Crosshatching</td><td>Crossed lines</td><td>Extra cell</td></tr></tbody></table><br /><br />Which technique uses lines in two directions?',
+    'Stippling',
+    'x-Crosshatching',
+    'Blending',
+    'Hatching',
+    'points:2',
+    'group:25'
   ].join('\n');
   document.querySelectorAll('.tab')[0].click();
   requestAnimationFrame(()=>{cm.refresh();cm.focus();});
