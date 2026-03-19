@@ -99,14 +99,14 @@
 		.stats-container {
 			text-align: right; 
 			margin-top: 10px; 
-			margin-bottom: -10px; /* Pulls the results grid up slightly to tighten spacing */
+			margin-bottom: -10px;
 			padding-right: 5px;
 		}
 		.stats-text {
 			font-size: 0.85rem; 
 			font-weight: 600; 
 			color: var(--text-light); 
-			background: #e9ecef; /* Adds a subtle pill background */
+			background: #e9ecef;
 			padding: 4px 12px; 
 			border-radius: 12px;
 			border: 1px solid var(--border);
@@ -151,8 +151,13 @@
         
         .snippet-item { font-size: 0.95rem; line-height: 1.5; color: var(--text); font-family: Georgia, serif; padding-left: 12px; border-left: 3px solid var(--border); word-wrap: break-word; }
         .snippet-item.code-view { font-family: var(--code-font); font-size: 0.85rem; background: #f6f8fa; border-left: 3px solid #0366d6; padding: 10px; border-radius: 4px; white-space: pre-wrap; }
+        
+        /* MATCH HIGHLIGHTS */
         .highlight { background-color: var(--highlight); padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #ffeeba; }
         .highlight-ml { background-color: #e8d5f0; border-bottom: 2px solid #8e44ad; color: #4a148c; }
+        .highlight-stds { background-color: #d0e8f2; border-bottom: 2px solid #007bff; color: #004085; }
+        .highlight-notes { background-color: #ffe5d9; border-bottom: 2px solid #ff7f50; color: #cc3700; }
+
         .separator { border-top: 1px dashed var(--border); margin: 5px 0; opacity: 0.5; }
         .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(28, 53, 94, 0.1); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -211,7 +216,7 @@
                 <div>
                     <h1 id="main-title" style="display:flex; align-items:center; gap:10px;">
                         Multi-Course Explorer
-                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v3.02</span>
+                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v3.03</span>
                     </h1>
                     <div class="header-subtitle" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Content &amp; Standards Tool</div>
                 </div>
@@ -440,14 +445,15 @@ let activeSearchCourses = new Set();
 let activeSearchModules = new Set();
 let activeSearchTypes = new Set();
 let activeSearchExcludeStandards = true;   // checked by default → standards excluded
-let activeSearchExcludeML = false;          // unchecked by default → ML included
+let activeSearchExcludeML = false;         // unchecked by default → ML included
+let activeSearchExcludeNotes = true;       // checked by default → Notes excluded
 
 let currentSearchResults = [];
 let currentSearchQuery = "";
 let currentSearchIsHtmlMode = false;
 let currentSearchHighlightRegex = null; 
 let searchRenderCount = 0;
-const SEARCH_BATCH_SIZE = 25;
+const SEARCH_BATCH_SIZE = 15;
 
 // Standards Filters & State
 let currentStdsSearchResults = []; 
@@ -578,7 +584,6 @@ function handleBatchScan(files) {
             const match = pathParts[j].match(versionFolderRegex);
             if (match) {
                 versionFolderIndex = j;
-                // Determine if it's an import or a standard version
                 if (match[0].toLowerCase().includes('cbimport')) {
                     isCbImport = true;
                     displayVersion = "cbimport";
@@ -594,7 +599,6 @@ function handleBatchScan(files) {
             const folderName = pathParts[versionFolderIndex];
             const courseName = folderName.replace(versionFolderRegex, '');
             
-            // Initialize tracker for this course if it doesn't exist
             if (!courseVersionsTracker.has(courseName)) {
                 courseVersionsTracker.set(courseName, { bestNumeric: null, cbImport: null });
             }
@@ -608,16 +612,13 @@ function handleBatchScan(files) {
                 }
                 activeTarget = tracker.cbImport;
             } else {
-                // Check if this numeric version is higher than our current best numeric version
                 if (!tracker.bestNumeric || versionWeight > tracker.bestNumeric.weight) {
                     tracker.bestNumeric = { weight: versionWeight, display: displayVersion, fileMap: new Map() };
                 }
                 
-                // If it belongs to our highest tracked numeric version, point activeTarget to it
                 if (versionWeight === tracker.bestNumeric.weight) {
                     activeTarget = tracker.bestNumeric;
                 } else {
-                    // It's an older numeric version, skip it
                     continue;
                 }
             }
@@ -634,14 +635,11 @@ function handleBatchScan(files) {
         }
     }
 
-    // Add surviving versions to the available course list
     courseVersionsTracker.forEach((data, courseName) => {
-        // Validate and add the best numeric version
         if (data.bestNumeric && (data.bestNumeric.fileMap.has('sitemap.json') || data.bestNumeric.fileMap.has('global/sitemap.json'))) {
             availableCoursesFromScan.set(`${courseName} (${data.bestNumeric.display})`, data.bestNumeric.fileMap);
         }
         
-        // Validate and add the cbimport version
         if (data.cbImport && (data.cbImport.fileMap.has('sitemap.json') || data.cbImport.fileMap.has('global/sitemap.json'))) {
             availableCoursesFromScan.set(`${courseName} (${data.cbImport.display})`, data.cbImport.fileMap);
         }
@@ -695,6 +693,7 @@ window.cancelCourseSelection = function() {
     }
 }
 
+
 window.confirmCourseSelection = function() {
     const checkboxes = document.querySelectorAll('.course-checkbox:checked');
     selectedCourseNames.clear();
@@ -712,7 +711,9 @@ window.confirmCourseSelection = function() {
 }
 // --- END OF PART 2 ---
 </script>
-
+	
+	
+	
 <script>
 // --- START OF PART 3: Multi-Course Indexing ---
 
@@ -858,29 +859,31 @@ function checkForMLData(obj) {
     return false;
 }
 
-function extractContentRecursive(obj, skipStandards = false) {
+function extractContentRecursive(obj) {
     const cleanParts = [], rawParts = [];
     const mlCleanParts = [], mlRawParts = [];
-    const ignoreKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'src', 'href', 'version', 'notes']);
+    const stdsCleanParts = [], stdsRawParts = [];
+    const notesCleanParts = [], notesRawParts = [];
     
-    if (skipStandards) {
-        ignoreKeys.add('standards');
-        ignoreKeys.add('standard');
-    }
-
+    // Removed 'notes', 'standards', and 'standard' from ignoreKeys so they process
+    const ignoreKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'src', 'href', 'version']);
+    
     const hasTags = /<[^>]+>/; 
 
-    function traverse(o, isInsideML = false) {
+    function traverse(o, isInsideML = false, isInsideStds = false, isInsideNotes = false) {
         if (!o) return;
         if (Array.isArray(o)) { 
-            for (let i = 0; i < o.length; i++) traverse(o[i], isInsideML); 
+            for (let i = 0; i < o.length; i++) traverse(o[i], isInsideML, isInsideStds, isInsideNotes); 
         } 
         else if (typeof o === 'object') {
             for (const key in o) {
                 if (ignoreKeys.has(key)) continue;
                 
-                // Track if we are currently inside an ML or chatHistory node
+                // Track node context
                 const currentIsML = isInsideML || key === 'ml' || key === 'chatHistory';
+                const currentIsStds = isInsideStds || key === 'standards' || key === 'standard';
+                const currentIsNotes = isInsideNotes || key === 'notes';
+                
                 const val = o[key];
                 
                 if (typeof val === 'string') {
@@ -889,24 +892,37 @@ function extractContentRecursive(obj, skipStandards = false) {
                         if (currentIsML) {
                             mlRawParts.push(val);
                             mlCleanParts.push(cleanVal);
+                        } else if (currentIsStds) {
+                            stdsRawParts.push(val);
+                            stdsCleanParts.push(cleanVal);
+                        } else if (currentIsNotes) {
+                            notesRawParts.push(val);
+                            notesCleanParts.push(cleanVal);
                         } else {
                             rawParts.push(val);
                             cleanParts.push(cleanVal);
                         }
                     }
                 } else {
-                    traverse(val, currentIsML);
+                    traverse(val, currentIsML, currentIsStds, currentIsNotes);
                 }
             }
         }
     }
-    traverse(obj, false);
+    traverse(obj, false, false, false);
     
     return { 
         clean: cleanParts.join(" "), 
         raw: rawParts.join(" "),
         mlClean: mlCleanParts.join(" "),
-        mlRaw: mlRawParts.join(" ")
+        mlRaw: mlRawParts.join(" "),
+        stdsClean: stdsCleanParts.join(" "),
+        stdsRaw: stdsRawParts.join(" "),
+        notesClean: notesCleanParts.join(" "),
+        notesRaw: notesRawParts.join(" "),
+        // Combined fallback properties for legacy mode toggles
+        cleanWithStds: cleanParts.concat(stdsCleanParts).join(" "),
+        rawWithStds: rawParts.concat(stdsRawParts).join(" ")
     };
 }
 
@@ -925,21 +941,22 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
         const contentText = await readFileAsText(fileMap.get(filename));
         const json = JSON.parse(contentText);
         
-        const extractedWithout = extractContentRecursive(json, true);
-        const extractedWith = extractContentRecursive(json, false);
+        const extracted = extractContentRecursive(json);
         const hasMLData = checkForMLData(json);
         
-        if (extractedWithout.clean.trim().length > 0 || extractedWithout.raw.trim().length > 0 || extractedWith.clean.trim().length > 0 || extractedWithout.mlClean.trim().length > 0) {
+        if (extracted.clean.trim().length > 0 || extracted.raw.trim().length > 0 || extracted.mlClean.trim().length > 0 || extracted.stdsClean.trim().length > 0 || extracted.notesClean.trim().length > 0) {
             globalCourseIndex.push({ 
                 courseName, courseFullName, breadcrumb, locationId, filename, fileMap,
-                cleanContent: extractedWithout.clean, 
-                rawContent: extractedWithout.raw,
-                cleanContentWithStds: extractedWith.clean,
-                rawContentWithStds: extractedWith.raw,
-                mlCleanContent: extractedWithout.mlClean, 
-                mlRawContent: extractedWithout.mlRaw,
-                mlCleanContentWithStds: extractedWith.mlClean,
-                mlRawContentWithStds: extractedWith.mlRaw,
+                cleanContent: extracted.clean, 
+                rawContent: extracted.raw,
+                cleanContentWithStds: extracted.cleanWithStds,
+                rawContentWithStds: extracted.rawWithStds,
+                mlCleanContent: extracted.mlClean, 
+                mlRawContent: extracted.mlRaw,
+                stdsCleanContent: extracted.stdsClean,
+                stdsRawContent: extracted.stdsRaw,
+                notesCleanContent: extracted.notesClean,
+                notesRawContent: extracted.notesRaw,
                 isInteractive: false,
                 hasML: hasMLData
             });
@@ -993,8 +1010,7 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
                     const intText = await readFileAsText(fileMap.get(fileKey));
                     const intJson = JSON.parse(intText);
                     
-                    const extractedIntWithout = extractContentRecursive(intJson, true);
-                    const extractedIntWith = extractContentRecursive(intJson, false);
+                    const extractedInt = extractContentRecursive(intJson);
                     const intHasMLData = checkForMLData(intJson);
                     
                     const parts = fileKey.split('/');
@@ -1002,17 +1018,19 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
                     const intBreadcrumb = `${breadcrumb} > Interactive (${folderName})`;
                     const intLocationId = `${locationId}.INT-${intCounter++}`;
 
-                    if (extractedIntWithout.clean.trim().length > 0 || extractedIntWithout.raw.trim().length > 0 || extractedIntWith.clean.trim().length > 0 || extractedIntWithout.mlClean.trim().length > 0) {
+                    if (extractedInt.clean.trim().length > 0 || extractedInt.raw.trim().length > 0 || extractedInt.mlClean.trim().length > 0 || extractedInt.stdsClean.trim().length > 0 || extractedInt.notesClean.trim().length > 0) {
                         globalCourseIndex.push({ 
                             courseName, courseFullName, breadcrumb: intBreadcrumb, locationId: intLocationId, filename: fileKey, fileMap,
-                            cleanContent: extractedIntWithout.clean, 
-                            rawContent: extractedIntWithout.raw,
-                            cleanContentWithStds: extractedIntWith.clean,
-                            rawContentWithStds: extractedIntWith.raw,
-                            mlCleanContent: extractedIntWithout.mlClean, 
-                            mlRawContent: extractedIntWithout.mlRaw,
-                            mlCleanContentWithStds: extractedIntWith.mlClean,
-                            mlRawContentWithStds: extractedIntWith.mlRaw,
+                            cleanContent: extractedInt.clean, 
+                            rawContent: extractedInt.raw,
+                            cleanContentWithStds: extractedInt.cleanWithStds,
+                            rawContentWithStds: extractedInt.rawWithStds,
+                            mlCleanContent: extractedInt.mlClean, 
+                            mlRawContent: extractedInt.mlRaw,
+                            stdsCleanContent: extractedInt.stdsClean,
+                            stdsRawContent: extractedInt.stdsRaw,
+                            notesCleanContent: extractedInt.notesClean,
+                            notesRawContent: extractedInt.notesRaw,
                             isInteractive: true,
                             hasML: intHasMLData
                         });
@@ -1023,8 +1041,9 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
     } catch (e) { }
 }
 // --- END OF PART 3 ---
-</script>
-
+</script>	
+	
+	
 <script>
 // --- START OF PART 4: Content Search & Filter Logic ---
 
@@ -1034,6 +1053,7 @@ window.clearAllSearchFilters = function() {
     activeSearchTypes.clear();
     activeSearchExcludeStandards = true;
     activeSearchExcludeML = false;
+    activeSearchExcludeNotes = true;
     renderSearchFilters();
     runSearch(elements.searchInput.value);
 };
@@ -1098,10 +1118,12 @@ window.renderSearchFilters = function() {
     const typeContainer = document.getElementById('search-type-dropdown-list');
     const typeBtn = document.getElementById('search-type-btn');
     if (typeContainer && typeBtn) {
+        // "Select All" includes ALL content (pages, interactives, standards, ML, notes)
+        // "Clear All" defaults back to clean search without extras
         let typeHtml = `
             <div class="filter-actions-row">
-                <button class="filter-action-link" onclick="activeSearchTypes.add('page'); activeSearchTypes.add('interactive'); activeSearchExcludeStandards = true; activeSearchExcludeML = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Select All</button>
-                <button class="filter-action-link" onclick="activeSearchTypes.clear(); activeSearchExcludeStandards = true; activeSearchExcludeML = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Clear All</button>
+                <button class="filter-action-link" onclick="activeSearchTypes.add('page'); activeSearchTypes.add('interactive'); activeSearchExcludeStandards = false; activeSearchExcludeML = false; activeSearchExcludeNotes = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Select All</button>
+                <button class="filter-action-link" onclick="activeSearchTypes.clear(); activeSearchExcludeStandards = true; activeSearchExcludeML = false; activeSearchExcludeNotes = true; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Clear All</button>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">`;
         
@@ -1123,6 +1145,12 @@ window.renderSearchFilters = function() {
                         <span style="flex:1;">Exclude Standards</span>
                     </label>`;
 
+        const isExclNotesChecked = activeSearchExcludeNotes ? 'checked' : '';
+        typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeNotes()" ${isExclNotesChecked}> 
+                        <span style="flex:1;">Exclude Notes</span>
+                    </label>`;
+
         const isExclMLChecked = activeSearchExcludeML ? 'checked' : '';
         typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
                         <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeML()" ${isExclMLChecked}> 
@@ -1130,8 +1158,7 @@ window.renderSearchFilters = function() {
                     </label></div>`;
                     
         typeContainer.innerHTML = typeHtml;
-        // Button shows "Filtered" when anything deviates from the all-on default
-        const isNonDefault = activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML;
+        const isNonDefault = activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML || !activeSearchExcludeNotes;
         typeBtn.innerHTML = isNonDefault ? `Types (Filtered) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>` : `Types (All) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`;
         typeBtn.classList.toggle('filtered', isNonDefault);
     }
@@ -1157,6 +1184,12 @@ window.toggleSearchType = function(type) {
 
 window.toggleSearchExcludeStandards = function() {
     activeSearchExcludeStandards = !activeSearchExcludeStandards;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeNotes = function() {
+    activeSearchExcludeNotes = !activeSearchExcludeNotes;
     renderSearchFilters();
     if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
 };
@@ -1218,65 +1251,54 @@ function runSearch(query) {
             const itemModNum = item.locationId.split('.')[0];
             if (activeSearchModules.size > 0 && !activeSearchModules.has(itemModNum)) return; 
             
-            let normalText = "", mlText = "";
-            if (item.isInteractive) {
-                if (activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
-                normalText = isHtmlMode ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds) : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
-                if (!activeSearchExcludeML) mlText = isHtmlMode ? (activeSearchExcludeStandards ? item.mlRawContent : item.mlRawContentWithStds) : (activeSearchExcludeStandards ? item.mlCleanContent : item.mlCleanContentWithStds);
-            } else {
-                const wantsPages = activeSearchTypes.has('page');
-                const wantsStds = !activeSearchExcludeStandards;
-                if (activeSearchTypes.size > 0 && !wantsPages && !wantsStds) return; 
-                const effectivelyWantsPages = activeSearchTypes.size === 0 || wantsPages;
+            // Check content types
+            if (item.isInteractive && activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
+            if (!item.isInteractive && activeSearchTypes.size > 0 && !activeSearchTypes.has('page') && activeSearchExcludeStandards && activeSearchExcludeNotes) return;
+            
+            let normalText = isHtmlMode ? item.rawContent : item.cleanContent;
+            let mlText = activeSearchExcludeML ? "" : (isHtmlMode ? item.mlRawContent : item.mlCleanContent);
+            let stdsText = activeSearchExcludeStandards ? "" : (isHtmlMode ? item.stdsRawContent : item.stdsCleanContent);
+            let notesText = activeSearchExcludeNotes ? "" : (isHtmlMode ? item.notesRawContent : item.notesCleanContent);
 
-                if (effectivelyWantsPages && wantsStds) {
-                    normalText = isHtmlMode ? item.rawContentWithStds : item.cleanContentWithStds;
-                    if (!activeSearchExcludeML) mlText = isHtmlMode ? item.mlRawContentWithStds : item.mlCleanContentWithStds;
-                } else if (effectivelyWantsPages && !wantsStds) {
-                    normalText = isHtmlMode ? item.rawContent : item.cleanContent;
-                    if (!activeSearchExcludeML) mlText = isHtmlMode ? item.mlRawContent : item.mlCleanContent;
-                } else if (!effectivelyWantsPages && wantsStds) {
-                    const pageStds = globalStandardsList.filter(s => s.locationId === item.locationId && s.courseName === item.courseName);
-                    if (pageStds.length === 0) return; 
-                    normalText = pageStds.map(s => `${s.code} ${s.statement}`).join(' ');
-                }
-            }
-
-            if (!normalText && !mlText) return; 
+            if (!normalText && !mlText && !stdsText && !notesText) return; 
+            
             const locId = item.locationId ? (isCaseSensitive ? item.locationId : item.locationId.toLowerCase()) : "";
             const isIdMatch = locId.includes(queryForId);
 
-            let normalMatches = [];
-            if (normalText) {
+            let normalMatches = [], mlMatches = [], stdsMatches = [], notesMatches = [];
+
+            const findMatches = (text, arr) => {
+                if (!text) return;
                 fileRegex.lastIndex = 0; 
                 let match;
-                while ((match = fileRegex.exec(normalText)) !== null) { normalMatches.push(match.index); if (normalMatches.length >= MAX_MATCH_COUNT) break; }
-            }
+                while ((match = fileRegex.exec(text)) !== null) { 
+                    arr.push(match.index); 
+                    if (arr.length >= MAX_MATCH_COUNT) break; 
+                }
+            };
 
-            let mlMatches = [];
-            if (mlText) {
-                fileRegex.lastIndex = 0; 
-                let match;
-                while ((match = fileRegex.exec(mlText)) !== null) { mlMatches.push(match.index); if (mlMatches.length >= MAX_MATCH_COUNT) break; }
-            }
+            findMatches(normalText, normalMatches);
+            findMatches(mlText, mlMatches);
+            findMatches(stdsText, stdsMatches);
+            findMatches(notesText, notesMatches);
 
-            if (normalMatches.length === 0 && mlMatches.length === 0 && !isIdMatch) return; 
+            if (normalMatches.length === 0 && mlMatches.length === 0 && stdsMatches.length === 0 && notesMatches.length === 0 && !isIdMatch) return; 
             
-            let combinedCount = normalMatches.length + mlMatches.length;
+            let combinedCount = normalMatches.length + mlMatches.length + stdsMatches.length + notesMatches.length;
             totalHitsCount += (isIdMatch && combinedCount === 0) ? 1 : combinedCount;
             
             currentSearchResults.push({ 
                 locationId: item.locationId, courseName: item.courseName, courseFullName: item.courseFullName, 
                 breadcrumb: item.breadcrumb, filename: item.filename, 
-                normalText: normalText, mlText: mlText, 
-                normalMatches: normalMatches, mlMatches: mlMatches, 
+                normalText, mlText, stdsText, notesText,
+                normalMatches, mlMatches, stdsMatches, notesMatches,
                 isIdMatch: isIdMatch, originalItem: item 
             });
             matchCount++;
         });
         
         if (matchCount === 0) {
-            const hasFilters = activeSearchCourses.size > 0 || activeSearchModules.size > 0 || activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML;
+            const hasFilters = activeSearchCourses.size > 0 || activeSearchModules.size > 0 || activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML || !activeSearchExcludeNotes;
             let filterBtn = hasFilters ? `<button class="action-btn btn-base" style="margin: 15px auto 0 auto;" onclick="clearAllSearchFilters()">Clear Active Filters</button>` : '';
             elements.results.innerHTML = `<div style="text-align:center; padding:40px; background:#fff; border-radius:8px; border:1px solid var(--border);"><div class="flex-center" style="margin-bottom:10px; color:var(--text-light);">${SVGS.search}</div><p style="color:var(--text-light);">No matches found.</p>${filterBtn}</div>`;
             elements.exportSearchBtn.style.display = 'none'; elements.searchStats.style.display = 'none';
@@ -1327,25 +1349,25 @@ function createResultCard(res, query, isIdMatch, isHtmlMode, maxCap, index) {
     let snippetsHtml = '';
     let allDisplayMatches = [];
     
-    // Consolidate both types of matches to loop over them for rendering
-    res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, isML: false, text: res.normalText }));
-    res.mlMatches.forEach(idx => allDisplayMatches.push({ idx, isML: true, text: res.mlText }));
+    // Consolidate all types of matches
+    res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'normal', text: res.normalText }));
+    res.mlMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'ml', text: res.mlText }));
+    res.stdsMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'stds', text: res.stdsText }));
+    res.notesMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'notes', text: res.notesText }));
     
     let totalMatches = allDisplayMatches.length;
     
     if (isIdMatch && totalMatches === 0) {
-        snippetsHtml = `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(res.normalText || res.mlText, 0, 0, query, isHtmlMode, false)}</div>`;
+        snippetsHtml = `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">${getSnippet(res.normalText || res.mlText || res.notesText || res.stdsText, 0, 0, query, isHtmlMode, 'normal')}</div>`;
     } else {
         const maxDisplay = 10;
         const displayIndices = allDisplayMatches.slice(0, maxDisplay);
         displayIndices.forEach((matchInfo, i) => {
-            // Added data-match-index="${i}" to the div below
-            snippetsHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">${getSnippet(matchInfo.text, matchInfo.idx, query.length, query, isHtmlMode, matchInfo.isML)}</div>`;
+            snippetsHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">${getSnippet(matchInfo.text, matchInfo.idx, query.length, query, isHtmlMode, matchInfo.type)}</div>`;
             if (i < displayIndices.length - 1) snippetsHtml += `<div class="separator"></div>`;
         });
         if (totalMatches > maxDisplay) {
-            const plusMore = (res.normalMatches.length === 25 || res.mlMatches.length === 25) ? "+" : "";
-            snippetsHtml += `<div style="font-size:0.8rem; color:#999; padding-left:12px; margin-top:5px;">...and ${totalMatches - maxDisplay}${plusMore} more matches.</div>`;
+            snippetsHtml += `<div style="font-size:0.8rem; color:#999; padding-left:12px; margin-top:5px;">...and ${totalMatches - maxDisplay} more matches.</div>`;
         }
     }
     
@@ -1367,7 +1389,8 @@ function createResultCard(res, query, isIdMatch, isHtmlMode, maxCap, index) {
     return card;
 }
 
-function getSnippet(fullText, index, length, query, isHtmlMode, isML) {
+function getSnippet(fullText, index, length, query, isHtmlMode, type) {
+    if (!fullText) return "";
     let matchLength = isHtmlMode ? escapeHtml(query).length : query.length; 
     const padding = isHtmlMode ? 80 : 60; 
     const start = Math.max(0, index - padding);
@@ -1376,14 +1399,25 @@ function getSnippet(fullText, index, length, query, isHtmlMode, isML) {
     
     if (isHtmlMode) textPart = escapeHtml(textPart);
     
-    let highlightClass = isML ? "highlight highlight-ml" : "highlight";
+    let highlightClass = "highlight";
+    let badgeHtml = "";
+    
+    if (type === 'ml') {
+        highlightClass = "highlight highlight-ml";
+        badgeHtml = `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="ML generated content">ML</span>`;
+    } else if (type === 'stds') {
+        highlightClass = "highlight highlight-stds";
+        badgeHtml = `<span style="font-size: 0.7rem; background: #007bff; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Standard">STDS</span>`;
+    } else if (type === 'notes') {
+        highlightClass = "highlight highlight-notes";
+        badgeHtml = `<span style="font-size: 0.7rem; background: #ff7f50; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="Internal Note">NOTE</span>`;
+    }
+
     if (matchLength > 0 && query && currentSearchHighlightRegex) {
         textPart = textPart.replace(currentSearchHighlightRegex, `<span class="${highlightClass}">$1</span>`);
     }
     
-    let mlBadge = isML ? `<span style="font-size: 0.7rem; background: #8e44ad; color: white; padding: 2px 6px; border-radius: 8px; margin-right: 8px; cursor: help; vertical-align: middle;" title="This content was generated by the built in Machine Language tool and is only visible in the json code.">ML</span>` : '';
-    
-    return mlBadge + (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
+    return badgeHtml + (start > 0 ? "..." : "") + textPart + (end < fullText.length ? "..." : "");
 }
 
 // Result Card Click -> Open Modal View
@@ -1430,27 +1464,35 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
             
             if (rawRegex) {
                 // Walk the JSON object and inject safe temporary tokens around matches
-                // so we know which ones belong to ML/chat nodes before stringifying.
-                // Skip keys that were excluded from the search to keep modal hits consistent.
-                const injectSkipKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version', 'notes']);
+                // so we know which ones belong to ML, Stds, or Notes nodes.
+                const injectSkipKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version']);
                 if (activeSearchExcludeStandards) { injectSkipKeys.add('standards'); injectSkipKeys.add('standard'); }
+                if (activeSearchExcludeNotes) { injectSkipKeys.add('notes'); }
 
-                function injectTokens(o, isInsideML = false) {
+                function injectTokens(o, isInsideML = false, isInsideStds = false, isInsideNotes = false) {
                     if (!o) return o;
                     if (Array.isArray(o)) {
-                        return o.map(val => injectTokens(val, isInsideML));
+                        return o.map(val => injectTokens(val, isInsideML, isInsideStds, isInsideNotes));
                     } else if (typeof o === 'object') {
                         const newObj = {};
                         for (const key in o) {
                             if (activeSearchExcludeML && (key === 'ml' || key === 'chatHistory')) { newObj[key] = o[key]; continue; }
                             if (injectSkipKeys.has(key)) { newObj[key] = o[key]; continue; }
+                            
                             const currentIsML = isInsideML || key === 'ml' || key === 'chatHistory';
-                            newObj[key] = injectTokens(o[key], currentIsML);
+                            const currentIsStds = isInsideStds || key === 'standards' || key === 'standard';
+                            const currentIsNotes = isInsideNotes || key === 'notes';
+                            
+                            newObj[key] = injectTokens(o[key], currentIsML, currentIsStds, currentIsNotes);
                         }
                         return newObj;
                     } else if (typeof o === 'string') {
                         if (isInsideML) {
                             return o.replace(rawRegex, '@@@ML_START@@@$1@@@ML_END@@@');
+                        } else if (isInsideStds) {
+                            return o.replace(rawRegex, '@@@STDS_START@@@$1@@@STDS_END@@@');
+                        } else if (isInsideNotes) {
+                            return o.replace(rawRegex, '@@@NOTES_START@@@$1@@@NOTES_END@@@');
                         } else {
                             return o.replace(rawRegex, '@@@NORM_START@@@$1@@@NORM_END@@@');
                         }
@@ -1467,6 +1509,8 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
                 
                 // Convert the safe tokens into the proper highlight HTML Spans
                 stringified = stringified.replace(/@@@ML_START@@@([\s\S]*?)@@@ML_END@@@/g, '<span class="highlight highlight-ml search-match">$1</span>');
+                stringified = stringified.replace(/@@@STDS_START@@@([\s\S]*?)@@@STDS_END@@@/g, '<span class="highlight highlight-stds search-match">$1</span>');
+                stringified = stringified.replace(/@@@NOTES_START@@@([\s\S]*?)@@@NOTES_END@@@/g, '<span class="highlight highlight-notes search-match">$1</span>');
                 stringified = stringified.replace(/@@@NORM_START@@@([\s\S]*?)@@@NORM_END@@@/g, '<span class="highlight search-match">$1</span>');
                 
                 fullText = stringified;
@@ -1479,19 +1523,27 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
         }
     } catch (e) { 
         // TEXT VIEW (Fallback or Interactives without JSON files)
-        let nText = isHtmlMode ? (activeSearchExcludeStandards ? item.rawContent : item.rawContentWithStds) : (activeSearchExcludeStandards ? item.cleanContent : item.cleanContentWithStds);
-        let mText = activeSearchExcludeML ? '' : (isHtmlMode ? (activeSearchExcludeStandards ? item.mlRawContent : item.mlRawContentWithStds) : (activeSearchExcludeStandards ? item.mlCleanContent : item.mlCleanContentWithStds));
+        let nText = isHtmlMode ? item.rawContent : item.cleanContent;
+        let mText = activeSearchExcludeML ? '' : (isHtmlMode ? item.mlRawContent : item.mlCleanContent);
+        let sText = activeSearchExcludeStandards ? '' : (isHtmlMode ? item.stdsRawContent : item.stdsCleanContent);
+        let noteText = activeSearchExcludeNotes ? '' : (isHtmlMode ? item.notesRawContent : item.notesCleanContent);
         
         nText = escapeHtml(nText);
         mText = escapeHtml(mText);
+        sText = escapeHtml(sText);
+        noteText = escapeHtml(noteText);
 
         if (displayRegex) {
             nText = nText.replace(displayRegex, '<span class="highlight search-match">$1</span>');
             if (mText) mText = mText.replace(displayRegex, '<span class="highlight highlight-ml search-match">$1</span>');
+            if (sText) sText = sText.replace(displayRegex, '<span class="highlight highlight-stds search-match">$1</span>');
+            if (noteText) noteText = noteText.replace(displayRegex, '<span class="highlight highlight-notes search-match">$1</span>');
         }
 
         fullText = nText;
-        if (mText) fullText += "\n\n--- ML GENERATED CONTENT (Hidden in UI) ---\n\n" + mText;
+        if (sText) fullText += "\n\n--- STANDARDS ---\n\n" + sText;
+        if (noteText) fullText += "\n\n--- NOTES ---\n\n" + noteText;
+        if (mText) fullText += "\n\n--- ML GENERATED CONTENT ---\n\n" + mText;
         
         isCodeView = isHtmlMode;
     }
@@ -2013,7 +2065,8 @@ window.exportSearchResults = function() {
         let resultsByCourse = {}; 
 
         currentSearchResults.forEach(res => {
-            let hitsInFile = (res.isIdMatch && res.normalMatches.length === 0 && res.mlMatches.length === 0) ? 1 : (res.normalMatches.length + res.mlMatches.length);
+            let combinedCount = res.normalMatches.length + res.mlMatches.length + res.stdsMatches.length + res.notesMatches.length;
+            let hitsInFile = (res.isIdMatch && combinedCount === 0) ? 1 : combinedCount;
             totalHits += hitsInFile;
 
             let cName = res.courseName || "Unknown Course";
@@ -2060,8 +2113,10 @@ window.exportSearchResults = function() {
                 const displayCourseName = res.courseFullName || res.courseName;
                 
                 let allMatches = [];
-                res.normalMatches.forEach(idx => allMatches.push({idx, isML: false, text: res.normalText}));
-                res.mlMatches.forEach(idx => allMatches.push({idx, isML: true, text: res.mlText}));
+                res.normalMatches.forEach(idx => allMatches.push({idx, type: 'normal', text: res.normalText}));
+                res.mlMatches.forEach(idx => allMatches.push({idx, type: 'ml', text: res.mlText}));
+                res.stdsMatches.forEach(idx => allMatches.push({idx, type: 'stds', text: res.stdsText}));
+                res.notesMatches.forEach(idx => allMatches.push({idx, type: 'notes', text: res.notesText}));
 
                 if (res.isIdMatch && allMatches.length === 0) {
                     rows.push([{v: displayCourseName, s: sText}, {v: res.locationId, s: sLocation}, {v: res.breadcrumb, s: sText}, {v: res.filename, s: sText}, {v: "[Matched by Location ID only]", s: sText}]);
@@ -2075,7 +2130,11 @@ window.exportSearchResults = function() {
                         let exactMatch = matchInfo.text.substring(matchInfo.idx, matchInfo.idx + matchLength);
                         let suffix = matchInfo.text.substring(matchInfo.idx + matchLength, end);
                         
-                        let centerBracket = matchInfo.isML ? " 【 ML: " : " 【 ";
+                        let centerBracket = " 【 ";
+                        if (matchInfo.type === 'ml') centerBracket = " 【 ML: ";
+                        else if (matchInfo.type === 'stds') centerBracket = " 【 STDS: ";
+                        else if (matchInfo.type === 'notes') centerBracket = " 【 NOTE: ";
+
                         let cleanSnippet = (start > 0 ? "..." : "") + prefix + centerBracket + exactMatch.toUpperCase() + " 】 " + suffix + (end < matchInfo.text.length ? "..." : "");
                         
                         rows.push([{v: displayCourseName, s: sText}, {v: res.locationId, s: sLocation}, {v: res.breadcrumb, s: sText}, {v: res.filename, s: sText}, {v: cleanSnippet, s: sText}]);
