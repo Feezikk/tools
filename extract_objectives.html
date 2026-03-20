@@ -402,47 +402,83 @@
 
     const fileInput = document.getElementById('fileInput');
 
+    // --- Helper to read files as Promises ---
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = e => reject(e);
+            reader.readAsText(file, "UTF-8");
+        });
+    }
+
     // --- Click/Browse Folder Logic ---
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        document.getElementById('status').textContent = "Scanning folder for sitemap.json...";
+        document.getElementById('status').textContent = "Scanning folder for files...";
         document.getElementById('status').className = "";
 
-        // Look for sitemap.json inside global/data/
+        // Find sitemap.json
         let sitemapFile = files.find(f => f.name === 'sitemap.json' && f.webkitRelativePath.includes('global/data/'));
-        
-        // Fallback if the user just clicked a folder already inside data
         if (!sitemapFile) {
             sitemapFile = files.find(f => f.name === 'sitemap.json');
         }
 
-        if (sitemapFile) {
-            processFile(sitemapFile);
-        } else {
+        // Find settings.json
+        let settingsFile = files.find(f => f.name === 'settings.json' && f.webkitRelativePath.includes('global/data/'));
+        if (!settingsFile) {
+            settingsFile = files.find(f => f.name === 'settings.json');
+        }
+
+        if (!sitemapFile) {
             showError("Could not find sitemap.json in the selected folder.");
+            fileInput.value = "";
+            return;
+        }
+
+        // Extract Course Title from settings.json if it exists
+        let courseTitle = "";
+        if (settingsFile) {
+            try {
+                const settingsText = await readFileAsText(settingsFile);
+                const settingsJson = JSON.parse(settingsText.replace(/^\uFEFF/, '').trim());
+                if (settingsJson.settings && settingsJson.settings.course_title) {
+                    courseTitle = settingsJson.settings.course_title;
+                }
+            } catch (err) {
+                console.warn("Could not parse settings.json, falling back to default naming.", err);
+            }
+        }
+
+        // Process sitemap.json
+        try {
+            const sitemapText = await readFileAsText(sitemapFile);
+            processSitemapData(sitemapText, courseTitle);
+        } catch (err) {
+            showError("Error reading sitemap.json");
         }
         
         // Clear input to allow re-selecting the same folder if needed
         fileInput.value = "";
     });
 
-    // --- Processing the single file ---
-    function processFile(file) {
-        if (!file) return;
+    // --- Processing the Data ---
+    function processSitemapData(rawText, providedCourseTitle) {
+        try {
+            let text = rawText.replace(/^\uFEFF/, '').trim();
+            const jsonContent = JSON.parse(text);
+            const rawModules = jsonContent.modules || jsonContent;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                let rawText = e.target.result.replace(/^\uFEFF/, '').trim();
-                const jsonContent = JSON.parse(rawText);
-                const rawModules = jsonContent.modules || jsonContent;
+            if (!Array.isArray(rawModules)) throw new Error("Invalid JSON structure: No 'modules' list found.");
 
-                if (!Array.isArray(rawModules)) throw new Error("Invalid JSON structure: No 'modules' list found.");
-
-                // 1. DETERMINE COURSE NAME
-                let defaultCourseName = "name_of_course";
+            // 1. DETERMINE COURSE NAME
+            let defaultCourseName = providedCourseTitle;
+            
+            // Fallback if settings.json wasn't found or didn't have the title
+            if (!defaultCourseName) {
+                defaultCourseName = "name_of_course";
                 const gettingStartedMod = rawModules.find(m => (m.title || "").trim() === "Getting Started");
                 
                 if (gettingStartedMod && gettingStartedMod.lessons) {
@@ -455,44 +491,43 @@
                         }
                     }
                 }
-
-                // 2. FILTERING LOGIC
-                const excludedTitles = ["Welcome", "Getting Started", "WDS Style Guide"];
-                
-                const filteredModules = rawModules.filter(mod => {
-                    const title = (mod.title || "").trim();
-                    return !excludedTitles.includes(title);
-                });
-
-                // 3. INITIALIZE STATE
-                globalCourseData = filteredModules.map(mod => {
-                    const lessons = mod.lessons || [];
-                    
-                    let hasAnyValidContent = false;
-                    lessons.forEach(l => {
-                        l.isSelected = true; 
-                        const hasObjs = l.objectives && l.objectives.items && l.objectives.items.length > 0;
-                        if(hasObjs) hasAnyValidContent = true;
-                    });
-                    
-                    mod.isSelected = hasAnyValidContent; 
-                    mod.isExpanded = false; // Track expansion state
-                    return mod;
-                });
-
-                renderCheckboxes(globalCourseData);
-                
-                document.getElementById('courseNameInput').value = defaultCourseName;
-                document.getElementById('status').textContent = "";
-                document.getElementById('dropWrapper').style.display = 'none';
-                document.getElementById('selectionArea').style.display = 'flex';
-                document.getElementById('resetBtn').style.display = 'block';
-
-            } catch (error) {
-                showError(`Error parsing sitemap.json: ${error.message}`);
             }
-        };
-        reader.readAsText(file, "UTF-8");
+
+            // 2. FILTERING LOGIC
+            const excludedTitles = ["Welcome", "Getting Started", "WDS Style Guide"];
+            
+            const filteredModules = rawModules.filter(mod => {
+                const title = (mod.title || "").trim();
+                return !excludedTitles.includes(title);
+            });
+
+            // 3. INITIALIZE STATE
+            globalCourseData = filteredModules.map(mod => {
+                const lessons = mod.lessons || [];
+                
+                let hasAnyValidContent = false;
+                lessons.forEach(l => {
+                    l.isSelected = true; 
+                    const hasObjs = l.objectives && l.objectives.items && l.objectives.items.length > 0;
+                    if(hasObjs) hasAnyValidContent = true;
+                });
+                
+                mod.isSelected = hasAnyValidContent; 
+                mod.isExpanded = false; 
+                return mod;
+            });
+
+            renderCheckboxes(globalCourseData);
+            
+            document.getElementById('courseNameInput').value = defaultCourseName;
+            document.getElementById('status').textContent = "";
+            document.getElementById('dropWrapper').style.display = 'none';
+            document.getElementById('selectionArea').style.display = 'flex';
+            document.getElementById('resetBtn').style.display = 'block';
+
+        } catch (error) {
+            showError(`Error parsing sitemap.json: ${error.message}`);
+        }
     }
 
     function resetApp() {
@@ -507,7 +542,6 @@
         document.getElementById('courseNameInput').value = "";
         document.getElementById('includeEmptyCheck').checked = false; 
         
-        // Reset Objectives Toggle to Default (Checked)
         document.getElementById('showObjectivesCheck').checked = true;
         document.getElementById('checklistContainer').classList.add('show-objectives');
         
@@ -544,7 +578,6 @@
             const lessons = mod.lessons || [];
             const hasLessons = lessons.length > 0;
             
-            // Check for missing objs
             let missingObjectives = false;
             lessons.forEach(l => {
                 const lHasObjs = l.objectives && l.objectives.items && l.objectives.items.length > 0;
@@ -555,7 +588,6 @@
             const modDiv = document.createElement('div');
             modDiv.className = 'module-item';
 
-            // --- Module Header ---
             const modHeader = document.createElement('div');
             modHeader.className = 'module-header';
             
@@ -579,7 +611,6 @@
                 mod.isSelected = this.checked;
                 lessons.forEach(l => l.isSelected = this.checked);
                 
-                // Visual update only
                 const childChecks = document.querySelectorAll(`.lesson-check-${mIndex}:not(:disabled)`);
                 childChecks.forEach(c => c.checked = this.checked);
             });
@@ -600,15 +631,12 @@
 
             modDiv.appendChild(modHeader);
 
-            // --- Lesson List ---
             if (hasLessons) {
                 const lessonContainer = document.createElement('div');
                 lessonContainer.className = 'lesson-list';
                 
-                // Restore state
                 if (mod.isExpanded) lessonContainer.classList.add('show');
                 
-                // Expand/Collapse Logic (Persists State)
                 modHeader.addEventListener('click', () => {
                     const isShowing = lessonContainer.classList.contains('show');
                     if (isShowing) {
@@ -622,14 +650,12 @@
                     }
                 });
 
-                // Render Lessons
                 lessons.forEach((less, lIndex) => {
                     const lDiv = document.createElement('div');
                     lDiv.className = 'lesson-item';
 
                     const hasObjectives = less.objectives && less.objectives.items && less.objectives.items.length > 0;
 
-                    // Row Content Wrapper (Checkbox + Title)
                     const rowMain = document.createElement('div');
                     rowMain.className = 'lesson-row-main';
 
@@ -670,7 +696,6 @@
                     rowMain.append(lCheck, lLabel);
                     lDiv.appendChild(rowMain);
 
-                    // Objectives Preview Area (Always generated, hidden via CSS class on container)
                     if (hasObjectives) {
                         const previewDiv = document.createElement('div');
                         previewDiv.className = 'objective-preview';
@@ -785,6 +810,7 @@
                 const doc = new Document({ sections: [{ children: docChildren }] });
 
                 Packer.toBlob(doc).then(blob => {
+                    // This generates [name of course]_objectives.docx based on the input field
                     saveAs(blob, `${safeName}_objectives.docx`);
                     btn.innerHTML = originalText;
                     btn.disabled = false;
