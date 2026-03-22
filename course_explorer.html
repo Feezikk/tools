@@ -6,10 +6,7 @@
     <title>Course Explorer</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
-        /* =====================================================================
-           COURSE EXPLORER v5.00 — Styles
-           ===================================================================== */
-
+        /* Styles */
         :root {
             /* FLVS Brand Theme */
             --primary:       #1C355E;
@@ -568,12 +565,29 @@
         .copy-btn      { background: none; border: none; cursor: pointer; padding: 0; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; opacity: 0.7; color: var(--text-light); }
         .copy-btn:hover { opacity: 1; transform: scale(1.1); color: var(--primary); }
 
-        .media-controls  { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; }
-        .media-tab-group { display: flex; gap: 20px; margin-bottom: -2px; overflow-x: auto; padding-bottom: 2px; }
-        .media-tab-btn   { background: none; border: none; font-size: 1rem; font-weight: 600; color: var(--text-light); cursor: pointer; padding: 10px 4px; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+        .media-header-container { display: flex; flex-direction: column; width: 100%; }
+        .media-tab-group { 
+            display: flex; 
+            gap: 20px; 
+            border-bottom: 1px solid var(--border); 
+            overflow-x: auto; 
+            overflow-y: hidden; 
+            padding-bottom: 0; 
+            margin-bottom: 15px; 
+            scrollbar-width: none; /* Hides scrollbar in Firefox */
+        }
+        .media-tab-group::-webkit-scrollbar { display: none; /* Hides scrollbar in Chrome/Safari/Edge */ }
+        .media-tab-btn   { background: none; border: none; font-size: 1rem; font-weight: 600; color: var(--text-light); cursor: pointer; padding: 12px 4px; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; margin-bottom: -1px; }
         .media-tab-btn:hover  { color: var(--primary); }
         .media-tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
-        .media-utilities { display: flex; align-items: center; gap: 15px; padding-bottom: 10px; flex-wrap: wrap; }
+        
+        .media-action-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; padding-bottom: 15px; }
+        .media-filters-group { display: flex; align-items: center; gap: 10px; }
+        .media-global-actions { display: flex; align-items: center; gap: 15px; margin-left: auto; }
+        
+        .filter-badge { background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; margin-left: 4px; font-weight: 800; line-height: 1; }
+        .clear-filters-btn { background: none; border: none; color: #dc3545; font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 4px 8px; transition: opacity 0.2s; }
+        .clear-filters-btn:hover { opacity: 0.7; text-decoration: underline; }
 
         /* Layout toggle (Grid / List) */
         .layout-toggle { display: inline-flex; background: #e9ecef; padding: 4px; border-radius: 8px; }
@@ -597,6 +611,29 @@
             #media-grid.list-view .media-location    { white-space: normal; }
         }
 
+        /* ── Image Index Layout Specifics ──────────────────────────────────── */
+        #media-grid.image-grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .image-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.04); display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .image-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(28,53,94,0.1); border-color: var(--primary-light); }
+        .image-card-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; color: var(--text); }
+        .image-card-img-wrapper { height: 160px; background: #e9ecef; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+        .image-card-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .image-card-body { padding: 15px; font-size: 0.85rem; color: var(--text); flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .image-card-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+        .image-card-footer { padding: 12px 15px; border-top: 1px dashed var(--border); background: #fff; }
+        
+        .text-version-pill { background: #d1e7dd; color: #0f5132; padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; }
+        .text-version-pill.missing { background: #e9ecef; color: #adb5bd; }
+
+        .image-list-wrapper { width: 100%; max-height: 65vh; overflow-x: auto; overflow-y: auto; background: #fff; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .image-list-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; text-align: left; white-space: nowrap; }
+        .image-list-table th { position: sticky; top: 0; background: var(--primary); padding: 12px 15px; font-weight: 600; color: #fff; border-bottom: 2px solid var(--primary-light); z-index: 20; }
+        .image-list-table td { padding: 10px 15px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .image-list-table tr:hover td { background: #f8f9fa; cursor: pointer; }
+        .img-thumb-sm { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); background: #e9ecef; }
+        .status-icon-check { color: #198754; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+        .status-icon-dash { color: #adb5bd; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+
         /* ── Glossary ───────────────────────────────────────────────────────── */
         .glossary-search-wrapper { margin-top: 15px; width: 100%; box-sizing: border-box; position: relative; }
         .glossary-search { width: 100%; padding: 10px 40px 10px 15px; border-radius: 6px; border: 2px solid var(--border); font-size: 0.95rem; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
@@ -611,28 +648,40 @@
         .az-btn.duplicate-btn:hover,
         .az-btn.duplicate-btn.active       { background: #dc3545; color: #fff; border-color: #dc3545; }
 
-        .glossary-columns { column-count: 3; column-gap: 30px; margin-top: 10px; }
-        @media (max-width: 900px) { .glossary-columns { column-count: 2; } }
-        @media (max-width: 600px) { .glossary-columns { column-count: 1; } }
-
-        .glossary-group  { margin-bottom: 25px; }
-        .glossary-letter { font-size: 1.4rem; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--border); margin-bottom: 12px; padding-bottom: 5px; break-after: avoid; }
-        .glossary-item   { background: #fff; padding: 12px; border-radius: 6px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; break-inside: avoid; }
+       /* Remove masonry columns, stack groups vertically */
+        .glossary-columns { display: flex; flex-direction: column; gap: 30px; margin-top: 10px; }
+        
+        .glossary-group  { width: 100%; }
+        .glossary-letter { font-size: 1.4rem; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--border); margin-bottom: 15px; padding-bottom: 5px; }
+        
+        /* New true grid for the items under each letter */
+        .glossary-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; align-items: start; }
+        
+        /* Removed bottom margin since the grid handles spacing now */
+        .glossary-item   { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box; }
         .glossary-item:hover { background: var(--tag-bg); border-color: var(--primary-light); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(28,53,94,0.08); }
         .glossary-term   { font-weight: 600; color: var(--primary); font-size: 1rem; line-height: 1.2; }
         .glossary-locs   { font-size: 0.75rem; display: flex; flex-wrap: wrap; gap: 5px; }
         .glossary-loc-badge { background: #e9ecef; color: var(--text-light); padding: 2px 6px; border-radius: 4px; font-family: var(--code-font); }
         .glossary-item.duplicate-term       { border: 1px solid #f5c2c7; border-left: 4px solid #dc3545; }
         .glossary-item.duplicate-term:hover { border-color: #dc3545; background: #fff5f5; }
+		
+		/* ── Image Index Specifics ─────────────────────────────────────────── */
+        .empty-dash { color: #adb5bd; font-weight: normal; }
+        .img-bg-dark { background-color: #212529 !important; background-image: none !important; }
+        
+        .darken-toggle-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); cursor: pointer; background: #fff; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); transition: all 0.2s; }
+        .darken-toggle-label:hover { background: #f8f9fa; }
+        
+        .modal-nav-btn { background: var(--tag-bg); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; cursor: pointer; color: var(--primary); font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; }
+        .modal-nav-btn:hover:not(:disabled) { background: var(--primary); color: #fff; }
+        .modal-nav-btn:disabled { opacity: 0.5; cursor: not-allowed; color: var(--text-light); }
     </style>
 </head>
-
+	
 <body>
 <div class="container">
 
-    <!-- =====================================================================
-         HEADER
-         ===================================================================== -->
     <div class="header-card">
         <div class="header-top-row">
             <div class="header-logo-group">
@@ -640,7 +689,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v5.10</span>
+                        Course Explorer Tool <span class="version-pill">v6.01</span>
                     </div>
                 </div>
             </div>
@@ -650,7 +699,6 @@
             </div>
         </div>
 
-        <!-- View Switcher -->
         <div class="view-switcher" id="view-switcher" style="display:none;">
             <button id="btn-view-search" class="view-btn active" onclick="switchView('search')"></button>
             <button id="btn-view-media"  class="view-btn"        onclick="switchView('media')"></button>
@@ -658,7 +706,6 @@
             <button id="btn-view-stds"   class="view-btn"        onclick="switchView('stds')"></button>
         </div>
 
-        <!-- ── Setup / Drop Zone ── -->
         <div id="setup-area">
             <p style="color:var(--text-light); margin-bottom:10px;">
                 Select your <strong>.Courses</strong> root folder to begin scanning.
@@ -675,7 +722,6 @@
             </div>
         </div>
 
-        <!-- ── Audit Configuration Screen ── -->
         <div id="config-screen" style="display:none; text-align:left; position:relative; padding-bottom:20px;">
             <div style="text-align:center; margin-bottom:20px;" id="config-header"></div>
 
@@ -695,7 +741,6 @@
                 </table>
             </div>
 
-            <!-- Sticky confirm button -->
             <div style="position:sticky; bottom:0; text-align:center; padding:15px 0; z-index:100;
                         background:var(--bg); margin:0 -20px; padding-left:20px; padding-right:20px;
                         border-radius:0 0 12px 12px;">
@@ -710,16 +755,9 @@
         </div>
 
         <div id="status-area" style="margin-top:10px; font-weight:500;"></div>
-    </div><!-- /.header-card -->
-
-
-    <!-- =====================================================================
-         CONTENT SEARCH VIEW
-         ===================================================================== -->
-    <div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
+    </div><div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
         <div class="white-card-header" style="display:flex; flex-direction:column; gap:15px;">
 
-            <!-- Search Input -->
             <div class="main-search-wrapper">
                 <div class="main-search-icon" id="svg-content-search-icon"></div>
                 <input type="text" id="search-input"
@@ -728,10 +766,8 @@
                         style="display:none;" title="Clear search">&times;</button>
             </div>
 
-            <!-- Search Controls Row -->
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
 
-                <!-- Module & Type filter dropdowns -->
                 <div class="flex-center gap-10">
                     <div class="filter-dropdown-wrapper">
                         <button class="filter-btn btn-base" id="search-mod-btn"
@@ -766,7 +802,6 @@
 
                 <div class="divider" style="height:24px; margin:0 -5px;"></div>
 
-                <!-- Search modifier toggles -->
                 <div class="pill-checkbox-group">
                     <label class="pill-label">
                         <input type="checkbox" id="html-toggle" checked>
@@ -792,18 +827,13 @@
         <div id="search-stats" class="search-summary-bar" style="display:none;"></div>
     </div>
 
-    <!-- Search results -->
     <div id="results-area"></div>
 
 
-    <!-- =====================================================================
-         STANDARDS SEARCH VIEW
-         ===================================================================== -->
     <div id="stds-search-area" style="display:none; width:100%; text-align:left;">
         <div class="sticky-top-wrapper">
             <div class="white-card-header" style="display:flex; flex-direction:column; gap:15px;">
 
-                <!-- Standards Search Input -->
                 <div class="main-search-wrapper">
                     <div class="main-search-icon" id="svg-stds-search-icon"></div>
                     <input type="text" id="stds-search-input"
@@ -812,10 +842,8 @@
                             style="display:none;" title="Clear search">&times;</button>
                 </div>
 
-                <!-- Standards Controls Row -->
                 <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
 
-                    <!-- Module & State filter dropdowns -->
                     <div class="flex-center gap-10">
                         <div class="filter-dropdown-wrapper">
                             <button class="filter-btn btn-base" id="stds-mod-btn"
@@ -850,7 +878,6 @@
 
                     <div class="divider" style="height:24px; margin:0 -5px;"></div>
 
-                    <!-- View mode & Show Shared toggle -->
                     <div class="flex-center gap-15" style="flex-wrap:wrap;">
                         <div class="segmented-control">
                             <label><input type="radio" name="stds-view" value="page"   onchange="setStdsView('page')">  <span>Page</span></label>
@@ -881,15 +908,9 @@
     </div>
 
 
-    <!-- =====================================================================
-         MEDIA DASHBOARD VIEW  (rendered dynamically by JS)
-         ===================================================================== -->
     <div id="media-area"></div>
 
 
-    <!-- =====================================================================
-         SHARED MODAL  (search page preview, media, glossary, standards detail)
-         ===================================================================== -->
     <div id="media-modal" class="modal-overlay" onclick="closeMediaModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -901,9 +922,6 @@
     </div>
 
 
-    <!-- =====================================================================
-         COURSE SELECTION MODAL
-         ===================================================================== -->
     <div id="course-selection-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:600px;">
             <div class="modal-header">
@@ -916,7 +934,6 @@
                 </p>
                 <div id="course-list-container"></div>
             </div>
-            <!-- Footer action row reuses .modal-header styling -->
             <div class="modal-header"
                  style="background:#fff; border-top:1px solid var(--border);
                         border-bottom:none; border-radius:0 0 12px 12px;
@@ -929,11 +946,6 @@
     </div>
 
 
-    <!-- =====================================================================
-         CURRICULUM MAP VIEW
-         ===================================================================== -->
-
-    <!-- Top action bar (shown when audit view is active) -->
     <div id="audit-top-bar">
         <h2 style="margin:0; font-size:1.4rem; color:var(--primary);">Curriculum Map</h2>
         <div class="flex-center gap-10">
@@ -945,16 +957,13 @@
         </div>
     </div>
 
-    <!-- Module dashboard grid -->
     <div id="dashboard-grid"></div>
 
-    <!-- Module detail / lesson drill-down -->
     <div id="audit-detail-area">
         <div class="sticky-top-wrapper">
             <div class="white-card-header"
                  style="padding:15px 20px; display:flex; flex-direction:column; gap:15px;">
 
-                <!-- Navigation row -->
                 <div class="flex-between flex-wrap gap-10"
                      style="border-bottom:1px solid var(--border); padding-bottom:15px;">
                     <button id="btn-nav-dash" class="nav-btn nav-btn-primary btn-base"
@@ -968,10 +977,8 @@
                     </div>
                 </div>
 
-                <!-- Filter row -->
                 <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
 
-                    <!-- Objectives / Standards / Both toggle -->
                     <div class="flex-center gap-15">
                         <div class="segmented-control">
                             <label><input type="radio" name="audit-filter" value="all" checked><span>Both</span></label>
@@ -980,7 +987,6 @@
                         </div>
                     </div>
 
-                    <!-- State filter (only shown when multiple standard groups exist) -->
                     <div class="divider" id="std-filter-divider"
                          style="height:24px; margin:0 -5px; display:none;"></div>
                     <div class="filter-dropdown-wrapper" id="std-filter-wrapper" style="display:none;">
@@ -994,7 +1000,6 @@
 
                     <div class="divider" style="height:24px; margin:0 -5px;"></div>
 
-                    <!-- Gaps Only toggle -->
                     <div class="pill-checkbox-group flex-center gap-15">
                         <label class="pill-label danger-pill" id="lbl-gap-toggle">
                             <input type="checkbox" id="gap-toggle">
@@ -1002,7 +1007,6 @@
                         </label>
                     </div>
 
-                    <!-- Expand / Collapse all lessons -->
                     <div class="flex-center gap-10" style="margin-left:auto;">
                         <button id="toggle-all-btn" class="action-btn btn-base"
                                 onclick="toggleAllLessonsState()"></button>
@@ -1012,25 +1016,20 @@
             </div>
         </div>
 
-        <!-- Lesson blocks injected here by renderModuleDetail() -->
         <div id="module-detail-content"></div>
     </div>
 
 
-</div><!-- /.container -->
-
-<!-- Back-to-top FAB -->
-<button id="back-to-top"
+</div><button id="back-to-top"
         onclick="window.scrollTo({top:0, behavior:'smooth'})"
         title="Back to Top"></button>
 
 
 <script>
 // =============================================================================
-// COURSE EXPLORER v5.10  —  JavaScript
-// Improvements: Web Worker search (#5), stripHtml hoist (#7), file.text() (#8),
-// interactive dedup (#1), glossary drift fix (#2), safeSheetName regex (#20),
-// activeStdsStates reassignment (#4), window.* state cleanup (#11)
+// COURSE EXPLORER v5.20  —  JavaScript
+// Added: Image Index inside the Media Dashboard with filtering, pagination, 
+//        and table/grid layouts.
 // =============================================================================
 
 // ── SVG Icon Library ──────────────────────────────────────────────────────────
@@ -1040,10 +1039,13 @@ const SVGS = {
     audio:      `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`,
     interactive:`<svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="M13 13l6 6"></path></svg>`,
     glossary:   `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`,
+    image:      `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
     fileText:   `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
     clipboard:  `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2-2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>`,
     check:      `<svg class="svg-icon" viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    checkCircle:`<svg class="svg-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
     x:          `<svg class="svg-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    minus:      `<svg class="svg-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
     alert:      `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
     arrowUp:    `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>`,
     arrowDown:  `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`,
@@ -1060,8 +1062,9 @@ const SVGS = {
     config:     `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
     back:       `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`,
     forward:    `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`,
-    refresh:    `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
-    maximize:   `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>`
+   refresh:    `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
+    maximize:   `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>`,
+    info:       `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
 };
 
 // ── Shared Standards Colour Palette ───────────────────────────────────────────
@@ -1154,10 +1157,11 @@ const CONFIG_KEY  = 'courseSearch_auditConfig';
 const NAME_KEY    = 'courseSearch_courseName';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const IGNORE_TITLES   = ["style guide", "styleguide"];
-const IGNORE_IDS      = ["wf", "gs"];
+const IGNORE_TITLES     = ["style guide", "styleguide"];
+const IGNORE_IDS        = ["wf", "gs"];
 const SEARCH_BATCH_SIZE = 25;
 const STDS_BATCH_SIZE   = 25;
+const MEDIA_BATCH_SIZE  = 25;
 
 // =============================================================================
 // GLOBAL STATE
@@ -1171,6 +1175,7 @@ let validModules             = [];
 let courseVideos             = [];
 let courseAudio              = [];
 let courseInteractives       = [];
+let courseImages             = [];
 let courseGlossary           = [];
 let foundGlossaryIds         = {};
 let courseStandardsList      = [];
@@ -1190,9 +1195,9 @@ let isAllExpanded            = false;
 let hasRunAuditConfig        = false;
 let isRefreshMode            = false;
 let debounceTimer;
+let _processedInteractives   = new Set();
 
 // ── Web Worker (fix #5) ───────────────────────────────────────────────────────
-// Declared here; initialised in Part 4 after the worker body is defined.
 let searchWorker             = null;
 
 // ── Content Search State ──────────────────────────────────────────────────────
@@ -1212,9 +1217,6 @@ let currentStdsSearchResults = [];
 let activeStdsModules        = new Set();
 let activeStdsStates         = new Set();
 let currentStdsView          = 'lesson';
-
-// Standards search highlight state — proper declarations (fix #11).
-// Previously these lived as window.* properties assigned mid-function.
 let currentGroupedStds       = [];
 let stdsRenderCount          = 0;
 let currentStdsQuery         = "";
@@ -1226,13 +1228,20 @@ let sharedStandardColors     = new Map();
 let colorIndexTracker        = 0;
 
 // ── Media Dashboard State ─────────────────────────────────────────────────────
-let currentDisplayedMedia      = [];
-let currentMediaLayout         = localStorage.getItem('courseSearch_mediaLayout') || 'grid';
-let currentMediaTab            = 'videos';
-let activeMediaModules         = new Set();
-let activeMediaFilterTypes     = new Set();
-let activeMediaFilterMissingId = false;
-let isMediaFilterOpen          = false;
+let currentDisplayedMedia             = [];
+let currentMediaRenderCount           = 0;
+let currentMediaLayout                = localStorage.getItem('courseSearch_mediaLayout') || 'grid';
+let currentMediaTab                   = 'videos';
+let activeMediaModules                = new Set();
+let activeMediaFilterTypes            = new Set();
+let activeMediaFilterMissingId        = false;
+let activeMediaFilterHasAlt           = false;
+let activeMediaFilterHasCaption       = false;
+let activeMediaFilterHasCaptionHeader = false;
+let activeMediaFilterHasTextVer       = false;
+let activeMediaFilterCheckCopyright   = false;
+let activeMediaFilterCheckTextVer     = false;
+let isMediaFilterOpen                 = false;
 
 // ── Glossary State ────────────────────────────────────────────────────────────
 let activeGlossaryLetters    = new Set();
@@ -1247,36 +1256,17 @@ let currentAudioBlobUrl      = null;
 
 // =============================================================================
 // PART 4 — Init, Utils, History, Batch Scan & Course Selection
-// v5.10 changes:
-//   Fix #5  — Web Worker: search logic moved off the main thread
-//   Fix #7  — stripHtml: DOM element hoisted to module level
-//   Fix #8  — File.text() replaces FileReader wrapper everywhere
 // =============================================================================
 
-// ── Fix #7: Module-level DOM element for stripHtml ────────────────────────────
-// Creating a new <div> on every call was wasteful during the indexing loop
-// (called thousands of times). One element, reused forever.
 const _stripHtmlEl = document.createElement('div');
-
-// ── Pending search state (used by worker result handler) ──────────────────────
 let _pendingSearchOptions = null;
 
 // =============================================================================
-// WEB WORKER — Search Engine  (fix #5)
-//
-// The worker is defined as a real JS function (_searchWorkerBody) to avoid
-// template-literal backslash-escaping hell with regex patterns.
-// Function.prototype.toString() retrieves the exact source text, which is
-// then wrapped in an IIFE and loaded from a Blob URL.
-//
-// Protocol:
-//   Main → Worker  { type:'INIT',   index: courseIndex }
-//   Main → Worker  { type:'SEARCH', query, options }
-//   Worker → Main  { results, totalHits }
+// WEB WORKER — Search Engine
 // =============================================================================
 
 function _searchWorkerBody() {
-    let _index = [];   // cached after INIT, reused for every SEARCH
+    let _index = [];
 
     self.onmessage = function (e) {
         if      (e.data.type === 'INIT')   { _index = e.data.index; }
@@ -1309,18 +1299,15 @@ function _searchWorkerBody() {
         for (const item of _index) {
             if (!item.locationId) continue;
 
-            // Module filter
             if (activeModulesSet.size > 0 &&
                 !activeModulesSet.has(item.locationId.split('.')[0])) continue;
 
-            // Type filter
             const isInt = item.locationId.includes('.INT-');
             if (activeTypesSet.size > 0) {
                 if ( isInt && !activeTypesSet.has('interactive')) continue;
                 if (!isInt && !activeTypesSet.has('page'))        continue;
             }
 
-            // Resolve text streams
             const nText = isHtmlMode ? item.normalRaw   : item.normalClean;
             const mText = !excludeML    ? (isHtmlMode ? item.mlRaw   : item.mlClean)   : '';
             const sText = !excludeStds  ? (isHtmlMode ? item.stdRaw  : item.stdClean)  : '';
@@ -1337,7 +1324,6 @@ function _searchWorkerBody() {
                 const hits = []; let m;
                 while ((m = re.exec(text)) !== null) {
                     hits.push(m.index);
-
                     if (hits.length >= MAX) break;
                 }
                 return hits;
@@ -1357,7 +1343,6 @@ function _searchWorkerBody() {
                 filename:      item.filename,
                 normalText:    nText,  mlText:   mText,
                 stdText:       sText,  noteText: oText,
-                // also ship raw/clean so openPageModal can fall back to them
                 normalRaw:     item.normalRaw,
                 normalClean:   item.normalClean,
                 normalMatches: nm, mlMatches: mm,
@@ -1371,10 +1356,7 @@ function _searchWorkerBody() {
         return { results, totalHits };
     }
 
-    // Pure helpers — no DOM, no imports needed inside a worker
-    function _reEscape(s) {
-        return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
+    function _reEscape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
     function _htmlEscape(t) {
         if (!t) return '';
         return t.replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -1383,33 +1365,24 @@ function _searchWorkerBody() {
     }
 }
 
-// ── Initialise worker from stringified function body ──────────────────────────
 (function _initSearchWorker() {
     try {
         const code   = '(' + _searchWorkerBody.toString() + ')()';
         const blob   = new Blob([code], { type: 'application/javascript' });
         searchWorker = new Worker(URL.createObjectURL(blob));
-        // Route worker results back through the shared handler
         searchWorker.onmessage = (e) => _handleWorkerResults(e.data);
-        searchWorker.onerror   = (err) => {
-            console.warn('Search worker error:', err.message);
-        };
+        searchWorker.onerror   = (err) => { console.warn('Search worker error:', err.message); };
     } catch (e) {
-        // Workers unavailable (e.g. file:// origin in some browsers).
-        // runSearch() will fall back to the synchronous path automatically.
         console.warn('Web Worker unavailable — search will run on main thread.', e.message);
         searchWorker = null;
     }
 })();
 
-// ── Worker result handler ─────────────────────────────────────────────────────
-// Called both from worker.onmessage and from the sync fallback.
 function _handleWorkerResults({ results, totalHits }) {
     if (!_pendingSearchOptions) return;
     const { isHtmlMode, isWholeWord, isCaseSensitive } = _pendingSearchOptions;
     _pendingSearchOptions = null;
 
-    // Build the highlight regex on the main thread (worker can't share regexes)
     let pat = escapeRegExp(isHtmlMode ? escapeHtml(currentSearchQuery) : currentSearchQuery);
     if (isWholeWord) pat = `(?<=^|\\W)${pat}(?=\\W|$)`;
     currentSearchHighlightRegex = new RegExp(`(${pat})`, isCaseSensitive ? 'g' : 'gi');
@@ -1439,10 +1412,7 @@ function _handleWorkerResults({ results, totalHits }) {
     window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
-// ── Sync search fallback (runs on main thread when worker is unavailable) ─────
 function _runSearchSync(query, options) {
-    // Use the same worker function body but call it directly via a cloned search
-    // function that operates on the real courseIndex instead of a serialised copy.
     const {
         isHtmlMode, isWholeWord, isCaseSensitive,
         excludeML, excludeStds, excludeNotes,
@@ -1517,8 +1487,6 @@ function _runSearchSync(query, options) {
 // =============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-
-    // Inject all SVGs in one pass
     const svgInjections = {
         'svg-header-logo':            SVGS.logo,
         'svg-drop-zone':              `<svg class="svg-icon" style="width:48px;height:48px;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
@@ -1555,11 +1523,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('download-btn').innerHTML    = `${SVGS.download}  Download Report`;
     document.getElementById('btn-nav-dash').innerHTML    = `${SVGS.back}      Dashboard`;
 
-    // Force default radio states (prevent browser form caching)
     const defaultStdsRadio = document.querySelector('input[name="stds-view"][value="lesson"]');
     if (defaultStdsRadio) defaultStdsRadio.checked = true;
 
-    // ── Gap toggle ────────────────────────────────────────────────────────────
     elements.gapToggle.addEventListener('change', (e) => {
         if (e.target.checked) {
             elements.auditDetailArea.classList.add('gap-mode');
@@ -1572,7 +1538,6 @@ document.addEventListener("DOMContentLoaded", () => {
         saveAppState();
     });
 
-    // ── Audit filter segmented control ────────────────────────────────────────
     elements.auditFilterRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             elements.auditDetailArea.classList.remove('show-objs-only', 'show-stds-only');
@@ -1583,7 +1548,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ── Content search inputs ─────────────────────────────────────────────────
     elements.searchInput.addEventListener('input', (e) => {
         elements.searchClearBtn.style.display = e.target.value.length > 0 ? 'block' : 'none';
         clearTimeout(debounceTimer);
@@ -1607,7 +1571,6 @@ document.addEventListener("DOMContentLoaded", () => {
     elements.wholeWordToggle.addEventListener('change',     () => runSearch(elements.searchInput.value));
     elements.caseSensitiveToggle.addEventListener('change', () => runSearch(elements.searchInput.value));
 
-    // ── Standards search inputs ───────────────────────────────────────────────
     elements.stdsSearchInput.addEventListener('input', (e) => {
         elements.stdsSearchClear.style.display = e.target.value.length > 0 ? 'block' : 'none';
         clearTimeout(debounceTimer);
@@ -1627,7 +1590,6 @@ document.addEventListener("DOMContentLoaded", () => {
         runStdsSearch();
     });
 
-    // ── Result card click → open page modal ───────────────────────────────────
     elements.results.addEventListener('click', (e) => {
         const card = e.target.closest('.result-card');
         if (!card) return;
@@ -1645,11 +1607,18 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     });
 
-    // ── Media area click delegation ───────────────────────────────────────────
     elements.mediaArea.addEventListener('click', (e) => {
         const copyBtn = e.target.closest('.copy-btn');
         if (copyBtn) { copyTextToClipboard(copyBtn.dataset.id, copyBtn); return; }
         if (e.target.closest('.kaltura-badge') || e.target.closest('.type-badge')) return;
+        
+        const imgCard = e.target.closest('.image-card') || e.target.closest('.image-list-table tr');
+        if (imgCard && imgCard.dataset.index) {
+            const entry = currentDisplayedMedia[imgCard.dataset.index];
+            if (entry) openMediaModalFromObj(entry.item, entry.type);
+            return;
+        }
+
         const card = e.target.closest('.media-card');
         if (card) {
             const entry = currentDisplayedMedia[card.dataset.index];
@@ -1663,7 +1632,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ── Global dropdown close ─────────────────────────────────────────────────
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.filter-dropdown-wrapper')) {
             document.querySelectorAll('.filter-dropdown-content.show')
@@ -1672,7 +1640,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ── Back-to-top visibility ────────────────────────────────────────────────
     window.addEventListener('scroll', () => {
         const btt = document.getElementById('back-to-top');
         if (!btt) return;
@@ -1700,21 +1667,13 @@ function escapeHtml(t) {
             .replace(/'/g, "&#039;");
 }
 
-// Fix #7: Uses the hoisted module-level element instead of creating a new one each call.
 function stripHtml(html) {
     _stripHtmlEl.innerHTML = html.replace(/<[^>]+>/g, ' ');
     return _stripHtmlEl.textContent || _stripHtmlEl.innerText || "";
 }
 
 const isMissingId = (id) => !id || id === "Unknown" || id.trim() === "";
-
-// Fix #20 (safeSheetName): Escape [ and ] properly in the character class.
 const safeSheetName = (name) => name.substring(0, 31).replace(/[\\/*?:\[\]]/g, '');
-
-// Fix #8: readFileAsText removed — all callers now use the native File.text() API:
-//   Before:  const text = await readFileAsText(file);
-//   After:   const text = await file.text();
-// File.text() is supported in all modern browsers and returns a Promise directly.
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
@@ -1776,7 +1735,7 @@ window.toggleFilterDropdown = function toggleFilterDropdown(id, event) {
 };
 
 // =============================================================================
-// HISTORY
+// HISTORY, FILE INPUT & BATCH SCAN
 // =============================================================================
 
 function renderHistory() {
@@ -1784,15 +1743,10 @@ function renderHistory() {
     if (!lastFolder) { elements.historyArea.style.display = 'none'; return; }
     elements.historyArea.style.display = 'block';
     elements.historyList.innerHTML =
-        `<div class="history-chip"
-              onclick="document.getElementById('folder-input').click()">
+        `<div class="history-chip" onclick="document.getElementById('folder-input').click()">
             <span style="color:var(--primary);">${SVGS.folder}</span> ${lastFolder}
          </div>`;
 }
-
-// =============================================================================
-// FILE INPUT & COURSE SELECTION
-// =============================================================================
 
 elements.input.addEventListener('change', (e) => handleBatchScan(e.target.files));
 
@@ -1806,10 +1760,6 @@ elements.refreshBtn.addEventListener('click', () => {
     elements.input.value = '';
     elements.input.click();
 });
-
-// =============================================================================
-// BATCH SCAN
-// =============================================================================
 
 async function handleBatchScan(files) {
     if (!files.length) return;
@@ -1941,10 +1891,6 @@ async function handleBatchScan(files) {
     showCourseSelectionModal();
 }
 
-// =============================================================================
-// COURSE SELECTION MODAL
-// =============================================================================
-
 function showCourseSelectionModal() {
     const container     = document.getElementById('course-list-container');
     const sortedCourses = Array.from(availableCoursesFromScan.keys()).sort();
@@ -1983,14 +1929,6 @@ window.confirmCourseSelection = function confirmCourseSelection() {
     fileMap = availableCoursesFromScan.get(selectedCourseName);
     runIndexingAndShowUI(false);
 };
-	
-// =============================================================================
-// PART 5 — Indexing, Content Extraction, Page Processing
-// v5.10 changes:
-//   Fix #1 — Interactive dedup: Set prevents the same file being indexed
-//             multiple times when referenced by more than one page
-//   Fix #8 — All file reads use native File.text() instead of FileReader
-// =============================================================================
 
 // =============================================================================
 // MAIN INDEXING ENTRY POINT
@@ -2002,13 +1940,13 @@ async function runIndexingAndShowUI(wasRefreshed) {
         elements.status.innerHTML     =
             `<div class="spinner"></div> Indexing content &amp; parsing settings…`;
 
-        // ── Reset all data collections ────────────────────────────────────────
         courseIndex         = [];
         courseTree          = {};
         validModules        = [];
         courseVideos        = [];
         courseAudio         = [];
         courseInteractives  = [];
+        courseImages        = [];
         courseGlossary      = [];
         foundGlossaryIds    = {};
         courseStandardsList = [];
@@ -2031,7 +1969,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
         fileNameIndex.clear();
         folderIndex.clear();
 
-        // ── Reset UI inputs ───────────────────────────────────────────────────
         elements.searchInput.value            = '';
         elements.searchClearBtn.style.display = 'none';
         elements.results.innerHTML            = '';
@@ -2043,14 +1980,12 @@ async function runIndexingAndShowUI(wasRefreshed) {
         const stdsGrid = document.getElementById('stds-results-grid');
         if (stdsGrid) stdsGrid.innerHTML = '';
 
-        // Fix #11: reset proper let variables instead of window.* properties
         currentStdsQuery        = "";
         currentStdsExactPattern = null;
         currentStdsFuzzyPattern = null;
         currentGroupedStds      = [];
         stdsRenderCount         = 0;
 
-        // Force standards view radio back to "lesson"
         currentStdsView = 'lesson';
         const resetStdsRadio = document.querySelector('input[name="stds-view"][value="lesson"]');
         if (resetStdsRadio) resetStdsRadio.checked = true;
@@ -2059,8 +1994,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
         const glossarySearch = document.getElementById('glossary-search');
         if (glossarySearch) glossarySearch.value = '';
 
-        // ── Load settings.json for course title ───────────────────────────────
-        // Fix #8: file.text() replaces readFileAsText()
         const settingsFile =
             fileMap.get('settings.json') ||
             fileMap.get('global/data/settings.json') ||
@@ -2086,7 +2019,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
             }
         }
 
-        // ── Resolve display name & persist ────────────────────────────────────
         if (!wasRefreshed) localStorage.removeItem(NAME_KEY);
         const savedName    = localStorage.getItem(NAME_KEY) || "";
         const displayTitle = extractedCourseTitle || selectedCourseName || savedName || "Course";
@@ -2098,8 +2030,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
             document.title = `${customCourseName} Course Explorer`;
         }
 
-        // ── Load & parse sitemap.json ─────────────────────────────────────────
-        // Fix #8: file.text() replaces readFileAsText()
         const sitemapFile =
             fileMap.get('sitemap.json') ||
             fileMap.get('global/sitemap.json');
@@ -2109,8 +2039,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
         courseTree = JSON.parse(await sitemapFile.text());
         await buildIndexAndHydrate(courseTree);
 
-        // ── Load glossary.json ────────────────────────────────────────────────
-        // Fix #8: file.text() replaces readFileAsText()
         let rawGlossaryMap = {};
         const glossaryFile = fileMap.get('global/data/glossary.json');
         if (glossaryFile) {
@@ -2127,7 +2055,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
             } catch (e) { /* glossary is optional */ }
         }
 
-        // ── Sort course index ─────────────────────────────────────────────────
         try {
             courseIndex.sort((a, b) =>
                 (a.locationId || "").localeCompare(b.locationId || "") ||
@@ -2135,7 +2062,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
             );
         } catch (e) {}
 
-        // ── Build glossary from found IDs ─────────────────────────────────────
         for (const [id, locSet] of Object.entries(foundGlossaryIds)) {
             const data = rawGlossaryMap[id.toString()];
             courseGlossary.push({
@@ -2147,17 +2073,16 @@ async function runIndexingAndShowUI(wasRefreshed) {
         }
         courseGlossary.sort((a, b) => a.title.localeCompare(b.title));
 
-        // ── Sort media collections ────────────────────────────────────────────
         const mediaSort = (a, b) =>
             (a.locationId || "").localeCompare(b.locationId || "") ||
-            (a.title || "").localeCompare(b.title || "");
+            (a.title || a.fileName || "").localeCompare(b.title || b.fileName || "");
         try {
             courseVideos.sort(mediaSort);
             courseAudio.sort(mediaSort);
             courseInteractives.sort(mediaSort);
+            courseImages.sort(mediaSort);
         } catch (e) {}
 
-        // ── Build module list & initialise filters ────────────────────────────
         buildValidModuleList();
 
         activeSearchModules.clear();
@@ -2173,7 +2098,6 @@ async function runIndexingAndShowUI(wasRefreshed) {
 
         applyDefaultOrSavedConfig();
 
-        // Show / hide the state-group filter in the audit toolbar
         const stdWrapper = document.getElementById('std-filter-wrapper');
         const stdDivider = document.getElementById('std-filter-divider');
         if (stdWrapper && stdDivider) {
@@ -2184,15 +2108,11 @@ async function runIndexingAndShowUI(wasRefreshed) {
             if (hasMultiple) window.renderStdFilterDropdown();
         }
 
-        // ── Show UI ───────────────────────────────────────────────────────────
         elements.viewSwitcher.style.display    = 'inline-flex';
         elements.selectCourseBtn.style.display = 'inline-flex';
         elements.refreshBtn.style.display      = 'inline-flex';
         elements.status.style.display          = 'none';
 
-        // ── Send course index to the search worker ────────────────────────────
-        // The worker caches this once and reuses it for every subsequent query.
-        // Fix #8: index entries are plain objects — no File references — safe to transfer.
         if (searchWorker) {
             searchWorker.postMessage({ type: 'INIT', index: courseIndex });
         }
@@ -2218,15 +2138,10 @@ async function runIndexingAndShowUI(wasRefreshed) {
     }
 }
 
-// =============================================================================
-// BUILD INDEX & HYDRATE
-// =============================================================================
-
 async function buildIndexAndHydrate(sitemap) {
-    _processedInteractives = new Set();   // Fix #1: reset dedup Set each run
+    _processedInteractives = new Set();
     if (!sitemap.modules) return;
 
-    // ── Build filename and folder lookup indexes ──────────────────────────────
     fileNameIndex.clear();
     folderIndex.clear();
     for (const key of fileMap.keys()) {
@@ -2242,11 +2157,17 @@ async function buildIndexAndHydrate(sitemap) {
         }
     }
 
-    // ── Queue page processing tasks ───────────────────────────────────────────
     const tasks = [];
-    sitemap.modules.forEach(module => {
-        if (!module.lessons) return;
-        module.lessons.forEach(lesson => {
+        sitemap.modules.forEach(module => {
+            // Exclude modules matching the ignore lists (same logic as Curriculum Map)
+            const title = String(module.title || "").toLowerCase();
+            const id    = String(module.mID   || "").toLowerCase();
+            if (IGNORE_TITLES.some(k => title.includes(k)) || IGNORE_IDS.includes(id)) {
+                return; 
+            }
+
+            if (!module.lessons) return;
+            module.lessons.forEach(lesson => {
             lesson._topic            = lesson.topic || null;
             lesson._parsedObjectives =
                 (lesson.objectives?.items?.length > 0)
@@ -2266,7 +2187,6 @@ async function buildIndexAndHydrate(sitemap) {
         });
     });
 
-    // Process in parallel chunks of 10
     const CHUNK_SIZE = 10;
     for (let i = 0; i < tasks.length; i += CHUNK_SIZE) {
         await Promise.all(tasks.slice(i, i + CHUNK_SIZE).map(fn => fn()));
@@ -2329,10 +2249,6 @@ function extractContentRecursive(obj) {
     };
 }
 
-// =============================================================================
-// INTERACTIVE TYPE DETECTION
-// =============================================================================
-
 function determineInteractiveType(rawJsonString) {
     const srcMatch = rawJsonString.match(/"src"\s*:\s*"([^"]+)"/i);
     if (srcMatch?.[1]) {
@@ -2345,10 +2261,6 @@ function determineInteractiveType(rawJsonString) {
         ? (typeMatches[1] || "undetermined")
         : typeMatches[0];
 }
-
-// =============================================================================
-// GLOSSARY ID EXTRACTION
-// =============================================================================
 
 function extractGlossaryIds(text, locId) {
     if (!text) return;
@@ -2365,10 +2277,6 @@ function extractGlossaryIds(text, locId) {
         }
     }
 }
-
-// =============================================================================
-// MP3 FILE EXTRACTION
-// =============================================================================
 
 function extractMp3Files(text, locationId, breadcrumb) {
     const found = [];
@@ -2388,10 +2296,6 @@ function extractMp3Files(text, locationId, breadcrumb) {
     }
     return found;
 }
-
-// =============================================================================
-// MEDIA HELPERS
-// =============================================================================
 
 function extractMediaTitle(htmlString, mediaType = 'unknown') {
     if (!htmlString) return "Untitled Media";
@@ -2433,6 +2337,38 @@ function findMedia(obj, locationId, breadcrumb, mediaType, found = []) {
     return found;
 }
 
+// ── NEW: Extract Images ───────────────────────────────────────────────────────
+function extractImages(obj, locationId, breadcrumb, found = []) {
+    if (!obj) return found;
+    if (Array.isArray(obj)) {
+        obj.forEach(item => extractImages(item, locationId, breadcrumb, found));
+    } else if (typeof obj === 'object') {
+        if (obj.contentType === 'image' && obj.fieldValues) {
+            const fv = obj.fieldValues;
+            const src = fv.src || "";
+            const fileName = src.split('/').pop() || "Unknown";
+            const fileType = fileName.split('.').pop().toLowerCase() || "unknown";
+
+            found.push({
+                locationId, breadcrumb,
+                src: src,
+                fileName: fileName,
+                fileType: fileType,
+                altText: fv.altText || "",
+                caption: fv.caption || "",
+                captionHeader: fv.captionHeader || "",
+                copyright: fv.copyright || "",
+                textVersion: fv.textVersion || "",
+                rawJson: JSON.stringify(obj, null, 2)
+            });
+        }
+        for (const key in obj) {
+            extractImages(obj[key], locationId, breadcrumb, found);
+        }
+    }
+    return found;
+}
+
 function findInteractivesPaths(obj, found = []) {
     if (!obj) return found;
     if (Array.isArray(obj)) {
@@ -2465,21 +2401,10 @@ function extractInteractiveMeta(obj) {
 
 // =============================================================================
 // PAGE PROCESSOR
-// Fix #1: A module-level Set (_processedInteractives) tracks every interactive
-// file key that has already been indexed during the current load. If the same
-// interactive is referenced by two or more pages, the second encounter is
-// skipped for indexing and courseInteractives (media entries are still added
-// so every location-breadcrumb pairing is recorded for the Media Dashboard).
-// The Set is declared here and reset at the start of buildIndexAndHydrate.
 // =============================================================================
-
-// Fix #1: tracks interactive file keys already indexed in this run.
-// Declared here; reset at the top of buildIndexAndHydrate each call.
-let _processedInteractives = new Set();
 
 async function processPage(filename, breadcrumb, locationId, pageRef) {
     try {
-        // Fix #8: file.text() replaces readFileAsText()
         const contentText = await fileMap.get(filename).text();
         const json        = JSON.parse(contentText);
         const extracted   = extractContentRecursive(json);
@@ -2506,8 +2431,8 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
         courseVideos.push(...findMedia(json, locationId, breadcrumb, 'video'));
         courseAudio.push(...findMedia(json, locationId, breadcrumb, 'audio'));
         courseAudio.push(...extractMp3Files(contentText, locationId, breadcrumb));
+        courseImages.push(...extractImages(json, locationId, breadcrumb));
 
-        // Standards
         if (json.info?.standards?.length > 0) {
             pageRef._parsedStandards = json.info.standards.map(s => {
                 const groupName = (s.folder && s.folder !== "N/A") ? s.folder : "Uncategorized";
@@ -2525,7 +2450,6 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
             pageRef._parsedStandards = [];
         }
 
-        // ── Process linked interactives ───────────────────────────────────────
         const interactivePaths = findInteractivesPaths(json);
         let intCounter = 1;
 
@@ -2535,12 +2459,10 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
             const pathParts      = cleanPath.split('/');
             const targetFileName = pathParts[pathParts.length - 1];
 
-            // 1. Exact / suffix match on filename index
             for (const key of (fileNameIndex.get(targetFileName) || [])) {
                 if (key === cleanPath || key.endsWith('/' + cleanPath)) targetFiles.push(key);
             }
 
-            // 2. Folder-based fallback
             if (!targetFiles.length) {
                 const isJson     = cleanPath.toLowerCase().endsWith('.json');
                 const folderName = pathParts.length > 1
@@ -2562,18 +2484,14 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
                         return `${breadcrumb} > Interactive (${folderName})`;
                     })();
 
-                    // Fix #8: file.text() replaces readFileAsText()
                     const intText = await fileMap.get(fileKey).text();
                     const intJson = JSON.parse(intText);
 
-                    // Always record media — every page-location pairing is useful
                     courseVideos.push(...findMedia(intJson, intLocationId, intBreadcrumb, 'video'));
                     courseAudio.push(...findMedia(intJson, intLocationId, intBreadcrumb, 'audio'));
                     courseAudio.push(...extractMp3Files(intText, intLocationId, intBreadcrumb));
+                    courseImages.push(...extractImages(intJson, intLocationId, intBreadcrumb));
 
-                    // Fix #1: Only index content and register in courseInteractives once.
-                    // If the same file key has already been processed (referenced by a
-                    // previous page), skip the index/interactives push to avoid duplicates.
                     if (_processedInteractives.has(fileKey)) continue;
                     _processedInteractives.add(fileKey);
 
@@ -2613,7 +2531,6 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
                     });
 
                 } catch (e) {
-                    // Silently skip unreadable or unparseable interactive files
                 }
             }
         }
@@ -2623,14 +2540,6 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
     }
 }
 	
-// =============================================================================
-// PART 6 — View Switching, State Save/Restore, Content Search
-// v5.10 changes:
-//   Fix #5  — runSearch() posts to the Web Worker instead of running inline.
-//             Sync fallback retained for environments where Workers unavailable.
-//   Fix #11 — openPageModal uses res fields directly; no originalItem reference.
-// =============================================================================
-
 // =============================================================================
 // VIEW SWITCHING
 // =============================================================================
@@ -2874,8 +2783,6 @@ window.renderSearchFilters = function renderSearchFilters() {
     }
 };
 
-// ── Filter toggle handlers ────────────────────────────────────────────────────
-
 window.toggleSearchModule = function toggleSearchModule(modNum) {
     if (activeSearchModules.has(modNum)) activeSearchModules.delete(modNum);
     else                                 activeSearchModules.add(modNum);
@@ -2930,18 +2837,6 @@ window.toggleSearchExcludeNotes = function() {
     if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
 };
 
-// =============================================================================
-// CONTENT SEARCH — CORE  (Fix #5)
-//
-// runSearch() no longer executes the search loop itself. Instead:
-//   1. Stores the current options in _pendingSearchOptions.
-//   2. Posts a SEARCH message to the worker (which has the index cached from INIT).
-//   3. Returns immediately — the UI stays responsive.
-//   4. _handleWorkerResults() in Part 4 receives the results and renders them.
-//
-// If the worker is unavailable, falls back to the synchronous _runSearchSync().
-// =============================================================================
-
 function runSearch(query) {
     const q = query.trim();
     elements.results.innerHTML = '';
@@ -2967,7 +2862,6 @@ function runSearch(query) {
         activeTypes:     Array.from(activeSearchTypes)
     };
 
-    // Show a spinner immediately so the user knows work is happening
     elements.results.innerHTML =
         `<div style="text-align:center; padding:40px; color:var(--text-light);">
              <div class="spinner" style="display:inline-block;"></div>
@@ -2976,18 +2870,11 @@ function runSearch(query) {
     _pendingSearchOptions = options;
 
     if (searchWorker) {
-        // Worker path: post query + options; worker already has the index from INIT.
         searchWorker.postMessage({ type: 'SEARCH', query: q, options });
     } else {
-        // Sync fallback: runs on main thread when Workers are unavailable.
-        // Wrapped in setTimeout(0) to let the spinner render first.
         setTimeout(() => _runSearchSync(q, options), 0);
     }
 }
-
-// =============================================================================
-// CONTENT SEARCH — PROGRESSIVE RENDERING
-// =============================================================================
 
 function renderSearchBatch() {
     const frag  = document.createDocumentFragment();
@@ -3017,13 +2904,6 @@ function renderSearchBatch() {
         elements.results.appendChild(btn);
     }
 }
-
-// =============================================================================
-// CONTENT SEARCH — RESULT CARD
-// Fix #11: result objects now carry all needed fields directly.
-// res.originalItem no longer exists; use res.breadcrumb, res.locationId,
-// res.filename, res.hasML, res.hasNote directly.
-// =============================================================================
 
 function createResultCard(res, query, isHtmlMode, index) {
     const card = document.createElement('div');
@@ -3065,7 +2945,6 @@ function createResultCard(res, query, isHtmlMode, index) {
         }
     }
 
-    // Fix #11: read fields directly from res, not res.originalItem
     const contextBadges = [
         res.mlMatches?.length
             ? `<span style="font-size:0.7rem; background:#8e44ad; color:white; padding:2px 6px;
@@ -3106,11 +2985,6 @@ function createResultCard(res, query, isHtmlMode, index) {
 
     return card;
 }
-
-// =============================================================================
-// CONTENT SEARCH — SNIPPET BUILDER
-// Single authoritative definition (duplicate removed in v5.00, unchanged here).
-// =============================================================================
 
 function getSnippet(fullText, index, length, query, isHtmlMode, matchType = 'normal') {
     if (!fullText) return '';
@@ -3154,17 +3028,9 @@ function getSnippet(fullText, index, length, query, isHtmlMode, matchType = 'nor
            (end < fullText.length ? '…' : '');
 }
 
-// =============================================================================
-// CONTENT SEARCH — PAGE DETAIL MODAL
-// Fix #11: res fields used directly; res.originalItem removed.
-// The result object now carries normalRaw, normalClean directly so the
-// fallback render path still works without an originalItem back-reference.
-// =============================================================================
-
 window.openPageModal = async function openPageModal(
     res, query, isHtmlMode, isWholeWord, isCaseSensitive, startingMatchIndex = 0
 ) {
-    // Fix #11: was res?.originalItem — now just res
     if (!res?.filename) return;
 
     let fullText   = "";
@@ -3180,7 +3046,6 @@ window.openPageModal = async function openPageModal(
     try {
         const file = fileMap.get(res.filename);
         if (file) {
-            // Fix #8: file.text() replaces readFileAsText()
             const rawText    = await file.text();
             const json       = JSON.parse(rawText);
             const prettyJson = JSON.stringify(json, null, 2);
@@ -3240,8 +3105,6 @@ window.openPageModal = async function openPageModal(
             }
 
         } else {
-            // File not in fileMap — fall back to pre-extracted text
-            // Fix #11: res.normalRaw / res.normalClean are now direct fields on res
             let text = isHtmlMode ? res.normalRaw : res.normalClean;
             fullText = escapeHtml(text || "");
             if (rawRegex) {
@@ -3253,12 +3116,10 @@ window.openPageModal = async function openPageModal(
             isCodeView = false;
         }
     } catch (e) {
-        // Fix #11: res.normalRaw / res.normalClean are direct fields on res
         fullText   = escapeHtml((isHtmlMode ? res.normalRaw : res.normalClean) || "");
         isCodeView = false;
     }
 
-    // Fix #11: was item.filename, item.locationId, item.breadcrumb (via originalItem)
     document.getElementById('modal-header-content').innerHTML = `
         <h3 class="flex-center gap-10"
             style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary); justify-content:flex-start;">
@@ -3346,20 +3207,10 @@ window.openPageModal = async function openPageModal(
     } else {
         modalBody.scrollTop = 0;
     }
-};	
+};
 
 // =============================================================================
-// PART 7 — Standards Search & Filters
-// v5.10 changes:
-//   Fix #4  — activeStdsStates reassignment replaced with .clear() + forEach
-//   Fix #11 — currentGroupedStds, stdsRenderCount, currentStdsQuery,
-//             currentStdsExactPattern, currentStdsFuzzyPattern are now proper
-//             let variables (Part 3) instead of window.* properties.
-//             All references updated accordingly.
-// =============================================================================
-
-// =============================================================================
-// STANDARDS SEARCH — FILTER RENDERING
+// STANDARDS SEARCH & FILTERS
 // =============================================================================
 
 window.renderStdsFilters = function renderStdsFilters() {
@@ -3403,8 +3254,6 @@ window.renderStdsFilters = function renderStdsFilters() {
     }
 };
 
-// ── Standards filter toggle handlers ──────────────────────────────────────────
-
 window.toggleStdsModule = function toggleStdsModule(modNum) {
     if (activeStdsModules.has(modNum)) activeStdsModules.delete(modNum);
     else                               activeStdsModules.add(modNum);
@@ -3426,9 +3275,6 @@ window.toggleStdsState = function toggleStdsState(stateName) {
     runStdsSearch();
 };
 
-// Fix #4: use .clear() + forEach instead of direct reassignment.
-// Direct reassignment (activeStdsStates = new Set(...)) creates a new object
-// and silently breaks any code holding a reference to the old Set.
 window.toggleAllStdsStates = function toggleAllStdsStates(state) {
     activeStdsStates.clear();
     if (state) courseStandardGroups.forEach(g => activeStdsStates.add(g));
@@ -3442,18 +3288,11 @@ window.setStdsView = function setStdsView(mode) {
     runStdsSearch();
 };
 
-// =============================================================================
-// STANDARDS SEARCH — CORE
-// Fix #11: references to window.currentGroupedStds etc replaced with the
-// proper module-level let variables declared in Part 3.
-// =============================================================================
-
 window.runStdsSearch = function runStdsSearch() {
     const query     = elements.stdsSearchInput.value.trim().toLowerCase();
     const grid      = document.getElementById('stds-results-grid');
     const isGrouped = document.getElementById('stds-group-toggle')?.checked;
 
-    // ── Helper: enable/disable "Show Shared" toggle + rebuild colour map ──────
     const updateToggleState = (resultsArr) => {
         const groupToggleCb  = document.getElementById('stds-group-toggle');
         const groupToggleLbl = document.getElementById('lbl-stds-group-toggle');
@@ -3489,7 +3328,6 @@ window.runStdsSearch = function runStdsSearch() {
         }
     };
 
-    // ── Clear when nothing active ─────────────────────────────────────────────
     if (!query && activeStdsModules.size === 0 && activeStdsStates.size === 0) {
         grid.innerHTML                       = '';
         elements.exportStdsBtn.style.display = 'none';
@@ -3499,13 +3337,11 @@ window.runStdsSearch = function runStdsSearch() {
         return;
     }
 
-    // ── Build fuzzy pattern for multi-word queries ────────────────────────────
     const queryParts   = query.split(/[\W_]+/).filter(Boolean);
     const fuzzyPattern = queryParts.length > 0
         ? new RegExp(queryParts.map(escapeRegExp).join('[\\W_]+'), 'gi')
         : null;
 
-    // ── Filter the flat standards list ───────────────────────────────────────
     let results = courseStandardsList.filter(std => {
         if (activeStdsModules.size > 0 && !activeStdsModules.has(std.locationId.split('.')[0])) return false;
         if (activeStdsStates.size  > 0 && !activeStdsStates.has(std.group))  return false;
@@ -3518,7 +3354,6 @@ window.runStdsSearch = function runStdsSearch() {
         return true;
     });
 
-    // ── Aggregate to lesson level for lesson / table views ───────────────────
     if (currentStdsView === 'lesson' || currentStdsView === 'table') {
         const lessonMap = new Map();
         results.forEach(std => {
@@ -3536,14 +3371,12 @@ window.runStdsSearch = function runStdsSearch() {
         results = Array.from(lessonMap.values());
     }
 
-    // ── Sort ──────────────────────────────────────────────────────────────────
     results.sort((a, b) =>
         (a.locationId || "").localeCompare(b.locationId || "", undefined, { numeric: true }) ||
         (a.group      || "").localeCompare(b.group      || "") ||
         (a.code       || "").localeCompare(b.code       || "", undefined, { numeric: true })
     );
 
-    // ── Update state ──────────────────────────────────────────────────────────
     currentStdsSearchResults = results;
     grid.innerHTML           = '';
 
@@ -3568,12 +3401,10 @@ window.runStdsSearch = function runStdsSearch() {
         `across ${uniqueLocs} location${uniqueLocs !== 1 ? 's' : ''}`;
     elements.stdsStats.style.display = 'inline-block';
 
-    // Fix #11: assign to let variables instead of window.* properties
     currentStdsExactPattern = query ? new RegExp(`(${escapeRegExp(query)})`, 'gi') : null;
     currentStdsFuzzyPattern = fuzzyPattern;
     currentStdsQuery        = query;
 
-    // ── Group results by location ID ──────────────────────────────────────────
     const groupedResults = new Map();
     results.forEach(std => {
         if (!groupedResults.has(std.locationId)) {
@@ -3586,7 +3417,6 @@ window.runStdsSearch = function runStdsSearch() {
         groupedResults.get(std.locationId).standards.push(std);
     });
 
-    // Fix #11: assign to let variables instead of window.* properties
     currentGroupedStds = Array.from(groupedResults.values());
     stdsRenderCount    = 0;
 
@@ -3594,21 +3424,15 @@ window.runStdsSearch = function runStdsSearch() {
     else                             renderStdsBatch();
 };
 
-// =============================================================================
-// STANDARDS SEARCH — BATCH RENDERER
-// Fix #11: window.currentGroupedStds → currentGroupedStds
-//          window.stdsRenderCount    → stdsRenderCount
-// =============================================================================
-
 window.renderStdsBatch = function renderStdsBatch() {
     const grid      = document.getElementById('stds-results-grid');
     const frag      = document.createDocumentFragment();
     const isGrouped = document.getElementById('stds-group-toggle')?.checked;
-    const start     = stdsRenderCount;                                    // Fix #11
-    const end       = Math.min(start + STDS_BATCH_SIZE, currentGroupedStds.length); // Fix #11
+    const start     = stdsRenderCount;                                    
+    const end       = Math.min(start + STDS_BATCH_SIZE, currentGroupedStds.length); 
 
     for (let i = start; i < end; i++) {
-        const group = currentGroupedStds[i];   // Fix #11
+        const group = currentGroupedStds[i];   
         const card  = document.createElement('div');
         card.className = 'std-result-card';
 
@@ -3682,9 +3506,9 @@ window.renderStdsBatch = function renderStdsBatch() {
 
     document.getElementById('load-more-stds-btn')?.remove();
     grid.appendChild(frag);
-    stdsRenderCount = end;   // Fix #11
+    stdsRenderCount = end;   
 
-    if (stdsRenderCount < currentGroupedStds.length) {   // Fix #11
+    if (stdsRenderCount < currentGroupedStds.length) {   
         const remaining = currentGroupedStds.length - stdsRenderCount;
         const btn = document.createElement('button');
         btn.id        = 'load-more-stds-btn';
@@ -3700,7 +3524,6 @@ window.renderStdsBatch = function renderStdsBatch() {
     setTimeout(updateStickyHeaderOffset, 50);
 };
 
-// Shared helper: single standard code + description row.
 function buildStdRowHTML(displayCode, displayState, borderStyle = '') {
     return `<div style="display:flex; align-items:flex-start; gap:15px;
                         padding:10px 0; ${borderStyle}">
@@ -3718,15 +3541,10 @@ function buildStdRowHTML(displayCode, displayState, borderStyle = '') {
             </div>`;
 }
 
-// =============================================================================
-// STANDARDS SEARCH — TABLE VIEW
-// Fix #11: window.currentGroupedStds → currentGroupedStds
-// =============================================================================
-
 window.renderStdsTable = function renderStdsTable() {
     const grid = document.getElementById('stds-results-grid');
     grid.innerHTML = '';
-    if (!currentGroupedStds.length) return;   // Fix #11
+    if (!currentGroupedStds.length) return;  
 
     const sortedStates = Array.from(
         new Set(currentStdsSearchResults.map(s => s.group))
@@ -3738,7 +3556,7 @@ window.renderStdsTable = function renderStdsTable() {
     sortedStates.forEach(s => { html += `<th>${escapeHtml(s)}</th>`; });
     html += '</tr></thead><tbody>';
 
-    currentGroupedStds.forEach(group => {   // Fix #11
+    currentGroupedStds.forEach(group => {   
         html += `<tr><td class="compact-loc-col"
                          title="${escapeHtml(group.breadcrumb)}">
                      ${escapeHtml(group.locationId)}
@@ -3786,11 +3604,6 @@ window.renderStdsTable = function renderStdsTable() {
     setTimeout(updateStickyHeaderOffset, 50);
 };
 
-// =============================================================================
-// STANDARDS SEARCH — FULLSCREEN TABLE
-// Fix #11: no window.currentGroupedStds reference here (clones rendered HTML)
-// =============================================================================
-
 window.openFullscreenTable = function openFullscreenTable() {
     const tableHtml = document.getElementById('stds-results-grid').innerHTML;
 
@@ -3807,12 +3620,6 @@ window.openFullscreenTable = function openFullscreenTable() {
     overlay.classList.add('active', 'fullscreen-modal');
     document.body.style.overflow = 'hidden';
 };
-
-// =============================================================================
-// STANDARDS SEARCH — CELL DETAIL MODAL
-// Fix #11: uses currentStdsQuery, currentStdsExactPattern, currentStdsFuzzyPattern
-//          as let variables instead of window.* properties
-// =============================================================================
 
 window.openStdCellModal = function openStdCellModal(encCellData, encGroup, encLocationId) {
     const cellData   = JSON.parse(decodeURIComponent(encCellData));
@@ -3864,8 +3671,6 @@ window.openStdCellModal = function openStdCellModal(encCellData, encGroup, encLo
         let displayCode  = escapeHtml(std.code);
         let displayState = std.statement;
 
-        // Fix #11: currentStdsQuery / currentStdsExactPattern / currentStdsFuzzyPattern
-        // are now module-level let variables, not window.* properties
         if (currentStdsQuery) {
             if (currentStdsExactPattern) {
                 currentStdsExactPattern.lastIndex = 0;
@@ -3927,25 +3732,19 @@ window.returnToFullscreenTable = function returnToFullscreenTable(e) {
     }
 };
 
-// =============================================================================
-// HIGHLIGHT HELPER
-// Fix #11: currentStdsQuery, currentStdsExactPattern, currentStdsFuzzyPattern
-//          referenced as module-level let variables
-// =============================================================================
-
 function getHighlightedStd(code, statement) {
     let displayCode  = escapeHtml(code);
     let displayState = escapeHtml(statement);
 
-    if (currentStdsQuery) {   // Fix #11: was window.currentStdsQuery
-        if (currentStdsExactPattern) {   // Fix #11
+    if (currentStdsQuery) {   
+        if (currentStdsExactPattern) {   
             currentStdsExactPattern.lastIndex = 0;
             displayCode = displayCode.replace(
                 currentStdsExactPattern,
                 '<span class="highlight">$1</span>'
             );
         }
-        if (currentStdsFuzzyPattern) {   // Fix #11
+        if (currentStdsFuzzyPattern) {   
             currentStdsFuzzyPattern.lastIndex = 0;
             if (currentStdsFuzzyPattern.test(statement)) {
                 currentStdsFuzzyPattern.lastIndex = 0;
@@ -3956,7 +3755,7 @@ function getHighlightedStd(code, statement) {
                 return { displayCode, displayState };
             }
         }
-        if (currentStdsExactPattern) {   // Fix #11
+        if (currentStdsExactPattern) {   
             currentStdsExactPattern.lastIndex = 0;
             displayState = displayState.replace(
                 currentStdsExactPattern,
@@ -4038,16 +3837,6 @@ window.toggleFolderDetails = function toggleFolderDetails(event, btn) {
     details.forEach(d => { d.open = isExpanding; });
     btn.innerHTML = isExpanding ? 'Collapse States' : 'Expand States';
 };
-	
-// =============================================================================
-// PART 8 — Media Dashboard, Glossary & Modals
-// v5.10 changes:
-//   Fix #2  — Glossary index drift: currentDisplayedMedia is reset at the top
-//             of renderGlossaryList() when called standalone (not just from
-//             renderMediaDashboard), so dataset.index values stay consistent.
-//   Fix #8  — file.text() used for MP3 blob URL (indirect — fileMap.get()
-//             still returns a File object; URL.createObjectURL unchanged).
-// =============================================================================
 
 // =============================================================================
 // MEDIA DASHBOARD — FILTER TOGGLE HANDLERS
@@ -4057,6 +3846,12 @@ window.setMediaTab = function setMediaTab(tab) {
     currentMediaTab = tab;
     activeMediaFilterTypes.clear();
     activeMediaFilterMissingId = false;
+    activeMediaFilterHasAlt = false;
+    activeMediaFilterHasCaption = false;
+    activeMediaFilterHasCaptionHeader = false;
+    activeMediaFilterHasTextVer = false;
+    activeMediaFilterCheckCopyright = false;
+    activeMediaFilterCheckTextVer = false;
     renderMediaDashboard();
 };
 
@@ -4070,6 +3865,16 @@ window.toggleMissingIdFilter = function toggleMissingIdFilter(checked) {
     activeMediaFilterMissingId = checked;
     renderMediaDashboard();
 };
+
+// NEW image filter toggles
+window.toggleMediaFilterHasAlt = function(checked) { activeMediaFilterHasAlt = checked; renderMediaDashboard(); };
+window.toggleMediaFilterHasCaption = function(checked) { activeMediaFilterHasCaption = checked; renderMediaDashboard(); };
+window.toggleMediaFilterHasCaptionHeader = function(checked) { activeMediaFilterHasCaptionHeader = checked; renderMediaDashboard(); };
+window.toggleMediaFilterHasTextVer = function(checked) { activeMediaFilterHasTextVer = checked; renderMediaDashboard(); };
+
+// NEW audit check toggles
+window.toggleMediaFilterCheckCopyright = function(checked) { activeMediaFilterCheckCopyright = checked; renderMediaDashboard(); };
+window.toggleMediaFilterCheckTextVer = function(checked) { activeMediaFilterCheckTextVer = checked; renderMediaDashboard(); };
 
 window.toggleMediaTypeFilter = function toggleMediaTypeFilter(type) {
     if (activeMediaFilterTypes.has(type)) activeMediaFilterTypes.delete(type);
@@ -4102,15 +3907,35 @@ function passesModuleFilter(item) {
     if (activeMediaModules.size === 0) return true;
     return activeMediaModules.has(item.locationId.split('.')[0]);
 }
+	
+window.clearAllMediaFilters = function clearAllMediaFilters() {
+    activeMediaModules.clear();
+    activeMediaFilterTypes.clear();
+    activeMediaFilterMissingId = false;
+    activeMediaFilterHasAlt = false;
+    activeMediaFilterHasCaption = false;
+    activeMediaFilterHasCaptionHeader = false;
+    activeMediaFilterHasTextVer = false;
+    activeMediaFilterCheckCopyright = false;
+    activeMediaFilterCheckTextVer = false;
+    renderMediaDashboard();
+};
 
 // =============================================================================
-// MEDIA DASHBOARD — MAIN RENDERER
+// MEDIA DASHBOARD — MAIN RENDERER (Start)
 // =============================================================================
 
-function renderMediaDashboard() {
+window.renderMediaDashboard = function renderMediaDashboard() {
     const container = elements.mediaArea;
-    container.innerHTML  = '';
+    
+    // We do NOT clear HTML here entirely because the image tab uses progressive 
+    // rendering (batching) to avoid freezing the UI when there are 100s of images.
+    // Instead we clear inside the specific tab logic below.
+
+    // Calculate filtered items...
+	container.innerHTML  = '';
     currentDisplayedMedia = [];
+    currentMediaRenderCount = 0; // Reset pagination counter
 
     // ── Compute filtered counts ───────────────────────────────────────────────
     const filteredVideos = courseVideos.filter(m =>
@@ -4127,20 +3952,59 @@ function renderMediaDashboard() {
         passesModuleFilter(m) &&
         (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.interactiveType))
     );
+    
+   // NEW: Filter Images based on the new requirements
+    const filteredImages = courseImages.filter(img => {
+        if (!passesModuleFilter(img)) return false;
+        if (activeMediaFilterTypes.size > 0 && !activeMediaFilterTypes.has(img.fileType)) return false;
+        if (activeMediaFilterHasAlt && !img.altText.trim()) return false;
+        if (activeMediaFilterHasCaption && !img.caption.trim()) return false;
+        if (activeMediaFilterHasCaptionHeader && !img.captionHeader.trim()) return false;
+        if (activeMediaFilterHasTextVer && !img.textVersion.trim()) return false;
+        
+        // Audit Check: Copyrights
+        if (activeMediaFilterCheckCopyright) {
+            // Display IF copyright is empty AND filename does NOT end with approved suffixes
+            if (img.copyright.trim() !== '') return false;
+            const nameWithoutExt = img.fileName.substring(0, img.fileName.lastIndexOf('.')) || img.fileName;
+            const approvedSuffixes = ['_gi', '_ts', '_flvs', '_flvs_ai', '_ai_flvs'];
+            const hasApprovedSuffix = approvedSuffixes.some(suffix => nameWithoutExt.toLowerCase().endsWith(suffix));
+            if (hasApprovedSuffix) return false;
+        }
+        
+        // Audit Check: Text Versions
+        if (activeMediaFilterCheckTextVer) {
+            const hasTextVer = !!img.textVersion.trim();
+            const hasAlt = !!img.altText.trim();
+            const altContainsTextVer = img.altText.toLowerCase().includes('text version');
+            
+            // Fails Condition 1: Has Text Version but NO Alt Tag
+            const failsCondition1 = hasTextVer && !hasAlt;
+            // Fails Condition 2: Alt tag says "text version" but NO Text Version exists
+            const failsCondition2 = altContainsTextVer && !hasTextVer;
+            
+            if (!failsCondition1 && !failsCondition2) return false;
+        }
+        
+        return true;
+    });
+
     const filteredGlossary = courseGlossary.filter(g =>
         activeMediaModules.size === 0 ||
         g.locations.some(loc => activeMediaModules.has(loc.split('.')[0]))
     );
 
     const currentUniqueTypes = new Set();
-    if      (currentMediaTab === 'videos')
-        filteredVideos.forEach(m => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
-    else if (currentMediaTab === 'audio')
-        filteredAudio.forEach(m  => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
-    else if (currentMediaTab === 'interactives')
-        filteredInteractives.forEach(m => { if (m.interactiveType) currentUniqueTypes.add(m.interactiveType); });
+    if      (currentMediaTab === 'videos')       filteredVideos.forEach(m => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
+    else if (currentMediaTab === 'audio')        filteredAudio.forEach(m  => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
+    else if (currentMediaTab === 'interactives') filteredInteractives.forEach(m => { if (m.interactiveType) currentUniqueTypes.add(m.interactiveType); });
+    else if (currentMediaTab === 'images')       filteredImages.forEach(img => { if (img.fileType) currentUniqueTypes.add(img.fileType); });
 
-    const isFiltered = activeMediaModules.size > 0 || activeMediaFilterTypes.size > 0 || activeMediaFilterMissingId;
+    const isFiltered = activeMediaModules.size > 0 || activeMediaFilterTypes.size > 0 || 
+                       activeMediaFilterMissingId || activeMediaFilterHasAlt || 
+                       activeMediaFilterHasCaption || activeMediaFilterHasCaptionHeader || 
+                       activeMediaFilterHasTextVer;
+    
     const isGlossary = currentMediaTab === 'glossary';
 
     // ── Build filter dropdown sections ────────────────────────────────────────
@@ -4157,41 +4021,82 @@ function renderMediaDashboard() {
         buildFilterCheckboxHTML(`toggleMediaTypeFilter('${t}')`, t, activeMediaFilterTypes.has(t))
     ).join('');
 
-    const missingIdRow = (currentMediaTab === 'videos' || currentMediaTab === 'audio')
-        ? `<div style="font-weight:700; font-size:0.75rem; color:var(--text-light);
-                       text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-               Status
-           </div>
-           <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem;
-                         cursor:pointer; color:#dc3545; font-weight:600;">
-               <input type="checkbox"
-                      style="accent-color:#dc3545; width:16px; height:16px; cursor:pointer;"
-                      onchange="toggleMissingIdFilter(this.checked)"
-                      ${activeMediaFilterMissingId ? 'checked' : ''}>
+	let specificFiltersHtml = '';
+    if (currentMediaTab === 'videos' || currentMediaTab === 'audio') {
+        specificFiltersHtml = `
+            <div style="font-weight:700; font-size:0.75rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Status</div>
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; cursor:pointer; color:#dc3545; font-weight:600;">
+               <input type="checkbox" style="accent-color:#dc3545; width:16px; height:16px; cursor:pointer;" onchange="toggleMissingIdFilter(this.checked)" ${activeMediaFilterMissingId ? 'checked' : ''}>
                Missing Kaltura ID
-           </label>`
-        : '';
+            </label>`;
+    } else if (currentMediaTab === 'images') {
+        specificFiltersHtml = `
+            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:140px;">
+                    <div style="font-weight:700; font-size:0.75rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Must Contain</div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        ${buildFilterCheckboxHTML('toggleMediaFilterHasAlt(this.checked)', 'Alt Text', activeMediaFilterHasAlt)}
+                        ${buildFilterCheckboxHTML('toggleMediaFilterHasCaption(this.checked)', 'Caption', activeMediaFilterHasCaption)}
+                        ${buildFilterCheckboxHTML('toggleMediaFilterHasCaptionHeader(this.checked)', 'Caption Header', activeMediaFilterHasCaptionHeader)}
+                        ${buildFilterCheckboxHTML('toggleMediaFilterHasTextVer(this.checked)', 'Text Version', activeMediaFilterHasTextVer)}
+                    </div>
+                </div>
+               <div style="flex:1; min-width:140px;">
+                    <div style="font-weight:700; font-size:0.75rem; color:#dc3545; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Audit Checks</div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        ${buildFilterCheckboxHTML(
+                            'toggleMediaFilterCheckCopyright(this.checked)', 
+                            `Check Copyrights <span title="Flags images with an empty copyright, unless the filename ends in an approved suffix (e.g., _gi, _ts, _flvs, _flvs_ai)." style="cursor:help; opacity:0.6; margin-left:4px; display:inline-flex; align-items:center; vertical-align:text-bottom; width:1.1em; height:1.1em;">${SVGS.info}</span>`, 
+                            activeMediaFilterCheckCopyright
+                        )}
+                        ${buildFilterCheckboxHTML(
+                            'toggleMediaFilterCheckTextVer(this.checked)', 
+                            `Check Text Versions <span title="Flags images that have a Text Version but no Alt Text, OR say &quot;text version&quot; in the Alt Text but are missing the actual text." style="cursor:help; opacity:0.6; margin-left:4px; display:inline-flex; align-items:center; vertical-align:text-bottom; width:1.1em; height:1.1em;">${SVGS.info}</span>`, 
+                            activeMediaFilterCheckTextVer
+                        )}
+                    </div>
+                </div>
+            </div>`;
+    }
 
     const typesSection = !isGlossary
         ? `<div style="border-top:1px dashed var(--border); padding-top:15px;">
-               <div style="font-weight:700; font-size:0.75rem; color:var(--text-light);
-                           text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-                   Types
-               </div>
-               <div style="max-height:150px; overflow-y:auto; overflow-x:hidden;
-                           padding-right:5px; margin-bottom:${missingIdRow ? '15px' : '0'};">
+               <div style="font-weight:700; font-size:0.75rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Types</div>
+               <div style="max-height:150px; overflow-y:auto; overflow-x:hidden; padding-right:5px; margin-bottom:${specificFiltersHtml ? '15px' : '0'};">
                    <div style="column-count:2; column-gap:20px;">${typeCheckboxes}</div>
                </div>
-               ${missingIdRow}
+               ${specificFiltersHtml}
            </div>`
         : '';
 
     // ── Inject sticky header ──────────────────────────────────────────────────
+    let activeFilterCount = activeMediaModules.size + activeMediaFilterTypes.size;
+    if (activeMediaFilterMissingId) activeFilterCount++;
+    if (activeMediaFilterHasAlt) activeFilterCount++;
+    if (activeMediaFilterHasCaption) activeFilterCount++;
+    if (activeMediaFilterHasCaptionHeader) activeFilterCount++;
+    if (activeMediaFilterHasTextVer) activeFilterCount++;
+    if (activeMediaFilterCheckCopyright) activeFilterCount++;
+    if (activeMediaFilterCheckTextVer) activeFilterCount++;
+
+    const isFilteredUI = activeFilterCount > 0;
+    const filterBtnHtml = isFilteredUI 
+        ? `Filters <span class="filter-badge">${activeFilterCount}</span> ${SVGS.arrowDown}`
+        : `Filters ${SVGS.arrowDown}`;
+
+    const clearFiltersHtml = isFilteredUI
+        ? `<button class="clear-filters-btn" onclick="clearAllMediaFilters()">Clear</button>`
+        : '';
+
     container.innerHTML = `
         <div class="sticky-top-wrapper">
             <div class="white-card-header" style="padding-bottom:0;">
-                <div class="media-controls">
+                <div class="media-header-container">
                     <div class="media-tab-group">
+                        <button class="media-tab-btn ${currentMediaTab === 'images'       ? 'active' : ''}" onclick="setMediaTab('images')">
+                            ${SVGS.image} Images
+                            <span style="font-size:0.8em; opacity:0.7;">(${filteredImages.length})</span>
+                        </button>
                         <button class="media-tab-btn ${currentMediaTab === 'videos'       ? 'active' : ''}" onclick="setMediaTab('videos')">
                             ${SVGS.video} Videos
                             <span style="font-size:0.8em; opacity:0.7;">(${filteredVideos.length})</span>
@@ -4209,201 +4114,512 @@ function renderMediaDashboard() {
                             <span style="font-size:0.8em; opacity:0.7;">(${filteredGlossary.length})</span>
                         </button>
                     </div>
-                    <div class="media-utilities">
-                        <div class="filter-dropdown-wrapper">
-                            <button class="filter-btn btn-base ${isFiltered ? 'filtered' : ''}"
-                                    onclick="toggleMediaFilterDropdown(event)">
-                                ${isFiltered ? `${SVGS.check} Filters Applied` : 'Filters'}
-                                ${SVGS.arrowDown}
-                            </button>
-                            <div id="media-filter-dropdown"
-                                 class="filter-dropdown-content ${isMediaFilterOpen ? 'show' : ''}"
-                                 style="width:400px;" onclick="event.stopPropagation()">
-                                <div style="font-weight:700; font-size:0.75rem; color:var(--text-light);
-                                            text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-                                    Modules
+                    
+                    <div class="media-action-bar">
+                        <div class="media-filters-group">
+                            <div class="filter-dropdown-wrapper">
+                                <button class="filter-btn btn-base ${isFilteredUI ? 'filtered' : ''}" onclick="toggleMediaFilterDropdown(event)">
+                                    ${filterBtnHtml}
+                                </button>
+                                <div id="media-filter-dropdown" class="filter-dropdown-content ${isMediaFilterOpen ? 'show' : ''}" style="width:400px;" onclick="event.stopPropagation()">
+                                    <div style="font-weight:700; font-size:0.75rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Modules</div>
+                                    <div class="filter-actions" style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border);">
+                                        <button class="filter-action-btn" onclick="toggleAllMediaModules(false)">Clear All</button>
+                                    </div>
+                                    <div style="max-height:200px; overflow-y:auto; overflow-x:hidden; padding-right:5px; margin-bottom:${!isGlossary ? '15px' : '0'};">
+                                        <div style="column-count:2; column-gap:20px;">${modCheckboxes}</div>
+                                    </div>
+                                    ${typesSection}
                                 </div>
-                                <div class="filter-actions"
-                                     style="margin-bottom:10px; padding-bottom:10px;
-                                            border-bottom:1px solid var(--border);">
-                                    <button class="filter-action-btn" onclick="toggleAllMediaModules(false)">Clear All</button>
-                                </div>
-                                <div style="max-height:200px; overflow-y:auto; overflow-x:hidden;
-                                            padding-right:5px; margin-bottom:${!isGlossary ? '15px' : '0'};">
-                                    <div style="column-count:2; column-gap:20px;">${modCheckboxes}</div>
-                                </div>
-                                ${typesSection}
                             </div>
+                            ${clearFiltersHtml}
                         </div>
-                        <div class="layout-toggle" style="${isGlossary ? 'display:none;' : ''}">
-                            <button class="layout-btn ${currentMediaLayout === 'grid' ? 'active' : ''}"
-                                    onclick="setMediaLayout('grid')">▦ Grid</button>
-                            <button class="layout-btn ${currentMediaLayout === 'list' ? 'active' : ''}"
-                                    onclick="setMediaLayout('list')">☰ List</button>
+                        
+                        <div class="media-global-actions">
+                            <div class="layout-toggle" style="${isGlossary ? 'display:none;' : ''}">
+                                <button class="layout-btn ${currentMediaLayout === 'grid' ? 'active' : ''}" onclick="setMediaLayout('grid')">▦ Grid</button>
+                                <button class="layout-btn ${currentMediaLayout === 'list' ? 'active' : ''}" onclick="setMediaLayout('list')">☰ List</button>
+                            </div>
+                            <button class="action-btn btn-base" style="background:var(--primary); color:#fff; border:none; box-shadow: 0 2px 4px rgba(28,53,94,0.15);" onclick="exportMediaReport()">
+                                ${SVGS.export} Export Report
+                            </button>
                         </div>
-                        <button class="action-btn btn-base" style="margin-left:auto;"
-                                onclick="exportMediaReport()">
-                            ${SVGS.export} Export Report
-                        </button>
                     </div>
                 </div>
                 ${isGlossary ? `
                     <div class="glossary-search-wrapper">
-                        <input type="text" id="glossary-search" class="glossary-search"
-                               placeholder="Search glossary terms (name or definition)…"
-                               autocomplete="off"
-                               oninput="filterGlossaryList(this.value); toggleGlossaryClearBtn(this.value)">
-                        <button id="glossary-search-clear" class="glossary-search-clear"
-                                onclick="clearGlossarySearch()" title="Clear search">&times;</button>
+                        <input type="text" id="glossary-search" class="glossary-search" placeholder="Search glossary terms…" autocomplete="off" oninput="filterGlossaryList(this.value); toggleGlossaryClearBtn(this.value)">
+                        <button id="glossary-search-clear" class="glossary-search-clear" onclick="clearGlossarySearch()" title="Clear search">&times;</button>
                     </div>
                     <div class="glossary-az-bar" id="glossary-az-bar"></div>
                 ` : ''}
             </div>
         </div>
-        <div id="media-grid"
-             class="${currentMediaLayout === 'list' && !isGlossary ? 'list-view' : ''}
-                    ${isGlossary ? 'glossary-view-mode' : ''}"></div>`;
+        <div id="media-grid" class="${currentMediaLayout === 'list' && !isGlossary ? 'list-view' : ''} ${isGlossary ? 'glossary-view-mode' : ''} ${currentMediaTab === 'images' && currentMediaLayout === 'grid' ? 'image-grid-view' : ''}"></div>`;
+    
 
-    // ── Render tab content ────────────────────────────────────────────────────
     const grid = document.getElementById('media-grid');
     const frag = document.createDocumentFragment();
 
     if (isGlossary) {
         grid.innerHTML = `<div class="glossary-columns" id="glossary-list-container"></div>`;
-        // Fix #2: renderGlossaryList now receives an already-cleared
-        // currentDisplayedMedia (cleared at the top of this function).
-        // The glossary path is fine here because renderMediaDashboard
-        // always resets currentDisplayedMedia before calling it.
         renderGlossaryList('');
+    } else if (currentMediaTab === 'images') {
+        if (!filteredImages.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No images found for the selected filters.</div>';
+            return;
+        }
+        
+        currentDisplayedMedia = filteredImages.map(img => ({ item: img, type: 'image' }));
+        
+        if (currentMediaLayout === 'list') {
+            grid.className = ''; // Remove other classes
+            grid.style.display = 'block'; // Force block layout so the table and button stack vertically
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-list-wrapper';
+            wrapper.innerHTML = `
+                <table class="image-list-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Thumbnail</th>
+                            <th>Location</th>
+                            <th>File Name</th>
+                            <th>Type</th>
+                            <th style="text-align:center;">Alt Text</th>
+                            <th style="text-align:center;">Text Version</th>
+                            <th style="text-align:center;">Caption</th>
+                            <th style="text-align:center;">Caption Header</th>
+                            <th style="text-align:center;">Copyright</th>
+                        </tr>
+                    </thead>
+                    <tbody id="image-list-tbody"></tbody>
+                </table>
+            `;
+            grid.appendChild(wrapper);
+        }
+        
+        window.renderImageBatch = function() {
+            const batchContainer = currentMediaLayout === 'list' ? document.getElementById('image-list-tbody') : grid;
+            const start = currentMediaRenderCount;
+            const end = Math.min(start + MEDIA_BATCH_SIZE, currentDisplayedMedia.length);
+            const batchFrag = document.createDocumentFragment();
+
+            const checkIcon = `<span class="status-icon-check">${SVGS.checkCircle}</span>`;
+            const dashIcon = `<span class="status-icon-dash">${SVGS.minus}</span>`;
+
+            for (let i = start; i < end; i++) {
+                const entry = currentDisplayedMedia[i];
+                const img = entry.item;
+                
+                // Get Blob URL if the file exists locally to show preview
+                let srcUrl = '';
+                const cleanPath = img.src.replace(/^\/+/, '');
+                if (fileMap.has(cleanPath)) {
+                    srcUrl = URL.createObjectURL(fileMap.get(cleanPath));
+                }
+
+                if (currentMediaLayout === 'grid') {
+                    const card = document.createElement('div');
+                    card.className = 'image-card';
+                    card.dataset.index = i;
+                    
+                    const tvClass = img.textVersion.trim() ? '' : 'missing';
+                    const tvIcon = img.textVersion.trim() ? SVGS.checkCircle : SVGS.minus;
+
+                    card.innerHTML = `
+                        <div class="image-card-header">
+                            <span class="id-number"># ${img.locationId}</span>
+                            <span class="type-badge">Type: ${img.fileType}</span>
+                        </div>
+                        <div class="image-card-img-wrapper">
+                            ${srcUrl ? `<img src="${srcUrl}" alt="Preview" loading="lazy">` : `<span style="color:#adb5bd; font-size:0.8rem;">Image not found</span>`}
+                        </div>
+                       <div class="image-card-body">
+                            <div class="image-card-text"><strong>Alt:</strong> ${img.altText || '<span class="empty-dash">—</span>'}</div>
+                            <div class="image-card-text"><strong>Caption:</strong> ${img.caption || '<span class="empty-dash">—</span>'}</div>
+                            <div class="image-card-text"><strong>Copyright:</strong> ${img.copyright || '<span class="empty-dash">—</span>'}</div>
+                        </div>
+                        <div class="image-card-footer">
+                            <span class="text-version-pill ${tvClass}">${tvIcon} Text Version</span>
+                        </div>
+                    `;
+                    batchFrag.appendChild(card);
+                } else {
+                    const tr = document.createElement('tr');
+                    tr.dataset.index = i;
+                    
+                    tr.innerHTML = `
+                        <td>${srcUrl ? `<img src="${srcUrl}" class="img-thumb-sm" loading="lazy">` : `<div class="img-thumb-sm flex-center">${SVGS.image}</div>`}</td>
+                        <td style="font-family:var(--code-font); color:var(--id-color); font-size:0.8rem;">${img.locationId}</td>
+                        <td style="font-weight:500;">${img.fileName}</td>
+                        <td style="font-family:var(--code-font); color:var(--text-light); font-size:0.8rem;">${img.fileType}</td>
+                        <td style="text-align:center;">${img.altText.trim() ? checkIcon : dashIcon}</td>
+                        <td style="text-align:center;">${img.textVersion.trim() ? checkIcon : dashIcon}</td>
+                        <td style="text-align:center;">${img.caption.trim() ? checkIcon : dashIcon}</td>
+                        <td style="text-align:center;">${img.captionHeader.trim() ? checkIcon : dashIcon}</td>
+                        <td style="text-align:center;">${img.copyright.trim() ? checkIcon : dashIcon}</td>
+                    `;
+                    batchFrag.appendChild(tr);
+                }
+            }
+            
+            document.getElementById('load-more-media-btn')?.remove();
+            batchContainer.appendChild(batchFrag);
+            currentMediaRenderCount = end;
+
+            if (currentMediaRenderCount < currentDisplayedMedia.length) {
+                const remaining = currentDisplayedMedia.length - currentMediaRenderCount;
+                const btnWrapper = document.createElement('div');
+                btnWrapper.id = 'load-more-media-btn';
+                btnWrapper.style = currentMediaLayout === 'list' ? 'padding: 20px; text-align: center;' : 'grid-column: 1/-1; text-align: center;';
+                
+                const btn = document.createElement('button');
+                btn.className = 'action-btn btn-base';
+                btn.style.margin = '0 auto';
+                btn.innerHTML = `Load Next ${Math.min(MEDIA_BATCH_SIZE, remaining)} Images (Showing ${currentMediaRenderCount} of ${currentDisplayedMedia.length})`;
+                btn.onclick = window.renderImageBatch;
+                
+                btnWrapper.appendChild(btn);
+                
+                if (currentMediaLayout === 'list') {
+                    grid.appendChild(btnWrapper);
+                } else {
+                    grid.appendChild(btnWrapper);
+                }
+            }
+        };
+        
+        window.renderImageBatch();
 
     } else if (currentMediaTab === 'videos') {
-        if (!filteredVideos.length) {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No videos found for the selected filters.</div>';
-            return;
-        }
-        filteredVideos.forEach(vid => {
-            const hasTranscript = vid.textVersion?.replace(/<[^>]*>?/gm, '').trim();
-            currentDisplayedMedia.push({ item: vid, type: 'video' });
-            const card = document.createElement('div');
-            card.className     = 'media-card';
-            card.dataset.index = currentDisplayedMedia.length - 1;
-            card.innerHTML = `
-                <div class="media-top-row">
-                    <div class="media-icon">${SVGS.video}</div>
-                    <div class="media-location">
-                        <span class="id-number" title="Location"># ${vid.locationId}</span>
+        if (!filteredVideos.length) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No videos found for the selected filters.</div>'; return; }
+        
+        if (currentMediaLayout === 'list') {
+            grid.className = ''; 
+            grid.style.display = 'block'; 
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-list-wrapper'; 
+            
+           let tableRows = '';
+            filteredVideos.forEach(vid => {
+                const hasTranscript = vid.textVersion?.replace(/<[^>]*>?/gm, '').trim();
+                currentDisplayedMedia.push({ item: vid, type: 'video' });
+                const idx = currentDisplayedMedia.length - 1;
+                
+                tableRows += `
+                    <tr data-index="${idx}">
+                        <td style="font-family:var(--code-font); color:var(--id-color); font-size:0.8rem;">${vid.locationId}</td>
+                        <td style="font-weight:500; white-space:normal; min-width:200px;">${escapeHtml(vid.title)}</td>
+                        <td style="font-family:var(--code-font); font-size:0.8rem;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                ${vid.entryId}
+                                <button class="copy-btn flex-center" data-id="${vid.entryId}" title="Copy ID">${SVGS.clipboard}</button>
+                            </div>
+                        </td>
+                        <td><span class="type-badge" style="margin:0;">${vid.kalturaType}</span></td>
+                        <td style="text-align:center;">${hasTranscript ? `<span class="status-icon-check">${SVGS.checkCircle}</span>` : `<span class="status-icon-dash">${SVGS.minus}</span>`}</td>
+                    </tr>`;
+            });
+
+            wrapper.innerHTML = `
+                <table class="image-list-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Title</th>
+                            <th>Kaltura ID</th>
+                            <th>Type</th>
+                            <th style="text-align:center;">Text Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>`;
+            grid.appendChild(wrapper);
+        } else {
+            filteredVideos.forEach(vid => {
+                const hasTranscript = vid.textVersion?.replace(/<[^>]*>?/gm, '').trim();
+                currentDisplayedMedia.push({ item: vid, type: 'video' });
+                const card = document.createElement('div');
+                card.className     = 'media-card';
+                card.dataset.index = currentDisplayedMedia.length - 1;
+                card.innerHTML = `
+                    <div class="media-top-row">
+                        <div class="media-icon">${SVGS.video}</div>
+                        <div class="media-location"><span class="id-number" title="Location"># ${vid.locationId}</span></div>
                     </div>
-                </div>
-                <h3 class="media-title flex-center gap-10"
-                    title="${escapeHtml(vid.title)}" style="justify-content:flex-start;">
-                    ${vid.title}
-                    ${hasTranscript ? `<span title="Transcript Available" style="color:var(--primary); cursor:help;">${SVGS.fileText}</span>` : ''}
-                </h3>
-                <div class="media-card-footer">
-                    <span class="kaltura-badge">
-                        ID: ${vid.entryId}
-                        <button class="copy-btn flex-center" data-id="${vid.entryId}"
-                                title="Copy ID">${SVGS.clipboard}</button>
-                    </span>
-                    <span class="type-badge">Type: ${vid.kalturaType}</span>
-                </div>`;
-            frag.appendChild(card);
-        });
-        grid.appendChild(frag);
+                    <h3 class="media-title flex-center gap-10" title="${escapeHtml(vid.title)}" style="justify-content:flex-start;">
+                        ${escapeHtml(vid.title)} ${hasTranscript ? `<span title="Transcript Available" style="color:var(--primary); cursor:help;">${SVGS.fileText}</span>` : ''}
+                    </h3>
+                    <div class="media-card-footer">
+                        <span class="kaltura-badge">ID: ${vid.entryId} <button class="copy-btn flex-center" data-id="${vid.entryId}" title="Copy ID">${SVGS.clipboard}</button></span>
+                        <span class="type-badge">Type: ${vid.kalturaType}</span>
+                    </div>`;
+                frag.appendChild(card);
+            });
+            grid.appendChild(frag);
+        }
 
     } else if (currentMediaTab === 'audio') {
-        if (!filteredAudio.length) {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No audio found for the selected filters.</div>';
-            return;
-        }
-        filteredAudio.forEach(aud => {
-            const hasTranscript = aud.textVersion?.replace(/<[^>]*>?/gm, '').trim();
-            currentDisplayedMedia.push({ item: aud, type: 'audio' });
+        if (!filteredAudio.length) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No audio found for the selected filters.</div>'; return; }
+        
+        if (currentMediaLayout === 'list') {
+            grid.className = ''; 
+            grid.style.display = 'block'; 
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-list-wrapper'; 
+            
+            let tableRows = '';
+            filteredAudio.forEach(aud => {
+                const hasTranscript = aud.textVersion?.replace(/<[^>]*>?/gm, '').trim();
+                currentDisplayedMedia.push({ item: aud, type: 'audio' });
+                const idx = currentDisplayedMedia.length - 1;
+                
+               let displayLoc  = aud.locationId;
+                let idOrSource = aud.entryId;
+                let copyBtnHtml = `<button class="copy-btn flex-center" data-id="${aud.entryId}" title="Copy ID">${SVGS.clipboard}</button>`;
+                
+                if (aud.kalturaType === 'mp3') {
+                    displayLoc  = displayLoc.replace(/\.INT-\d+/i, '');
+                    idOrSource = 'In Course';
+                    copyBtnHtml = ''; // Hide copy button for local MP3 files
+                }
+                
+                tableRows += `
+                    <tr data-index="${idx}">
+                        <td style="font-family:var(--code-font); color:var(--id-color); font-size:0.8rem;">${displayLoc}</td>
+                        <td style="font-weight:500; white-space:normal; min-width:200px;">${escapeHtml(aud.title)}</td>
+                        <td style="font-family:var(--code-font); font-size:0.8rem;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                ${idOrSource}
+                                ${copyBtnHtml}
+                            </div>
+                        </td>
+                        <td><span class="type-badge" style="margin:0;">${aud.kalturaType}</span></td>
+                        <td style="text-align:center;">${hasTranscript ? `<span class="status-icon-check">${SVGS.checkCircle}</span>` : `<span class="status-icon-dash">${SVGS.minus}</span>`}</td>
+                    </tr>`;
+            });
 
-            let displayLoc  = aud.locationId;
-            let idBadgeHtml = '';
-            if (aud.kalturaType === 'mp3') {
-                const isInteractive = displayLoc.includes('.INT-');
-                displayLoc  = displayLoc.replace(/\.INT-\d+/i, '');
-                idBadgeHtml = `<span class="kaltura-badge"
-                                      style="background:var(--badge-neutral); color:var(--text); cursor:default;">
-                                   Source: ${isInteractive ? 'Interactive' : 'Page'}
-                               </span>`;
-            } else {
-                idBadgeHtml = `<span class="kaltura-badge">
-                                   ID: ${aud.entryId}
-                                   <button class="copy-btn flex-center" data-id="${aud.entryId}"
-                                           title="Copy ID">${SVGS.clipboard}</button>
-                               </span>`;
-            }
-
-            const card = document.createElement('div');
-            card.className     = 'media-card';
-            card.dataset.index = currentDisplayedMedia.length - 1;
-            card.innerHTML = `
-                <div class="media-top-row">
-                    <div class="media-icon">${SVGS.audio}</div>
-                    <div class="media-location">
-                        <span class="id-number" title="Location"># ${displayLoc}</span>
+            wrapper.innerHTML = `
+                <table class="image-list-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Title</th>
+                            <th>Kaltura ID / Source</th>
+                            <th>Type</th>
+                            <th style="text-align:center;">Text Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>`;
+            grid.appendChild(wrapper);
+        } else {
+            filteredAudio.forEach(aud => {
+                const hasTranscript = aud.textVersion?.replace(/<[^>]*>?/gm, '').trim();
+                currentDisplayedMedia.push({ item: aud, type: 'audio' });
+                let displayLoc  = aud.locationId;
+                let idBadgeHtml = '';
+                if (aud.kalturaType === 'mp3') {
+                    displayLoc  = displayLoc.replace(/\.INT-\d+/i, '');
+                    idBadgeHtml = `<span class="kaltura-badge" style="background:var(--badge-neutral); color:var(--text); cursor:default;">Source: In Course</span>`;
+                } else {
+                    idBadgeHtml = `<span class="kaltura-badge">ID: ${aud.entryId} <button class="copy-btn flex-center" data-id="${aud.entryId}" title="Copy ID">${SVGS.clipboard}</button></span>`;
+                }
+                const card = document.createElement('div');
+                card.className     = 'media-card';
+                card.dataset.index = currentDisplayedMedia.length - 1;
+                card.innerHTML = `
+                    <div class="media-top-row">
+                        <div class="media-icon">${SVGS.audio}</div>
+                        <div class="media-location"><span class="id-number" title="Location"># ${displayLoc}</span></div>
                     </div>
-                </div>
-                <h3 class="media-title flex-center gap-10"
-                    title="${escapeHtml(aud.title)}" style="justify-content:flex-start;">
-                    ${aud.title}
-                    ${hasTranscript ? `<span title="Transcript Available" style="color:var(--primary); cursor:help;">${SVGS.fileText}</span>` : ''}
-                </h3>
-                <div class="media-card-footer">
-                    ${idBadgeHtml}
-                    <span class="type-badge">Type: ${aud.kalturaType}</span>
-                </div>`;
-            frag.appendChild(card);
-        });
-        grid.appendChild(frag);
+                    <h3 class="media-title flex-center gap-10" title="${escapeHtml(aud.title)}" style="justify-content:flex-start;">
+                        ${escapeHtml(aud.title)} ${hasTranscript ? `<span title="Transcript Available" style="color:var(--primary); cursor:help;">${SVGS.fileText}</span>` : ''}
+                    </h3>
+                    <div class="media-card-footer">
+                        ${idBadgeHtml} <span class="type-badge">Type: ${aud.kalturaType}</span>
+                    </div>`;
+                frag.appendChild(card);
+            });
+            grid.appendChild(frag);
+        }
 
     } else if (currentMediaTab === 'interactives') {
-        if (!filteredInteractives.length) {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No interactives found for the selected modules.</div>';
-            return;
-        }
-        filteredInteractives.forEach(intItem => {
-            currentDisplayedMedia.push({ item: intItem, type: 'interactive' });
-            const displayLoc = intItem.locationId
-                ? intItem.locationId.replace(/\.INT-\d+/i, '')
-                : "";
-            const card = document.createElement('div');
-            card.className     = 'media-card';
-            card.dataset.index = currentDisplayedMedia.length - 1;
-            card.innerHTML = `
-                <div class="media-top-row">
-                    <div class="media-icon">${SVGS.interactive}</div>
-                    <div class="media-location">
-                        <span class="id-number" title="Location"># ${displayLoc}</span>
+        if (!filteredInteractives.length) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#999;">No interactives found for the selected modules.</div>'; return; }
+        
+        if (currentMediaLayout === 'list') {
+            grid.className = ''; 
+            grid.style.display = 'block'; 
+            const wrapper = document.createElement('div');
+            wrapper.className = 'image-list-wrapper'; 
+            
+            let tableRows = '';
+            filteredInteractives.forEach(intItem => {
+                currentDisplayedMedia.push({ item: intItem, type: 'interactive' });
+                const idx = currentDisplayedMedia.length - 1;
+                const displayLoc = intItem.locationId ? intItem.locationId.replace(/\.INT-\d+/i, '') : "";
+                
+                tableRows += `
+                    <tr data-index="${idx}">
+                        <td style="font-family:var(--code-font); color:var(--id-color); font-size:0.8rem;">${displayLoc}</td>
+                        <td style="font-weight:500; white-space:normal; min-width:200px;">${escapeHtml(intItem.title)}</td>
+                        <td><span class="flex-center gap-10" style="color:#888; font-size:0.85rem; font-weight:500; justify-content:flex-start;" title="Folder Name">${SVGS.folder} ${escapeHtml(intItem.folder)}</span></td>
+                        <td><span class="type-badge" style="margin:0;">${escapeHtml(intItem.interactiveType || 'Unknown')}</span></td>
+                    </tr>`;
+            });
+
+            wrapper.innerHTML = `
+                <table class="image-list-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Title</th>
+                            <th>Folder Name</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>`;
+            grid.appendChild(wrapper);
+        } else {
+            filteredInteractives.forEach(intItem => {
+                currentDisplayedMedia.push({ item: intItem, type: 'interactive' });
+                const displayLoc = intItem.locationId ? intItem.locationId.replace(/\.INT-\d+/i, '') : "";
+                const card = document.createElement('div');
+                card.className     = 'media-card';
+                card.dataset.index = currentDisplayedMedia.length - 1;
+                card.innerHTML = `
+                    <div class="media-top-row">
+                        <div class="media-icon">${SVGS.interactive}</div>
+                        <div class="media-location"><span class="id-number" title="Location"># ${displayLoc}</span></div>
                     </div>
-                </div>
-                <h3 class="media-title" title="${escapeHtml(intItem.title)}">${intItem.title}</h3>
-                <div class="media-card-footer" style="justify-content:flex-start; gap:8px;">
-                    <span class="flex-center gap-10"
-                          style="color:#888; font-size:0.85rem; font-weight:500;"
-                          title="Folder Name">
-                        ${SVGS.folder} ${intItem.folder}
-                    </span>
-                    <span class="type-badge">Type: ${intItem.interactiveType || 'Unknown'}</span>
-                </div>`;
-            frag.appendChild(card);
-        });
-        grid.appendChild(frag);
+                    <h3 class="media-title" title="${escapeHtml(intItem.title)}">${escapeHtml(intItem.title)}</h3>
+                    <div class="media-card-footer" style="justify-content:flex-start; gap:8px;">
+                        <span class="flex-center gap-10" style="color:#888; font-size:0.85rem; font-weight:500;" title="Folder Name">${SVGS.folder} ${escapeHtml(intItem.folder)}</span>
+                        <span class="type-badge">Type: ${escapeHtml(intItem.interactiveType || 'Unknown')}</span>
+                    </div>`;
+                frag.appendChild(card);
+            });
+            grid.appendChild(frag);
+        }
     }
-}
+};
 
 // =============================================================================
 // MEDIA MODAL — OPEN
 // =============================================================================
 
-window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type) {
+window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, index = -1) {
     const modalHeader = document.getElementById('modal-header-content');
     const modalBody   = document.getElementById('modal-body-content');
 
-    if (type === 'video') {
+    if (type === 'image') {
+        // Determine index for Next/Prev navigation
+        let currentIndex = index !== -1 ? index : currentDisplayedMedia.findIndex(e => e.item === mediaObj);
+        let hasNav = currentIndex !== -1 && currentDisplayedMedia.length > 1;
+        
+        let navHtml = '';
+        if (hasNav) {
+            navHtml = `
+                <div class="flex-center gap-10" style="margin-right: 5px;">
+                    <button class="modal-nav-btn" onclick="navigateMediaModal(-1, ${currentIndex})" ${currentIndex === 0 ? 'disabled' : ''}>
+                        ${SVGS.back} Prev
+                    </button>
+                    <span style="font-size:0.8rem; color:var(--text-light); font-weight:600; min-width: 45px; text-align: center;">
+                        ${currentIndex + 1} / ${currentDisplayedMedia.length}
+                    </span>
+                    <button class="modal-nav-btn" onclick="navigateMediaModal(1, ${currentIndex})" ${currentIndex === currentDisplayedMedia.length - 1 ? 'disabled' : ''}>
+                        Next ${SVGS.forward}
+                    </button>
+                </div>
+            `;
+        }
+
+        modalHeader.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex: 1; min-width: 0;">
+                <div style="flex: 1; min-width: 0; padding-right: 15px;">
+                    <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary); display:flex; align-items:flex-start; gap:10px; overflow-wrap: anywhere;">
+                        <span style="flex-shrink:0;">${SVGS.image}</span>
+                        <span>${escapeHtml(mediaObj.fileName)}</span>
+                    </h3>
+                    <div style="font-size:0.85rem; color:var(--text-light); margin-top:4px;">
+                        <span class="id-number"># ${mediaObj.locationId}</span>
+                        &nbsp;|&nbsp;
+                        <span>Type: ${mediaObj.fileType}</span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">
+                    ${navHtml}
+                    <label class="darken-toggle-label" title="Darken background to see light text">
+                        <input type="checkbox" id="dark-bg-toggle" onchange="toggleModalImageBg(this.checked)" style="accent-color:var(--primary);">
+                        Dark BG
+                    </label>
+                </div>
+            </div>`;
+
+        let srcUrl = '';
+        const cleanPath = mediaObj.src.replace(/^\/+/, '');
+        if (fileMap.has(cleanPath)) {
+            srcUrl = URL.createObjectURL(fileMap.get(cleanPath));
+            currentAudioBlobUrl = srcUrl; // Reusing variable name to ensure cleanup
+        }
+
+        const imgPreviewHtml = srcUrl 
+            ? `<div id="modal-img-wrapper" style="text-align:center; background:#e9ecef; padding:20px; border-radius:8px; margin-bottom:20px; border:1px solid var(--border); transition: background 0.3s;">
+                   <img src="${srcUrl}" style="max-width:100%; max-height:400px; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" alt="Full Image Preview">
+               </div>`
+            : `<div style="padding:15px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin-bottom:20px; font-size:0.9rem;">
+                   ${SVGS.alert} Image file (<strong>${mediaObj.src}</strong>) not found in the loaded folder.
+               </div>`;
+
+        const renderField = (label, val) => `
+            <div style="margin-bottom: 12px; border-bottom: 1px solid #f1f3f5; padding-bottom: 12px;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                    ${label}
+                </div>
+                <div style="font-size:0.95rem; color:var(--text);">
+                    ${val.trim() ? val : '<span class="empty-dash">—</span>'}
+                </div>
+            </div>`;
+
+        modalBody.innerHTML = `
+            ${imgPreviewHtml}
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    ${renderField('Alt Text', escapeHtml(mediaObj.altText))}
+                    ${renderField('Caption Header', escapeHtml(mediaObj.captionHeader))}
+                    ${renderField('Copyright', escapeHtml(mediaObj.copyright))}
+                </div>
+                <div>
+                    ${renderField('Caption', escapeHtml(mediaObj.caption))}
+                </div>
+            </div>
+            <div>
+                <div style="font-size:0.75rem; font-weight:700; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                    Text Version
+                </div>
+                <div style="font-size:0.95rem; color:var(--text); background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid var(--border);">
+                    ${mediaObj.textVersion.trim() ? mediaObj.textVersion : '<span class="empty-dash">—</span>'}
+                </div>
+            </div>
+        `;
+        
+        // Set up global keydown listener for modal navigation
+        if (!window.imageModalKeyHandler) {
+            window.imageModalKeyHandler = function(e) {
+                if (document.getElementById('media-modal').classList.contains('active')) {
+                    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                        const prevBtn = document.querySelector('.modal-nav-btn:first-of-type');
+                        if (prevBtn && !prevBtn.disabled) prevBtn.click();
+                    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                        const nextBtn = document.querySelector('.modal-nav-btn:last-of-type');
+                        if (nextBtn && !nextBtn.disabled) nextBtn.click();
+                    }
+                }
+            };
+            document.addEventListener('keydown', window.imageModalKeyHandler);
+        }
+    } else if (type === 'video') {
         modalHeader.innerHTML = `
             <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
                 ${mediaObj.title}
@@ -4577,14 +4793,53 @@ ${escapeHtml(mediaObj.rawJson)}</pre>`;
 };
 
 // =============================================================================
-// MEDIA MODAL — CLOSE
+// MEDIA MODAL — NAVIGATION & CLOSE
 // =============================================================================
+
+window.navigateMediaModal = function(dir, currentIndex) {
+    let newIndex = currentIndex + dir;
+    if (newIndex >= 0 && newIndex < currentDisplayedMedia.length) {
+        // Check if dark mode was toggled so we can preserve it across images
+        let isDark = document.getElementById('dark-bg-toggle')?.checked || false;
+        
+        if (currentAudioBlobUrl) {
+            URL.revokeObjectURL(currentAudioBlobUrl);
+            currentAudioBlobUrl = null;
+        }
+        
+        const nextEntry = currentDisplayedMedia[newIndex];
+        openMediaModalFromObj(nextEntry.item, nextEntry.type, newIndex);
+        
+        if (isDark) {
+            const newToggle = document.getElementById('dark-bg-toggle');
+            if (newToggle) {
+                newToggle.checked = true;
+                toggleModalImageBg(true);
+            }
+        }
+    }
+};
+
+window.toggleModalImageBg = function(isDark) {
+    const wrapper = document.getElementById('modal-img-wrapper');
+    if (wrapper) {
+        if (isDark) wrapper.classList.add('img-bg-dark');
+        else wrapper.classList.remove('img-bg-dark');
+    }
+};
 
 window.closeMediaModal = function closeMediaModal(e) {
     if (e && e.target !== e.currentTarget) return;
     const overlay = document.getElementById('media-modal');
     overlay.classList.remove('active', 'fullscreen-modal');
     document.body.style.overflow = '';
+    
+    // Clean up keyboard listener
+    if (window.imageModalKeyHandler) {
+        document.removeEventListener('keydown', window.imageModalKeyHandler);
+        window.imageModalKeyHandler = null;
+    }
+    
     if (currentAudioBlobUrl) {
         URL.revokeObjectURL(currentAudioBlobUrl);
         currentAudioBlobUrl = null;
@@ -4598,10 +4853,6 @@ window.closeMediaModal = function closeMediaModal(e) {
 
 // =============================================================================
 // GLOSSARY
-// Fix #2: renderGlossaryList now always resets currentDisplayedMedia before
-// populating it. Previously, when called standalone (letter filter, clear
-// search) the array already had entries from the prior full render, causing
-// dataset.index values on glossary items to point at wrong modal data.
 // =============================================================================
 
 window.toggleGlossaryLetter = function toggleGlossaryLetter(letter) {
@@ -4656,12 +4907,6 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
     const azBar     = document.getElementById('glossary-az-bar');
     if (!container || !azBar) return;
 
-    // Fix #2: Reset currentDisplayedMedia here so that dataset.index values
-    // are always correct, regardless of how renderGlossaryList was triggered.
-    // When called from renderMediaDashboard the array is already empty (reset
-    // at the top of that function). When called standalone (letter filter,
-    // A-Z bar, duplicate toggle) we must reset it ourselves so indexes don't
-    // accumulate from the previous render.
     currentDisplayedMedia = [];
 
     if (query.trim()) activeGlossaryLetters.clear();
@@ -4678,7 +4923,6 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
         return true;
     });
 
-    // ── Build A–Z bar ─────────────────────────────────────────────────────────
     const hasDuplicates = courseGlossary.some(g =>
         (activeMediaModules.size === 0 ||
          g.locations.some(loc => activeMediaModules.has(loc.split('.')[0]))) &&
@@ -4704,7 +4948,6 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
         return;
     }
 
-    // ── Group by first letter ─────────────────────────────────────────────────
     const groups = {};
     filteredGlossary.forEach(g => {
         let letter = g.title.charAt(0).toUpperCase();
@@ -4725,7 +4968,6 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
     });
     azBar.innerHTML = azHtml;
 
-    // ── Build letter group divs ───────────────────────────────────────────────
     container.innerHTML = '';
     const frag = document.createDocumentFragment();
 
@@ -4740,12 +4982,14 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
         letterDiv.textContent = letter;
         groupDiv.appendChild(letterDiv);
 
+        // NEW: Create the grid container for this letter's terms
+        const gridDiv = document.createElement('div');
+        gridDiv.className = 'glossary-items-grid';
+
         groups[letter].forEach(g => {
             const isDup   = g.locations.length > 1;
             const itemDiv = document.createElement('div');
             itemDiv.className    = `glossary-item ${isDup ? 'duplicate-term' : ''}`;
-            // Fix #2: index is always correct because currentDisplayedMedia was
-            // reset at the top of this function
             currentDisplayedMedia.push({ item: g, type: 'glossary' });
             itemDiv.dataset.index = currentDisplayedMedia.length - 1;
             itemDiv.innerHTML = `
@@ -4755,28 +4999,22 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
                         `<span class="glossary-loc-badge" title="Location">${loc}</span>`
                     ).join('')}
                 </div>`;
-            groupDiv.appendChild(itemDiv);
+            
+            // Append the item to the grid container, not the group container
+            gridDiv.appendChild(itemDiv);
         });
 
+        // Append the populated grid to the main group
+        groupDiv.appendChild(gridDiv);
         frag.appendChild(groupDiv);
     });
 
     container.appendChild(frag);
     applyGlossaryFilters();
 };
-	
-// =============================================================================
-// PART 9 — Exports: Search, Standards, Media & Spreadsheet
-// v5.10 changes:
-//   Fix #20 — safeSheetName regex: [\[\]] properly escapes [ and ] inside
-//             the character class (was unescaped in v5.00 draft, fixed in
-//             Part 4 utility but confirmed here on all actual call sites).
-//   All export functions also use the consolidated sortStdsByCode() helper
-//   and the corrected passesModuleFilter() from Part 8.
-// =============================================================================
 
 // =============================================================================
-// SHARED EXPORT HELPERS
+// EXPORT FUNCTIONS 
 // =============================================================================
 
 function parseLocDetails(locationId, breadcrumb) {
@@ -4802,10 +5040,6 @@ function sortStdsByCode(stds) {
             )
     );
 }
-
-// =============================================================================
-// EXPORT 1 — CONTENT SEARCH RESULTS
-// =============================================================================
 
 window.exportSearchResults = function exportSearchResults() {
     if (!currentSearchResults?.length) { showToast("No results to export.", "error"); return; }
@@ -4846,7 +5080,6 @@ window.exportSearchResults = function exportSearchResults() {
 
         const numericSort = (a, b) => a.localeCompare(b, undefined, { numeric: true });
 
-        // ── Summary sheet ─────────────────────────────────────────────────────
         const sumRows = [
             [{ v: "Search Overview",         s: sTitle }],
             [{ v: "Search Query",            s: sHeaderLeft }, { v: currentSearchQuery,                               s: sText   }],
@@ -4897,10 +5130,8 @@ window.exportSearchResults = function exportSearchResults() {
             { s: { r: 9,               c: 0 }, e: { r: 9,               c: 3 } },
             { s: { r: lesBreakdownRow, c: 0 }, e: { r: lesBreakdownRow, c: 3 } }
         ];
-        // Fix #20: safeSheetName uses corrected [\[\]] regex (defined in Part 4)
         XLSX.utils.book_append_sheet(wb, wsSummary, safeSheetName("Search Summary"));
 
-        // ── Per-module detail sheets ───────────────────────────────────────────
         const resultHeaders = [
             { v: "Location ID",    s: sHeader }, { v: "Breadcrumb",     s: sHeader },
             { v: "Filename",       s: sHeader }, { v: "Search Snippet", s: sHeader }
@@ -4966,7 +5197,6 @@ window.exportSearchResults = function exportSearchResults() {
             ws['!cols']   = [{ wch: 15 }, { wch: 45 }, { wch: 30 }, { wch: 100 }];
             ws['!views']  = [{ showGridLines: false }];
             ws['!merges'] = merges;
-            // Fix #20: safeSheetName uses corrected [\[\]] regex (defined in Part 4)
             XLSX.utils.book_append_sheet(wb, ws,
                 safeSheetName(modId === "Unknown" ? "Unknown Module" : `Module ${modId}`)
             );
@@ -4977,10 +5207,6 @@ window.exportSearchResults = function exportSearchResults() {
 
     } catch (e) { showToast("Export error: " + e.message, "error"); }
 };
-
-// =============================================================================
-// EXPORT 2 — STANDARDS SEARCH RESULTS
-// =============================================================================
 
 window.exportStdsSearchResults = function exportStdsSearchResults() {
     if (!currentStdsSearchResults?.length) { showToast("No results to export.", "error"); return; }
@@ -5027,7 +5253,6 @@ window.exportStdsSearchResults = function exportStdsSearchResults() {
         const modDisplay   = activeStdsModules.size === 0 ? "All Modules"       : `${activeStdsModules.size} Selected`;
         const stateDisplay = activeStdsStates.size  === 0 ? "All States/Groups" : `${activeStdsStates.size} Selected`;
 
-        // ── Summary sheet ─────────────────────────────────────────────────────
         const sumRows = [
             [{ v: "Standards Search Overview", s: sTitle }],
             [{ v: "Search Query",          s: sHeaderLeft }, { v: queryDisplay, s: sText   }],
@@ -5083,7 +5308,6 @@ window.exportStdsSearchResults = function exportStdsSearchResults() {
         ];
         XLSX.utils.book_append_sheet(wb, wsSummary, safeSheetName("Search Summary"));
 
-        // ── Snapshot sheet ────────────────────────────────────────────────────
         const groupedResultsMap = new Map();
         currentStdsSearchResults.forEach(std => {
             if (!groupedResultsMap.has(std.locationId)) {
@@ -5125,7 +5349,6 @@ window.exportStdsSearchResults = function exportStdsSearchResults() {
         wsSnapshot['!freeze'] = { xSplit: 1, ySplit: 1, topLeftCell: 'B2', activePane: 'bottomRight', state: 'frozen' };
         XLSX.utils.book_append_sheet(wb, wsSnapshot, safeSheetName("Snapshot"));
 
-        // ── Per-module detail sheets ───────────────────────────────────────────
         const resultHeaders = [
             { v: "Location ID",      s: sHeader }, { v: "Breadcrumb",         s: sHeader },
             { v: "State / Group",    s: sHeader }, { v: "Standard Code",      s: sHeader },
@@ -5177,12 +5400,7 @@ window.exportStdsSearchResults = function exportStdsSearchResults() {
     } catch (e) { showToast("Export error: " + e.message, "error"); }
 };
 
-// =============================================================================
-// EXPORT 3 — MEDIA REPORT
-// =============================================================================
-
 window.exportMediaReport = function exportMediaReport() {
-    // Re-uses passesModuleFilter() from Part 8 for consistency
     const expVideos = courseVideos.filter(m =>
         passesModuleFilter(m) &&
         (!activeMediaFilterMissingId || isMissingId(m.entryId)) &&
@@ -5197,6 +5415,37 @@ window.exportMediaReport = function exportMediaReport() {
         passesModuleFilter(m) &&
         (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.interactiveType))
     );
+    const expImages = courseImages.filter(img => {
+        if (!passesModuleFilter(img)) return false;
+        if (activeMediaFilterTypes.size > 0 && !activeMediaFilterTypes.has(img.fileType)) return false;
+        if (activeMediaFilterHasAlt && !img.altText.trim()) return false;
+        if (activeMediaFilterHasCaption && !img.caption.trim()) return false;
+        if (activeMediaFilterHasCaptionHeader && !img.captionHeader.trim()) return false;
+        if (activeMediaFilterHasTextVer && !img.textVersion.trim()) return false;
+        
+        // Audit Check: Copyrights
+        if (activeMediaFilterCheckCopyright) {
+            if (img.copyright.trim() !== '') return false;
+            const nameWithoutExt = img.fileName.substring(0, img.fileName.lastIndexOf('.')) || img.fileName;
+            const approvedSuffixes = ['_gi', '_ts', '_flvs', '_flvs_ai', '_ai_flvs'];
+            const hasApprovedSuffix = approvedSuffixes.some(suffix => nameWithoutExt.toLowerCase().endsWith(suffix));
+            if (hasApprovedSuffix) return false;
+        }
+        
+        // Audit Check: Text Versions
+        if (activeMediaFilterCheckTextVer) {
+            const hasTextVer = !!img.textVersion.trim();
+            const hasAlt = !!img.altText.trim();
+            const altContainsTextVer = img.altText.toLowerCase().includes('text version');
+            
+            const failsCondition1 = hasTextVer && !hasAlt;
+            const failsCondition2 = altContainsTextVer && !hasTextVer;
+            
+            if (!failsCondition1 && !failsCondition2) return false;
+        }
+        
+        return true;
+    });
 
     const glossaryQuery = document.getElementById('glossary-search')?.value.toLowerCase() || '';
     const expGlossary = courseGlossary.filter(g => {
@@ -5214,7 +5463,7 @@ window.exportMediaReport = function exportMediaReport() {
         return true;
     });
 
-    if (!expVideos.length && !expAudio.length && !expInteractives.length && !expGlossary.length) {
+    if (!expVideos.length && !expAudio.length && !expInteractives.length && !expGlossary.length && !expImages.length) {
         showToast("No active media found to export.", "error"); return;
     }
     if (typeof XLSX === 'undefined') { showToast("Excel library failed to load.", "error"); return; }
@@ -5223,6 +5472,29 @@ window.exportMediaReport = function exportMediaReport() {
         const wb = XLSX.utils.book_new();
         const { sHeader, sText, sLocation, sCode,
                 sLocationWrap, sHighlightLoc, sHighlightText } = ExcelStyles;
+
+        if (expImages.length) {
+            const rows = [[
+                { v: "Location",       s: sHeader }, { v: "File Name",   s: sHeader },
+                { v: "Type",           s: sHeader }, { v: "Alt Text",    s: sHeader },
+                { v: "Caption Header", s: sHeader }, { v: "Caption",     s: sHeader },
+                { v: "Copyright",      s: sHeader }, { v: "Text Version",s: sHeader }
+            ]];
+            expImages.forEach(img => rows.push([
+                { v: img.locationId    || "",  s: sLocation },
+                { v: img.fileName      || "",  s: sText },
+                { v: img.fileType      || "",  s: sText },
+                { v: img.altText       || "—", s: sText },
+                { v: img.captionHeader || "—", s: sText },
+                { v: img.caption       || "—", s: sText },
+                { v: img.copyright     || "—", s: sText },
+                { v: img.textVersion   || "—", s: sText }
+            ]));
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols']  = [{ wch: 15 }, { wch: 35 }, { wch: 10 }, { wch: 40 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 40 }];
+            ws['!views'] = [{ showGridLines: false }];
+            XLSX.utils.book_append_sheet(wb, ws, safeSheetName("Images"));
+        }
 
         if (expVideos.length) {
             const rows = [[
@@ -5312,10 +5584,6 @@ window.exportMediaReport = function exportMediaReport() {
     } catch (e) { showToast("Export error: " + e.message, "error"); }
 };
 
-// =============================================================================
-// EXPORT 4 — CURRICULUM MAP SPREADSHEET
-// =============================================================================
-
 window.generateSpreadsheet = function generateSpreadsheet() {
     if (typeof XLSX === 'undefined')   { showToast("Excel library failed to load.", "error"); return; }
     if (!validModules?.length)         { showToast("No modules found to export.", "error"); return; }
@@ -5325,7 +5593,6 @@ window.generateSpreadsheet = function generateSpreadsheet() {
         const { sHeader, sModRow, sLesBar, sGap, sGood, sNeutral,
                 sText, sTextBold, sCode } = ExcelStyles;
 
-        // ── Objectives Map sheet ──────────────────────────────────────────────
         const objRows    = [[
             { v: "Module",       s: sHeader }, { v: "ID",           s: sHeader },
             { v: "Lesson Title", s: sHeader }, { v: "Status",       s: sHeader },
@@ -5386,7 +5653,6 @@ window.generateSpreadsheet = function generateSpreadsheet() {
         });
         XLSX.utils.book_append_sheet(wb, wsObj, "Objectives Map");
 
-        // ── Standards Map sheet ───────────────────────────────────────────────
         const exportStdGroups = activeStandardGroups.size > 0
             ? Array.from(activeStandardGroups).sort()
             : Array.from(courseStandardGroups).sort();
@@ -5500,15 +5766,9 @@ window.generateSpreadsheet = function generateSpreadsheet() {
 
     } catch (e) { showToast("Export error: " + e.message, "error"); }
 };
-	
-// =============================================================================
-// PART 10 — Audit Config, Dashboard Grid, Module Detail & Lesson/Page Rendering
-// =============================================================================
 
 // =============================================================================
-// AUDIT CONFIGURATION SCREEN
-// The first-time setup view where the user marks which lessons require
-// objectives and/or standards checking.
+// STANDARDS / CONFIGURATION UTILS 
 // =============================================================================
 
 function showConfigScreen() {
@@ -5517,7 +5777,6 @@ function showConfigScreen() {
     elements.status.innerHTML           = '';
     tbody.innerHTML                      = '';
 
-    // Pre-populate the course name input from whatever source we have
     const displayName    = extractedCourseTitle || localStorage.getItem(NAME_KEY) || selectedCourseName || "";
     const safeDisplayName = displayName.replace(/"/g, '&quot;');
 
@@ -5546,16 +5805,13 @@ function showConfigScreen() {
 
     courseTree.modules.forEach(mod => {
         if (!mod.lessons) return;
-        // Skip ignored modules (same logic as buildValidModuleList)
         if (IGNORE_TITLES.some(k => String(mod.title || "").toLowerCase().includes(k))) return;
         if (IGNORE_IDS.includes(String(mod.mID || "").toLowerCase())) return;
 
-        // Module header row
         const modRow = document.createElement('tr');
         modRow.style.background = "#e9ecef";
         modRow.innerHTML = `
-            <td style="padding:10px 15px; font-weight:bold; color:var(--primary);
-                       border-top:2px solid #fff;">
+            <td style="padding:10px 15px; font-weight:bold; color:var(--primary); border-top:2px solid #fff;">
                 Module ${padNum(mod.num)}: ${mod.title}
             </td>
             <td colspan="2" style="border-top:2px solid #fff;"></td>`;
@@ -5575,30 +5831,14 @@ function showConfigScreen() {
             tr.style.borderBottom = "1px solid #eee";
             tr.innerHTML = `
                 <td style="padding:10px 15px; display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" title="Toggle Row"
-                           id="${rowID}-master"
-                           onchange="toggleLessonRow(this, '${rowID}')"
-                           ${isMasterChecked ? 'checked' : ''}
-                           style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer;">
-                    <div>
-                        <span class="id-number">${fullID}</span> ${lesson.title}
-                    </div>
+                    <input type="checkbox" title="Toggle Row" id="${rowID}-master" onchange="toggleLessonRow(this, '${rowID}')" ${isMasterChecked ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer;">
+                    <div><span class="id-number">${fullID}</span> ${lesson.title}</div>
                 </td>
                 <td style="text-align:center;">
-                    <input type="checkbox"
-                           id="${rowID}-content"
-                           class="cfg-content"
-                           data-mid="${mod.mID}" data-lid="${lesson.lID}"
-                           ${defaultContent ? 'checked' : ''}
-                           onchange="syncChecks(this, '${rowID}', 'content')">
+                    <input type="checkbox" id="${rowID}-content" class="cfg-content" data-mid="${mod.mID}" data-lid="${lesson.lID}" ${defaultContent ? 'checked' : ''} onchange="syncChecks(this, '${rowID}', 'content')">
                 </td>
                 <td style="text-align:center;">
-                    <input type="checkbox"
-                           id="${rowID}-std"
-                           class="cfg-std"
-                           data-lid="${lesson.lID}"
-                           ${defaultStd ? 'checked' : ''}
-                           onchange="syncChecks(this, '${rowID}', 'std')">
+                    <input type="checkbox" id="${rowID}-std" class="cfg-std" data-lid="${lesson.lID}" ${defaultStd ? 'checked' : ''} onchange="syncChecks(this, '${rowID}', 'std')">
                 </td>`;
             frag.appendChild(tr);
         });
@@ -5607,7 +5847,6 @@ function showConfigScreen() {
     tbody.appendChild(frag);
 }
 
-/** Master-row checkbox: mirrors its state to both content and std checkboxes. */
 window.toggleLessonRow = function toggleLessonRow(masterCb, rowID) {
     const contentCb = document.getElementById(`${rowID}-content`);
     const stdCb     = document.getElementById(`${rowID}-std`);
@@ -5615,11 +5854,6 @@ window.toggleLessonRow = function toggleLessonRow(masterCb, rowID) {
     if (stdCb)     stdCb.checked     = masterCb.checked;
 };
 
-/**
- * Child checkbox sync:
- *  • If content is unchecked, std must also be unchecked (can't require std without content).
- *  • Master reflects whether either child is checked.
- */
 window.syncChecks = function syncChecks(sourceCb, rowID, type) {
     const contentCb = document.getElementById(`${rowID}-content`);
     const stdCb     = document.getElementById(`${rowID}-std`);
@@ -5630,9 +5864,7 @@ window.syncChecks = function syncChecks(sourceCb, rowID, type) {
     }
 };
 
-/** Read the config table, persist to localStorage, hydrate the courseTree, and enter audit view. */
 window.applyAuditConfig = function applyAuditConfig() {
-    // Persist the course name override
     const nameInput = document.getElementById('course-name-input');
     if (nameInput) {
         customCourseName = nameInput.value.trim();
@@ -5646,7 +5878,6 @@ window.applyAuditConfig = function applyAuditConfig() {
         document.title = "Course Explorer";
     }
 
-    // Read checkbox states and hydrate lessons
     const configMap  = new Map();
     const saveToStore = {};
 
@@ -5674,16 +5905,11 @@ window.applyAuditConfig = function applyAuditConfig() {
     switchView('audit');
 };
 
-/** Force the audit config screen to show again on next visit. */
 window.reconfigureAudit = function reconfigureAudit() {
     hasRunAuditConfig = false;
     switchView('audit');
 };
 
-/**
- * On load (or after a refresh), apply whatever config is saved in localStorage.
- * If nothing is saved, default every lesson to required for both.
- */
 function applyDefaultOrSavedConfig() {
     let savedConfig = {};
     try { savedConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; } catch (e) {}
@@ -5696,11 +5922,6 @@ function applyDefaultOrSavedConfig() {
         });
     });
 }
-
-// =============================================================================
-// MODULE LIST
-// Builds validModules by filtering out ignored titles/IDs from courseTree.
-// =============================================================================
 
 function buildValidModuleList() {
     validModules = [];
@@ -5716,16 +5937,13 @@ function buildValidModuleList() {
 }
 
 // =============================================================================
-// DASHBOARD GRID
-// Renders the module card grid shown after the audit config is confirmed.
-// Each card shows module number, title, lesson/page counts, and a health badge.
+// DASHBOARD & AUDIT RENDERING
 // =============================================================================
 
 function renderDashboardGrid() {
     elements.dashboardGrid.innerHTML = '';
     if (!validModules.length) {
-        elements.dashboardGrid.innerHTML =
-            '<div style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">No modules found.</div>';
+        elements.dashboardGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">No modules found.</div>';
         return;
     }
 
@@ -5739,8 +5957,7 @@ function renderDashboardGrid() {
 
         (mod.lessons || []).forEach(lesson => {
             if (lesson.pages) pageCount += lesson.pages.length;
-            if (lesson._reqContent !== false &&
-                (!lesson._topic || !lesson._parsedObjectives?.length)) {
+            if (lesson._reqContent !== false && (!lesson._topic || !lesson._parsedObjectives?.length)) {
                 moduleHasIssues = true;
             }
             if (lesson._reqStd !== false && lesson.pages) {
@@ -5753,9 +5970,7 @@ function renderDashboardGrid() {
         const statusColor  = moduleHasIssues ? "#dc3545" : "#28a745";
         const statusBg     = moduleHasIssues ? "#fff5f5"  : "#e6f9e9";
         const statusBorder = moduleHasIssues ? "#ffaeb5"  : "#c3e6cb";
-        const statusIcon   = moduleHasIssues
-            ? `${SVGS.alert} Needs Attention`
-            : `${SVGS.check} All Good`;
+        const statusIcon   = moduleHasIssues ? `${SVGS.alert} Needs Attention` : `${SVGS.check} All Good`;
 
         const card = document.createElement('div');
         card.className = 'module-card';
@@ -5767,30 +5982,19 @@ function renderDashboardGrid() {
                     <div class="mc-header">Module ${modNum}</div>
                     <div class="mc-title">${mod.title}</div>
                 </div>
-                <div class="flex-center gap-10"
-                     style="font-size:0.75rem; font-weight:bold; color:${statusColor};
-                            background:${statusBg}; border:1px solid ${statusBorder};
-                            padding:4px 8px; border-radius:12px; white-space:nowrap;">
+                <div class="flex-center gap-10" style="font-size:0.75rem; font-weight:bold; color:${statusColor}; background:${statusBg}; border:1px solid ${statusBorder}; padding:4px 8px; border-radius:12px; white-space:nowrap;">
                     ${statusIcon}
                 </div>
             </div>
             <div class="mc-stats">
-                <div class="flex-center gap-10" style="justify-content:flex-start;">
-                    <span style="color:var(--primary);">${SVGS.folder}</span> ${lessonCount} Lessons
-                </div>
-                <div class="flex-center gap-10" style="justify-content:flex-start;">
-                    <span style="color:var(--primary);">${SVGS.fileText}</span> ${pageCount} Pages
-                </div>
+                <div class="flex-center gap-10" style="justify-content:flex-start;"><span style="color:var(--primary);">${SVGS.folder}</span> ${lessonCount} Lessons</div>
+                <div class="flex-center gap-10" style="justify-content:flex-start;"><span style="color:var(--primary);">${SVGS.fileText}</span> ${pageCount} Pages</div>
             </div>`;
         frag.appendChild(card);
     });
 
     elements.dashboardGrid.appendChild(frag);
 }
-
-// =============================================================================
-// MODULE NAVIGATION
-// =============================================================================
 
 window.openModuleDetail = function openModuleDetail(index) {
     currentModuleIndex = index;
@@ -5815,13 +6019,6 @@ window.navModule = function navModule(direction) {
     saveAppState();
 };
 
-// =============================================================================
-// MODULE DETAIL RENDERER
-// Builds the lesson list for the currently selected module.
-// autoExpand = true on first load; false when restoring state after a refresh.
-// =============================================================================
-
-/** Returns a short display label for the module navigation buttons. */
 function getModNavText(mod) {
     const val = String(mod.num || "").trim();
     return /^\d+$/.test(val) ? `Module ${padNum(val)}` : val;
@@ -5829,16 +6026,11 @@ function getModNavText(mod) {
 
 function renderModuleDetail(autoExpand = true) {
     const container = elements.auditDetailContent;
-
-    // Capture which lessons are currently open before clearing the DOM
-    const openLessonIds = Array.from(
-        container.querySelectorAll('details.audit-lesson[open]')
-    ).map(d => d.id);
+    const openLessonIds = Array.from(container.querySelectorAll('details.audit-lesson[open]')).map(d => d.id);
 
     container.innerHTML = '';
     const frag = document.createDocumentFragment();
 
-    // Manage expand state
     if (autoExpand) {
         isAllExpanded = false;
         if (elements.gapToggle?.checked) isAllExpanded = true;
@@ -5848,15 +6040,9 @@ function renderModuleDetail(autoExpand = true) {
     const mod    = validModules[currentModuleIndex];
     const modNum = padNum(mod.num);
 
-    // ── Update prev/next navigation buttons ──────────────────────────────────
     if (validModules.length > 0) {
-        const prevIndex = currentModuleIndex === 0
-            ? validModules.length - 1
-            : currentModuleIndex - 1;
-        const nextIndex = currentModuleIndex === validModules.length - 1
-            ? 0
-            : currentModuleIndex + 1;
-
+        const prevIndex = currentModuleIndex === 0 ? validModules.length - 1 : currentModuleIndex - 1;
+        const nextIndex = currentModuleIndex === validModules.length - 1 ? 0 : currentModuleIndex + 1;
         const btnPrev  = document.getElementById('btn-prev-mod');
         const btnNext  = document.getElementById('btn-next-mod');
         const lblCurr  = document.getElementById('current-mod-label');
@@ -5864,46 +6050,29 @@ function renderModuleDetail(autoExpand = true) {
         const nextText = getModNavText(validModules[nextIndex]);
         const currText = getModNavText(mod);
 
-        if (btnPrev) {
-            btnPrev.innerHTML = `${SVGS.back} <span class="nav-btn-truncate">${escapeHtml(prevText)}</span>`;
-            btnPrev.title     = prevText;
-        }
-        if (btnNext) {
-            btnNext.innerHTML = `<span class="nav-btn-truncate">${escapeHtml(nextText)}</span> ${SVGS.forward}`;
-            btnNext.title     = nextText;
-        }
+        if (btnPrev) { btnPrev.innerHTML = `${SVGS.back} <span class="nav-btn-truncate">${escapeHtml(prevText)}</span>`; btnPrev.title = prevText; }
+        if (btnNext) { btnNext.innerHTML = `<span class="nav-btn-truncate">${escapeHtml(nextText)}</span> ${SVGS.forward}`; btnNext.title = nextText; }
         if (lblCurr) lblCurr.innerHTML = escapeHtml(currText);
     }
 
-    // ── Module title ──────────────────────────────────────────────────────────
     const titleDiv = document.createElement('div');
     titleDiv.className = 'module-detail-title';
     titleDiv.textContent = `Module ${modNum}: ${mod.title}`;
     frag.appendChild(titleDiv);
 
-    // ── Lesson blocks ─────────────────────────────────────────────────────────
     (mod.lessons || []).forEach(lesson => frag.appendChild(renderLessonBlock(lesson, modNum)));
     container.appendChild(frag);
 
-    // Apply expansion state
     if (autoExpand) {
         applyExpansionState(isAllExpanded);
     } else {
-        // Restore the lessons that were open before the re-render
         openLessonIds.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.open = true;
         });
     }
-
     setTimeout(updateStickyHeaderOffset, 50);
 }
-
-// =============================================================================
-// LESSON BLOCK RENDERER
-// Builds a <details> element for one lesson, including health badges,
-// topic box, objectives box, and either a unified or per-page standards section.
-// =============================================================================
 
 function renderLessonBlock(lesson, modNum) {
     const details  = document.createElement('details');
@@ -5911,99 +6080,62 @@ function renderLessonBlock(lesson, modNum) {
     const hasObj   = !!lesson._parsedObjectives?.length;
     const contentPass = !lesson._reqContent || (hasTopic && hasObj);
 
-    // Standards pass if all pages (when required) have at least one standard
     let standardsPass = true;
     if (lesson._reqStd) {
         if (lesson.pages?.length > 0) {
-            lesson.pages.forEach(p => {
-                if (!p._parsedStandards?.length) standardsPass = false;
-            });
-        } else {
-            standardsPass = false;
-        }
+            lesson.pages.forEach(p => { if (!p._parsedStandards?.length) standardsPass = false; });
+        } else { standardsPass = false; }
     }
 
-    details.className = (contentPass && standardsPass)
-        ? 'audit-lesson lesson-complete'
-        : 'audit-lesson lesson-has-gaps';
-
+    details.className = (contentPass && standardsPass) ? 'audit-lesson lesson-complete' : 'audit-lesson lesson-has-gaps';
     const fullLesID = `${modNum}.${padNum(lesson.num)}`;
     details.id      = `lesson-${fullLesID}`;
     details.addEventListener('toggle', () => saveAppState());
 
-    // ── Health badges ─────────────────────────────────────────────────────────
     const hasAnyStandards = lesson.pages?.some(p => p._parsedStandards?.length > 0);
-
     let healthBadges = `<div class="flex-center gap-10" style="margin-left:auto;">`;
 
-    // Collapse/expand states button — only relevant when multiple groups exist
     if (courseStandardGroups.size > 1 && hasAnyStandards) {
-        healthBadges +=
-            `<button class="nav-btn btn-base"
-                     style="padding:2px 8px; font-size:0.75rem; margin-right:4px;"
-                     onclick="toggleFolderDetails(event, this)">Collapse States</button>`;
+        healthBadges += `<button class="nav-btn btn-base" style="padding:2px 8px; font-size:0.75rem; margin-right:4px;" onclick="toggleFolderDetails(event, this)">Collapse States</button>`;
     }
 
     if (!lesson._reqContent && !lesson._reqStd) {
         healthBadges += `<span class="status-badge neutral" style="margin-left:0;">NOT REQUIRED</span>`;
     } else {
         if (lesson._reqContent) {
-            healthBadges += hasTopic
-                ? `<span class="status-badge present" style="margin-left:0;">TOPIC</span>`
-                : `<span class="status-badge missing" style="margin-left:0;">NO TOPIC</span>`;
-            healthBadges += hasObj
-                ? `<span class="status-badge present" style="margin-left:0;">OBJS</span>`
-                : `<span class="status-badge missing" style="margin-left:0;">NO OBJS</span>`;
+            healthBadges += hasTopic ? `<span class="status-badge present" style="margin-left:0;">TOPIC</span>` : `<span class="status-badge missing" style="margin-left:0;">NO TOPIC</span>`;
+            healthBadges += hasObj   ? `<span class="status-badge present" style="margin-left:0;">OBJS</span>`  : `<span class="status-badge missing" style="margin-left:0;">NO OBJS</span>`;
         }
         if (lesson._reqStd) {
-            healthBadges += standardsPass
-                ? `<span class="status-badge present" style="margin-left:0;">STNDS</span>`
-                : `<span class="status-badge missing" style="margin-left:0;">NO STNDS</span>`;
+            healthBadges += standardsPass ? `<span class="status-badge present" style="margin-left:0;">STNDS</span>` : `<span class="status-badge missing" style="margin-left:0;">NO STNDS</span>`;
         }
     }
     healthBadges += `</div>`;
 
-    // ── Summary row ───────────────────────────────────────────────────────────
     const summary = document.createElement('summary');
     summary.className = 'lesson-summary';
-    summary.innerHTML =
-        `<span class="id-number">${fullLesID}</span> ` +
-        `<span>${lesson.title}</span> ` +
-        healthBadges;
+    summary.innerHTML = `<span class="id-number">${fullLesID}</span> <span>${lesson.title}</span> ${healthBadges}`;
 
-    // ── Content area ──────────────────────────────────────────────────────────
     const contentDiv = document.createElement('div');
     contentDiv.className = 'audit-lesson-content';
 
-    // Topic box
     const topicBox = document.createElement('div');
     if (lesson._topic) {
         topicBox.className = 'topic-box present status-good';
-        topicBox.innerHTML =
-            `<div class="topic-title">Lesson Topic</div>` +
-            `<div class="topic-content">${lesson._topic}</div>`;
+        topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content">${lesson._topic}</div>`;
     } else if (!lesson._reqContent) {
         topicBox.className = 'topic-box neutral status-neutral';
-        topicBox.innerHTML =
-            `<div class="topic-title">Lesson Topic</div>` +
-            `<div class="topic-content topic-neutral">Not required for this lesson.</div>`;
+        topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content topic-neutral">Not required for this lesson.</div>`;
     } else {
         topicBox.className = 'topic-box missing';
-        topicBox.innerHTML =
-            `<div class="topic-title">Lesson Topic</div>` +
-            `<div class="topic-content topic-missing">No topic listed.</div>`;
+        topicBox.innerHTML = `<div class="topic-title">Lesson Topic</div><div class="topic-content topic-missing">No topic listed.</div>`;
     }
     contentDiv.appendChild(topicBox);
 
-    // Objectives box
     if (hasObj) {
         const objBox = document.createElement('div');
         objBox.className = 'objectives-box status-good';
-        objBox.innerHTML =
-            `<div class="obj-title">Learning Objectives</div>` +
-            `<ul class="obj-list">` +
-            lesson._parsedObjectives.map(o => `<li>${o}</li>`).join('') +
-            `</ul>`;
+        objBox.innerHTML = `<div class="obj-title">Learning Objectives</div><ul class="obj-list">${lesson._parsedObjectives.map(o => `<li>${o}</li>`).join('')}</ul>`;
         contentDiv.appendChild(objBox);
     } else if (lesson._reqContent) {
         const emptyBox = document.createElement('div');
@@ -6013,7 +6145,6 @@ function renderLessonBlock(lesson, modNum) {
         contentDiv.appendChild(emptyBox);
     }
 
-    // Standards: either a single shared block or one block per page
     if (checkIdenticalStandards(lesson.pages)) {
         const stdBox      = document.createElement('div');
         stdBox.className  = 'standards-box status-good';
@@ -6022,26 +6153,16 @@ function renderLessonBlock(lesson, modNum) {
 
         if (firstStds?.length > 0) {
             const tableHtml = renderStandardsTableHTML(firstStds);
-            stdHTML =
-                `<div class="std-title">Standards applied to all pages of this lesson</div>` +
-                (tableHtml ||
-                 `<div style="color:#666; font-style:italic;">No standards match the current state filter.</div>`);
+            stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div>` + (tableHtml || `<div style="color:#666; font-style:italic;">No standards match the current state filter.</div>`);
         } else if (!lesson._reqStd) {
-            stdHTML =
-                `<div class="std-title">Standards applied to all pages of this lesson</div>` +
-                `<div style="color:#666; font-style:italic;">Standards not required for this lesson.</div>`;
+            stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#666; font-style:italic;">Standards not required for this lesson.</div>`;
         } else {
-            stdHTML =
-                `<div class="std-title">Standards applied to all pages of this lesson</div>` +
-                `<div style="color:#dc3545; font-weight:bold;">No standards found on any page.</div>`;
+            stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#dc3545; font-weight:bold;">No standards found on any page.</div>`;
         }
         stdBox.innerHTML = stdHTML;
         contentDiv.appendChild(stdBox);
     } else {
-        // Mixed standards — render a block per page
-        (lesson.pages || []).forEach(page =>
-            contentDiv.appendChild(renderPageBlock(page, fullLesID, lesson._reqStd))
-        );
+        (lesson.pages || []).forEach(page => contentDiv.appendChild(renderPageBlock(page, fullLesID, lesson._reqStd)));
     }
 
     details.appendChild(summary);
@@ -6049,20 +6170,12 @@ function renderLessonBlock(lesson, modNum) {
     return details;
 }
 
-// =============================================================================
-// PAGE BLOCK RENDERER
-// Builds a single page row inside a lesson when pages have differing standards.
-// =============================================================================
-
 function renderPageBlock(page, parentID, reqStd) {
     const div          = document.createElement('div');
     const rawStandards = page._parsedStandards;
     const hasStandards = !!rawStandards?.length;
 
-    div.className = (hasStandards || !reqStd)
-        ? 'audit-page page-complete'
-        : 'audit-page page-incomplete';
-
+    div.className = (hasStandards || !reqStd) ? 'audit-page page-complete' : 'audit-page page-incomplete';
     const fullPgID = `${parentID}.${padNum(Number(page.num) + 1)}`;
 
     let stdBadge = '';
@@ -6072,44 +6185,24 @@ function renderPageBlock(page, parentID, reqStd) {
 
     if (hasStandards) {
         const tableHtml = renderStandardsTableHTML(rawStandards);
-        div.innerHTML =
-            `<div class="page-header flex-wrap gap-10" style="justify-content:space-between;">
-                 <div class="flex-center gap-10">
-                     <span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}
-                 </div>
-             </div>` +
-            (tableHtml ||
-             `<div style="color:#666; font-style:italic; margin-bottom:10px; font-size:0.85rem;">
-                  No standards match the current state filter.
-              </div>`);
+        div.innerHTML = `
+            <div class="page-header flex-wrap gap-10" style="justify-content:space-between;">
+                 <div class="flex-center gap-10"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>
+             </div>` + (tableHtml || `<div style="color:#666; font-style:italic; margin-bottom:10px; font-size:0.85rem;">No standards match the current state filter.</div>`);
     } else {
-        div.innerHTML =
-            `<div class="page-header flex-center gap-10" style="justify-content:flex-start;">
-                 <span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}
-             </div>`;
+        div.innerHTML = `<div class="page-header flex-center gap-10" style="justify-content:flex-start;"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>`;
     }
-
     return div;
 }
 
-// =============================================================================
-// STANDARDS TABLE HTML BUILDER
-// Renders a collapsible <details> block per state/group, each containing a
-// standards table. Respects the active state group filter.
-// =============================================================================
-
 function getGroupedAndSortedStandards(standards) {
     if (!standards?.length) return [];
-    const filtered = activeStandardGroups.size > 0
-        ? standards.filter(s => activeStandardGroups.has(s.group))
-        : standards;
-
+    const filtered = activeStandardGroups.size > 0 ? standards.filter(s => activeStandardGroups.has(s.group)) : standards;
     const groups = {};
     filtered.forEach(s => {
         if (!groups[s.group]) groups[s.group] = [];
         groups[s.group].push(s);
     });
-
     return Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(g => {
         groups[g] = sortStdsByCode(groups[g]);
         return { group: g, standards: groups[g] };
@@ -6119,41 +6212,23 @@ function getGroupedAndSortedStandards(standards) {
 function renderStandardsTableHTML(rawStandards) {
     const grouped = getGroupedAndSortedStandards(rawStandards);
     if (!grouped.length) return '';
-
     return grouped.map(g => `
         <details class="std-group-details" open>
             <summary class="std-group-summary">📁 ${escapeHtml(g.group)}</summary>
             <table class="standards-table status-good">
-                ${g.standards.map(s => `
-                    <tr>
-                        <td class="std-code-cell">
-                            <span class="std-code">${escapeHtml(s.code)}</span>
-                        </td>
-                        <td class="std-desc">${escapeHtml(s.statement)}</td>
-                        <td class="std-grade" style="width:85px;">${escapeHtml(s.grade)}</td>
-                    </tr>`).join('')}
+                ${g.standards.map(s => `<tr><td class="std-code-cell"><span class="std-code">${escapeHtml(s.code)}</span></td><td class="std-desc">${escapeHtml(s.statement)}</td><td class="std-grade" style="width:85px;">${escapeHtml(s.grade)}</td></tr>`).join('')}
             </table>
         </details>`).join('');
 }
 
-// =============================================================================
-// STANDARDS IDENTITY CHECK
-// Returns true if all pages in a lesson have exactly the same set of standard
-// codes (order-insensitive). Used to decide whether to show a single shared
-// standards block or individual per-page blocks.
-// =============================================================================
-
 function checkIdenticalStandards(pages) {
     if (!pages?.length) return false;
-
     const getCodes = (p) => {
         if (!p._parsedStandards?.length) return "NONE";
         return p._parsedStandards.map(s => s.code).sort().join('|');
     };
-
     const firstCodes = getCodes(pages[0]);
     if (firstCodes === "NONE") return false;
-
     for (let i = 1; i < pages.length; i++) {
         if (getCodes(pages[i]) !== firstCodes) return false;
     }
