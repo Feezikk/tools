@@ -4234,7 +4234,8 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                         <div class="image-card-img-wrapper">
                             ${srcUrl ? `<img src="${srcUrl}" alt="Preview" loading="lazy">` : `<span style="color:#adb5bd; font-size:0.8rem;">Image not found</span>`}
                         </div>
-                       <div class="image-card-body">
+                       <div class="image-card-body" style="font-size: 0.75rem; gap: 4px; line-height: 1.3;">
+                            <div class="image-card-text"><strong> ${img.fileName || '<span class="empty-dash">—</span>'}</strong></div>
                             <div class="image-card-text"><strong>Alt:</strong> ${img.altText || '<span class="empty-dash">—</span>'}</div>
                             <div class="image-card-text"><strong>Caption:</strong> ${img.caption || '<span class="empty-dash">—</span>'}</div>
                             <div class="image-card-text"><strong>Copyright:</strong> ${img.copyright || '<span class="empty-dash">—</span>'}</div>
