@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Version Editor v2.0.2</title>
+    <title>Text Version Editor</title>
     <style>
         /* --- CSS VARIABLES (THEMING) --- */
         :root {
@@ -338,7 +338,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.0.2</h1>
+            <h1>Text Version Editor v2.05</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -939,7 +939,9 @@ const App = (function() {
         },
 
         sanitizeHTML(htmlString) {
-            const parser = new DOMParser(), doc = parser.parseFromString(htmlString, 'text/html');
+            // Normalize whitespace to collapse Word's source-code line breaks into standard spaces
+            const normalizedHtml = htmlString.replace(/\s+/g, ' ');
+            const parser = new DOMParser(), doc = parser.parseFromString(normalizedHtml, 'text/html');
             const allowedTags = ['H1','H2','H3','H4','H5','H6','P','UL','OL','LI','STRONG','EM','TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','CAPTION','BR'];
 
             function cleanNode(node) {
@@ -954,8 +956,8 @@ const App = (function() {
                     el = document.createElement(tag);
                     [...node.attributes].forEach(attr => {
                         const name = attr.name.toLowerCase();
-                        if (name === 'style') { const match = attr.value.match(/text-align:\s*(left|center|right)/i); if (match) el.style.textAlign = match[1].toLowerCase(); } 
-                        else if (['colspan', 'rowspan', 'scope', 'border', 'cellpadding'].includes(name)) el.setAttribute(name, attr.value);
+                        // Completely strip styles, only keep structural table attributes
+                        if (['colspan', 'rowspan', 'scope', 'border', 'cellpadding'].includes(name)) el.setAttribute(name, attr.value);
                     });
                     frag.appendChild(el);
                 }
@@ -981,9 +983,9 @@ const App = (function() {
             return this.formatHTMLString(cleanDoc.innerHTML);
         },
 
-        formatHTMLString(str) {
-            return str.replace(/><(h[1-6]|p|ul|ol|table|div|blockquote|li|tr|thead|tbody|tfoot|caption)/gi, ">\n<$1")
-                      .replace(/<\/(h[1-6]|p|ul|ol|table|div|blockquote|tr|thead|tbody|tfoot|caption)></gi, "</$1>\n<").trim();
+       formatHTMLString(str) {
+            return str.replace(/>\s*<(h[1-6]|p|ul|ol|table|div|blockquote|li|tr|thead|tbody|tfoot|caption)/gi, ">\n<$1")
+                      .replace(/<\/(h[1-6]|p|ul|ol|table|div|blockquote|tr|thead|tbody|tfoot|caption)>\s*</gi, "</$1>\n<").trim();
         },
         
         cleanPlainPaste(text) { return text.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "..."); },
