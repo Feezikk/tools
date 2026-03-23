@@ -668,7 +668,14 @@
 		
 		/* ── Image Index Specifics ─────────────────────────────────────────── */
         .empty-dash { color: #adb5bd; font-weight: normal; }
-        .img-bg-dark { background-color: #212529 !important; background-image: none !important; }
+        
+        body.global-dark-bg .image-card-img-wrapper,
+        body.global-dark-bg .img-thumb-sm,
+        body.global-dark-bg #modal-img-wrapper { 
+            background-color: #212529 !important; 
+            background-image: none !important; 
+            transition: background-color 0.2s;
+        }
         
         .darken-toggle-label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); cursor: pointer; background: #fff; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); transition: all 0.2s; }
         .darken-toggle-label:hover { background: #f8f9fa; }
@@ -689,7 +696,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v6.01</span>
+                        Course Explorer Tool <span class="version-pill">v6.03</span>
                     </div>
                 </div>
             </div>
@@ -1242,6 +1249,7 @@ let activeMediaFilterHasTextVer       = false;
 let activeMediaFilterCheckCopyright   = false;
 let activeMediaFilterCheckTextVer     = false;
 let isMediaFilterOpen                 = false;
+let isGlobalDarkImageBg               = false;
 
 // ── Glossary State ────────────────────────────────────────────────────────────
 let activeGlossaryLetters    = new Set();
@@ -3866,6 +3874,12 @@ window.toggleMissingIdFilter = function toggleMissingIdFilter(checked) {
     renderMediaDashboard();
 };
 
+window.toggleGlobalImageBg = function(checked) {
+    isGlobalDarkImageBg = checked;
+    if (checked) document.body.classList.add('global-dark-bg');
+    else         document.body.classList.remove('global-dark-bg');
+};
+
 // NEW image filter toggles
 window.toggleMediaFilterHasAlt = function(checked) { activeMediaFilterHasAlt = checked; renderMediaDashboard(); };
 window.toggleMediaFilterHasCaption = function(checked) { activeMediaFilterHasCaption = checked; renderMediaDashboard(); };
@@ -3928,12 +3942,8 @@ window.clearAllMediaFilters = function clearAllMediaFilters() {
 window.renderMediaDashboard = function renderMediaDashboard() {
     const container = elements.mediaArea;
     
-    // We do NOT clear HTML here entirely because the image tab uses progressive 
-    // rendering (batching) to avoid freezing the UI when there are 100s of images.
-    // Instead we clear inside the specific tab logic below.
-
-    // Calculate filtered items...
-	container.innerHTML  = '';
+    // Wipe container to prepare for fresh render
+    container.innerHTML  = '';
     currentDisplayedMedia = [];
     currentMediaRenderCount = 0; // Reset pagination counter
 
@@ -4088,6 +4098,13 @@ window.renderMediaDashboard = function renderMediaDashboard() {
         ? `<button class="clear-filters-btn" onclick="clearAllMediaFilters()">Clear</button>`
         : '';
 
+    const darkBgToggleHtml = currentMediaTab === 'images'
+        ? `<label class="darken-toggle-label" title="Globally darken image backgrounds" style="margin-left: 5px; height: 32px;">
+               <input type="checkbox" onchange="toggleGlobalImageBg(this.checked)" ${isGlobalDarkImageBg ? 'checked' : ''} style="accent-color:var(--primary); cursor:pointer;">
+               Dark BG
+           </label>`
+        : '';
+
     container.innerHTML = `
         <div class="sticky-top-wrapper">
             <div class="white-card-header" style="padding-bottom:0;">
@@ -4133,6 +4150,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                                 </div>
                             </div>
                             ${clearFiltersHtml}
+                            ${darkBgToggleHtml}
                         </div>
                         
                         <div class="media-global-actions">
@@ -4549,12 +4567,8 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
                         <span>Type: ${mediaObj.fileType}</span>
                     </div>
                 </div>
-                <div style="display:flex; align-items:center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">
+               <div style="display:flex; align-items:center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;">
                     ${navHtml}
-                    <label class="darken-toggle-label" title="Darken background to see light text">
-                        <input type="checkbox" id="dark-bg-toggle" onchange="toggleModalImageBg(this.checked)" style="accent-color:var(--primary);">
-                        Dark BG
-                    </label>
                 </div>
             </div>`;
 
@@ -4796,13 +4810,9 @@ ${escapeHtml(mediaObj.rawJson)}</pre>`;
 // =============================================================================
 // MEDIA MODAL — NAVIGATION & CLOSE
 // =============================================================================
-
 window.navigateMediaModal = function(dir, currentIndex) {
     let newIndex = currentIndex + dir;
     if (newIndex >= 0 && newIndex < currentDisplayedMedia.length) {
-        // Check if dark mode was toggled so we can preserve it across images
-        let isDark = document.getElementById('dark-bg-toggle')?.checked || false;
-        
         if (currentAudioBlobUrl) {
             URL.revokeObjectURL(currentAudioBlobUrl);
             currentAudioBlobUrl = null;
@@ -4810,22 +4820,6 @@ window.navigateMediaModal = function(dir, currentIndex) {
         
         const nextEntry = currentDisplayedMedia[newIndex];
         openMediaModalFromObj(nextEntry.item, nextEntry.type, newIndex);
-        
-        if (isDark) {
-            const newToggle = document.getElementById('dark-bg-toggle');
-            if (newToggle) {
-                newToggle.checked = true;
-                toggleModalImageBg(true);
-            }
-        }
-    }
-};
-
-window.toggleModalImageBg = function(isDark) {
-    const wrapper = document.getElementById('modal-img-wrapper');
-    if (wrapper) {
-        if (isDark) wrapper.classList.add('img-bg-dark');
-        else wrapper.classList.remove('img-bg-dark');
     }
 };
 
@@ -5476,20 +5470,20 @@ window.exportMediaReport = function exportMediaReport() {
 
         if (expImages.length) {
             const rows = [[
-                { v: "Location",       s: sHeader }, { v: "File Name",   s: sHeader },
-                { v: "Type",           s: sHeader }, { v: "Alt Text",    s: sHeader },
-                { v: "Caption Header", s: sHeader }, { v: "Caption",     s: sHeader },
-                { v: "Copyright",      s: sHeader }, { v: "Text Version",s: sHeader }
+                { v: "Location",     s: sHeader }, { v: "File Name",    s: sHeader },
+                { v: "Type",         s: sHeader }, { v: "Alt Text",     s: sHeader },
+                { v: "Text Version", s: sHeader }, { v: "Caption",      s: sHeader },
+                { v: "Caption Header", s: sHeader }, { v: "Copyright",  s: sHeader }
             ]];
             expImages.forEach(img => rows.push([
                 { v: img.locationId    || "",  s: sLocation },
                 { v: img.fileName      || "",  s: sText },
                 { v: img.fileType      || "",  s: sText },
                 { v: img.altText       || "—", s: sText },
-                { v: img.captionHeader || "—", s: sText },
+                { v: img.textVersion   || "—", s: sText },
                 { v: img.caption       || "—", s: sText },
-                { v: img.copyright     || "—", s: sText },
-                { v: img.textVersion   || "—", s: sText }
+                { v: img.captionHeader || "—", s: sText },
+                { v: img.copyright     || "—", s: sText }
             ]));
             const ws = XLSX.utils.aoa_to_sheet(rows);
             ws['!cols']  = [{ wch: 15 }, { wch: 35 }, { wch: 10 }, { wch: 40 }, { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 40 }];
@@ -5523,9 +5517,8 @@ window.exportMediaReport = function exportMediaReport() {
                 let loc        = m.locationId || "";
                 let idOrSource = m.entryId    || "Unknown";
                 if (m.kalturaType === 'mp3') {
-                    const isInt = loc.includes('.INT-');
                     loc        = loc.replace(/\.INT-\d+/i, '');
-                    idOrSource = isInt ? "Interactive" : "Page";
+                    idOrSource = "In Course";
                 }
                 rows.push([
                     { v: loc,        s: sLocation },
