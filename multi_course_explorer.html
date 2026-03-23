@@ -268,7 +268,7 @@
                 <div>
                     <h1 id="main-title" style="display:flex; align-items:center; gap:10px;">
                         Multi-Course Explorer
-                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v5.0</span>
+                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v5.03</span>
                     </h1>
                     <div class="header-subtitle" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Content &amp; Standards Tool</div>
                 </div>
@@ -327,7 +327,7 @@
                 </div>
 
                 <div class="filter-dropdown-wrapper">
-                    <button class="filter-btn btn-base" id="search-type-btn" onclick="toggleFilterDropdown('search-type-dropdown', event)">Other <span id="svg-arrow-down-search-type"></span></button>
+                    <button class="filter-btn btn-base" id="search-type-btn" onclick="toggleFilterDropdown('search-type-dropdown', event)">Exclude <span id="svg-arrow-down-search-type"></span></button>
                     <div id="search-type-dropdown" class="filter-dropdown-content" style="width: 250px;" onclick="event.stopPropagation()">
                         <div id="search-type-dropdown-list" style="max-height: 250px; overflow-y: auto; overflow-x: hidden; padding-right: 5px;"></div>
                     </div>
@@ -806,10 +806,12 @@ let allKnownStandardStates = new Set();
 
 let activeSearchCourses = new Set();
 let activeSearchModules = new Set();
-let activeSearchTypes = new Set();
+let activeSearchExcludePages = false;
+let activeSearchExcludeInteractives = false;
+let activeSearchExcludeHTML = true;
 let activeSearchExcludeStandards = true; 
 let activeSearchExcludeML = true;       
-let activeSearchExcludeNotes = true;    
+let activeSearchExcludeNotes = true;  
 
 let currentSearchResults = [];
 let currentSearchQuery = "";
@@ -1098,7 +1100,9 @@ async function runMultiCourseIndexing() {
 
         activeSearchCourses = new Set();
         activeSearchModules = new Set();
-        activeSearchTypes = new Set();
+        activeSearchExcludePages = false;
+        activeSearchExcludeInteractives = false;
+        activeSearchExcludeHTML = true;
         activeSearchExcludeStandards = true;
         activeSearchExcludeML = true;
 
@@ -1384,7 +1388,9 @@ async function processPage(courseName, courseFullName, filename, breadcrumb, loc
 window.clearAllSearchFilters = function() {
     activeSearchCourses.clear();
     activeSearchModules.clear();
-    activeSearchTypes.clear();
+    activeSearchExcludePages = false;
+    activeSearchExcludeInteractives = false;
+    activeSearchExcludeHTML = true;
     activeSearchExcludeStandards = true;
     activeSearchExcludeML = true;
     activeSearchExcludeNotes = true;
@@ -1454,44 +1460,52 @@ window.renderSearchFilters = function() {
     if (typeContainer && typeBtn) {
         let typeHtml = `
             <div class="filter-actions-row">
-                <button class="filter-action-link" onclick="activeSearchTypes.add('page'); activeSearchTypes.add('interactive'); activeSearchExcludeStandards = false; activeSearchExcludeML = false; activeSearchExcludeNotes = false; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Select All</button>
-                <button class="filter-action-link" onclick="activeSearchTypes.clear(); activeSearchExcludeStandards = true; activeSearchExcludeML = false; activeSearchExcludeNotes = true; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Clear All</button>
+                <button class="filter-action-link" onclick="activeSearchExcludePages = true; activeSearchExcludeInteractives = true; activeSearchExcludeHTML = true; activeSearchExcludeStandards = true; activeSearchExcludeML = true; activeSearchExcludeNotes = true; renderSearchFilters(); runSearch(document.getElementById('search-input').value);">Select All</button>
+                <button class="filter-action-link" onclick="clearAllSearchFilters()">Clear / Defaults</button>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">`;
         
-        const isPageChecked = activeSearchTypes.has('page') ? 'checked' : '';
+        const isExclPagesChecked = activeSearchExcludePages ? 'checked' : '';
         typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
-                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchType('page')" ${isPageChecked}> 
-                        <span style="flex:1;">Course Pages</span>
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludePages()" ${isExclPagesChecked}> 
+                        <span style="flex:1;">Exclude Course Pages</span>
                     </label>`;
                     
-        const isIntChecked = activeSearchTypes.has('interactive') ? 'checked' : '';
+        const isExclIntChecked = activeSearchExcludeInteractives ? 'checked' : '';
         typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
-                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchType('interactive')" ${isIntChecked}> 
-                        <span style="flex:1;">Interactives</span>
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeInteractives()" ${isExclIntChecked}> 
+                        <span style="flex:1;">Exclude Interactives</span>
+                    </label>`;
+        
+        const isExclHTMLChecked = activeSearchExcludeHTML ? 'checked' : '';
+        typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text); border-top: 1px dashed var(--border); padding-top: 8px;">
+                        <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeHTML()" ${isExclHTMLChecked}> 
+                        <span style="flex:1;">HTML Code (Tags & Attributes)</span>
                     </label>`;
         
         const isExclStdsChecked = activeSearchExcludeStandards ? 'checked' : '';
-        typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text); border-top: 1px dashed var(--border); padding-top: 8px;">
+        typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
                         <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeStandards()" ${isExclStdsChecked}> 
-                        <span style="flex:1;">Exclude Standards</span>
+                        <span style="flex:1;">Standards</span>
                     </label>`;
 
         const isExclNotesChecked = activeSearchExcludeNotes ? 'checked' : '';
         typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
                         <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeNotes()" ${isExclNotesChecked}> 
-                        <span style="flex:1;">Exclude Notes</span>
+                        <span style="flex:1;">Notes</span>
                     </label>`;
 
         const isExclMLChecked = activeSearchExcludeML ? 'checked' : '';
         typeHtml += `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem; cursor:pointer; color:var(--text);">
                         <input type="checkbox" style="accent-color:var(--primary); width:16px; height:16px; cursor:pointer; margin-top:2px;" onchange="toggleSearchExcludeML()" ${isExclMLChecked}> 
-                        <span style="flex:1;">Exclude ML</span>
+                        <span style="flex:1;">ML Content</span>
                     </label></div>`;
                     
         typeContainer.innerHTML = typeHtml;
-        const isNonDefault = activeSearchTypes.size > 0 || !activeSearchExcludeStandards || !activeSearchExcludeML || !activeSearchExcludeNotes;
-        typeBtn.innerHTML = isNonDefault ? `Other (Filtered) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>` : `Other (All) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`;
+        
+        // Button highlight logic: Highlights yellow if any setting deviates from the new global defaults
+        const isNonDefault = activeSearchExcludePages || activeSearchExcludeInteractives || !activeSearchExcludeHTML || !activeSearchExcludeStandards || !activeSearchExcludeML || !activeSearchExcludeNotes;
+        typeBtn.innerHTML = isNonDefault ? `Exclude (Filtered) <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>` : `Exclude <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`;
         typeBtn.classList.toggle('filtered', isNonDefault);
     }
 };
@@ -1508,8 +1522,20 @@ window.toggleSearchModule = function(modNum) {
     if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
 };
 
-window.toggleSearchType = function(type) {
-    if (activeSearchTypes.has(type)) activeSearchTypes.delete(type); else activeSearchTypes.add(type);
+window.toggleSearchExcludePages = function() {
+    activeSearchExcludePages = !activeSearchExcludePages;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeInteractives = function() {
+    activeSearchExcludeInteractives = !activeSearchExcludeInteractives;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeHTML = function() {
+    activeSearchExcludeHTML = !activeSearchExcludeHTML;
     renderSearchFilters();
     if (elements.searchInput.value.trim().length > 0) runSearch(elements.searchInput.value);
 };
@@ -1706,6 +1732,30 @@ elements.results.addEventListener('click', (e) => {
     
     if (res) openPageModal(res.originalItem, currentSearchQuery, currentSearchIsHtmlMode, elements.wholeWordToggle.checked, elements.caseSensitiveToggle.checked, startingMatchIndex);
 });
+	
+// --- HTML Tag Helper ---
+function isInsideHTMLTag(text, index) {
+    const lastOpen = text.lastIndexOf('<', index);
+    const lastClose = text.lastIndexOf('>', index);
+    const nextClose = text.indexOf('>', index);
+    // If there is an open bracket before this word, and it hasn't been closed yet...
+    return (lastOpen !== -1 && lastOpen > lastClose && nextClose !== -1);
+}
+
+// --- Image Filename Helper ---
+function isImageFilename(text, index) {
+    let start = index;
+    // Move backwards until we hit a boundary character (space, quote, bracket, etc.)
+    while (start > 0 && !/[ \n\r\t"'<>,{}[\]\\]/.test(text[start - 1])) start--;
+    
+    let end = index;
+    // Move forwards until we hit a boundary character
+    while (end < text.length && !/[ \n\r\t"'<>,{}[\]\\]/.test(text[end])) end++;
+    
+    const token = text.substring(start, end).toLowerCase();
+    // Check if this contiguous string ends with a standard image extension
+    return /\.(png|jpg|jpeg|gif|svg|webp|bmp|ico)(?:\?.*)?$/.test(token);
+}
 
 // AST Evaluator Helper Functions
 function evaluateASTNode(node, textObj, isCaseSensitive, isWholeWord) {
@@ -1731,12 +1781,24 @@ function termExists(term, textObj, isCaseSensitive, exactMatch) {
     let pattern = escapeRegExp(term);
     if (exactMatch) pattern = `(?<=^|\\W)${pattern}(?=\\W|$)`;
     
-    const regex = new RegExp(pattern, isCaseSensitive ? '' : 'i'); 
+    // We need the 'g' flag so we can use regex.exec() safely in a loop
+    const regex = new RegExp(pattern, isCaseSensitive ? 'g' : 'gi'); 
 
-    if (textObj.normalText && regex.test(textObj.normalText)) return true;
-    if (textObj.mlText && regex.test(textObj.mlText)) return true;
-    if (textObj.stdsText && regex.test(textObj.stdsText)) return true;
-    if (textObj.notesText && regex.test(textObj.notesText)) return true;
+    const checkText = (text) => {
+        if (!text) return false;
+        regex.lastIndex = 0;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            // If we aren't excluding HTML, OR if we are but this match is safely outside a tag AND not an image filename, it's a hit!
+            if (!activeSearchExcludeHTML || (!isInsideHTMLTag(text, match.index) && !isImageFilename(text, match.index))) return true;
+        }
+        return false;
+    };
+
+    if (checkText(textObj.normalText)) return true;
+    if (checkText(textObj.mlText)) return true;
+    if (checkText(textObj.stdsText)) return true;
+    if (checkText(textObj.notesText)) return true;
     
     const queryForId = isCaseSensitive ? term : term.toLowerCase();
     if (textObj.locId && textObj.locId.includes(queryForId)) return true;
@@ -1798,8 +1860,8 @@ window.runSearch = function(query) {
             const itemModNum = item.locationId.split('.')[0];
             if (activeSearchModules.size > 0 && !activeSearchModules.has(itemModNum)) return; 
             
-            if (item.isInteractive && activeSearchTypes.size > 0 && !activeSearchTypes.has('interactive')) return;
-            if (!item.isInteractive && activeSearchTypes.size > 0 && !activeSearchTypes.has('page') && activeSearchExcludeStandards && activeSearchExcludeNotes) return;
+            if (item.isInteractive && activeSearchExcludeInteractives) return;
+            if (!item.isInteractive && activeSearchExcludePages) return;
             
             let normalText = isHtmlMode ? item.rawContent : item.cleanContent;
             let mlText = activeSearchExcludeML ? "" : (isHtmlMode ? item.mlRawContent : item.mlCleanContent);
@@ -1824,6 +1886,10 @@ window.runSearch = function(query) {
                     currentSearchHighlightRegex.lastIndex = 0; 
                     let match;
                     while ((match = currentSearchHighlightRegex.exec(text)) !== null) { 
+                        // Skip adding this match to the snippet list if it's hidden inside an HTML tag or an image filename
+                        if (activeSearchExcludeHTML && (isInsideHTMLTag(text, match.index) || isImageFilename(text, match.index))) {
+                            continue; 
+                        }
                         arr.push(match.index); 
                         if (arr.length >= MAX_MATCH_COUNT) break; 
                     }
@@ -1854,7 +1920,7 @@ window.runSearch = function(query) {
         });
         
         if (matchCount === 0) {
-            const hasFilters = activeSearchCourses.size > 0 || activeSearchModules.size > 0 || activeSearchTypes.size > 0 || !activeSearchExcludeStandards || activeSearchExcludeML || !activeSearchExcludeNotes;
+            const hasFilters = activeSearchCourses.size > 0 || activeSearchModules.size > 0 || activeSearchExcludePages || activeSearchExcludeInteractives || !activeSearchExcludeHTML || !activeSearchExcludeStandards || !activeSearchExcludeML || !activeSearchExcludeNotes;
             let filterBtn = hasFilters ? `<button class="action-btn btn-base" style="margin: 15px auto 0 auto;" onclick="clearAllSearchFilters()">Clear Active Filters</button>` : '';
             elements.results.innerHTML = `<div style="text-align:center; padding:40px; background:#fff; border-radius:8px; border:1px solid var(--border);"><div class="flex-center" style="margin-bottom:10px; color:var(--text-light);">${SVGS.search}</div><p style="color:var(--text-light);">No matches found for this complex query.</p>${filterBtn}</div>`;
             elements.exportSearchBtn.style.display = 'none'; elements.searchStats.style.display = 'none';
@@ -1906,10 +1972,13 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
                         return newObj;
                     } else if (typeof o === 'string') {
                         rawRegex.lastIndex = 0; 
-                        if (isInsideML) return o.replace(rawRegex, '@@@ML_START@@@$1@@@ML_END@@@');
-                        else if (isInsideStds) return o.replace(rawRegex, '@@@STDS_START@@@$1@@@STDS_END@@@');
-                        else if (isInsideNotes) return o.replace(rawRegex, '@@@NOTES_START@@@$1@@@NOTES_END@@@');
-                        else return o.replace(rawRegex, '@@@NORM_START@@@$1@@@NORM_END@@@');
+                        return o.replace(rawRegex, (match, p1, offset, fullString) => {
+                            if (activeSearchExcludeHTML && (isInsideHTMLTag(fullString, offset) || isImageFilename(fullString, offset))) return match;
+                            if (isInsideML) return '@@@ML_START@@@' + p1 + '@@@ML_END@@@';
+                            if (isInsideStds) return '@@@STDS_START@@@' + p1 + '@@@STDS_END@@@';
+                            if (isInsideNotes) return '@@@NOTES_START@@@' + p1 + '@@@NOTES_END@@@';
+                            return '@@@NORM_START@@@' + p1 + '@@@NORM_END@@@';
+                        });
                     }
                     return o;
                 }
@@ -1939,14 +2008,36 @@ window.openPageModal = async function(item, query, isHtmlMode, isWholeWord, isCa
         let sText = activeSearchExcludeStandards ? '' : (isHtmlMode ? item.stdsRawContent : item.stdsCleanContent);
         let noteText = activeSearchExcludeNotes ? '' : (isHtmlMode ? item.notesRawContent : item.notesCleanContent);
         
-        nText = escapeHtml(nText); mText = escapeHtml(mText); sText = escapeHtml(sText); noteText = escapeHtml(noteText);
+        const applyHighlight = (text, type) => {
+            if (!text) return '';
+            if (!displayRegex) return escapeHtml(text);
+            
+            displayRegex.lastIndex = 0;
+            // Inject tokens safely BEFORE escaping the HTML
+            let tokenized = text.replace(displayRegex, (match, p1, offset, fullStr) => {
+                if (activeSearchExcludeHTML && (isInsideHTMLTag(fullStr, offset) || isImageFilename(fullStr, offset))) return match;
+                if (type === 'ml') return '@@@ML_START@@@' + p1 + '@@@ML_END@@@';
+                if (type === 'stds') return '@@@STDS_START@@@' + p1 + '@@@STDS_END@@@';
+                if (type === 'notes') return '@@@NOTES_START@@@' + p1 + '@@@NOTES_END@@@';
+                return '@@@NORM_START@@@' + p1 + '@@@NORM_END@@@';
+            });
+            
+            // Escape HTML so it displays nicely
+            tokenized = escapeHtml(tokenized);
+            
+            // Swap tokens for actual spans
+            tokenized = tokenized.replace(/@@@ML_START@@@([\s\S]*?)@@@ML_END@@@/g, '<span class="highlight highlight-ml search-match">$1</span>');
+            tokenized = tokenized.replace(/@@@STDS_START@@@([\s\S]*?)@@@STDS_END@@@/g, '<span class="highlight highlight-stds search-match">$1</span>');
+            tokenized = tokenized.replace(/@@@NOTES_START@@@([\s\S]*?)@@@NOTES_END@@@/g, '<span class="highlight highlight-notes search-match">$1</span>');
+            tokenized = tokenized.replace(/@@@NORM_START@@@([\s\S]*?)@@@NORM_END@@@/g, '<span class="highlight search-match">$1</span>');
+            
+            return tokenized;
+        };
 
-        if (displayRegex) {
-            displayRegex.lastIndex = 0; nText = nText.replace(displayRegex, '<span class="highlight search-match">$1</span>');
-            displayRegex.lastIndex = 0; if (mText) mText = mText.replace(displayRegex, '<span class="highlight highlight-ml search-match">$1</span>');
-            displayRegex.lastIndex = 0; if (sText) sText = sText.replace(displayRegex, '<span class="highlight highlight-stds search-match">$1</span>');
-            displayRegex.lastIndex = 0; if (noteText) noteText = noteText.replace(displayRegex, '<span class="highlight highlight-notes search-match">$1</span>');
-        }
+        nText = applyHighlight(nText, 'norm');
+        mText = applyHighlight(mText, 'ml');
+        sText = applyHighlight(sText, 'stds');
+        noteText = applyHighlight(noteText, 'notes');
 
         fullText = nText;
         if (sText) fullText += "\n\n--- STANDARDS ---\n\n" + sText;
