@@ -696,7 +696,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v6.03</span>
+                        Course Explorer Tool <span class="version-pill">v6.04</span>
                     </div>
                 </div>
             </div>
@@ -4613,8 +4613,10 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
                 <div style="font-size:0.75rem; font-weight:700; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
                     Text Version
                 </div>
-                <div style="font-size:0.95rem; color:var(--text); background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid var(--border);">
-                    ${mediaObj.textVersion.trim() ? mediaObj.textVersion : '<span class="empty-dash">—</span>'}
+                <div style="font-size:0.95rem; color:var(--text); background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid var(--border); overflow-x: auto;">
+                    ${mediaObj.textVersion.trim() 
+                        ? mediaObj.textVersion.replace(/<table[^>]*class=['"]table['"][^>]*>/gi, '<table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%; background: #fff;">') 
+                        : '<span class="empty-dash">—</span>'}
                 </div>
             </div>
         `;
