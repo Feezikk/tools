@@ -182,7 +182,7 @@
         }
 
         /* ── Search Inputs ─────────────────────────────────────────────────── */
-        .main-search-wrapper { position: relative; width: 100%; box-sizing: border-box; display: flex; align-items: center; }
+        .main-search-wrapper { position: relative; width: 100%; box-sizing: border-box; display: flex; align-items: center; flex-grow: 1; }
         .main-search-icon    { position: absolute; left: 15px; color: var(--text-light); pointer-events: none; display: flex; align-items: center; }
 
         #search-input, #stds-search-input {
@@ -200,6 +200,56 @@
             line-height: 1; display: flex; align-items: center;
         }
         .main-search-clear:hover { color: var(--primary); }
+
+        /* ── ADVANCED SEARCH UI ────────────────────────────────────────────── */
+        #advanced-search-toggle {
+            background: var(--tag-bg); border: 1px solid var(--border); border-radius: 6px;
+            color: var(--primary); padding: 0 14px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; margin: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); height: 46px; flex-shrink: 0;
+        }
+        #advanced-search-toggle:hover { background: #e2e8f0; color: var(--primary-light); border-color: #cbd5e0; }
+        
+        #advanced-search-panel {
+            display: none; background: #fcfcfc; border: 1px solid var(--border); border-radius: 8px;
+            padding: 20px; margin-top: 15px; border-top: 3px solid var(--accent);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        .adv-search-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .adv-mode-toggle { display: inline-flex; background: #e9ecef; border-radius: 6px; padding: 3px; }
+        .adv-mode-btn { background: none; border: none; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .adv-mode-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        /* Guided Builder Styles */
+        #guided-builder-area { display: flex; flex-direction: column; gap: 15px; }
+        
+        .query-bucket { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .query-bucket-header { font-weight: 600; color: var(--primary); margin-bottom: 12px; font-size: 0.95rem; }
+        
+        .bucket-all { border-left: 4px solid var(--primary-light); }
+        .bucket-any { border-left: 4px solid var(--accent); }
+        .bucket-none { border-left: 4px solid #dc3545; }
+        
+        .query-rule { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .query-rule:last-child { margin-bottom: 0; }
+        
+        .rule-input { flex-grow: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; outline: none; transition: 0.2s; }
+        .rule-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(28, 53, 94, 0.1); }
+        
+        .remove-rule-btn { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 6px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; font-weight: bold; transition: 0.2s; padding: 0; line-height: 1; flex-shrink: 0; }
+        .remove-rule-btn:hover { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        
+        .add-btn { background: #fff; border: 1px dashed #e2e8f0; color: var(--text-light); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: 0.2s; margin-top: 5px; display: inline-block; }
+        .add-btn:hover { background: var(--tag-bg); color: var(--primary); border-color: var(--primary-light); }
+
+        /* Power User Styles */
+        #power-user-area { display: none; flex-direction: column; gap: 10px; }
+        #power-user-input { width: 100%; height: 100px; padding: 12px; font-family: var(--code-font); font-size: 0.9rem; border: 1px solid var(--border); border-radius: 6px; resize: vertical; outline: none; box-sizing: border-box; }
+        #power-user-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(28, 53, 94, 0.1); }
+        
+        .adv-preview { background: #e8f4fd; border-left: 3px solid #2196F3; padding: 10px 15px; border-radius: 0 6px 6px 0; font-size: 0.85rem; color: #0d47a1; margin-top: 15px; font-family: monospace; word-wrap: break-word; }
+        .adv-error { background: #f8d7da; border-left: 3px solid #dc3545; color: #721c24; }
 
         /* ── Segmented Controls ────────────────────────────────────────────── */
         .segmented-control { display: inline-flex; background: #e9ecef; padding: 4px; border-radius: 8px; }
@@ -574,9 +624,9 @@
             overflow-y: hidden; 
             padding-bottom: 0; 
             margin-bottom: 15px; 
-            scrollbar-width: none; /* Hides scrollbar in Firefox */
+            scrollbar-width: none;
         }
-        .media-tab-group::-webkit-scrollbar { display: none; /* Hides scrollbar in Chrome/Safari/Edge */ }
+        .media-tab-group::-webkit-scrollbar { display: none; }
         .media-tab-btn   { background: none; border: none; font-size: 1rem; font-weight: 600; color: var(--text-light); cursor: pointer; padding: 12px 4px; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; margin-bottom: -1px; }
         .media-tab-btn:hover  { color: var(--primary); }
         .media-tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
@@ -648,16 +698,10 @@
         .az-btn.duplicate-btn:hover,
         .az-btn.duplicate-btn.active       { background: #dc3545; color: #fff; border-color: #dc3545; }
 
-       /* Remove masonry columns, stack groups vertically */
         .glossary-columns { display: flex; flex-direction: column; gap: 30px; margin-top: 10px; }
-        
         .glossary-group  { width: 100%; }
         .glossary-letter { font-size: 1.4rem; font-weight: 700; color: var(--primary); border-bottom: 2px solid var(--border); margin-bottom: 15px; padding-bottom: 5px; }
-        
-        /* New true grid for the items under each letter */
         .glossary-items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; align-items: start; }
-        
-        /* Removed bottom margin since the grid handles spacing now */
         .glossary-item   { background: #fff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box; }
         .glossary-item:hover { background: var(--tag-bg); border-color: var(--primary-light); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(28,53,94,0.08); }
         .glossary-term   { font-weight: 600; color: var(--primary); font-size: 1rem; line-height: 1.2; }
@@ -665,8 +709,8 @@
         .glossary-loc-badge { background: #e9ecef; color: var(--text-light); padding: 2px 6px; border-radius: 4px; font-family: var(--code-font); }
         .glossary-item.duplicate-term       { border: 1px solid #f5c2c7; border-left: 4px solid #dc3545; }
         .glossary-item.duplicate-term:hover { border-color: #dc3545; background: #fff5f5; }
-		
-		/* ── Image Index Specifics ─────────────────────────────────────────── */
+        
+        /* ── Image Index Specifics ─────────────────────────────────────────── */
         .empty-dash { color: #adb5bd; font-weight: normal; }
         
         body.global-dark-bg .image-card-img-wrapper,
@@ -685,7 +729,7 @@
         .modal-nav-btn:disabled { opacity: 0.5; cursor: not-allowed; color: var(--text-light); }
     </style>
 </head>
-	
+    
 <body>
 <div class="container">
 
@@ -696,7 +740,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v6.04</span>
+                        Course Explorer Tool <span class="version-pill">v6.11</span>
                     </div>
                 </div>
             </div>
@@ -762,15 +806,20 @@
         </div>
 
         <div id="status-area" style="margin-top:10px; font-weight:500;"></div>
-    </div><div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
+    </div>
+    
+    <div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
         <div class="white-card-header" style="display:flex; flex-direction:column; gap:15px;">
 
-            <div class="main-search-wrapper">
-                <div class="main-search-icon" id="svg-content-search-icon"></div>
-                <input type="text" id="search-input"
-                       placeholder="Enter your search..." autocomplete="off">
-                <button id="search-clear-btn" class="main-search-clear"
-                        style="display:none;" title="Clear search">&times;</button>
+            <div style="display: flex; gap: 10px; width: 100%; align-items: center;">
+                <div class="main-search-wrapper" style="flex-grow: 1;">
+                    <div class="main-search-icon" id="svg-content-search-icon"></div>
+                    <input type="text" id="search-input" placeholder="Enter your search..." autocomplete="off">
+                    <button id="search-clear-btn" class="main-search-clear" style="display:none;" title="Clear search">&times;</button>
+                </div>
+                <button id="advanced-search-toggle" title="Advanced Search Options" onclick="toggleAdvancedSearch()">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="width:1.2em; height:1.2em;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </button>
             </div>
 
             <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
@@ -791,10 +840,10 @@
                         </div>
                     </div>
 
-                    <div class="filter-dropdown-wrapper">
+                   <div class="filter-dropdown-wrapper">
                         <button class="filter-btn btn-base" id="search-type-btn"
                                 onclick="toggleFilterDropdown('search-type-dropdown', event)">
-                            Types <span id="svg-arrow-down-search-type"></span>
+                            Exclude <span id="svg-arrow-down-search-type"></span>
                         </button>
                         <div id="search-type-dropdown" class="filter-dropdown-content"
                              style="width:250px;" onclick="event.stopPropagation()">
@@ -816,7 +865,7 @@
                     </label>
                     <label class="pill-label">
                         <input type="checkbox" id="whole-word-toggle">
-                        <span><i id="svg-icon-wholeword"></i> Whole Word</span>
+                        <span><i id="svg-icon-wholeword"></i> Exact Match</span>
                     </label>
                     <label class="pill-label">
                         <input type="checkbox" id="case-sensitive-toggle">
@@ -917,6 +966,55 @@
 
     <div id="media-area"></div>
 
+
+    <div id="advanced-search-modal" class="modal-overlay" onclick="closeAdvSearchModal(event)">
+        <div class="modal-content" style="max-width: 800px; padding: 0;" onclick="event.stopPropagation()">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: var(--primary); font-size: 1.2rem;">Advanced Search Options</strong>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="adv-mode-toggle" style="margin: 0;">
+                        <button class="adv-mode-btn active" id="btn-mode-guided" onclick="setAdvMode('guided')">Guided Builder</button>
+                        <button class="adv-mode-btn" id="btn-mode-power" onclick="setAdvMode('power')">Power User syntax</button>
+                    </div>
+                    <button class="close-modal-btn" onclick="closeAdvSearchModal()">&times;</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="background: #fcfcfc;">
+                <div id="guided-builder-area">
+                    <div class="query-bucket bucket-all">
+                        <div class="query-bucket-header">Must include ALL of these terms:</div>
+                        <div id="bucket-all-rules"></div>
+                        <button class="add-btn" onclick="addBucketRule('all')">+ Add Term</button>
+                    </div>
+                    
+                    <div class="query-bucket bucket-any">
+                        <div class="query-bucket-header">Can include ANY of these terms:</div>
+                        <div id="bucket-any-rules"></div>
+                        <button class="add-btn" onclick="addBucketRule('any')">+ Add Term</button>
+                    </div>
+                    
+                    <div class="query-bucket bucket-none">
+                        <div class="query-bucket-header">Must NOT include these terms:</div>
+                        <div id="bucket-none-rules"></div>
+                        <button class="add-btn" onclick="addBucketRule('none')">+ Add Term</button>
+                    </div>
+                </div>
+
+                <div id="power-user-area" style="display: none; flex-direction: column; gap: 10px;">
+                    <label for="power-user-input" style="font-size: 0.85rem; color: var(--text-light);">Enter Boolean query (Supports AND, OR, NOT, parentheses, and "exact phrases"):</label>
+                    <textarea id="power-user-input" placeholder='e.g., "Stock Market" AND ("Bull Market" OR "Bear Market")'></textarea>
+                </div>
+
+                <div id="adv-query-preview" class="adv-preview" style="margin-top: 20px;">Compiled Query: <span id="adv-compiled-output"></span></div>
+            </div>
+            
+            <div class="modal-header" style="background:#fff; border-top:1px solid var(--border); border-bottom:none; border-radius:0 0 12px 12px; justify-content: flex-end; gap: 10px;">
+                <button class="action-btn btn-base" onclick="clearAdvancedSearch()">Reset</button>
+                <button class="action-btn btn-base btn-primary" onclick="executeAdvancedSearch()">Apply & Search</button>
+            </div>
+        </div>
+    </div>
 
     <div id="media-modal" class="modal-overlay" onclick="closeMediaModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
@@ -1026,17 +1124,14 @@
         <div id="module-detail-content"></div>
     </div>
 
-
 </div><button id="back-to-top"
         onclick="window.scrollTo({top:0, behavior:'smooth'})"
         title="Back to Top"></button>
-
-
+	
 <script>
 // =============================================================================
-// COURSE EXPLORER v5.20  —  JavaScript
-// Added: Image Index inside the Media Dashboard with filtering, pagination, 
-//        and table/grid layouts.
+// COURSE EXPLORER v6.04 — JavaScript
+// Includes Advanced AST Boolean Search & Query Builder
 // =============================================================================
 
 // ── SVG Icon Library ──────────────────────────────────────────────────────────
@@ -1059,7 +1154,7 @@ const SVGS = {
     logo:       `<svg class="svg-icon" style="width:28px;height:28px;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>`,
     search:     `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
     code:       `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`,
-    wholeWord:  `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="8" y1="12" x2="16" y2="12"></line></svg>`,
+   wholeWord:  `<svg class="svg-icon" viewBox="0 0 24 24"><path style="fill: currentColor; stroke: none;" d="M7 6h3v7l-2 4H5l2-4V6zm9 0h3v7l-2 4h-3l2-4V6z"/></svg>`,
     matchCase:  `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="4 20 9 5 14 20"></polyline><line x1="6" y1="15" x2="12" y2="15"></line><circle cx="18" cy="15" r="3"></circle><line x1="21" y1="20" x2="21" y2="12"></line></svg>`,
     layers:     `<svg class="svg-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`,
     media:      `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>`,
@@ -1069,7 +1164,7 @@ const SVGS = {
     config:     `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
     back:       `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`,
     forward:    `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`,
-   refresh:    `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
+    refresh:    `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
     maximize:   `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>`,
     info:       `<svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
 };
@@ -1174,7 +1269,6 @@ const MEDIA_BATCH_SIZE  = 25;
 // GLOBAL STATE
 // =============================================================================
 
-// ── File / Course Data ────────────────────────────────────────────────────────
 let fileMap                  = new Map();
 let courseIndex              = [];
 let courseTree               = {};
@@ -1190,13 +1284,11 @@ let courseStandardGroups     = new Set();
 let fileNameIndex            = new Map();
 let folderIndex              = new Map();
 
-// ── Multi-course scanning ─────────────────────────────────────────────────────
 let availableCoursesFromScan = new Map();
 let selectedCourseName       = "";
 let extractedCourseTitle     = "";
 let customCourseName         = "";
 
-// ── UI / Session flags ────────────────────────────────────────────────────────
 let currentModuleIndex       = -1;
 let isAllExpanded            = false;
 let hasRunAuditConfig        = false;
@@ -1204,22 +1296,21 @@ let isRefreshMode            = false;
 let debounceTimer;
 let _processedInteractives   = new Set();
 
-// ── Web Worker (fix #5) ───────────────────────────────────────────────────────
 let searchWorker             = null;
 
-// ── Content Search State ──────────────────────────────────────────────────────
-let activeSearchModules          = new Set();
-let activeSearchTypes            = new Set(['page', 'interactive']);
-let activeSearchExcludeStandards = true;
-let activeSearchExcludeML        = false;
-let activeSearchExcludeNotes     = true;
+let activeSearchModules               = new Set();
+let activeSearchExcludePages          = false;
+let activeSearchExcludeInteractives   = false;
+let activeSearchExcludeStandards      = true;
+let activeSearchExcludeML             = true;
+let activeSearchExcludeNotes          = true;
+let activeSearchExcludeHTML           = true;
 let currentSearchResults         = [];
 let currentSearchQuery           = "";
 let currentSearchIsHtmlMode      = false;
 let currentSearchHighlightRegex  = null;
 let searchRenderCount            = 0;
 
-// ── Standards Search State ────────────────────────────────────────────────────
 let currentStdsSearchResults = [];
 let activeStdsModules        = new Set();
 let activeStdsStates         = new Set();
@@ -1230,11 +1321,9 @@ let currentStdsQuery         = "";
 let currentStdsExactPattern  = null;
 let currentStdsFuzzyPattern  = null;
 
-// Shared-standard colour tracking
 let sharedStandardColors     = new Map();
 let colorIndexTracker        = 0;
 
-// ── Media Dashboard State ─────────────────────────────────────────────────────
 let currentDisplayedMedia             = [];
 let currentMediaRenderCount           = 0;
 let currentMediaLayout                = localStorage.getItem('courseSearch_mediaLayout') || 'grid';
@@ -1251,27 +1340,270 @@ let activeMediaFilterCheckTextVer     = false;
 let isMediaFilterOpen                 = false;
 let isGlobalDarkImageBg               = false;
 
-// ── Glossary State ────────────────────────────────────────────────────────────
 let activeGlossaryLetters    = new Set();
 let showOnlyDuplicates       = false;
 
-// ── Audit / Standards Filter State ───────────────────────────────────────────
 let activeStandardGroups     = new Set();
 
-// ── Modal State ───────────────────────────────────────────────────────────────
 let previousModalState       = null;
 let currentAudioBlobUrl      = null;
 
 // =============================================================================
-// PART 4 — Init, Utils, History, Batch Scan & Course Selection
+// ADVANCED SEARCH AST & QUERY PARSER
+// =============================================================================
+
+const TokenType = {
+    AND: 'AND', OR: 'OR', NOT: 'NOT',
+    LPAREN: 'LPAREN', RPAREN: 'RPAREN',
+    TERM: 'TERM'
+};
+
+function tokenizeQuery(query) {
+    const tokens = [];
+    let i = 0;
+    while (i < query.length) {
+        let char = query[i];
+        if (char === ' ' || char === '\t' || char === '\n') { i++; continue; }
+        if (char === '(') { tokens.push({ type: TokenType.LPAREN, value: '(' }); i++; continue; }
+        if (char === ')') { tokens.push({ type: TokenType.RPAREN, value: ')' }); i++; continue; }
+        if (char === '"') {
+            i++;
+            let phrase = "";
+            while (i < query.length && query[i] !== '"') { phrase += query[i]; i++; }
+            i++; 
+            if (phrase.trim()) tokens.push({ type: TokenType.TERM, value: phrase.trim(), exact: true });
+            continue;
+        }
+        
+        let word = "";
+        while (i < query.length && ![' ', '\t', '\n', '(', ')', '"'].includes(query[i])) { word += query[i]; i++; }
+        
+        if (word) {
+            let upperWord = word.toUpperCase();
+            if (upperWord === 'AND') tokens.push({ type: TokenType.AND, value: upperWord });
+            else if (upperWord === 'OR') tokens.push({ type: TokenType.OR, value: upperWord });
+            else if (upperWord === 'NOT' || upperWord === 'EXCLUDE') tokens.push({ type: TokenType.NOT, value: 'NOT' });
+            else tokens.push({ type: TokenType.TERM, value: word, exact: false });
+        }
+    }
+    return tokens;
+}
+
+class BooleanParser {
+    constructor(tokens) { this.tokens = tokens; this.pos = 0; }
+    peek() { return this.tokens[this.pos] || null; }
+    consume() { return this.tokens[this.pos++]; }
+    parse() {
+        if (this.tokens.length === 0) return null;
+        const ast = this.parseExpression();
+        if (this.pos < this.tokens.length) throw new Error(`Unexpected token at end of query: ${this.peek().value}`);
+        return ast;
+    }
+    parseExpression() {
+        let left = this.parseTerm();
+        while (this.peek() && this.peek().type === TokenType.OR) {
+            this.consume(); 
+            let right = this.parseTerm();
+            left = { type: 'OR', left, right };
+        }
+        return left;
+    }
+    parseTerm() {
+        let left = this.parseFactor();
+        while (this.peek() && (this.peek().type === TokenType.AND || this.peek().type === TokenType.TERM || this.peek().type === TokenType.LPAREN || this.peek().type === TokenType.NOT)) {
+            let isImplicit = true;
+            if (this.peek().type === TokenType.AND) { this.consume(); isImplicit = false; }
+            let right = this.parseFactor();
+            left = { type: 'AND', left, right, implicit: isImplicit };
+        }
+        return left;
+    }
+    parseFactor() {
+        const token = this.peek();
+        if (!token) throw new Error("Unexpected end of query. Check your formatting.");
+        if (token.type === TokenType.NOT) { this.consume(); let operand = this.parseFactor(); return { type: 'NOT', operand }; }
+        if (token.type === TokenType.LPAREN) {
+            this.consume();
+            let expr = this.parseExpression();
+            let next = this.consume();
+            if (!next || next.type !== TokenType.RPAREN) throw new Error("Missing closing parenthesis ')'");
+            return expr;
+        }
+        if (token.type === TokenType.TERM) return this.consume();
+        throw new Error(`Unexpected operator: ${token.value}. Expected a search term.`);
+    }
+}
+
+function compileQueryToAST(queryString) {
+    try {
+        const tokens = tokenizeQuery(queryString);
+        const parser = new BooleanParser(tokens);
+        return { ast: parser.parse(), error: null };
+    } catch (err) {
+        return { ast: null, error: err.message };
+    }
+}
+
+function extractPositiveTerms(node, terms = []) {
+    if (!node) return terms;
+    if (node.type === 'AND' || node.type === 'OR') {
+        extractPositiveTerms(node.left, terms);
+        extractPositiveTerms(node.right, terms);
+    }
+    if (node.type === 'TERM') {
+        terms.push(node);
+    }
+    return terms;
+}
+
+// ── ADVANCED SEARCH UI (GUIDED BUILDER) ──────────────────────────────────────
+let advSearchMode = 'guided'; 
+let ruleCounter = 0;
+
+let bucketState = {
+    all: [{ id: generateId(), value: '' }],
+    any: [],
+    none: []
+};
+
+function generateId() { return 'node_' + (ruleCounter++); }
+
+window.toggleAdvancedSearch = function() {
+    document.getElementById('advanced-search-modal').classList.add('active');
+    document.body.style.overflow = 'hidden'; 
+    renderBuckets();
+};
+
+window.closeAdvSearchModal = function(e) {
+    if (e && e.target !== e.currentTarget && !e.target.classList.contains('close-modal-btn')) return; 
+    document.getElementById('advanced-search-modal').classList.remove('active');
+    document.body.style.overflow = ''; 
+};
+
+window.setAdvMode = function(mode) {
+    advSearchMode = mode;
+    document.getElementById('btn-mode-guided').classList.toggle('active', mode === 'guided');
+    document.getElementById('btn-mode-power').classList.toggle('active', mode === 'power');
+    document.getElementById('guided-builder-area').style.display = mode === 'guided' ? 'flex' : 'none';
+    document.getElementById('power-user-area').style.display = mode === 'power' ? 'flex' : 'none';
+    
+    if (mode === 'power') {
+        const compiled = buildBucketQueryString();
+        if (compiled.trim()) document.getElementById('power-user-input').value = compiled;
+    }
+    updatePreview();
+};
+
+window.addBucketRule = function(bucketType) {
+    bucketState[bucketType].push({ id: generateId(), value: '' });
+    renderBuckets();
+};
+
+window.removeBucketRule = function(bucketType, id) {
+    bucketState[bucketType] = bucketState[bucketType].filter(rule => rule.id !== id);
+    renderBuckets();
+};
+
+window.updateBucketRule = function(bucketType, id, value) {
+    const rule = bucketState[bucketType].find(r => r.id === id);
+    if (rule) {
+        rule.value = value;
+        updatePreview();
+    }
+};
+
+function renderBuckets() {
+    ['all', 'any', 'none'].forEach(type => {
+        const container = document.getElementById(`bucket-${type}-rules`);
+        if (!container) return;
+        
+        if (bucketState[type].length === 0) {
+            container.innerHTML = `<div style="font-size: 0.85rem; color: var(--secondary); font-style: italic; margin-bottom: 10px;">No terms added.</div>`;
+            return;
+        }
+        
+        let html = '';
+        bucketState[type].forEach(rule => {
+            html += `
+                <div class="query-rule" id="${rule.id}">
+                    <input type="text" class="rule-input" placeholder="Enter term or &quot;exact phrase&quot;" value="${escapeHtml(rule.value)}" oninput="updateBucketRule('${type}', '${rule.id}', this.value)">
+                    <button class="remove-rule-btn" onclick="removeBucketRule('${type}', '${rule.id}')" title="Remove Term">&times;</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    });
+    updatePreview();
+}
+
+function buildBucketQueryString() {
+    let parts = [];
+    const allTerms = bucketState.all.map(r => r.value.trim()).filter(v => v !== '');
+    if (allTerms.length > 0) {
+        if (allTerms.length === 1) parts.push(allTerms[0]);
+        else parts.push(`(${allTerms.join(' AND ')})`);
+    }
+    const anyTerms = bucketState.any.map(r => r.value.trim()).filter(v => v !== '');
+    if (anyTerms.length > 0) {
+        if (anyTerms.length === 1) parts.push(anyTerms[0]);
+        else parts.push(`(${anyTerms.join(' OR ')})`);
+    }
+    const noneTerms = bucketState.none.map(r => r.value.trim()).filter(v => v !== '');
+    if (noneTerms.length > 0) {
+         if (noneTerms.length === 1) parts.push(`NOT (${noneTerms[0]})`);
+         else parts.push(`NOT (${noneTerms.join(' OR ')})`); 
+    }
+    return parts.join(' AND ');
+}
+
+window.updatePreview = function() {
+    let rawString = '';
+    if (advSearchMode === 'guided') { rawString = buildBucketQueryString(); } 
+    else { const inputEl = document.getElementById('power-user-input'); rawString = inputEl ? inputEl.value : ''; }
+    
+    const previewEl = document.getElementById('adv-query-preview');
+    const outputEl = document.getElementById('adv-compiled-output');
+    
+    if (!rawString.trim()) { previewEl.className = 'adv-preview'; outputEl.innerText = '...'; return; }
+    
+    const compiled = compileQueryToAST(rawString);
+    if (compiled.error) {
+        previewEl.className = 'adv-preview adv-error';
+        outputEl.innerText = `Syntax Error: ${compiled.error}`;
+    } else {
+        previewEl.className = 'adv-preview';
+        outputEl.innerText = rawString;
+    }
+};
+
+window.clearAdvancedSearch = function() {
+    bucketState = { all: [{ id: generateId(), value: '' }], any: [], none: [] };
+    if (document.getElementById('power-user-input')) document.getElementById('power-user-input').value = '';
+    renderBuckets(); 
+    document.getElementById('search-input').value = ''; 
+    runSearch('');
+};
+
+window.executeAdvancedSearch = function() {
+    let rawString = '';
+    if (advSearchMode === 'guided') rawString = buildBucketQueryString();
+    else rawString = document.getElementById('power-user-input').value;
+    
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && rawString.trim()) {
+        searchInput.value = rawString;
+        document.getElementById('search-clear-btn').style.display = 'block';
+        runSearch(rawString);
+        closeAdvSearchModal();
+    }
+};
+
+// =============================================================================
+// WEB WORKER — AST Search Engine
 // =============================================================================
 
 const _stripHtmlEl = document.createElement('div');
 let _pendingSearchOptions = null;
-
-// =============================================================================
-// WEB WORKER — Search Engine
-// =============================================================================
 
 function _searchWorkerBody() {
     let _index = [];
@@ -1281,25 +1613,92 @@ function _searchWorkerBody() {
         else if (e.data.type === 'SEARCH') { self.postMessage(_search(e.data.query, e.data.options)); }
     };
 
+    function isInsideHTMLTag(text, index) {
+        const lastOpen = text.lastIndexOf('<', index);
+        const lastClose = text.lastIndexOf('>', index);
+        const nextClose = text.indexOf('>', index);
+        return (lastOpen !== -1 && lastOpen > lastClose && nextClose !== -1);
+    }
+
+    function isImageFilename(text, index) {
+        let start = index;
+        while (start > 0 && !/[ \n\r\t"'<>,{}[\]\\]/.test(text[start - 1])) start--;
+        let end = index;
+        while (end < text.length && !/[ \n\r\t"'<>,{}[\]\\]/.test(text[end])) end++;
+        const token = text.substring(start, end).toLowerCase();
+        return /\.(png|jpg|jpeg|gif|svg|webp|bmp|ico)(?:\?.*)?$/.test(token);
+    }
+
+    function termExists(term, textObj, isCaseSensitive, exactMatch, excludeHTML) {
+        let pattern = _reEscape(term);
+        if (exactMatch) pattern = `(?<=^|\\W)${pattern}(?=\\W|$)`;
+        const regex = new RegExp(pattern, isCaseSensitive ? 'g' : 'gi'); 
+
+        const checkText = (text) => {
+            if (!text) return false;
+            regex.lastIndex = 0;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                if (!excludeHTML || (!isInsideHTMLTag(text, match.index) && !isImageFilename(text, match.index))) return true;
+            }
+            return false;
+        };
+
+        if (checkText(textObj.normalText)) return true;
+        if (checkText(textObj.mlText)) return true;
+        if (checkText(textObj.stdText)) return true;
+        if (checkText(textObj.noteText)) return true;
+        
+        const queryForId = isCaseSensitive ? term : term.toLowerCase();
+        if (textObj.locId && textObj.locId.includes(queryForId)) return true;
+
+        return false;
+    }
+
+    function evaluateASTNode(node, textObj, isCaseSensitive, isWholeWord, excludeHTML) {
+        if (!node) return true; 
+        if (node.type === 'AND') {
+            return evaluateASTNode(node.left, textObj, isCaseSensitive, isWholeWord, excludeHTML) && 
+                   evaluateASTNode(node.right, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+        }
+        if (node.type === 'OR') {
+            return evaluateASTNode(node.left, textObj, isCaseSensitive, isWholeWord, excludeHTML) || 
+                   evaluateASTNode(node.right, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+        }
+        if (node.type === 'NOT') {
+            return !evaluateASTNode(node.operand, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+        }
+        if (node.type === 'TERM') {
+            return termExists(node.value, textObj, isCaseSensitive, isWholeWord || node.exact, excludeHTML);
+        }
+        return false;
+    }
+
     function _search(query, opts) {
         const {
-            isHtmlMode, isWholeWord, isCaseSensitive,
+            ast, isHtmlMode, isWholeWord, isCaseSensitive,
+            excludePages, excludeInteractives, excludeHTML,
             excludeML, excludeStds, excludeNotes,
-            activeModules, activeTypes
+            activeModules, positiveTerms
         } = opts;
 
-        const q = query.trim();
-        if (!q.length) return { results: [], totalHits: 0 };
+        if (!ast) return { results: [], totalHits: 0 };
 
         const activeModulesSet = new Set(activeModules);
-        const activeTypesSet   = new Set(activeTypes);
         const MAX              = 25;
 
-        let pat = _reEscape(isHtmlMode ? _htmlEscape(q) : q);
-        if (isWholeWord) pat = '(?<=^|\\W)' + pat + '(?=\\W|$)';
-        const flags     = isCaseSensitive ? 'g' : 'gi';
-        const re        = new RegExp(pat, flags);
-        const queryForId = isCaseSensitive ? q : q.toLowerCase();
+        // Create a regex for highlighting positive terms (used to find index positions)
+        let hlRegex = null;
+        if (positiveTerms && positiveTerms.length > 0) {
+            const termsRegexStr = positiveTerms.map(t => {
+                let p = _reEscape(t.value);
+                if (isWholeWord || t.exact) p = `(?<=^|\\W)${p}(?=\\W|$)`;
+                return p;
+            }).join('|');
+            hlRegex = new RegExp(`(${termsRegexStr})`, isCaseSensitive ? 'g' : 'gi');
+        }
+
+        const queryForId = isCaseSensitive ? query : query.toLowerCase();
 
         let totalHits = 0;
         const results = [];
@@ -1307,14 +1706,12 @@ function _searchWorkerBody() {
         for (const item of _index) {
             if (!item.locationId) continue;
 
-            if (activeModulesSet.size > 0 &&
+           if (activeModulesSet.size > 0 &&
                 !activeModulesSet.has(item.locationId.split('.')[0])) continue;
 
             const isInt = item.locationId.includes('.INT-');
-            if (activeTypesSet.size > 0) {
-                if ( isInt && !activeTypesSet.has('interactive')) continue;
-                if (!isInt && !activeTypesSet.has('page'))        continue;
-            }
+            if (isInt && excludeInteractives) continue;
+            if (!isInt && excludePages) continue;
 
             const nText = isHtmlMode ? item.normalRaw   : item.normalClean;
             const mText = !excludeML    ? (isHtmlMode ? item.mlRaw   : item.mlClean)   : '';
@@ -1326,13 +1723,22 @@ function _searchWorkerBody() {
             const idStr     = item.locationId || '';
             const isIdMatch = (isCaseSensitive ? idStr : idStr.toLowerCase()).includes(queryForId);
 
+            const textObj = { normalText: nText, mlText: mText, stdText: sText, noteText: oText, locId: idStr };
+
+            // excludeHTML is now passed explicitly from the UI filters
+            const isMatch = evaluateASTNode(ast, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+
+            if (!isMatch && !isIdMatch) continue;
+
             const getMatches = (text) => {
-                if (!text) return [];
-                re.lastIndex = 0;
+                if (!text || !hlRegex) return [];
+                hlRegex.lastIndex = 0;
                 const hits = []; let m;
-                while ((m = re.exec(text)) !== null) {
-                    hits.push(m.index);
-                    if (hits.length >= MAX) break;
+                while ((m = hlRegex.exec(text)) !== null) {
+                    if (!excludeHTML || (!isInsideHTMLTag(text, m.index) && !isImageFilename(text, m.index))) {
+                        hits.push(m.index);
+                        if (hits.length >= MAX) break;
+                    }
                 }
                 return hits;
             };
@@ -1365,12 +1771,6 @@ function _searchWorkerBody() {
     }
 
     function _reEscape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-    function _htmlEscape(t) {
-        if (!t) return '';
-        return t.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-    }
 }
 
 (function _initSearchWorker() {
@@ -1388,12 +1788,19 @@ function _searchWorkerBody() {
 
 function _handleWorkerResults({ results, totalHits }) {
     if (!_pendingSearchOptions) return;
-    const { isHtmlMode, isWholeWord, isCaseSensitive } = _pendingSearchOptions;
+    const { isHtmlMode, isWholeWord, isCaseSensitive, positiveTerms } = _pendingSearchOptions;
     _pendingSearchOptions = null;
 
-    let pat = escapeRegExp(isHtmlMode ? escapeHtml(currentSearchQuery) : currentSearchQuery);
-    if (isWholeWord) pat = `(?<=^|\\W)${pat}(?=\\W|$)`;
-    currentSearchHighlightRegex = new RegExp(`(${pat})`, isCaseSensitive ? 'g' : 'gi');
+    if (positiveTerms && positiveTerms.length > 0) {
+        const termsRegexStr = positiveTerms.map(t => {
+            let p = escapeRegExp(t.value);
+            if (isWholeWord || t.exact) p = `(?<=^|\\W)${p}(?=\\W|$)`;
+            return p;
+        }).join('|');
+        currentSearchHighlightRegex = new RegExp(`(${termsRegexStr})`, isCaseSensitive ? 'g' : 'gi');
+    } else {
+        currentSearchHighlightRegex = null;
+    }
 
     currentSearchResults = results;
     searchRenderCount    = 0;
@@ -1405,7 +1812,7 @@ function _handleWorkerResults({ results, totalHits }) {
                 <div class="flex-center" style="margin-bottom:10px; opacity:0.3;">
                     ${SVGS.search}
                 </div>
-                <p>No matches found</p>
+                <p>No matches found for this complex query.</p>
              </div>`;
         elements.exportSearchBtn.style.display = 'none';
         elements.searchStats.style.display     = 'none';
@@ -1422,34 +1829,104 @@ function _handleWorkerResults({ results, totalHits }) {
 
 function _runSearchSync(query, options) {
     const {
-        isHtmlMode, isWholeWord, isCaseSensitive,
+        ast, isHtmlMode, isWholeWord, isCaseSensitive,
+        excludePages, excludeInteractives, excludeHTML,
         excludeML, excludeStds, excludeNotes,
-        activeModules, activeTypes
+        activeModules, positiveTerms
     } = options;
 
-    const q             = query.trim();
+    if (!ast) {
+        _handleWorkerResults({ results: [], totalHits: 0 });
+        return;
+    }
+
     const activeModSet  = new Set(activeModules);
-    const activeTypeSet = new Set(activeTypes);
     const MAX           = 25;
 
-    let pat = escapeRegExp(isHtmlMode ? escapeHtml(q) : q);
-    if (isWholeWord) pat = `(?<=^|\\W)${pat}(?=\\W|$)`;
-    const flags     = isCaseSensitive ? 'g' : 'gi';
-    const re        = new RegExp(pat, flags);
-    const queryForId = isCaseSensitive ? q : q.toLowerCase();
+    let hlRegex = null;
+    if (positiveTerms && positiveTerms.length > 0) {
+        const termsRegexStr = positiveTerms.map(t => {
+            let p = escapeRegExp(t.value);
+            if (isWholeWord || t.exact) p = `(?<=^|\\W)${p}(?=\\W|$)`;
+            return p;
+        }).join('|');
+        hlRegex = new RegExp(`(${termsRegexStr})`, isCaseSensitive ? 'g' : 'gi');
+    }
+
+    const queryForId = isCaseSensitive ? query : query.toLowerCase();
+
+    function isInsideHTMLTag(text, index) {
+        const lastOpen = text.lastIndexOf('<', index);
+        const lastClose = text.lastIndexOf('>', index);
+        const nextClose = text.indexOf('>', index);
+        return (lastOpen !== -1 && lastOpen > lastClose && nextClose !== -1);
+    }
+
+    function isImageFilename(text, index) {
+        let start = index;
+        while (start > 0 && !/[ \n\r\t"'<>,{}[\]\\]/.test(text[start - 1])) start--;
+        let end = index;
+        while (end < text.length && !/[ \n\r\t"'<>,{}[\]\\]/.test(text[end])) end++;
+        const token = text.substring(start, end).toLowerCase();
+        return /\.(png|jpg|jpeg|gif|svg|webp|bmp|ico)(?:\?.*)?$/.test(token);
+    }
+
+    function termExists(term, textObj, isCaseSensitive, exactMatch, excludeHTML) {
+        let pattern = escapeRegExp(term);
+        if (exactMatch) pattern = `(?<=^|\\W)${pattern}(?=\\W|$)`;
+        const regex = new RegExp(pattern, isCaseSensitive ? 'g' : 'gi'); 
+
+        const checkText = (text) => {
+            if (!text) return false;
+            regex.lastIndex = 0;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                if (!excludeHTML || (!isInsideHTMLTag(text, match.index) && !isImageFilename(text, match.index))) return true;
+            }
+            return false;
+        };
+
+        if (checkText(textObj.normalText)) return true;
+        if (checkText(textObj.mlText)) return true;
+        if (checkText(textObj.stdText)) return true;
+        if (checkText(textObj.noteText)) return true;
+        
+        const locIdCheck = isCaseSensitive ? term : term.toLowerCase();
+        if (textObj.locId && textObj.locId.includes(locIdCheck)) return true;
+
+        return false;
+    }
+
+    function evaluateASTNode(node, textObj, isCaseSensitive, isWholeWord, excludeHTML) {
+        if (!node) return true; 
+        if (node.type === 'AND') {
+            return evaluateASTNode(node.left, textObj, isCaseSensitive, isWholeWord, excludeHTML) && 
+                   evaluateASTNode(node.right, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+        }
+        if (node.type === 'OR') {
+            return evaluateASTNode(node.left, textObj, isCaseSensitive, isWholeWord, excludeHTML) || 
+                   evaluateASTNode(node.right, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+        }
+        if (node.type === 'NOT') {
+            return !evaluateASTNode(node.operand, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+        }
+        if (node.type === 'TERM') {
+            return termExists(node.value, textObj, isCaseSensitive, isWholeWord || node.exact, excludeHTML);
+        }
+        return false;
+    }
 
     let totalHits = 0;
     const results = [];
+    // excludeHTML is explicitly destructured from options above
 
     for (const item of courseIndex) {
         if (!item.locationId) continue;
         if (activeModSet.size > 0 && !activeModSet.has(item.locationId.split('.')[0])) continue;
 
         const isInt = item.locationId.includes('.INT-');
-        if (activeTypeSet.size > 0) {
-            if ( isInt && !activeTypeSet.has('interactive')) continue;
-            if (!isInt && !activeTypeSet.has('page'))        continue;
-        }
+        if (isInt && excludeInteractives) continue;
+        if (!isInt && excludePages) continue;
 
         const nText = isHtmlMode ? item.normalRaw   : item.normalClean;
         const mText = !excludeML    ? (isHtmlMode ? item.mlRaw   : item.mlClean)   : '';
@@ -1460,14 +1937,21 @@ function _runSearchSync(query, options) {
 
         const idStr     = item.locationId || '';
         const isIdMatch = (isCaseSensitive ? idStr : idStr.toLowerCase()).includes(queryForId);
+        
+        const textObj = { normalText: nText, mlText: mText, stdText: sText, noteText: oText, locId: idStr };
+        const isMatch = evaluateASTNode(ast, textObj, isCaseSensitive, isWholeWord, excludeHTML);
+
+        if (!isMatch && !isIdMatch) continue;
 
         const getMatches = (text) => {
-            if (!text) return [];
-            re.lastIndex = 0;
+            if (!text || !hlRegex) return [];
+            hlRegex.lastIndex = 0;
             const hits = []; let m;
-            while ((m = re.exec(text)) !== null) {
-                hits.push(m.index);
-                if (hits.length >= MAX) break;
+            while ((m = hlRegex.exec(text)) !== null) {
+                if (!excludeHTML || (!isInsideHTMLTag(text, m.index) && !isImageFilename(text, m.index))) {
+                    hits.push(m.index);
+                    if (hits.length >= MAX) break;
+                }
             }
             return hits;
         };
@@ -1475,6 +1959,7 @@ function _runSearchSync(query, options) {
         const nm = getMatches(nText), mm = getMatches(mText);
         const sm = getMatches(sText), om = getMatches(oText);
         const combined = nm.length + mm.length + sm.length + om.length;
+        
         if (!combined && !isIdMatch) continue;
 
         totalHits += (isIdMatch && !combined) ? 1 : combined;
@@ -1556,6 +2041,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Wire up the new Power User Input to update the Preview dynamically
+    const powerInput = document.getElementById('power-user-input');
+    if (powerInput) powerInput.addEventListener('input', updatePreview);
+
     elements.searchInput.addEventListener('input', (e) => {
         elements.searchClearBtn.style.display = e.target.value.length > 0 ? 'block' : 'none';
         clearTimeout(debounceTimer);
@@ -1599,6 +2088,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     elements.results.addEventListener('click', (e) => {
+        if (e.target.closest('.expand-matches-btn')) return;
+
         const card = e.target.closest('.result-card');
         if (!card) return;
         const res = currentSearchResults[card.dataset.index];
@@ -1658,6 +2149,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }, { passive: true });
 
     window.addEventListener('resize', updateStickyHeaderOffset);
+
+    // Advanced search modal close on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const advModal = document.getElementById('advanced-search-modal');
+            if (advModal && advModal.classList.contains('active')) {
+                closeAdvSearchModal();
+            }
+        }
+    });
 
     renderHistory();
 });
@@ -1965,10 +2466,12 @@ async function runIndexingAndShowUI(wasRefreshed) {
         activeStdsModules.clear();
         activeStdsStates.clear();
         activeSearchModules.clear();
-        activeSearchTypes            = new Set();
-        activeSearchExcludeStandards = true;
-        activeSearchExcludeML        = false;
-        activeSearchExcludeNotes     = true;
+        activeSearchExcludePages          = false;
+        activeSearchExcludeInteractives   = false;
+        activeSearchExcludeHTML           = true;
+        activeSearchExcludeStandards      = true;
+        activeSearchExcludeML             = true;
+        activeSearchExcludeNotes          = true;
 
         currentSearchResults     = [];
         currentStdsSearchResults = [];
@@ -2094,10 +2597,12 @@ async function runIndexingAndShowUI(wasRefreshed) {
         buildValidModuleList();
 
         activeSearchModules.clear();
-        activeSearchTypes.clear();
-        activeSearchExcludeStandards = true;
-        activeSearchExcludeML        = false;
-        activeSearchExcludeNotes     = true;
+        activeSearchExcludePages          = false;
+        activeSearchExcludeInteractives   = false;
+        activeSearchExcludeHTML           = true;
+        activeSearchExcludeStandards      = true;
+        activeSearchExcludeML             = true;
+        activeSearchExcludeNotes          = true;
         renderSearchFilters();
 
         activeStdsModules.clear();
@@ -2167,7 +2672,6 @@ async function buildIndexAndHydrate(sitemap) {
 
     const tasks = [];
         sitemap.modules.forEach(module => {
-            // Exclude modules matching the ignore lists (same logic as Curriculum Map)
             const title = String(module.title || "").toLowerCase();
             const id    = String(module.mID   || "").toLowerCase();
             if (IGNORE_TITLES.some(k => title.includes(k)) || IGNORE_IDS.includes(id)) {
@@ -2345,7 +2849,6 @@ function findMedia(obj, locationId, breadcrumb, mediaType, found = []) {
     return found;
 }
 
-// ── NEW: Extract Images ───────────────────────────────────────────────────────
 function extractImages(obj, locationId, breadcrumb, found = []) {
     if (!obj) return found;
     if (Array.isArray(obj)) {
@@ -2549,7 +3052,619 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
 }
 	
 // =============================================================================
-// VIEW SWITCHING
+// CONTENT SEARCH & STANDARDS — FILTER RENDERING
+// =============================================================================
+
+function buildFilterCheckboxHTML(onchange, label, checked) {
+    return `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem;
+                          cursor:pointer; color:var(--text); margin-bottom:4px; break-inside:avoid;">
+                <input type="checkbox"
+                       style="accent-color:var(--primary); width:16px; height:16px;
+                              cursor:pointer; margin-top:2px;"
+                       onchange="${onchange}" ${checked ? 'checked' : ''}>
+                <span style="flex:1;">${label}</span>
+            </label>`;
+}
+
+window.renderSearchFilters = function renderSearchFilters() {
+    const modContainer = document.getElementById('search-module-dropdown-list');
+    const modBtn       = document.getElementById('search-mod-btn');
+    if (modContainer && modBtn) {
+        modContainer.innerHTML =
+            `<div style="column-count:2; column-gap:20px;">` +
+            validModules.map(mod => {
+                const modNum = padNum(mod.num);
+                return buildFilterCheckboxHTML(
+                    `toggleSearchModule('${modNum}')`,
+                    `Module ${modNum}`,
+                    activeSearchModules.has(modNum)
+                );
+            }).join('') +
+            `</div>`;
+        modBtn.innerHTML = activeSearchModules.size === 0
+            ? `Modules <span id="svg-arrow-down-search-mod">${SVGS.arrowDown}</span>`
+            : `${activeSearchModules.size} Selected <span id="svg-arrow-down-search-mod">${SVGS.arrowDown}</span>`;
+        modBtn.classList.toggle('filtered', activeSearchModules.size > 0);
+    }
+
+    const typeContainer = document.getElementById('search-type-dropdown-list');
+    const typeBtn       = document.getElementById('search-type-btn');
+    if (typeContainer && typeBtn) {
+        typeContainer.innerHTML =
+            `<div>` +
+            buildFilterCheckboxHTML("toggleSearchExcludePages()",        'Exclude Course Pages', activeSearchExcludePages) +
+            buildFilterCheckboxHTML("toggleSearchExcludeInteractives()", 'Exclude Interactives', activeSearchExcludeInteractives) +
+            `<div style="border-top:1px dashed var(--border); margin-top:8px; padding-top:8px;">` +
+            buildFilterCheckboxHTML("toggleSearchExcludeHTML()",      'Exclude HTML Code', activeSearchExcludeHTML) +
+            buildFilterCheckboxHTML("toggleSearchExcludeStandards()", 'Exclude Standards', activeSearchExcludeStandards) +
+            buildFilterCheckboxHTML("toggleSearchExcludeML()",        'Exclude ML',        activeSearchExcludeML) +
+            buildFilterCheckboxHTML("toggleSearchExcludeNotes()",     'Exclude Notes',     activeSearchExcludeNotes) +
+            `</div></div>`;
+
+        const isNonDefault =
+            activeSearchExcludePages ||
+            activeSearchExcludeInteractives ||
+            !activeSearchExcludeHTML ||
+            !activeSearchExcludeStandards ||
+            !activeSearchExcludeML ||
+            !activeSearchExcludeNotes;
+            
+        typeBtn.innerHTML = isNonDefault
+            ? `Filtered <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`
+            : `Exclude <span id="svg-arrow-down-search-type">${SVGS.arrowDown}</span>`;
+        typeBtn.classList.toggle('filtered', isNonDefault);
+    }
+};
+
+window.toggleSearchModule = function toggleSearchModule(modNum) {
+    if (activeSearchModules.has(modNum)) activeSearchModules.delete(modNum);
+    else                                 activeSearchModules.add(modNum);
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.toggleAllSearchModules = function toggleAllSearchModules(state) {
+    if (state) validModules.forEach(mod => activeSearchModules.add(padNum(mod.num)));
+    else       activeSearchModules.clear();
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.toggleAllSearchTypes = function toggleAllSearchTypes(state) {
+    if (state) {
+        // Reset to default
+        activeSearchExcludePages          = false;
+        activeSearchExcludeInteractives   = false;
+        activeSearchExcludeHTML           = true;
+        activeSearchExcludeStandards      = true;
+        activeSearchExcludeML             = true;
+        activeSearchExcludeNotes          = true;
+    } else {
+        // "Clear All" unchecks everything
+        activeSearchExcludePages          = false;
+        activeSearchExcludeInteractives   = false;
+        activeSearchExcludeHTML           = false;
+        activeSearchExcludeStandards      = false;
+        activeSearchExcludeML             = false;
+        activeSearchExcludeNotes          = false;
+    }
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludePages = function() {
+    activeSearchExcludePages = !activeSearchExcludePages;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeInteractives = function() {
+    activeSearchExcludeInteractives = !activeSearchExcludeInteractives;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeHTML = function() {
+    activeSearchExcludeHTML = !activeSearchExcludeHTML;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.toggleSearchExcludeStandards = function() {
+    activeSearchExcludeStandards = !activeSearchExcludeStandards;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+window.toggleSearchExcludeML = function() {
+    activeSearchExcludeML = !activeSearchExcludeML;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+window.toggleSearchExcludeNotes = function() {
+    activeSearchExcludeNotes = !activeSearchExcludeNotes;
+    renderSearchFilters();
+    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
+};
+
+window.renderStdsFilters = function renderStdsFilters() {
+    const modContainer = document.getElementById('stds-module-dropdown-list');
+    const modBtn       = document.getElementById('stds-mod-btn');
+    if (modContainer && modBtn) {
+        modContainer.innerHTML =
+            `<div style="column-count:2; column-gap:20px;">` +
+            validModules.map(mod => {
+                const modNum = padNum(mod.num);
+                return buildFilterCheckboxHTML(
+                    `toggleStdsModule('${modNum}')`,
+                    `Module ${modNum}`,
+                    activeStdsModules.has(modNum)
+                );
+            }).join('') +
+            `</div>`;
+        modBtn.innerHTML = activeStdsModules.size === 0
+            ? `Modules <span id="svg-arrow-down-stds-mod">${SVGS.arrowDown}</span>`
+            : `${activeStdsModules.size} Selected <span id="svg-arrow-down-stds-mod">${SVGS.arrowDown}</span>`;
+        modBtn.classList.toggle('filtered', activeStdsModules.size > 0);
+    }
+
+    const stateContainer = document.getElementById('stds-state-dropdown-list');
+    const stateBtn       = document.getElementById('stds-state-btn');
+    if (stateContainer && stateBtn) {
+        stateContainer.innerHTML =
+            `<div style="column-count:2; column-gap:20px;">` +
+            Array.from(courseStandardGroups).sort().map(g =>
+                buildFilterCheckboxHTML(
+                    `toggleStdsState('${escapeHtml(g).replace(/'/g, "\\'")}')`,
+                    escapeHtml(g),
+                    activeStdsStates.has(g)
+                )
+            ).join('') +
+            `</div>`;
+        stateBtn.innerHTML = activeStdsStates.size === 0
+            ? `States <span id="svg-arrow-down-stds-state">${SVGS.arrowDown}</span>`
+            : `${activeStdsStates.size} Selected <span id="svg-arrow-down-stds-state">${SVGS.arrowDown}</span>`;
+        stateBtn.classList.toggle('filtered', activeStdsStates.size > 0);
+    }
+};
+
+window.toggleStdsModule = function toggleStdsModule(modNum) {
+    if (activeStdsModules.has(modNum)) activeStdsModules.delete(modNum);
+    else                               activeStdsModules.add(modNum);
+    renderStdsFilters();
+    runStdsSearch();
+};
+
+window.toggleAllStdsModules = function toggleAllStdsModules(state) {
+    if (state) validModules.forEach(mod => activeStdsModules.add(padNum(mod.num)));
+    else       activeStdsModules.clear();
+    renderStdsFilters();
+    runStdsSearch();
+};
+
+window.toggleStdsState = function toggleStdsState(stateName) {
+    if (activeStdsStates.has(stateName)) activeStdsStates.delete(stateName);
+    else                                  activeStdsStates.add(stateName);
+    renderStdsFilters();
+    runStdsSearch();
+};
+
+window.toggleAllStdsStates = function toggleAllStdsStates(state) {
+    activeStdsStates.clear();
+    if (state) courseStandardGroups.forEach(g => activeStdsStates.add(g));
+    renderStdsFilters();
+    runStdsSearch();
+};
+    
+// =============================================================================
+// SEARCH EXECUTION & HIGHLIGHTING (AST Integration)
+// =============================================================================
+
+window.runSearch = function runSearch(query) {
+    const q = query.trim();
+    elements.results.innerHTML = '';
+    currentSearchResults       = [];
+    currentSearchQuery         = q;
+    currentSearchIsHtmlMode    = elements.htmlToggle.checked;
+    searchRenderCount          = 0;
+
+    if (!q.length) {
+        elements.exportSearchBtn.style.display = 'none';
+        elements.searchStats.style.display     = 'none';
+        return;
+    }
+
+    const { ast, error } = compileQueryToAST(q);
+    if (error) {
+        elements.results.innerHTML = `<div style="color:#dc3545; padding: 20px; border: 1px solid #dc3545; border-radius: 8px; background: #fff;">Syntax Error in Advanced Search: ${error}</div>`;
+        elements.exportSearchBtn.style.display = 'none'; 
+        elements.searchStats.style.display = 'none';
+        return;
+    }
+    
+    const positiveTerms = extractPositiveTerms(ast);
+
+    const options = {
+        ast:             ast,
+        positiveTerms:   positiveTerms,
+        isHtmlMode:      elements.htmlToggle.checked,
+        isWholeWord:     elements.wholeWordToggle.checked,
+        isCaseSensitive: elements.caseSensitiveToggle.checked,
+        excludePages:        activeSearchExcludePages,
+        excludeInteractives: activeSearchExcludeInteractives,
+        excludeHTML:         activeSearchExcludeHTML,
+        excludeML:           activeSearchExcludeML,
+        excludeStds:         activeSearchExcludeStandards,
+        excludeNotes:        activeSearchExcludeNotes,
+        activeModules:       Array.from(activeSearchModules)
+    };
+
+    elements.results.innerHTML =
+        `<div style="text-align:center; padding:40px; color:var(--text-light);">
+             <div class="spinner" style="display:inline-block;"></div>
+         </div>`;
+
+    _pendingSearchOptions = options;
+
+    if (searchWorker) {
+        searchWorker.postMessage({ type: 'SEARCH', query: q, options });
+    } else {
+        setTimeout(() => _runSearchSync(q, options), 0);
+    }
+};
+
+function renderSearchBatch() {
+    const frag  = document.createDocumentFragment();
+    const start = searchRenderCount;
+    const end   = Math.min(start + SEARCH_BATCH_SIZE, currentSearchResults.length);
+
+    for (let i = start; i < end; i++) {
+        frag.appendChild(
+            createResultCard(currentSearchResults[i], currentSearchQuery, currentSearchIsHtmlMode, i)
+        );
+    }
+
+    document.getElementById('load-more-search-btn')?.remove();
+    elements.results.appendChild(frag);
+    searchRenderCount = end;
+
+    if (searchRenderCount < currentSearchResults.length) {
+        const remaining = currentSearchResults.length - searchRenderCount;
+        const btn = document.createElement('button');
+        btn.id        = 'load-more-search-btn';
+        btn.className = 'action-btn btn-base';
+        btn.style.margin = '20px auto';
+        btn.innerHTML =
+            `Load Next ${Math.min(SEARCH_BATCH_SIZE, remaining)} Results ` +
+            `(Showing ${searchRenderCount} of ${currentSearchResults.length})`;
+        btn.onclick = renderSearchBatch;
+        elements.results.appendChild(btn);
+    }
+}
+
+function createResultCard(res, query, isHtmlMode, index) {
+    const card = document.createElement('div');
+    card.className     = 'result-card';
+    card.dataset.index = index;
+
+    const allDisplayMatches = [];
+    res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'normal', text: res.normalText }));
+    res.mlMatches.forEach(idx     => allDisplayMatches.push({ idx, type: 'ml',     text: res.mlText     }));
+    res.stdMatches.forEach(idx    => allDisplayMatches.push({ idx, type: 'std',    text: res.stdText    }));
+    res.noteMatches.forEach(idx   => allDisplayMatches.push({ idx, type: 'note',   text: res.noteText   }));
+    const totalMatches = allDisplayMatches.length;
+
+    let snippetsHtml = '';
+    if (res.isIdMatch && totalMatches === 0) {
+        const fallback = res.normalText || res.mlText || res.stdText || res.noteText || '';
+        snippetsHtml =
+            `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">` +
+            getSnippet(fallback, 0, 0, query, isHtmlMode, 'normal') +
+            `</div>`;
+    } else {
+        const maxDisplay = 10;
+        const displayIndices = allDisplayMatches.slice(0, maxDisplay);
+        const hiddenIndices = allDisplayMatches.slice(maxDisplay);
+
+        displayIndices.forEach((m, i) => {
+            snippetsHtml +=
+                `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">` +
+                getSnippet(m.text, m.idx, query.length, query, isHtmlMode, m.type) +
+                `</div>`;
+            if (i < displayIndices.length - 1 || hiddenIndices.length > 0) {
+                snippetsHtml += `<div class="separator"></div>`;
+            }
+        });
+        
+        if (hiddenIndices.length > 0) {
+            let hiddenHtml = `<div class="hidden-matches" style="display:none; padding-top: 5px;">`;
+            hiddenIndices.forEach((m, i) => {
+                hiddenHtml += `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${maxDisplay + i}">${getSnippet(m.text, m.idx, query.length, query, isHtmlMode, m.type)}</div>`;
+                if (i < hiddenIndices.length - 1) hiddenHtml += `<div class="separator"></div>`;
+            });
+            hiddenHtml += `</div>`;
+            
+            snippetsHtml += hiddenHtml;
+            snippetsHtml += `<button class="expand-matches-btn" data-count="${hiddenIndices.length}" style="background: none; border: none; color: var(--primary-light); text-decoration: underline; font-size: 0.85rem; cursor: pointer; padding: 5px 10px 0 10px; margin-top: 5px; font-weight: 600; font-family: inherit;" onclick="toggleHiddenMatches(event, this)">...and ${hiddenIndices.length} more matches (Click to expand) ▼</button>`;
+        }
+    }
+
+    const contextBadges = [
+        res.mlMatches?.length
+            ? `<span style="font-size:0.7rem; background:#8e44ad; color:white; padding:2px 6px;
+                            border-radius:8px; margin-left:6px; font-weight:600;"
+                   title="Match in ML/chatHistory">ML</span>` : '',
+        res.stdMatches?.length
+            ? `<span style="font-size:0.7rem; background:#0d6efd; color:white; padding:2px 6px;
+                            border-radius:8px; margin-left:6px; font-weight:600;"
+                   title="Match in Standards">STND</span>` : '',
+        res.noteMatches?.length
+            ? `<span style="font-size:0.7rem; background:#fd7e14; color:white; padding:2px 6px;
+                            border-radius:8px; margin-left:6px; font-weight:600;"
+                   title="Match in Notes">NOTE</span>` : ''
+    ].join('');
+
+    const matchText = totalMatches > 0
+        ? (totalMatches >= 500 ? 'Found 500+' : `Found ${totalMatches}`)
+        : 'ID Match';
+
+    card.innerHTML = `
+        <div class="flex-between flex-wrap gap-10"
+             style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <div>
+                <div class="breadcrumb">${res.breadcrumb}${contextBadges}</div>
+                <div class="flex-center gap-10"
+                     style="font-size:0.8rem; margin-top:5px; justify-content:flex-start;">
+                    <span class="id-number"># ${res.locationId}</span>
+                    <span class="flex-center gap-10" style="color:var(--primary);">
+                        ${SVGS.fileText} ${res.filename}
+                    </span>
+                </div>
+            </div>
+            <div style="font-size:0.75rem; background:var(--primary); color:white;
+                        padding:4px 10px; border-radius:12px; height:fit-content;
+                        font-weight:600;">${matchText}</div>
+        </div>
+        <div class="snippets-container">${snippetsHtml}</div>`;
+
+    return card;
+}
+
+window.toggleHiddenMatches = function(event, btn) {
+    event.stopPropagation();
+    const container = btn.previousElementSibling;
+    if (container && container.classList.contains('hidden-matches')) {
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            btn.innerHTML = 'Collapse matches ▲';
+        } else {
+            container.style.display = 'none';
+            btn.innerHTML = `...and ${btn.dataset.count} more matches ▼`;
+        }
+    }
+};
+
+function getSnippet(fullText, index, length, query, isHtmlMode, matchType = 'normal') {
+    if (!fullText) return '';
+
+    const matchLength = isHtmlMode ? escapeHtml(query).length : query.length;
+    const padding     = isHtmlMode ? 80 : 60;
+    const start       = Math.max(0, index - padding);
+    const end         = Math.min(fullText.length, index + matchLength + padding);
+    let   textPart    = fullText.substring(start, end);
+
+    if (isHtmlMode) textPart = escapeHtml(textPart);
+
+    let highlightClass = 'highlight', contextBadge = '';
+    if (matchType === 'ml') {
+        highlightClass = 'highlight highlight-ml';
+        contextBadge   = `<span style="font-size:0.7rem; background:#8e44ad; color:white; padding:2px 6px;
+                                       border-radius:8px; margin-right:8px; cursor:help; vertical-align:middle;"
+                                title="Found in ML/chatHistory node">ML</span>`;
+    } else if (matchType === 'std') {
+        highlightClass = 'highlight highlight-std';
+        contextBadge   = `<span style="font-size:0.7rem; background:#0d6efd; color:white; padding:2px 6px;
+                                       border-radius:8px; margin-right:8px; cursor:help; vertical-align:middle;"
+                                title="Found in Standards node">STND</span>`;
+    } else if (matchType === 'note') {
+        highlightClass = 'highlight highlight-note';
+        contextBadge   = `<span style="font-size:0.7rem; background:#fd7e14; color:white; padding:2px 6px;
+                                       border-radius:8px; margin-right:8px; cursor:help; vertical-align:middle;"
+                                title="Found in Notes node">NOTE</span>`;
+    }
+
+    if (matchLength > 0 && query && currentSearchHighlightRegex) {
+        textPart = textPart.replace(
+            currentSearchHighlightRegex,
+            `<span class="${highlightClass}">$1</span>`
+        );
+    }
+
+    return contextBadge +
+           (start > 0 ? '…' : '') +
+           textPart +
+           (end < fullText.length ? '…' : '');
+}
+
+window.openPageModal = async function openPageModal(
+    res, query, isHtmlMode, isWholeWord, isCaseSensitive, startingMatchIndex = 0
+) {
+    if (!res?.filename) return;
+
+    let fullText   = "";
+    let isCodeView = true;
+
+    // Use currentSearchHighlightRegex from AST instead of raw string regex matching
+    let rawRegex = currentSearchHighlightRegex;
+
+    try {
+        const file = fileMap.get(res.filename);
+        if (file) {
+            const rawText    = await file.text();
+            const json       = JSON.parse(rawText);
+            const prettyJson = JSON.stringify(json, null, 2);
+
+            if (rawRegex) {
+                const NORM_O = '___MATCHNORMOPEN___', NORM_C = '___MATCHNORMCLOSE___';
+                const ML_O   = '___MATCHMLOPEN___',   ML_C   = '___MATCHMLCLOSE___';
+                const STD_O  = '___MATCHSTDOPEN___',  STD_C  = '___MATCHSTDCLOSE___';
+                const NOTE_O = '___MATCHNOTEOPEN___', NOTE_C = '___MATCHNOTECLOSE___';
+                const skipKeys = new Set(['id','type','contentType','status','classes','version']);
+
+                function injectTokens(o, ctx) {
+                    if (o === null || o === undefined) return o;
+                    if (Array.isArray(o)) return o.map(v => injectTokens(v, ctx));
+                    if (typeof o === 'object') {
+                        const result = {};
+                        for (const key in o) {
+                            if (activeSearchExcludeML        && (key === 'ml'        || key === 'chatHistory')) { result[key] = o[key]; continue; }
+                            if (activeSearchExcludeStandards && (key === 'standards' || key === 'standard'))    { result[key] = o[key]; continue; }
+                            if (activeSearchExcludeNotes     && (key === 'notes'     || key === 'note'))        { result[key] = o[key]; continue; }
+                            if (skipKeys.has(key)) { result[key] = o[key]; continue; }
+                            let nextCtx = ctx;
+                            if      (key === 'ml'        || key === 'chatHistory') nextCtx = 'ml';
+                            else if (key === 'standards' || key === 'standard')    nextCtx = 'std';
+                            else if (key === 'notes'     || key === 'note')        nextCtx = 'note';
+                            result[key] = injectTokens(o[key], nextCtx);
+                        }
+                        return result;
+                    }
+                    if (typeof o === 'string') {
+                        rawRegex.lastIndex = 0;
+                        const [open, close] = {
+                            ml:   [ML_O,   ML_C],
+                            std:  [STD_O,  STD_C],
+                            note: [NOTE_O, NOTE_C]
+                        }[ctx] || [NORM_O, NORM_C];
+                        return o.replace(rawRegex, `${open}$1${close}`);
+                    }
+                    return o;
+                }
+
+                const tokenized = injectTokens(json, 'normal');
+                let escaped = escapeHtml(JSON.stringify(tokenized, null, 2));
+                escaped = escaped
+                    .split(escapeHtml(NORM_O)).join('<span class="highlight search-match">')
+                    .split(escapeHtml(NORM_C)).join('</span>')
+                    .split(escapeHtml(ML_O)).join('<span class="highlight highlight-ml search-match">')
+                    .split(escapeHtml(ML_C)).join('</span>')
+                    .split(escapeHtml(STD_O)).join('<span class="highlight highlight-std search-match">')
+                    .split(escapeHtml(STD_C)).join('</span>')
+                    .split(escapeHtml(NOTE_O)).join('<span class="highlight highlight-note search-match">')
+                    .split(escapeHtml(NOTE_C)).join('</span>');
+                fullText = escaped;
+
+            } else {
+                fullText = escapeHtml(prettyJson);
+            }
+
+        } else {
+            let text = isHtmlMode ? res.normalRaw : res.normalClean;
+            fullText = escapeHtml(text || "");
+            if (rawRegex) {
+                // Not ideal, but fallback for no file
+                let htmlPattern = escapeRegExp(escapeHtml(query));
+                if (isWholeWord) htmlPattern = `(?<=^|\\W)${htmlPattern}(?=\\W|$)`;
+                const htmlRegex = new RegExp(`(${htmlPattern})`, isCaseSensitive ? 'g' : 'gi');
+                fullText = fullText.replace(htmlRegex, '<span class="highlight search-match">$1</span>');
+            }
+            isCodeView = false;
+        }
+    } catch (e) {
+        fullText   = escapeHtml((isHtmlMode ? res.normalRaw : res.normalClean) || "");
+        isCodeView = false;
+    }
+
+    document.getElementById('modal-header-content').innerHTML = `
+        <h3 class="flex-center gap-10"
+            style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary); justify-content:flex-start;">
+            ${SVGS.fileText} ${res.filename}
+        </h3>
+        <div style="font-size:0.85rem; color:var(--text-light);">
+            <span class="id-number"># ${res.locationId}</span>
+            &nbsp;|&nbsp;
+            <span>${res.breadcrumb}</span>
+        </div>
+        <div id="modal-match-controls"></div>`;
+
+    document.getElementById('modal-body-content').innerHTML = isCodeView
+        ? `<div style="margin-bottom:15px;">
+               <strong style="color:var(--text-light);">🧑‍💻 Code View (Formatted JSON)</strong>
+           </div>
+           <pre id="modal-pre"
+                style="font-family:var(--code-font); font-size:0.85rem; color:#24292e;
+                       background:#f6f8fa; border-left:3px solid #0366d6; padding:15px;
+                       border-radius:4px; overflow-x:auto; white-space:pre-wrap;
+                       word-wrap:break-word; margin:0;">${fullText}</pre>`
+        : `<div style="font-size:0.95rem; line-height:1.6; color:var(--text);
+                       font-family:Georgia, serif; white-space:pre-wrap;
+                       padding-left:10px; border-left:3px solid var(--border);">
+               ${fullText}
+           </div>`;
+
+    document.getElementById('media-modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    const modalBody = document.getElementById('modal-body-content');
+    const matches   = Array.from(document.querySelectorAll('#modal-body-content .search-match'));
+
+    function scrollModalToElement(el) {
+        let offsetTop = 0, node = el;
+        while (node && node !== modalBody) { offsetTop += node.offsetTop; node = node.offsetParent; }
+        modalBody.scrollTop = Math.max(0, offsetTop - (modalBody.clientHeight / 2) + (el.offsetHeight / 2));
+    }
+
+    if (matches.length > 0) {
+        let currentMatch = Math.min(Math.max(startingMatchIndex, 0), matches.length - 1);
+
+        document.getElementById('modal-match-controls').innerHTML = `
+            <div class="flex-center gap-10"
+                 style="margin-top:10px; font-size:0.85rem; justify-content:flex-start;">
+                <button id="prev-match-btn" class="nav-btn btn-base"
+                        style="padding:4px 8px;" disabled>
+                    ${SVGS.arrowUp} Prev
+                </button>
+                <span id="match-counter" style="font-weight:600;">
+                    ${currentMatch + 1} of ${matches.length}
+                </span>
+                <button id="next-match-btn" class="nav-btn btn-base"
+                        style="padding:4px 8px;" ${matches.length === 1 ? 'disabled' : ''}>
+                    Next ${SVGS.arrowDown}
+                </button>
+            </div>`;
+
+        const updateMatchNav = () => {
+            matches.forEach(m => { m.style.outline = 'none'; m.style.boxShadow = 'none'; });
+            const active = matches[currentMatch];
+            let outlineColor = 'var(--primary)', shadowColor = 'rgba(28,53,94,0.4)';
+            if      (active.classList.contains('highlight-ml'))   { outlineColor = '#8e44ad'; shadowColor = 'rgba(142,68,173,0.5)'; }
+            else if (active.classList.contains('highlight-std'))  { outlineColor = '#0d6efd'; shadowColor = 'rgba(13,110,253,0.5)'; }
+            else if (active.classList.contains('highlight-note')) { outlineColor = '#fd7e14'; shadowColor = 'rgba(253,126,20,0.5)'; }
+            active.style.outline   = `2px solid ${outlineColor}`;
+            active.style.boxShadow = `0 0 8px ${shadowColor}`;
+            scrollModalToElement(active);
+            document.getElementById('match-counter').innerText =
+                `${currentMatch + 1} of ${matches.length}`;
+            document.getElementById('prev-match-btn').disabled = (currentMatch === 0);
+            document.getElementById('next-match-btn').disabled = (currentMatch === matches.length - 1);
+        };
+
+        document.getElementById('prev-match-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentMatch > 0) { currentMatch--; updateMatchNav(); }
+        });
+        document.getElementById('next-match-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentMatch < matches.length - 1) { currentMatch++; updateMatchNav(); }
+        });
+
+        setTimeout(() => updateMatchNav(), 250);
+    } else {
+        modalBody.scrollTop = 0;
+    }
+};
+
+// =============================================================================
+// VIEW SWITCHING & VIEW LOGIC
 // =============================================================================
 
 window.switchView = function switchView(viewName) {
@@ -2729,566 +3844,10 @@ function restoreAppState() {
         console.warn("Failed to restore state:", e);
     }
 }
-
+					
 // =============================================================================
-// CONTENT SEARCH — FILTER RENDERING
+// STANDARDS SEARCH EXECUTION & RENDERING
 // =============================================================================
-
-function buildFilterCheckboxHTML(onchange, label, checked) {
-    return `<label style="display:flex; align-items:flex-start; gap:8px; font-size:0.9rem;
-                          cursor:pointer; color:var(--text); margin-bottom:4px; break-inside:avoid;">
-                <input type="checkbox"
-                       style="accent-color:var(--primary); width:16px; height:16px;
-                              cursor:pointer; margin-top:2px;"
-                       onchange="${onchange}" ${checked ? 'checked' : ''}>
-                <span style="flex:1;">${label}</span>
-            </label>`;
-}
-
-window.renderSearchFilters = function renderSearchFilters() {
-    const modContainer = document.getElementById('search-module-dropdown-list');
-    const modBtn       = document.getElementById('search-mod-btn');
-    if (modContainer && modBtn) {
-        modContainer.innerHTML =
-            `<div style="column-count:2; column-gap:20px;">` +
-            validModules.map(mod => {
-                const modNum = padNum(mod.num);
-                return buildFilterCheckboxHTML(
-                    `toggleSearchModule('${modNum}')`,
-                    `Module ${modNum}`,
-                    activeSearchModules.has(modNum)
-                );
-            }).join('') +
-            `</div>`;
-        modBtn.innerHTML = activeSearchModules.size === 0
-            ? `Modules ${SVGS.arrowDown}`
-            : `${activeSearchModules.size} Selected ${SVGS.arrowDown}`;
-        modBtn.classList.toggle('filtered', activeSearchModules.size > 0);
-    }
-
-    const typeContainer = document.getElementById('search-type-dropdown-list');
-    const typeBtn       = document.getElementById('search-type-btn');
-    if (typeContainer && typeBtn) {
-        typeContainer.innerHTML =
-            `<div>` +
-            buildFilterCheckboxHTML("toggleSearchType('page')",        'Course Pages',      activeSearchTypes.has('page')) +
-            buildFilterCheckboxHTML("toggleSearchType('interactive')", 'Interactives',      activeSearchTypes.has('interactive')) +
-            `<div style="border-top:1px dashed var(--border); margin-top:8px; padding-top:8px;">` +
-            buildFilterCheckboxHTML("toggleSearchExcludeStandards()", 'Exclude Standards', activeSearchExcludeStandards) +
-            buildFilterCheckboxHTML("toggleSearchExcludeML()",        'Exclude ML',        activeSearchExcludeML) +
-            buildFilterCheckboxHTML("toggleSearchExcludeNotes()",     'Exclude Notes',     activeSearchExcludeNotes) +
-            `</div></div>`;
-
-        const isNonDefault =
-            activeSearchTypes.size < 2 ||
-            !activeSearchExcludeStandards ||
-            activeSearchExcludeML         ||
-            activeSearchExcludeNotes;
-        typeBtn.innerHTML = isNonDefault
-            ? `Filtered ${SVGS.arrowDown}`
-            : `Types ${SVGS.arrowDown}`;
-        typeBtn.classList.toggle('filtered', isNonDefault);
-    }
-};
-
-window.toggleSearchModule = function toggleSearchModule(modNum) {
-    if (activeSearchModules.has(modNum)) activeSearchModules.delete(modNum);
-    else                                 activeSearchModules.add(modNum);
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-
-window.toggleAllSearchModules = function toggleAllSearchModules(state) {
-    if (state) validModules.forEach(mod => activeSearchModules.add(padNum(mod.num)));
-    else       activeSearchModules.clear();
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-
-window.toggleSearchType = function toggleSearchType(type) {
-    if (activeSearchTypes.has(type)) activeSearchTypes.delete(type);
-    else                             activeSearchTypes.add(type);
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-
-window.toggleAllSearchTypes = function toggleAllSearchTypes(state) {
-    if (state) {
-        activeSearchTypes.add('page');
-        activeSearchTypes.add('interactive');
-        activeSearchExcludeStandards = true;
-        activeSearchExcludeML        = false;
-        activeSearchExcludeNotes     = true;
-    } else {
-        activeSearchTypes.clear();
-        activeSearchExcludeStandards = false;
-        activeSearchExcludeML        = false;
-        activeSearchExcludeNotes     = false;
-    }
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-
-window.toggleSearchExcludeStandards = function() {
-    activeSearchExcludeStandards = !activeSearchExcludeStandards;
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-window.toggleSearchExcludeML = function() {
-    activeSearchExcludeML = !activeSearchExcludeML;
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-window.toggleSearchExcludeNotes = function() {
-    activeSearchExcludeNotes = !activeSearchExcludeNotes;
-    renderSearchFilters();
-    if (elements.searchInput.value.trim()) runSearch(elements.searchInput.value);
-};
-
-function runSearch(query) {
-    const q = query.trim();
-    elements.results.innerHTML = '';
-    currentSearchResults       = [];
-    currentSearchQuery         = q;
-    currentSearchIsHtmlMode    = elements.htmlToggle.checked;
-    searchRenderCount          = 0;
-
-    if (!q.length) {
-        elements.exportSearchBtn.style.display = 'none';
-        elements.searchStats.style.display     = 'none';
-        return;
-    }
-
-    const options = {
-        isHtmlMode:      elements.htmlToggle.checked,
-        isWholeWord:     elements.wholeWordToggle.checked,
-        isCaseSensitive: elements.caseSensitiveToggle.checked,
-        excludeML:       activeSearchExcludeML,
-        excludeStds:     activeSearchExcludeStandards,
-        excludeNotes:    activeSearchExcludeNotes,
-        activeModules:   Array.from(activeSearchModules),
-        activeTypes:     Array.from(activeSearchTypes)
-    };
-
-    elements.results.innerHTML =
-        `<div style="text-align:center; padding:40px; color:var(--text-light);">
-             <div class="spinner" style="display:inline-block;"></div>
-         </div>`;
-
-    _pendingSearchOptions = options;
-
-    if (searchWorker) {
-        searchWorker.postMessage({ type: 'SEARCH', query: q, options });
-    } else {
-        setTimeout(() => _runSearchSync(q, options), 0);
-    }
-}
-
-function renderSearchBatch() {
-    const frag  = document.createDocumentFragment();
-    const start = searchRenderCount;
-    const end   = Math.min(start + SEARCH_BATCH_SIZE, currentSearchResults.length);
-
-    for (let i = start; i < end; i++) {
-        frag.appendChild(
-            createResultCard(currentSearchResults[i], currentSearchQuery, currentSearchIsHtmlMode, i)
-        );
-    }
-
-    document.getElementById('load-more-search-btn')?.remove();
-    elements.results.appendChild(frag);
-    searchRenderCount = end;
-
-    if (searchRenderCount < currentSearchResults.length) {
-        const remaining = currentSearchResults.length - searchRenderCount;
-        const btn = document.createElement('button');
-        btn.id        = 'load-more-search-btn';
-        btn.className = 'action-btn btn-base';
-        btn.style.margin = '20px auto';
-        btn.innerHTML =
-            `Load Next ${Math.min(SEARCH_BATCH_SIZE, remaining)} Results ` +
-            `(Showing ${searchRenderCount} of ${currentSearchResults.length})`;
-        btn.onclick = renderSearchBatch;
-        elements.results.appendChild(btn);
-    }
-}
-
-function createResultCard(res, query, isHtmlMode, index) {
-    const card = document.createElement('div');
-    card.className     = 'result-card';
-    card.dataset.index = index;
-
-    const allDisplayMatches = [];
-    res.normalMatches.forEach(idx => allDisplayMatches.push({ idx, type: 'normal', text: res.normalText }));
-    res.mlMatches.forEach(idx     => allDisplayMatches.push({ idx, type: 'ml',     text: res.mlText     }));
-    res.stdMatches.forEach(idx    => allDisplayMatches.push({ idx, type: 'std',    text: res.stdText    }));
-    res.noteMatches.forEach(idx   => allDisplayMatches.push({ idx, type: 'note',   text: res.noteText   }));
-    const totalMatches = allDisplayMatches.length;
-
-    let snippetsHtml = '';
-    if (res.isIdMatch && totalMatches === 0) {
-        const fallback = res.normalText || res.mlText || res.stdText || res.noteText || '';
-        snippetsHtml =
-            `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}">` +
-            getSnippet(fallback, 0, 0, query, isHtmlMode, 'normal') +
-            `</div>`;
-    } else {
-        const maxDisplay = 10;
-        allDisplayMatches.slice(0, maxDisplay).forEach((m, i) => {
-            snippetsHtml +=
-                `<div class="snippet-item ${isHtmlMode ? 'code-view' : ''}" data-match-index="${i}">` +
-                getSnippet(m.text, m.idx, query.length, query, isHtmlMode, m.type) +
-                `</div>`;
-            if (i < Math.min(totalMatches, maxDisplay) - 1) {
-                snippetsHtml += `<div class="separator"></div>`;
-            }
-        });
-        if (totalMatches > maxDisplay) {
-            const cappedStreams = [res.normalMatches, res.mlMatches, res.stdMatches, res.noteMatches];
-            const plusMore = cappedStreams.some(a => a.length >= 25) ? "+" : "";
-            snippetsHtml +=
-                `<div style="font-size:0.8rem; color:#999; padding-left:12px; margin-top:5px;">
-                    …and ${totalMatches - maxDisplay}${plusMore} more matches.
-                 </div>`;
-        }
-    }
-
-    const contextBadges = [
-        res.mlMatches?.length
-            ? `<span style="font-size:0.7rem; background:#8e44ad; color:white; padding:2px 6px;
-                            border-radius:8px; margin-left:6px; font-weight:600;"
-                   title="Match in ML/chatHistory">ML</span>` : '',
-        res.stdMatches?.length
-            ? `<span style="font-size:0.7rem; background:#0d6efd; color:white; padding:2px 6px;
-                            border-radius:8px; margin-left:6px; font-weight:600;"
-                   title="Match in Standards">STND</span>` : '',
-        res.noteMatches?.length
-            ? `<span style="font-size:0.7rem; background:#fd7e14; color:white; padding:2px 6px;
-                            border-radius:8px; margin-left:6px; font-weight:600;"
-                   title="Match in Notes">NOTE</span>` : ''
-    ].join('');
-
-    const matchText = totalMatches > 0
-        ? (totalMatches >= 500 ? 'Found 500+' : `Found ${totalMatches}`)
-        : 'ID Match';
-
-    card.innerHTML = `
-        <div class="flex-between flex-wrap gap-10"
-             style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <div>
-                <div class="breadcrumb">${res.breadcrumb}${contextBadges}</div>
-                <div class="flex-center gap-10"
-                     style="font-size:0.8rem; margin-top:5px; justify-content:flex-start;">
-                    <span class="id-number"># ${res.locationId}</span>
-                    <span class="flex-center gap-10" style="color:var(--primary);">
-                        ${SVGS.fileText} ${res.filename}
-                    </span>
-                </div>
-            </div>
-            <div style="font-size:0.75rem; background:var(--primary); color:white;
-                        padding:4px 10px; border-radius:12px; height:fit-content;
-                        font-weight:600;">${matchText}</div>
-        </div>
-        <div class="snippets-container">${snippetsHtml}</div>`;
-
-    return card;
-}
-
-function getSnippet(fullText, index, length, query, isHtmlMode, matchType = 'normal') {
-    if (!fullText) return '';
-
-    const matchLength = isHtmlMode ? escapeHtml(query).length : query.length;
-    const padding     = isHtmlMode ? 80 : 60;
-    const start       = Math.max(0, index - padding);
-    const end         = Math.min(fullText.length, index + matchLength + padding);
-    let   textPart    = fullText.substring(start, end);
-
-    if (isHtmlMode) textPart = escapeHtml(textPart);
-
-    let highlightClass = 'highlight', contextBadge = '';
-    if (matchType === 'ml') {
-        highlightClass = 'highlight highlight-ml';
-        contextBadge   = `<span style="font-size:0.7rem; background:#8e44ad; color:white; padding:2px 6px;
-                                       border-radius:8px; margin-right:8px; cursor:help; vertical-align:middle;"
-                                title="Found in ML/chatHistory node">ML</span>`;
-    } else if (matchType === 'std') {
-        highlightClass = 'highlight highlight-std';
-        contextBadge   = `<span style="font-size:0.7rem; background:#0d6efd; color:white; padding:2px 6px;
-                                       border-radius:8px; margin-right:8px; cursor:help; vertical-align:middle;"
-                                title="Found in Standards node">STND</span>`;
-    } else if (matchType === 'note') {
-        highlightClass = 'highlight highlight-note';
-        contextBadge   = `<span style="font-size:0.7rem; background:#fd7e14; color:white; padding:2px 6px;
-                                       border-radius:8px; margin-right:8px; cursor:help; vertical-align:middle;"
-                                title="Found in Notes node">NOTE</span>`;
-    }
-
-    if (matchLength > 0 && query && currentSearchHighlightRegex) {
-        textPart = textPart.replace(
-            currentSearchHighlightRegex,
-            `<span class="${highlightClass}">$1</span>`
-        );
-    }
-
-    return contextBadge +
-           (start > 0 ? '…' : '') +
-           textPart +
-           (end < fullText.length ? '…' : '');
-}
-
-window.openPageModal = async function openPageModal(
-    res, query, isHtmlMode, isWholeWord, isCaseSensitive, startingMatchIndex = 0
-) {
-    if (!res?.filename) return;
-
-    let fullText   = "";
-    let isCodeView = true;
-
-    let rawRegex = null;
-    if (query?.trim()) {
-        let rawPattern = escapeRegExp(query);
-        if (isWholeWord) rawPattern = `(?<=^|\\W)${rawPattern}(?=\\W|$)`;
-        rawRegex = new RegExp(`(${rawPattern})`, isCaseSensitive ? 'g' : 'gi');
-    }
-
-    try {
-        const file = fileMap.get(res.filename);
-        if (file) {
-            const rawText    = await file.text();
-            const json       = JSON.parse(rawText);
-            const prettyJson = JSON.stringify(json, null, 2);
-
-            if (rawRegex) {
-                const NORM_O = '___MATCHNORMOPEN___', NORM_C = '___MATCHNORMCLOSE___';
-                const ML_O   = '___MATCHMLOPEN___',   ML_C   = '___MATCHMLCLOSE___';
-                const STD_O  = '___MATCHSTDOPEN___',  STD_C  = '___MATCHSTDCLOSE___';
-                const NOTE_O = '___MATCHNOTEOPEN___', NOTE_C = '___MATCHNOTECLOSE___';
-                const skipKeys = new Set(['id','type','contentType','status','classes','version']);
-
-                function injectTokens(o, ctx) {
-                    if (o === null || o === undefined) return o;
-                    if (Array.isArray(o)) return o.map(v => injectTokens(v, ctx));
-                    if (typeof o === 'object') {
-                        const result = {};
-                        for (const key in o) {
-                            if (activeSearchExcludeML        && (key === 'ml'        || key === 'chatHistory')) { result[key] = o[key]; continue; }
-                            if (activeSearchExcludeStandards && (key === 'standards' || key === 'standard'))    { result[key] = o[key]; continue; }
-                            if (activeSearchExcludeNotes     && (key === 'notes'     || key === 'note'))        { result[key] = o[key]; continue; }
-                            if (skipKeys.has(key)) { result[key] = o[key]; continue; }
-                            let nextCtx = ctx;
-                            if      (key === 'ml'        || key === 'chatHistory') nextCtx = 'ml';
-                            else if (key === 'standards' || key === 'standard')    nextCtx = 'std';
-                            else if (key === 'notes'     || key === 'note')        nextCtx = 'note';
-                            result[key] = injectTokens(o[key], nextCtx);
-                        }
-                        return result;
-                    }
-                    if (typeof o === 'string') {
-                        rawRegex.lastIndex = 0;
-                        const [open, close] = {
-                            ml:   [ML_O,   ML_C],
-                            std:  [STD_O,  STD_C],
-                            note: [NOTE_O, NOTE_C]
-                        }[ctx] || [NORM_O, NORM_C];
-                        return o.replace(rawRegex, `${open}$1${close}`);
-                    }
-                    return o;
-                }
-
-                const tokenized = injectTokens(json, 'normal');
-                let escaped = escapeHtml(JSON.stringify(tokenized, null, 2));
-                escaped = escaped
-                    .split(escapeHtml(NORM_O)).join('<span class="highlight search-match">')
-                    .split(escapeHtml(NORM_C)).join('</span>')
-                    .split(escapeHtml(ML_O)).join('<span class="highlight highlight-ml search-match">')
-                    .split(escapeHtml(ML_C)).join('</span>')
-                    .split(escapeHtml(STD_O)).join('<span class="highlight highlight-std search-match">')
-                    .split(escapeHtml(STD_C)).join('</span>')
-                    .split(escapeHtml(NOTE_O)).join('<span class="highlight highlight-note search-match">')
-                    .split(escapeHtml(NOTE_C)).join('</span>');
-                fullText = escaped;
-
-            } else {
-                fullText = escapeHtml(prettyJson);
-            }
-
-        } else {
-            let text = isHtmlMode ? res.normalRaw : res.normalClean;
-            fullText = escapeHtml(text || "");
-            if (rawRegex) {
-                let htmlPattern = escapeRegExp(escapeHtml(query));
-                if (isWholeWord) htmlPattern = `(?<=^|\\W)${htmlPattern}(?=\\W|$)`;
-                const htmlRegex = new RegExp(`(${htmlPattern})`, isCaseSensitive ? 'g' : 'gi');
-                fullText = fullText.replace(htmlRegex, '<span class="highlight search-match">$1</span>');
-            }
-            isCodeView = false;
-        }
-    } catch (e) {
-        fullText   = escapeHtml((isHtmlMode ? res.normalRaw : res.normalClean) || "");
-        isCodeView = false;
-    }
-
-    document.getElementById('modal-header-content').innerHTML = `
-        <h3 class="flex-center gap-10"
-            style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary); justify-content:flex-start;">
-            ${SVGS.fileText} ${res.filename}
-        </h3>
-        <div style="font-size:0.85rem; color:var(--text-light);">
-            <span class="id-number"># ${res.locationId}</span>
-            &nbsp;|&nbsp;
-            <span>${res.breadcrumb}</span>
-        </div>
-        <div id="modal-match-controls"></div>`;
-
-    document.getElementById('modal-body-content').innerHTML = isCodeView
-        ? `<div style="margin-bottom:15px;">
-               <strong style="color:var(--text-light);">🧑‍💻 Code View (Formatted JSON)</strong>
-           </div>
-           <pre id="modal-pre"
-                style="font-family:var(--code-font); font-size:0.85rem; color:#24292e;
-                       background:#f6f8fa; border-left:3px solid #0366d6; padding:15px;
-                       border-radius:4px; overflow-x:auto; white-space:pre-wrap;
-                       word-wrap:break-word; margin:0;">${fullText}</pre>`
-        : `<div style="font-size:0.95rem; line-height:1.6; color:var(--text);
-                       font-family:Georgia, serif; white-space:pre-wrap;
-                       padding-left:10px; border-left:3px solid var(--border);">
-               ${fullText}
-           </div>`;
-
-    document.getElementById('media-modal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    const modalBody = document.getElementById('modal-body-content');
-    const matches   = Array.from(document.querySelectorAll('#modal-body-content .search-match'));
-
-    function scrollModalToElement(el) {
-        let offsetTop = 0, node = el;
-        while (node && node !== modalBody) { offsetTop += node.offsetTop; node = node.offsetParent; }
-        modalBody.scrollTop = Math.max(0, offsetTop - (modalBody.clientHeight / 2) + (el.offsetHeight / 2));
-    }
-
-    if (matches.length > 0) {
-        let currentMatch = Math.min(Math.max(startingMatchIndex, 0), matches.length - 1);
-
-        document.getElementById('modal-match-controls').innerHTML = `
-            <div class="flex-center gap-10"
-                 style="margin-top:10px; font-size:0.85rem; justify-content:flex-start;">
-                <button id="prev-match-btn" class="nav-btn btn-base"
-                        style="padding:4px 8px;" disabled>
-                    ${SVGS.arrowUp} Prev
-                </button>
-                <span id="match-counter" style="font-weight:600;">
-                    ${currentMatch + 1} of ${matches.length}
-                </span>
-                <button id="next-match-btn" class="nav-btn btn-base"
-                        style="padding:4px 8px;" ${matches.length === 1 ? 'disabled' : ''}>
-                    Next ${SVGS.arrowDown}
-                </button>
-            </div>`;
-
-        const updateMatchNav = () => {
-            matches.forEach(m => { m.style.outline = 'none'; m.style.boxShadow = 'none'; });
-            const active = matches[currentMatch];
-            let outlineColor = 'var(--primary)', shadowColor = 'rgba(28,53,94,0.4)';
-            if      (active.classList.contains('highlight-ml'))   { outlineColor = '#8e44ad'; shadowColor = 'rgba(142,68,173,0.5)'; }
-            else if (active.classList.contains('highlight-std'))  { outlineColor = '#0d6efd'; shadowColor = 'rgba(13,110,253,0.5)'; }
-            else if (active.classList.contains('highlight-note')) { outlineColor = '#fd7e14'; shadowColor = 'rgba(253,126,20,0.5)'; }
-            active.style.outline   = `2px solid ${outlineColor}`;
-            active.style.boxShadow = `0 0 8px ${shadowColor}`;
-            scrollModalToElement(active);
-            document.getElementById('match-counter').innerText =
-                `${currentMatch + 1} of ${matches.length}`;
-            document.getElementById('prev-match-btn').disabled = (currentMatch === 0);
-            document.getElementById('next-match-btn').disabled = (currentMatch === matches.length - 1);
-        };
-
-        document.getElementById('prev-match-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (currentMatch > 0) { currentMatch--; updateMatchNav(); }
-        });
-        document.getElementById('next-match-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (currentMatch < matches.length - 1) { currentMatch++; updateMatchNav(); }
-        });
-
-        setTimeout(() => updateMatchNav(), 250);
-    } else {
-        modalBody.scrollTop = 0;
-    }
-};
-
-// =============================================================================
-// STANDARDS SEARCH & FILTERS
-// =============================================================================
-
-window.renderStdsFilters = function renderStdsFilters() {
-    const modContainer = document.getElementById('stds-module-dropdown-list');
-    const modBtn       = document.getElementById('stds-mod-btn');
-    if (modContainer && modBtn) {
-        modContainer.innerHTML =
-            `<div style="column-count:2; column-gap:20px;">` +
-            validModules.map(mod => {
-                const modNum = padNum(mod.num);
-                return buildFilterCheckboxHTML(
-                    `toggleStdsModule('${modNum}')`,
-                    `Module ${modNum}`,
-                    activeStdsModules.has(modNum)
-                );
-            }).join('') +
-            `</div>`;
-        modBtn.innerHTML = activeStdsModules.size === 0
-            ? `Modules ${SVGS.arrowDown}`
-            : `${activeStdsModules.size} Selected ${SVGS.arrowDown}`;
-        modBtn.classList.toggle('filtered', activeStdsModules.size > 0);
-    }
-
-    const stateContainer = document.getElementById('stds-state-dropdown-list');
-    const stateBtn       = document.getElementById('stds-state-btn');
-    if (stateContainer && stateBtn) {
-        stateContainer.innerHTML =
-            `<div style="column-count:2; column-gap:20px;">` +
-            Array.from(courseStandardGroups).sort().map(g =>
-                buildFilterCheckboxHTML(
-                    `toggleStdsState('${escapeHtml(g).replace(/'/g, "\\'")}')`,
-                    escapeHtml(g),
-                    activeStdsStates.has(g)
-                )
-            ).join('') +
-            `</div>`;
-        stateBtn.innerHTML = activeStdsStates.size === 0
-            ? `States ${SVGS.arrowDown}`
-            : `${activeStdsStates.size} Selected ${SVGS.arrowDown}`;
-        stateBtn.classList.toggle('filtered', activeStdsStates.size > 0);
-    }
-};
-
-window.toggleStdsModule = function toggleStdsModule(modNum) {
-    if (activeStdsModules.has(modNum)) activeStdsModules.delete(modNum);
-    else                               activeStdsModules.add(modNum);
-    renderStdsFilters();
-    runStdsSearch();
-};
-
-window.toggleAllStdsModules = function toggleAllStdsModules(state) {
-    if (state) validModules.forEach(mod => activeStdsModules.add(padNum(mod.num)));
-    else       activeStdsModules.clear();
-    renderStdsFilters();
-    runStdsSearch();
-};
-
-window.toggleStdsState = function toggleStdsState(stateName) {
-    if (activeStdsStates.has(stateName)) activeStdsStates.delete(stateName);
-    else                                  activeStdsStates.add(stateName);
-    renderStdsFilters();
-    runStdsSearch();
-};
-
-window.toggleAllStdsStates = function toggleAllStdsStates(state) {
-    activeStdsStates.clear();
-    if (state) courseStandardGroups.forEach(g => activeStdsStates.add(g));
-    renderStdsFilters();
-    runStdsSearch();
-};
 
 window.setStdsView = function setStdsView(mode) {
     currentStdsView = mode;
@@ -3774,10 +4333,7 @@ function getHighlightedStd(code, statement) {
     return { displayCode, displayState };
 }
 
-// =============================================================================
 // AUDIT VIEW — STATE / GROUP FILTER DROPDOWN
-// =============================================================================
-
 window.toggleStdFilterDropdown = function toggleStdFilterDropdown(event) {
     toggleFilterDropdown('std-filter-dropdown', event);
 };
@@ -3826,10 +4382,10 @@ window.updateStdFilterBtnText = function updateStdFilterBtnText() {
     const btn = document.getElementById('std-filter-btn');
     if (!btn) return;
     if (activeStandardGroups.size === 0) {
-        btn.innerHTML = `States ${SVGS.arrowDown}`;
+        btn.innerHTML = `States <span id="svg-arrow-down-audit-state">${SVGS.arrowDown}</span>`;
         btn.classList.remove('filtered');
     } else {
-        btn.innerHTML = `${activeStandardGroups.size} States ${SVGS.arrowDown}`;
+        btn.innerHTML = `${activeStandardGroups.size} States <span id="svg-arrow-down-audit-state">${SVGS.arrowDown}</span>`;
         btn.classList.add('filtered');
     }
 };
@@ -3845,7 +4401,7 @@ window.toggleFolderDetails = function toggleFolderDetails(event, btn) {
     details.forEach(d => { d.open = isExpanding; });
     btn.innerHTML = isExpanding ? 'Collapse States' : 'Expand States';
 };
-
+					
 // =============================================================================
 // MEDIA DASHBOARD — FILTER TOGGLE HANDLERS
 // =============================================================================
@@ -3880,13 +4436,11 @@ window.toggleGlobalImageBg = function(checked) {
     else         document.body.classList.remove('global-dark-bg');
 };
 
-// NEW image filter toggles
 window.toggleMediaFilterHasAlt = function(checked) { activeMediaFilterHasAlt = checked; renderMediaDashboard(); };
 window.toggleMediaFilterHasCaption = function(checked) { activeMediaFilterHasCaption = checked; renderMediaDashboard(); };
 window.toggleMediaFilterHasCaptionHeader = function(checked) { activeMediaFilterHasCaptionHeader = checked; renderMediaDashboard(); };
 window.toggleMediaFilterHasTextVer = function(checked) { activeMediaFilterHasTextVer = checked; renderMediaDashboard(); };
 
-// NEW audit check toggles
 window.toggleMediaFilterCheckCopyright = function(checked) { activeMediaFilterCheckCopyright = checked; renderMediaDashboard(); };
 window.toggleMediaFilterCheckTextVer = function(checked) { activeMediaFilterCheckTextVer = checked; renderMediaDashboard(); };
 
@@ -3936,18 +4490,16 @@ window.clearAllMediaFilters = function clearAllMediaFilters() {
 };
 
 // =============================================================================
-// MEDIA DASHBOARD — MAIN RENDERER (Start)
+// MEDIA DASHBOARD — MAIN RENDERER
 // =============================================================================
 
 window.renderMediaDashboard = function renderMediaDashboard() {
     const container = elements.mediaArea;
     
-    // Wipe container to prepare for fresh render
     container.innerHTML  = '';
     currentDisplayedMedia = [];
-    currentMediaRenderCount = 0; // Reset pagination counter
+    currentMediaRenderCount = 0; 
 
-    // ── Compute filtered counts ───────────────────────────────────────────────
     const filteredVideos = courseVideos.filter(m =>
         passesModuleFilter(m) &&
         (!activeMediaFilterMissingId || isMissingId(m.entryId)) &&
@@ -3963,7 +4515,6 @@ window.renderMediaDashboard = function renderMediaDashboard() {
         (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.interactiveType))
     );
     
-   // NEW: Filter Images based on the new requirements
     const filteredImages = courseImages.filter(img => {
         if (!passesModuleFilter(img)) return false;
         if (activeMediaFilterTypes.size > 0 && !activeMediaFilterTypes.has(img.fileType)) return false;
@@ -3972,9 +4523,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
         if (activeMediaFilterHasCaptionHeader && !img.captionHeader.trim()) return false;
         if (activeMediaFilterHasTextVer && !img.textVersion.trim()) return false;
         
-        // Audit Check: Copyrights
         if (activeMediaFilterCheckCopyright) {
-            // Display IF copyright is empty AND filename does NOT end with approved suffixes
             if (img.copyright.trim() !== '') return false;
             const nameWithoutExt = img.fileName.substring(0, img.fileName.lastIndexOf('.')) || img.fileName;
             const approvedSuffixes = ['_gi', '_ts', '_flvs', '_flvs_ai', '_ai_flvs'];
@@ -3982,15 +4531,12 @@ window.renderMediaDashboard = function renderMediaDashboard() {
             if (hasApprovedSuffix) return false;
         }
         
-        // Audit Check: Text Versions
         if (activeMediaFilterCheckTextVer) {
             const hasTextVer = !!img.textVersion.trim();
             const hasAlt = !!img.altText.trim();
             const altContainsTextVer = img.altText.toLowerCase().includes('text version');
             
-            // Fails Condition 1: Has Text Version but NO Alt Tag
             const failsCondition1 = hasTextVer && !hasAlt;
-            // Fails Condition 2: Alt tag says "text version" but NO Text Version exists
             const failsCondition2 = altContainsTextVer && !hasTextVer;
             
             if (!failsCondition1 && !failsCondition2) return false;
@@ -4013,11 +4559,11 @@ window.renderMediaDashboard = function renderMediaDashboard() {
     const isFiltered = activeMediaModules.size > 0 || activeMediaFilterTypes.size > 0 || 
                        activeMediaFilterMissingId || activeMediaFilterHasAlt || 
                        activeMediaFilterHasCaption || activeMediaFilterHasCaptionHeader || 
-                       activeMediaFilterHasTextVer;
+                       activeMediaFilterHasTextVer || activeMediaFilterCheckCopyright || 
+                       activeMediaFilterCheckTextVer;
     
     const isGlossary = currentMediaTab === 'glossary';
 
-    // ── Build filter dropdown sections ────────────────────────────────────────
     const modCheckboxes = validModules.map(mod => {
         const modNum = padNum(mod.num);
         return buildFilterCheckboxHTML(
@@ -4056,12 +4602,12 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                     <div style="display:flex; flex-direction:column; gap:6px;">
                         ${buildFilterCheckboxHTML(
                             'toggleMediaFilterCheckCopyright(this.checked)', 
-                            `Check Copyrights <span title="Flags images with an empty copyright, unless the filename ends in an approved suffix (e.g., _gi, _ts, _flvs, _flvs_ai)." style="cursor:help; opacity:0.6; margin-left:4px; display:inline-flex; align-items:center; vertical-align:text-bottom; width:1.1em; height:1.1em;">${SVGS.info}</span>`, 
+                            `Check Copyrights <span title="Flags images with an empty copyright, unless the filename ends in an approved suffix." style="cursor:help; opacity:0.6; margin-left:4px; display:inline-flex; align-items:center; vertical-align:text-bottom; width:1.1em; height:1.1em;">${SVGS.info}</span>`, 
                             activeMediaFilterCheckCopyright
                         )}
                         ${buildFilterCheckboxHTML(
                             'toggleMediaFilterCheckTextVer(this.checked)', 
-                            `Check Text Versions <span title="Flags images that have a Text Version but no Alt Text, OR say &quot;text version&quot; in the Alt Text but are missing the actual text." style="cursor:help; opacity:0.6; margin-left:4px; display:inline-flex; align-items:center; vertical-align:text-bottom; width:1.1em; height:1.1em;">${SVGS.info}</span>`, 
+                            `Check Text Versions <span title="Flags images that have a Text Version but no Alt Text, OR say text version in the Alt Text but are missing the actual text." style="cursor:help; opacity:0.6; margin-left:4px; display:inline-flex; align-items:center; vertical-align:text-bottom; width:1.1em; height:1.1em;">${SVGS.info}</span>`, 
                             activeMediaFilterCheckTextVer
                         )}
                     </div>
@@ -4079,7 +4625,6 @@ window.renderMediaDashboard = function renderMediaDashboard() {
            </div>`
         : '';
 
-    // ── Inject sticky header ──────────────────────────────────────────────────
     let activeFilterCount = activeMediaModules.size + activeMediaFilterTypes.size;
     if (activeMediaFilterMissingId) activeFilterCount++;
     if (activeMediaFilterHasAlt) activeFilterCount++;
@@ -4191,8 +4736,8 @@ window.renderMediaDashboard = function renderMediaDashboard() {
         currentDisplayedMedia = filteredImages.map(img => ({ item: img, type: 'image' }));
         
         if (currentMediaLayout === 'list') {
-            grid.className = ''; // Remove other classes
-            grid.style.display = 'block'; // Force block layout so the table and button stack vertically
+            grid.className = ''; 
+            grid.style.display = 'block'; 
             const wrapper = document.createElement('div');
             wrapper.className = 'image-list-wrapper';
             wrapper.innerHTML = `
@@ -4229,7 +4774,6 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                 const entry = currentDisplayedMedia[i];
                 const img = entry.item;
                 
-                // Get Blob URL if the file exists locally to show preview
                 let srcUrl = '';
                 const cleanPath = img.src.replace(/^\/+/, '');
                 if (fileMap.has(cleanPath)) {
@@ -4299,12 +4843,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                 btn.onclick = window.renderImageBatch;
                 
                 btnWrapper.appendChild(btn);
-                
-                if (currentMediaLayout === 'list') {
-                    grid.appendChild(btnWrapper);
-                } else {
-                    grid.appendChild(btnWrapper);
-                }
+                grid.appendChild(btnWrapper);
             }
         };
         
@@ -4400,7 +4939,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                 if (aud.kalturaType === 'mp3') {
                     displayLoc  = displayLoc.replace(/\.INT-\d+/i, '');
                     idOrSource = 'In Course';
-                    copyBtnHtml = ''; // Hide copy button for local MP3 files
+                    copyBtnHtml = ''; 
                 }
                 
                 tableRows += `
@@ -4533,7 +5072,6 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
     const modalBody   = document.getElementById('modal-body-content');
 
     if (type === 'image') {
-        // Determine index for Next/Prev navigation
         let currentIndex = index !== -1 ? index : currentDisplayedMedia.findIndex(e => e.item === mediaObj);
         let hasNav = currentIndex !== -1 && currentDisplayedMedia.length > 1;
         
@@ -4576,7 +5114,7 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
         const cleanPath = mediaObj.src.replace(/^\/+/, '');
         if (fileMap.has(cleanPath)) {
             srcUrl = URL.createObjectURL(fileMap.get(cleanPath));
-            currentAudioBlobUrl = srcUrl; // Reusing variable name to ensure cleanup
+            currentAudioBlobUrl = srcUrl; 
         }
 
         const imgPreviewHtml = srcUrl 
@@ -4621,7 +5159,6 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
             </div>
         `;
         
-        // Set up global keydown listener for modal navigation
         if (!window.imageModalKeyHandler) {
             window.imageModalKeyHandler = function(e) {
                 if (document.getElementById('media-modal').classList.contains('active')) {
@@ -4831,7 +5368,6 @@ window.closeMediaModal = function closeMediaModal(e) {
     overlay.classList.remove('active', 'fullscreen-modal');
     document.body.style.overflow = '';
     
-    // Clean up keyboard listener
     if (window.imageModalKeyHandler) {
         document.removeEventListener('keydown', window.imageModalKeyHandler);
         window.imageModalKeyHandler = null;
@@ -4979,7 +5515,6 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
         letterDiv.textContent = letter;
         groupDiv.appendChild(letterDiv);
 
-        // NEW: Create the grid container for this letter's terms
         const gridDiv = document.createElement('div');
         gridDiv.className = 'glossary-items-grid';
 
@@ -4997,11 +5532,9 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
                     ).join('')}
                 </div>`;
             
-            // Append the item to the grid container, not the group container
             gridDiv.appendChild(itemDiv);
         });
 
-        // Append the populated grid to the main group
         groupDiv.appendChild(gridDiv);
         frag.appendChild(groupDiv);
     });
