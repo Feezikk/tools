@@ -29,7 +29,7 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .cdn-label{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6)}
 .cdn-prefix{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.07);padding:3px 6px;border-radius:4px 0 0 4px;border:1px solid rgba(255,255,255,.18);border-right:none;white-space:nowrap;line-height:1}
 .cdn-input{padding:3px 7px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-family:var(--mono);font-size:11px;outline:none}
-.cdn-input-folder{width:140px;border-radius:0 4px 4px 0;border-left:none}
+.cdn-input-folder{width:220px;border-radius:0 4px 4px 0;border-left:none}
 .workspace{display:flex;height:calc(100vh - 52px);overflow:hidden}
 .left-panel{display:flex;flex-direction:column;background:var(--surface);overflow:hidden;min-width:240px;width:520px;flex-shrink:0;min-height:0}
 .right-panel{display:flex;flex-direction:column;overflow:hidden;flex:1;min-width:240px;min-height:0}
@@ -144,11 +144,12 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 .wand-btn{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--wand-bg);border:1px solid var(--wand-border);color:var(--wand);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0;transition:all .12s}
 .wand-btn:hover{background:var(--wand-border)}
 .wand-btn.applied{background:#fef9c3;border-color:#ca8a04;color:#854d0e;cursor:default}
-.fix-panel{display:none;border-top:1px solid var(--border);background:var(--surface2)}
+.fix-panel{display:none; margin: 0 12px 12px 38px; padding-left: 14px; border-left: 2px solid var(--border2); background:transparent}
 .result-item.expanded .fix-panel{display:block}
-.fix-applied-banner{padding:7px 12px;background:#fef9c3;border-bottom:1px solid #fcd34d;font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px}
-.fix-description{padding:8px 12px;font-size:12px;color:var(--text-mid);line-height:1.5;border-bottom:1px solid var(--border)}
-.fix-snippet{padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text);line-height:1.6;background:#f8f9fc;white-space:pre-wrap;word-break:break-word}
+.fix-applied-banner{padding:7px 12px;background:#fef9c3;border:1px solid #fcd34d; border-radius: var(--r); font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px; margin-bottom: 10px}
+.fix-description{padding:2px 0 10px 0;font-size:12px;color:var(--text-mid);line-height:1.5}
+.fix-snippet{padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word; border-radius: 0 0 var(--r) var(--r); border: 1px solid var(--border); border-top: none; margin: 0 0 10px 0}
+.snippet-hdr{font-size:10px; padding:6px 12px; font-weight:700; text-transform:uppercase; border: 1px solid var(--border); border-radius: var(--r) var(--r) 0 0; border-bottom: none}
 .status-bar{padding:7px 16px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text-dim);display:none;align-items:center;gap:4px}
 .status-bar.visible{display:flex}
 /* Dashboard button */
@@ -202,9 +203,9 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.3</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.10</span></div>
   <label class="cdn-label">
-    Course Folder:
+    Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
       placeholder="folder_name"
       title="Enter the course-specific folder name. The base path //cdn.flvs.net/assessment_images/ is always required."
@@ -281,6 +282,8 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
         <span class="chip chip-error" id="chip-error"></span>
         <span class="chip chip-warn"  id="chip-warn"></span>
         <span class="chip chip-pass"  id="chip-pass"></span>
+        <div class="q-pipe" style="margin: 0 4px;"></div>
+        <button class="btn-link" onclick="closeAllResults()" title="Collapse all items and categories">Collapse All</button>
       </div>
     </div>
     <div class="q-strip" id="q-strip"></div>
@@ -516,10 +519,10 @@ const RULES_DATA = {
            snippet:'<img src="..." alt="..." />'} },
 
     { id:'img-path-format', category:'images', severity:'error',
-      description:'Image paths must be lowercase with no spaces',
+      description:'Image paths must be lowercase and without spaces',
       type:'img-path-check',
       message:'Line {line} image path "{found}" has spaces or capitals.',
-      fix:{description:'Rename file and update path to lowercase with no spaces.',
+      fix:{description:'Rename file and update path to lowercase and without spaces.',
            snippet:'//cdn.flvs.net/assessment_images/course/my_image.jpg'} },
 
     { id:'img-path-base', category:'images', severity:'warning',
@@ -622,6 +625,20 @@ const RULES_DATA = {
       fix:{description:'Add more term-definition pairs so there are at least 3 matches.',
            snippet:'term1-definition one\nterm2-definition two\nterm3-definition three'} },
 
+    { id:'matching-right-side-length', category:'question-structure', severity:'error',
+      description:'Matching: text after the dash must be 42 characters or fewer',
+      type:'matching-right-side-length-check',
+      message:'Question {num} line {line}: right-side text is {count} characters (max 42). Rewrite to shorten, or swap the left and right sides.',
+      fix:{description:'The LMS truncates matching answer text longer than 42 characters. Either rewrite the right-side text to fit, or swap the two sides so the longer text becomes the left (term) side.\n\nSwapping example:\n  Before: short term-this is a long definition that exceeds the limit\n  After:  this is a long definition that exceeds the limit-short term',
+           snippet:'<!-- Option 1: Rewrite shorter -->\nhatching-parallel lines close together\n\n<!-- Option 2: Swap sides -->\nthis is a long definition that exceeds the limit-short term'} },
+
+    { id:'matching-html-on-right', category:'question-structure', severity:'error',
+      description:'Matching: HTML tags and images must appear on the left side of the dash, not the right',
+      type:'matching-html-on-right-check',
+      message:'Question {num} line {line}: HTML or image tag found on the right side of the dash. Move it to the left side by swapping the two halves.',
+      fix:{description:'The LMS cannot render HTML or images on the right side of a matching pair. Swap the left and right sides so the HTML/image is on the left.\n\nSwapping example:\n  Before: plain text-<img src="..." alt="..." />\n  After:  <img src="..." alt="..." />-plain text',
+           snippet:'<!-- Wrong: HTML on right -->\nplain label-<img src="..." alt="..." />\n\n<!-- Correct: HTML on left -->\n<img src="..." alt="..." />-plain label'} },
+
     { id:'span-lang-valid', category:'html-tags', severity:'error',
       description:'<span lang="..."> tags must be well-formed with a valid, non-empty language code',
       type:'span-lang-check',
@@ -636,14 +653,7 @@ const RULES_DATA = {
       fix:{description:'Replace the type attribute with the equivalent style="list-style-type:..." inline style.',
            snippet:'<!-- Wrong -->\n<ol type="A">  <ol type="i">  <ol type="1">\n\n<!-- Correct -->\n<ol style="list-style-type: upper-alpha;">\n<ol style="list-style-type: lower-roman;">\n<ol style="list-style-type: decimal;">'} },
 
-    { id:'ol-missing-style', category:'html-tags', severity:'error',
-      description:'Ordered lists must include an explicit style="list-style-type:..." attribute',
-      type:'ol-missing-style-check',
-      message:'Line {line} has <ol> with no style attribute — list-style-type must be set explicitly.',
-      fix:{description:'Add a style attribute specifying the list-style-type to ensure consistent rendering across LMS platforms.',
-           snippet:'<ol style="list-style-type: decimal;">\n<ol style="list-style-type: upper-alpha;">\n<ol style="list-style-type: upper-roman;">'} },
-
-    { id:'bare-url-in-text', category:'html-tags', severity:'error',
+   { id:'bare-url-in-text', category:'html-tags', severity:'error',
       description:'URLs in question text must be wrapped in <span></span> to prevent auto-linking',
       type:'bare-url-check',
       message:'Line {line} contains a bare URL "{found}" — wrap it in <span> to prevent auto-hyperlinking.',
@@ -693,7 +703,7 @@ const RULES_DATA = {
       type:'replacement-char-check',
       message:'Line {line} contains a Unicode replacement character \uFFFD (U+FFFD) — the original character was corrupted during copy/paste or file encoding.',
       fix:{description:'The \uFFFD character means the source text had an encoding error. You must identify what the original character was from the source document and retype it correctly — it cannot be recovered automatically.',
-           snippet:'Look at the original source document to determine what character was intended,\nthen delete \uFFFD and retype the correct character or HTML entity.'} },
+           snippet:'Look at the original source document to determine what character was intended, then delete \uFFFD and retype the correct character or HTML entity.'} },
 
     { id:'table-tag-pairs', category:'tables', severity:'error',
       description:'All table tags must have matching opening and closing tags in the correct order',
@@ -738,12 +748,19 @@ const RULES_DATA = {
       fix:{description:'Replace align="center" on any table element with the equivalent inline style.',
            snippet:'<!-- Wrong -->\n<td align="center">text</td>\n\n<!-- Correct -->\n<td style="text-align: center;">text</td>'} },
 
-    { id:'font-tag-replace', category:'html-tags', severity:'error',
+   { id:'font-tag-replace', category:'html-tags', severity:'error',
       description:'Font tags must be replaced with equivalent span style tags',
       type:'font-tag-check',
       message:'Line {line} uses <font face="..."> — replace with <span style="font-family:...">.',
       fix:{description:'Replace <font face="..."> with a span using font-family style.',
-           snippet:"<!-- Wrong -->\n<font face=\"courier new\">text</font>\n\n<!-- Correct -->\n<span style=\"font-family: 'Courier New', Courier, monospace;\">text</span>"} }
+           snippet:"\n<font face=\"courier new\">text</font>\n\n\n<span style=\"font-family: 'Courier New', Courier, monospace;\">text</span>"} },
+
+    { id:'underscore-format', category:'question-structure', severity:'error',
+      description:'Fill-in-the-blank underscores must be exactly 3 (___) for numbers or 8 (________) for words, with spaces around them',
+      type:'underscore-format-check',
+      message:'Line {line} has an invalid underscore sequence "{found}".',
+      fix:{description:'Adjust underscores to exactly 3 or 8, and ensure there is a space before and after the sequence.',
+           snippet:'\nWhat is the ____ shape?\nThe shape is____.\n\n\nWhat is the ________ shape?\nThe shape is ________.'} }
   ]
 };
 
@@ -791,6 +808,19 @@ const AssessmentChecker = (() => {
   const pass = rule => ({ status:'pass', rule });
   const fail = (rule, msg, ln, err, extra) =>
     ({ status:'fail', rule, message:msg, lineNum:ln||null, errorStr:err||null, extra:extra||null });
+
+
+  // Find the dash separating left from right in a matching answer, skipping dashes inside HTML tags.
+  function findMatchingDash(text) {
+    let inTag = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '<') { inTag = true; continue; }
+      if (ch === '>') { inTag = false; continue; }
+      if (!inTag && ch === '-') return i;
+    }
+    return -1;
+  }
 
   const handlers = {
     'code-spacing'(rule, qs, raw, lines) {
@@ -916,7 +946,7 @@ const AssessmentChecker = (() => {
     'br-format'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
         const ms = line.match(/<\/?\s*br\b[^><]*(?:>|(?=<|$))/gi)||[];
-        return ms.filter(m=>m!=='<br />').map(m=>fail(rule,rule.message.replace('{line}',i+1).replace('{found}',m),i+1,m));
+        return ms.filter(m=>m!=='<br />').map(m=>fail(rule,rule.message.replace('{line}',i+1).replace('{found}',m),i+1,m, { type: 'contextual-diff', actual: m, expected: '<br />' }));
       });
     },
 
@@ -938,25 +968,58 @@ const AssessmentChecker = (() => {
     },
 
     'forbidden-html-tags'(rule, qs, raw, lines) {
+      const fixMap = {
+        'b': { open: '<strong>', close: '</strong>' },
+        'i': { open: '<em>', close: '</em>' },
+        'u': { open: '<span class="underline">', close: '</span>' },
+        's': { open: '<del>', close: '</del>' },
+        'bold': { open: '<strong>', close: '</strong>' },
+        'italic': { open: '<em>', close: '</em>' }
+      };
+
       return lines.flatMap((line, i) => {
         const results = [];
-        for (const tag of rule.tags) {
-          const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const re = new RegExp(escaped, 'gi');
-          let m;
-          while ((m = re.exec(line)) !== null) {
-            results.push(fail(rule, rule.message.replace('{line}', i+1).replace('{found}', m[0]), i+1, m[0]));
-          }
+        let tempLine = line;
+
+        // 1. Look for paired tags on the same line (e.g., <b>text</b>)
+        const pairRe = /<(b|i|u|s|bold|italic)\b[^>]*>(.*?)<\/\1>/gi;
+        let m;
+        while ((m = pairRe.exec(tempLine)) !== null) {
+          const tag = m[1].toLowerCase();
+          const fix = fixMap[tag];
+          const actual = m[0];
+          const expected = `${fix.open}${m[2]}${fix.close}`;
+          
+          results.push(fail(rule,
+             rule.message.replace('{line}', i+1).replace('{found}', `<${tag}>...</${tag}> pair`),
+             i+1, actual,
+             { type: 'contextual-diff', actual, expected, truthAttr: actual }
+          ));
+          
+          // Mask out the pair with spaces so we don't flag the single tags inside it below
+          tempLine = tempLine.substring(0, m.index) + ' '.repeat(actual.length) + tempLine.substring(m.index + actual.length);
         }
+
+        // 2. Look for any orphaned/unpaired tags left over
+        const singleRe = /<\/?(b|i|u|s|bold|italic)\b[^>]*>/gi;
+        while ((m = singleRe.exec(tempLine)) !== null) {
+          const actual = m[0];
+          const isClosing = actual.startsWith('</');
+          const tag = (actual.match(/<\/?([a-z]+)/i) || [])[1].toLowerCase();
+          const expected = isClosing ? fixMap[tag].close : fixMap[tag].open;
+
+          results.push(fail(rule,
+             rule.message.replace('{line}', i+1).replace('{found}', `orphaned ${actual} tag`),
+             i+1, actual,
+             { type: 'contextual-diff', actual, expected, truthAttr: actual }
+          ));
+        }
+
         return results;
       });
     },
 
     'mark-tag-check'(rule, qs, raw, lines) {
-      // Complete well-formed mark tags — safe to auto-remove
-      const COMPLETE_RE = /<mark\b[^>]*>|<\/mark>/gi;
-      // Partial/malformed remnants — angle bracket(s) missing, needs manual review
-      // Patterns: <mark (unclosed), mark class=..., /mark>, mark>, </mark (no closing >)
       const PARTIAL_PATTERNS = [
         { re: /<mark(?:\s[^>]*)?$/, label: 'unclosed <mark tag (missing >)' },
         { re: /\bmark\s+class\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)?\s*>/, label: 'mark remnant (missing opening <)' },
@@ -967,25 +1030,42 @@ const AssessmentChecker = (() => {
 
       return lines.flatMap((line, i) => {
         const results = [];
+        let tempLine = line;
 
-        // Check for complete tags first
-        const completeMatches = [...line.matchAll(/<mark\b[^>]*>|<\/mark>/gi)];
-        for (const m of completeMatches) {
+        // 1. Complete pairs on the same line
+        const pairRe = /<mark\b[^>]*>.*?<\/mark>/gi;
+        let m;
+        while ((m = pairRe.exec(tempLine)) !== null) {
+          const actual = m[0];
+          const expected = actual.replace(/<\/?mark\b[^>]*>/gi, ''); // strip the tags, keep inner text
           results.push(fail(rule,
-            rule.message.replace('{line}', i+1).replace('{found}',
-              'complete ' + m[0] + ' tag — use Apply Fix to remove'),
-            i+1, m[0]));
+            rule.message.replace('{line}', i+1).replace('{found}', 'complete <mark>...</mark> pair'),
+            i+1, actual,
+            { type: 'contextual-diff', actual, expected }
+          ));
+          tempLine = tempLine.substring(0, m.index) + ' '.repeat(actual.length) + tempLine.substring(m.index + actual.length);
         }
 
-        // Check for partial remnants on a version of the line with complete tags already removed
-        const stripped = line.replace(COMPLETE_RE, '');
+        // 2. Orphaned single tags (opening or closing)
+        const singleRe = /<mark\b[^>]*>|<\/mark>/gi;
+        while ((m = singleRe.exec(tempLine)) !== null) {
+          const actual = m[0];
+          results.push(fail(rule,
+            rule.message.replace('{line}', i+1).replace('{found}', `orphaned ${actual} tag`),
+            i+1, actual,
+            { type: 'contextual-diff', actual, expected: '' }
+          ));
+          tempLine = tempLine.substring(0, m.index) + ' '.repeat(actual.length) + tempLine.substring(m.index + actual.length);
+        }
+
+        // 3. Partial remnants
         for (const { re, label } of PARTIAL_PATTERNS) {
-          const m = stripped.match(re);
-          if (m) {
+          const pm = tempLine.match(re);
+          if (pm) {
             results.push(fail(rule,
               rule.message.replace('{line}', i+1).replace('{found}',
-                'partial mark remnant "' + m[0].trim().substring(0, 40) + '" (' + label + ') — remove manually'),
-              i+1, m[0].trim()));
+                'partial mark remnant "' + pm[0].trim().substring(0, 40) + '" (' + label + ') — remove manually'),
+              i+1, pm[0].trim()));
           }
         }
 
@@ -1061,8 +1141,17 @@ const AssessmentChecker = (() => {
 
     'img-quote-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        const m=line.match(/(src|alt)\s*=\s*'/i);
-        return (/<img/i.test(line)&&m) ? [fail(rule,rule.message.replace('{line}',i+1),i+1,m[0])] : [];
+        if (!/<img/i.test(line)) return [];
+        const imgs = line.match(/<img[^>]+>/gi) || [];
+        return imgs.flatMap(img => {
+          const m = img.match(/(src|alt)\s*=\s*'([^']+)'/i);
+          if (m) {
+            const actual = m[0];
+            const expected = `${m[1]}="${m[2]}"`;
+            return [fail(rule, rule.message.replace('{line}', i+1), i+1, actual, { type: 'contextual-diff', actual, expected, truthAttr: img })];
+          }
+          return [];
+        });
       });
     },
 
@@ -1089,7 +1178,12 @@ const AssessmentChecker = (() => {
         const imgs=line.match(/<img[^>]+>/gi)||[];
         return imgs.flatMap(img=>{
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
-          return (a&&a[1].includes('"')) ? [fail(rule,rule.message.replace('{line}',i+1),i+1,'"')] : [];
+          if (a && a[1].includes('"')) {
+            const actual = a[0];
+            const expected = `alt="${a[1].replace(/"/g, "'")}"`;
+            return [fail(rule, rule.message.replace('{line}', i+1), i+1, actual, { type: 'contextual-diff', actual, expected, truthAttr: img })];
+          }
+          return [];
         });
       });
     },
@@ -1106,17 +1200,13 @@ const AssessmentChecker = (() => {
       });
     },
 
-    'img-alt-symbol-check'(rule, qs, raw, lines) {
-      // '-' is only flagged when it looks like a math minus (space-dash-digit or space-dash-space)
-      // not when used as a hyphen in compound words.
-      // &lt; and &gt; in alt text must be spelled out — unlike question body text where
-      // <span>></span> is the fix, alt attributes cannot contain HTML tags.
+   'img-alt-symbol-check'(rule, qs, raw, lines) {
       const SYMS={'>':'greater than','<':'less than','/':'divided by','*':'multiplied by',
                   '%':'percent','&':'ampersand','@':'at','=':'equals','°':'degree','+':'plus'};
       const ENTS={
         '&amp;':'ampersand',
-        '&lt;':'less than (spell out — HTML tags not allowed in alt text)',
-        '&gt;':'greater than (spell out — HTML tags not allowed in alt text)',
+        '&lt;':'less than',
+        '&gt;':'greater than',
         '&deg;':'degree'
       };
       const MATH_MINUS=/(?<=\s)-(?=\d|\s)/;
@@ -1126,9 +1216,24 @@ const AssessmentChecker = (() => {
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
           if(!a) return [];
           const txt=a[1];
-          for(const[ent,word] of Object.entries(ENTS)) if(txt.includes(ent)) return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',ent)+' Write: "'+word.split(' (')[0]+'"',i+1,ent)];
-          for(const sym of Object.keys(SYMS)) if(txt.includes(sym)) return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',sym),i+1,sym)];
-          if(MATH_MINUS.test(txt)) return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}','-'),i+1,'-')];
+          const fullAlt = a[0]; // The whole alt="..." string for context
+
+          for(const[ent,word] of Object.entries(ENTS)) {
+            if(txt.includes(ent)) {
+              return [fail(rule, `Line ${i+1} alt text contains "${ent}". Expected: "${word}"`, i+1, ent, 
+                { type: 'contextual-diff', actual: ent, expected: word, truthAttr: fullAlt })];
+            }
+          }
+          for(const sym of Object.keys(SYMS)) {
+            if(txt.includes(sym)) {
+              return [fail(rule, `Line ${i+1} alt text contains symbol "${sym}". Expected: "${SYMS[sym]}"`, i+1, sym, 
+                { type: 'contextual-diff', actual: sym, expected: SYMS[sym], truthAttr: fullAlt })];
+            }
+          }
+          if(MATH_MINUS.test(txt)) {
+            return [fail(rule, `Line ${i+1} alt text contains "-" used as a math minus. Expected: "minus"`, i+1, '-', 
+              { type: 'contextual-diff', actual: '-', expected: 'minus', truthAttr: fullAlt })];
+          }
           return [];
         });
       });
@@ -1234,8 +1339,10 @@ const AssessmentChecker = (() => {
           const idx=lower.indexOf(code); if(idx===-1) continue;
           const after=line.substring(idx+code.length);
           if(/^:?span\b/i.test(after)){
-            const found=code+after.match(/^:?span/i)[0];
-            return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',found),i+1,after.match(/^:?span/i)[0])];
+            const actualTag = after.match(/^:?span/i)[0];
+            const found = code + actualTag;
+            const expected = code + '<span';
+            return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',found),i+1,actualTag, { type: 'contextual-diff', actual: found, expected: expected })];
           }
           break;
         }
@@ -1244,32 +1351,51 @@ const AssessmentChecker = (() => {
     },
 
     'span-self-closing-check'(rule, qs) {
-      // A metadata span that ends with /> instead of > — the slash is invalid on non-void elements
-      return qs.filter(q => /<span\b[^>]*\/>/i.test(q.stem))
-        .map(q => fail(rule, rule.message.replace('{num}', q.num), q.startLine, '/>'));
+      return qs.filter(q => /<span\b[^>]*\/>/i.test(q.stem)).map(q => {
+        const actual = q.stem.match(/<span\b[^>]*\/>/i)[0];
+        const expected = actual.replace(/\/>$/, '>');
+        return fail(rule, rule.message.replace('{num}', q.num), q.startLine, '/>', { type: 'contextual-diff', actual, expected, truthAttr: actual });
+      });
     },
 
     'span-missing-check'(rule, qs) {
-      // Fire for any question with no <span at all in its stem
-      return qs.filter(q => !q.stem.includes('<span')).map(q =>
-        fail(rule, rule.message.replace('{num}', q.num), q.startLine));
+      return qs.filter(q => !q.stem.includes('<span')).map(q => {
+        const actual = q.code;
+        const expected = `${q.code}<span data-standard-florida="[Standard]" data-complexity="LC" data-associatedlessons="01.01R">(01.01 LC)</span><br /><br />`;
+        return fail(rule, rule.message.replace('{num}', q.num), q.startLine, null, { type: 'contextual-diff', actual, expected });
+      });
     },
 
     'span-unclosed-check'(rule, qs) {
-      // Fire when a <span opens but no </span> closes it
-      return qs.filter(q => q.stem.includes('<span') && !/\/span>/i.test(q.stem)).map(q =>
-        fail(rule, rule.message.replace('{num}', q.num), q.startLine));
+      return qs.filter(q => q.stem.includes('<span') && !/\/span>/i.test(q.stem)).map(q => {
+        const sm = q.stem.match(/<span([^>]*)>([^<]*)/i);
+        if (sm) {
+            const actual = sm[0];
+            const expected = sm[0].trim() + '</span>';
+            return fail(rule, rule.message.replace('{num}', q.num), q.startLine, null, { type: 'contextual-diff', actual, expected });
+        }
+        return fail(rule, rule.message.replace('{num}', q.num), q.startLine);
+      });
     },
 
     'span-data-standard-check'(rule, qs) {
       const results=[];
       for(const q of qs){
-        // Skip if no span or unclosed span — those are caught by dedicated rules
         if(!q.stem.includes('<span') || !/\/span>/i.test(q.stem)) continue;
         const sm=q.stem.match(/<span([^>]*)>/i); if(!sm) continue;
+        const fullTag = sm[0];
         const std=sm[1].match(/data-standard-[a-z0-9_-]+\s*=\s*"([^"]*)"/i);
-        if(!std){results.push(fail(rule,rule.message.replace('{num}',q.num),q.startLine,'data-standard-*'));continue;}
-        if(!std[1].trim()) results.push(fail(rule,rule.message.replace('{num}',q.num)+' Value cannot be blank.',q.startLine,'""'));
+        
+        if(!std){
+           const expectedTag = fullTag.replace('<span', '<span data-standard-florida="[Standard]"');
+           results.push(fail(rule,rule.message.replace('{num}',q.num),q.startLine,'data-standard-*', { type: 'contextual-diff', actual: fullTag, expected: expectedTag }));
+           continue;
+        }
+        if(!std[1].trim()) {
+           const actualAttr = std[0];
+           const expectedAttr = actualAttr.replace('""', '"[Standard]"');
+           results.push(fail(rule,rule.message.replace('{num}',q.num)+' Value cannot be blank.',q.startLine,'""', { type: 'contextual-diff', actual: actualAttr, expected: expectedAttr, truthAttr: fullTag }));
+        }
       }
       return results;
     },
@@ -1277,7 +1403,6 @@ const AssessmentChecker = (() => {
     'span-attribute-check'(rule, qs) {
       const results=[];
       for(const q of qs){
-        // Skip if no span or unclosed span — those are caught by dedicated rules
         if(!q.stem.includes('<span') || !/\/span>/i.test(q.stem)) continue;
         const sm=q.stem.match(/<span([^>]*)>/i); if(!sm) continue;
         const attrs=sm[1];
@@ -1287,12 +1412,20 @@ const AssessmentChecker = (() => {
         }
         const vm=attrs.match(new RegExp(rule.attribute+'\\s*=\\s*"([^"]*)"','i'));
         const val=vm?vm[1].trim():'';
+        
         if(!val){
-          results.push(fail(rule,rule.message.replace('{num}',q.num).replace('{found}','(empty)'),q.startLine,'(empty)'));
+          // Provide a visual diff suggesting LC if complexity is empty
+          const expectedAttr = rule.attribute === 'data-complexity' ? 'LC' : '01.01R';
+          results.push(fail(rule, `Question ${q.num} span is missing a value for ${rule.attribute}.`, q.startLine, `""`, 
+            { type: 'contextual-diff', actual: `${rule.attribute}=""`, expected: `${rule.attribute}="${expectedAttr}"` }));
           continue;
         }
-        if(rule.validValues && !rule.validValues.includes(val))
-          results.push(fail(rule,rule.message.replace('{num}',q.num).replace('{found}',val),q.startLine,val));
+        
+        if(rule.validValues && !rule.validValues.includes(val)) {
+          // Suggest the first valid value (e.g. LC) visually
+          results.push(fail(rule, `Question ${q.num} span has invalid ${rule.attribute} "${val}". Valid: ${rule.validValues.join(', ')}.`, q.startLine, val, 
+            { type: 'contextual-diff', actual: `${rule.attribute}="${val}"`, expected: `${rule.attribute}="${rule.validValues[0]}"` }));
+        }
       }
       return results;
     },
@@ -1304,8 +1437,16 @@ const AssessmentChecker = (() => {
         const sm=q.stem.match(/<span([^>]*)>/i); if(!sm) continue;
         const lm=sm[1].match(/data-associatedlessons\s*=\s*"([^"]*)"/i);
         if(!lm||!lm[1].trim()) continue;
+        
         const bad=lm[1].split('|').filter(e=>!/^\d{2}\.\d{2}[RH]$/i.test(e.trim()));
-        if(bad.length) results.push(fail(rule,rule.message.replace('{num}',q.num).replace('{found}',bad.join(', ')),q.startLine,bad[0].trim()));
+        if(bad.length) {
+          const badVal = bad[0].trim();
+          // Attempt to fix standard patterns, otherwise just append 'R'
+          const fixedVal = /^\d{2}\.\d{2}$/.test(badVal) ? badVal + 'R' : badVal + 'R'; 
+          
+          results.push(fail(rule, `Question ${q.num} data-associatedlessons "${badVal}" must end with R or H.`, q.startLine, badVal, 
+            { type: 'contextual-diff', actual: badVal, expected: fixedVal, truthAttr: lm[0] }));
+        }
       }
       return results;
     },
@@ -1313,15 +1454,16 @@ const AssessmentChecker = (() => {
     'span-br-check'(rule, qs) {
       const results=[];
       for(const q of qs){
-        // Skip if no span or unclosed — those are caught by dedicated rules
         if(!q.stem.includes('<span') || !/\/span>/i.test(q.stem)) continue;
         const after=q.stem.match(/<\/span>(.*)/i);
         if(after){
           const tail=after[1].trim();
-          // Only accept <br /><br /> with spaces — consistent with self-closing-br rule
           if(!tail.startsWith('<br /><br />')){
             const bad=tail.match(/^(?:<\/?\s*br\b[^><]*(?:>|(?=<|$)))+/i);
-            results.push(fail(rule,rule.message.replace('{num}',q.num),q.startLine,bad?bad[0]:tail.substring(0,15)));
+            const actualBad = bad ? bad[0] : '';
+            const actual = '</span>' + actualBad;
+            const expected = '</span><br /><br />';
+            results.push(fail(rule,rule.message.replace('{num}',q.num),q.startLine, actualBad || '</span>', { type: 'contextual-diff', actual, expected }));
           }
         }
       }
@@ -1337,15 +1479,39 @@ const AssessmentChecker = (() => {
         const cm2=attrs.match(/data-complexity\s*=\s*"([^"]*)"/i);
         const lm=attrs.match(/data-associatedlessons\s*=\s*"([^"]*)"/i);
         if(!cm2||!lm) continue;
-        const complexity=cm2[1],firstLesson=lm[1].split('|')[0].trim().replace(/[RH]$/i,'');
+        
+        const complexity=cm2[1].trim();
+        const firstLesson=lm[1].split('|')[0].trim().replace(/[RH]$/i,'');
+        
+        // If the source attributes are empty, skip this check.
+        // We let the span-attribute-check handle the empty attributes first
+        // so we don't suggest erasing valid text to match a blank attribute.
+        if (!complexity || !firstLesson) continue;
+
+        const expectedText = `(${firstLesson} ${complexity})`;
+        
         const inner=content.match(/^\(([^)]+)\)$/);
-        if(!inner){results.push(fail(rule,rule.message.replace('{num}',q.num).replace('{found}',content)+' Expected: ('+firstLesson+' '+complexity+')',q.startLine,content));continue;}
+        if(!inner){
+            results.push(fail(rule,
+                `Question ${q.num} span content "${content}" does not match its attributes. Expected "${expectedText}" based on the attributes.`,
+                q.startLine, content, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim() }
+            ));
+            continue;
+        }
+        
         const parts=inner[1].trim().split(/\s+/);
         const cL=parts[0]||'',cC=parts[1]||'';
         const issues=[]; let errStr=null;
-        if(cL!==firstLesson){issues.push('lesson "'+cL+'" -> "'+firstLesson+'"');errStr=cL;}
-        if(cC!==complexity){issues.push('complexity "'+cC+'" -> "'+complexity+'"');errStr=errStr||cC;}
-        if(issues.length) results.push(fail(rule,rule.message.replace('{num}',q.num).replace('{found}',content)+' Mismatch: '+issues.join('; ')+'.',q.startLine,errStr));
+        
+        if(cL!==firstLesson){issues.push('lesson');errStr=cL;}
+        if(cC!==complexity){issues.push('complexity');errStr=errStr||cC;}
+        
+        if(issues.length) {
+            results.push(fail(rule,
+                `Question ${q.num} span content "${content}" does not match its attributes. Expected "${expectedText}" based on the attributes.`,
+                q.startLine, errStr, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim() }
+            ));
+        }
       }
       return results;
     },
@@ -1360,7 +1526,8 @@ const AssessmentChecker = (() => {
     'matching-points-check'(rule, qs) {
       return qs.filter(q=>q.code==='matching:label:'&&q.points!==null).flatMap(q=>{
         const pairs=q.answers.length;
-        return(pairs>0&&q.points%pairs!==0)?[fail(rule,rule.message.replace('{num}',q.num).replace('{pairs}',pairs).replace('{points}',q.points),q.pointsLine)]:[];
+        // Using a global regex /\{pairs\}/g ensures EVERY instance is replaced
+        return(pairs>0&&q.points%pairs!==0)?[fail(rule,rule.message.replace('{num}',q.num).replace(/\{pairs\}/g,pairs).replace('{points}',q.points),q.pointsLine)]:[];
       });
     },
 
@@ -1467,6 +1634,63 @@ const AssessmentChecker = (() => {
       });
     },
 
+    'underscore-format-check'(rule, qs, raw, lines) {
+      return lines.flatMap((line, i) => {
+        const results = [];
+        // Map out where the HTML tags are so we don't flag underscores inside src="file_name.jpg"
+        const tagRanges = [];
+        let tm;
+        const tagRe = /<[^>]+>/g;
+        while ((tm = tagRe.exec(line)) !== null) {
+          tagRanges.push([tm.index, tm.index + tm[0].length]);
+        }
+
+        // Find sequences of 2 or more underscores
+        const re = /_{2,}/g;
+        let m;
+        while ((m = re.exec(line)) !== null) {
+          const idx = m.index;
+          const len = m[0].length;
+          
+          // Skip if this underscore sequence is hidden inside an HTML tag
+          if (tagRanges.some(([s, e]) => idx >= s && idx < e)) continue;
+
+          const charBefore = idx > 0 ? line[idx - 1] : ' ';
+          const charAfter = (idx + len) < line.length ? line[idx + len] : ' ';
+          
+          // Check for spaces or valid boundaries (start/end of line, > or < from tags, and trailing punctuation)
+          const needsSpaceBefore = idx > 0 && !/[\s>\(]/.test(charBefore) && charBefore !== '&';
+          const needsSpaceAfter = (idx + len) < line.length && !/[\s<.,!?;:\)\]]/.test(charAfter);
+
+          // If it's already exactly 3 or 8 AND the spacing is correct, it passes!
+          if ((len === 3 || len === 8) && !needsSpaceBefore && !needsSpaceAfter) continue;
+
+          // Otherwise, determine the target count (if they typed 4 or fewer, assume 3. If 5 or more, assume 8).
+          const targetCount = len <= 4 ? 3 : 8;
+          const targetUnderscores = '_'.repeat(targetCount);
+
+          let actualSnippet = m[0];
+          let expectedSnippet = targetUnderscores;
+
+          // Build the contextual diff so we can visually inject the missing spaces
+          if (needsSpaceBefore) {
+            actualSnippet = charBefore + actualSnippet;
+            expectedSnippet = charBefore + ' ' + expectedSnippet;
+          }
+          if (needsSpaceAfter) {
+            actualSnippet = actualSnippet + charAfter;
+            expectedSnippet = expectedSnippet + ' ' + charAfter;
+          }
+
+          results.push(fail(rule, 
+            rule.message.replace('{line}', i+1).replace('{found}', m[0]), 
+            i+1, actualSnippet, 
+            { type: 'contextual-diff', actual: actualSnippet, expected: expectedSnippet }));
+        }
+        return results;
+      });
+    },
+
     'replacement-char-check'(rule, qs, raw, lines) {
       const REPL = '\uFFFD';
       return lines.flatMap((line, i) => {
@@ -1485,6 +1709,43 @@ const AssessmentChecker = (() => {
           ? [fail(rule, rule.message.replace('{num}', q.num).replace('{count}', count), q.startLine)]
           : [];
       });
+    },
+
+    'matching-right-side-length-check'(rule, qs) {
+      const MAX = 42;
+      return qs.filter(q => q.code === 'matching:label:').flatMap(q =>
+        q.answers.flatMap(a => {
+          const text = a.text.trim();
+          const dashIdx = findMatchingDash(text);
+          if (dashIdx === -1) return []; // malformed — caught by matching-format
+          const rightRaw = text.slice(dashIdx + 1);
+          // Strip HTML tags to measure visible character count
+          const rightText = rightRaw.replace(/<[^>]+>/g, '');
+          const len = rightText.length;
+          return len > MAX
+            ? [fail(rule,
+                rule.message.replace('{num}', q.num).replace('{line}', a.lineNum).replace('{count}', len),
+                a.lineNum, rightText.slice(0, 20))]
+            : [];
+        })
+      );
+    },
+
+    'matching-html-on-right-check'(rule, qs) {
+      return qs.filter(q => q.code === 'matching:label:').flatMap(q =>
+        q.answers.flatMap(a => {
+          const text = a.text.trim();
+          const dashIdx = findMatchingDash(text);
+          if (dashIdx === -1) return [];
+          const rightRaw = text.slice(dashIdx + 1);
+          // Flag if the right side contains any HTML tag or image tag
+          return /<[a-zA-Z!][^>]*>/.test(rightRaw)
+            ? [fail(rule,
+                rule.message.replace('{num}', q.num).replace('{line}', a.lineNum),
+                a.lineNum, (rightRaw.match(/<[^>]+>/) || [''])[0])]
+            : [];
+        })
+      );
     },
 
     'span-lang-check'(rule, qs, raw, lines) {
@@ -1523,13 +1784,8 @@ const AssessmentChecker = (() => {
     },
 
     'ol-type-check'(rule, qs, raw, lines) {
-      // Map ol type= attribute values to their inline style equivalents
       const TYPE_MAP = {
-        '1': 'decimal',
-        'a': 'lower-alpha',
-        'A': 'upper-alpha',
-        'i': 'lower-roman',
-        'I': 'upper-roman'
+        '1': 'decimal', 'a': 'lower-alpha', 'A': 'upper-alpha', 'i': 'lower-roman', 'I': 'upper-roman'
       };
       return lines.flatMap((line, i) => {
         const olRe = /<ol\b([^>]*)>/gi;
@@ -1540,32 +1796,13 @@ const AssessmentChecker = (() => {
           const typeMatch = attrs.match(/\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
           if (!typeMatch) continue;
           const typeVal = (typeMatch[1] || typeMatch[2] || typeMatch[3] || '').trim();
-          const equivalent = TYPE_MAP[typeVal] || ('list-style-type: ' + typeVal);
+          const styleVal = TYPE_MAP[typeVal] || typeVal;
+          const actual = typeMatch[0];
+          const expected = `style="list-style-type: ${styleVal};"`;
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', typeVal),
-            i+1, 'type="'+typeVal+'"',
-            { type:'ol-type', typeVal, styleName: TYPE_MAP[typeVal] ? 'list-style-type: '+TYPE_MAP[typeVal]+';' : null }));
-        }
-        return results;
-      });
-    },
-
-    'ol-missing-style-check'(rule, qs, raw, lines) {
-      return lines.flatMap((line, i) => {
-        const olRe = /<ol\b([^>]*)>/gi;
-        let m;
-        const results = [];
-        while ((m = olRe.exec(line)) !== null) {
-          const attrs = m[1];
-          // Skip if already has a list-style-type style (well-formed)
-          const hasStyle = /\bstyle\s*=\s*"[^"]*list-style-type[^"]*"/i.test(attrs);
-          // Skip if it has type= — that's caught by ol-type-check
-          const hasType = /\btype\s*=/i.test(attrs);
-          if (!hasStyle && !hasType) {
-            results.push(fail(rule,
-              rule.message.replace('{line}', i+1),
-              i+1, '<ol>'));
-          }
+            i+1, actual,
+            { type: 'contextual-diff', actual, expected, truthAttr: m[0] }));
         }
         return results;
       });
@@ -1908,7 +2145,20 @@ const autoFixers={
         return '<img ' + attrsClean.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="vertical-align:middle; '+existingStyle[1]+'"') + '>';
       }
       return '<img' + (attrsClean ? ' '+attrsClean : '') + ' style="vertical-align:middle;">';
-    })
+    }),
+
+  'underscore-format': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        // Targeted replacement using the exact snippet from the contextual diff
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  }
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -1990,6 +2240,7 @@ zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-
 function clearAll(){
   ta.value='';clearFile();clearLineMarks();fixedLines.clear();
   Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
+  window._lineMap = {};
   document.getElementById('results-body').innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Paste your assessment content and click <strong>Run Audit</strong> to check for formatting issues.</p></div>';
   document.getElementById('summary-chips').style.display='none';
   document.getElementById('q-strip').classList.remove('visible');
@@ -2221,7 +2472,31 @@ function loadSample(){
     'Blending',
     'Hatching',
     'points:2',
-    'group:25'
+    'group:25',
+    '',
+    // ── Q27 — matching: right-side text exceeds 42 characters ─────────────────
+    'matching:label:Match each shading technique to its full description.',
+    'hatching-parallel lines drawn close together in one direction to create value and tone',
+    'crosshatching-lines drawn in two or more crossing directions to build up darker value areas',
+    'stippling-individual dots placed very close together gradually creating darker shadow regions',
+    'blending-smooth continuous gradation of tone from light to dark with no visible line edges',
+    'points:4',
+    'group:26',
+    '',
+    // ── Q28 — matching: HTML image tag on right side of dash ──────────────────
+    'matching:label:Match each term to its image.',
+    'value scale-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_value_scale.jpg" alt="A value scale." />',
+    'hatching-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_hatching.jpg" alt="Hatching lines." />',
+    'stippling-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_stippling.jpg" alt="Stippling dots." />',
+    'points:3',
+    'group:27',
+    '',
+    // ── Q29 — Underscore format errors: wrong count and missing spaces ──────────
+    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />This____has 4 underscores and no spaces. This has________ has 8 underscores but no space before. And this is _________ too long.',
+    'x-Correct',
+    'Wrong',
+    'points:1',
+    'group:28'
   ].join('\n');
   document.querySelectorAll('.tab')[0].click();
   requestAnimationFrame(()=>{cm.refresh();cm.focus();});
@@ -2231,6 +2506,7 @@ function runAudit(){
   if(!raw){alert('Please paste content or upload a file first.');return;}
   document.getElementById('results-body').innerHTML='<div class="empty-state"><div class="spinner"></div><p>Running checks\u2026</p></div>';
   Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
+  window._lineMap = {};
   fixedLines.clear();clearLineMarks();
   setTimeout(()=>{
     try{const lines=raw.split('\n');renderReport(AssessmentChecker.run(raw),lines);}
@@ -2444,9 +2720,14 @@ function renderReport(report,lines){
 function renderItem(r,lines){
   const isPassing=r.status==='pass';
   const cls=isPassing?'pass':r.rule.severity==='error'?'err':'warn';
-  const icon=isPassing?'✓':r.rule.severity==='error'?'✕':'⚠';
+  const icon=isPassing?'✓':r.rule.severity==='error'?'':'⚠';
   const uid='ri-'+r.rule.id+(r.lineNum||'')+Math.random().toString(36).slice(2,6);
   resultRegistry[uid]=r;
+  if(r.lineNum) {
+      window._lineMap = window._lineMap || {};
+      if(!window._lineMap[r.lineNum]) window._lineMap[r.lineNum] = [];
+      window._lineMap[r.lineNum].push(uid);
+  }
   const lineBadge=r.lineNum?'<span class="line-badge" onclick="jumpToLine('+r.lineNum+');event.stopPropagation()">L'+r.lineNum+'</span>':'';
   const hasFixer=!isPassing&&!!r.rule.fix;
   const hasAuto=hasFixer&&typeof autoFixers[r.rule.id]==='function';
@@ -2459,7 +2740,34 @@ function renderItem(r,lines){
   if(hasFixer){
     const escSnip=esc(r.rule.fix.snippet||'');
     const userLine=r.lineNum&&lines?lines[r.lineNum-1]:'';
-    const userSnippet=userLine?'<div style="background:var(--error-bg);border-bottom:1px solid var(--border)"><div style="font-size:10px;color:var(--error);padding:4px 12px;font-weight:700;text-transform:uppercase">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:transparent;color:var(--error);margin:0">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>':'';
+    let userSnippet='';
+    let standardFixPanel = '<div><div class="snippet-hdr" style="background:var(--pass-bg); color:var(--pass);">Example Fix</div><pre class="fix-snippet" style="background:var(--surface);">'+escSnip+'</pre></div>';
+    
+    if (r.extra && r.extra.type === 'contextual-diff') {
+        const safeLine = esc(userLine.trim());
+        const safeActual = esc(r.extra.actual || r.errorStr);
+        const safeExpected = esc(r.extra.expected);
+        const safeTruth = esc(r.extra.truthAttr);
+        
+        // Highlight the source of truth (yellow background)
+        let diffHtml = safeLine;
+        if (safeTruth) {
+            diffHtml = diffHtml.replace(safeTruth, `<mark style="background:#fef08a; padding:0 3px; border-radius:3px; color:#854d0e;">${safeTruth}</mark>`);
+        }
+        
+        // Apply Red/Green strike-through diff
+        const visualDiff = `<del style="color: #991b1b; background: #fee2e2; text-decoration: line-through; padding: 0 2px; border-radius: 2px;">${safeActual}</del> <ins style="color: #166534; background: #dcfce7; text-decoration: none; font-weight: bold; padding: 0 2px; border-radius: 2px;">${safeExpected}</ins>`;
+        diffHtml = diffHtml.replace(safeActual, visualDiff);
+        
+        userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
+        
+        // Generate contextual suggested fix
+        const exactCorrectedLine = safeLine.replace(safeActual, safeExpected);
+        standardFixPanel = `<div><div class="snippet-hdr" style="background:var(--pass-bg); color:var(--pass);">Suggested Fix</div><pre class="fix-snippet" style="background:var(--surface);">${exactCorrectedLine}</pre></div>`;
+    } else {
+        userSnippet = userLine ? '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--error);">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>' : '';
+    }
+    
     let extraPanel='';
     if(r.extra&&r.extra.type==='group-points'){
       const{group,expected,items}=r.extra;
@@ -2481,6 +2789,26 @@ function renderItem(r,lines){
       const isAuto=r.extra.tier==='auto';
       const hdrColor=isAuto?'var(--error)':'var(--warn)';
       const hdrBg=isAuto?'var(--error-bg)':'var(--warn-bg)';
+      
+      // 1. Build the Highlighted Snippet Preview
+      const affectedLines = [...new Set(r.extra.chars.flatMap(c => c.lineNums))].sort((a,b)=>a-b);
+      let snippetHtml = '';
+      affectedLines.forEach(ln => {
+         let text = lines[ln-1] || '';
+         let safeText = esc(text);
+         // Highlight all bad chars in this specific line
+         r.extra.chars.forEach(c => {
+             if (c.lineNums.includes(ln)) {
+                 const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+                 safeText = safeText.replace(charRegex, '<mark style="background:#fee2e2; color:#991b1b; padding:0 2px; border-radius:2px; font-weight:bold;">' + esc(c.char) + '</mark>');
+             }
+         });
+         snippetHtml += '<div style="color:var(--text-dim); font-size:9px; margin-bottom:2px; user-select:none; text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
+      });
+      
+      const previewPanel = '<div><div class="snippet-hdr" style="background:'+hdrBg+'; color:'+hdrColor+'; border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text); border-bottom:none; margin-bottom:0; border-radius:0;">'+snippetHtml+'</pre></div>';
+
+      // 2. Build the Info Table
       const rows=r.extra.chars.map(c=>{
         const lineList=c.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
         return '<tr style="border-bottom:1px solid var(--border)">'+
@@ -2491,8 +2819,9 @@ function renderItem(r,lines){
           '<td style="padding:5px 10px;text-align:right">'+lineList+'</td>'+
           '</tr>';
       }).join('');
-      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:'+hdrColor+';background:'+hdrBg+';text-transform:uppercase;letter-spacing:.5px">'+(isAuto?'✕ Must Fix':'⚠ Review Required')+' — Special Characters Found</div>'+
-        '<table style="width:100%;border-collapse:collapse">'+
+      
+      extraPanel= previewPanel + '<div style="border-top:1px solid var(--border); border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding:8px 12px 4px;font-size:11px;font-weight:700;color:'+hdrColor+';background:'+hdrBg+';text-transform:uppercase;letter-spacing:.5px">'+(isAuto?'✕ Must Fix':'⚠ Review Required')+' — Special Characters Found</div>'+
+        '<table style="width:100%;border-collapse:collapse; border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 0 0 var(--r) var(--r); margin-bottom: 10px;">'+
         '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
         '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Char</th>'+
         '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Code</th>'+
@@ -2500,11 +2829,12 @@ function renderItem(r,lines){
         '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Replace with</th>'+
         '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line(s)</th>'+
         '</tr>'+rows+'</table>';
-      if(!isAuto) extraPanel+='<div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
+        
+      if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
     }
     const isGroupExtra=!!extraPanel;
     fixPanel='<div class="fix-panel"><div class="fix-description">'+esc(r.rule.fix.description)+'</div>'+
-      (isGroupExtra?extraPanel:userSnippet+'<div><div style="font-size:10px;color:var(--pass);padding:4px 12px;font-weight:700;text-transform:uppercase">Example Fix</div><pre class="fix-snippet">'+escSnip+'</pre></div>')+
+      (isGroupExtra?extraPanel:userSnippet+standardFixPanel)+
       '</div>';
   }
   return '<div class="result-item '+cls+'" id="'+uid+'">'+
@@ -2549,6 +2879,13 @@ function applyFix(uid,event){
 
 function toggleCat(id){document.getElementById(id).classList.toggle('open');}
 
+function closeAllResults() {
+  // Close all category drawers
+  document.querySelectorAll('.category-section.open').forEach(el => el.classList.remove('open'));
+  // Close all individual result items
+  document.querySelectorAll('.result-item.expanded').forEach(el => el.classList.remove('expanded'));
+}
+
 // ─────────────────────────────────────────────────────────────────
 // RESIZABLE DIVIDER
 // ─────────────────────────────────────────────────────────────────
@@ -2561,6 +2898,53 @@ function toggleCat(id){document.getElementById(id).classList.toggle('open');}
   document.addEventListener('mousemove',e=>{if(!dragging)return;const newW=Math.max(240,Math.min(startW+e.clientX-startX,workspace.getBoundingClientRect().width-245));leftPanel.style.width=newW+'px';cm.refresh();});
   document.addEventListener('mouseup',()=>{if(!dragging)return;dragging=false;divider.classList.remove('dragging');document.body.style.cssText='';});
 })();
+
+// ─────────────────────────────────────────────────────────────────
+// TWO-WAY BINDING (EDITOR CLICK TO RESULTS)
+// ─────────────────────────────────────────────────────────────────
+cm.on('mousedown', (instance, e) => {
+  // Ignore clicks on scrollbars
+  if (e.target.closest('.CodeMirror-vscrollbar') || e.target.closest('.CodeMirror-hscrollbar')) return;
+
+  const pos = instance.coordsChar({left: e.clientX, top: e.clientY});
+  const lineNum = pos.line + 1; // Convert 0-indexed CM to 1-indexed
+
+  if (window._lineMap && window._lineMap[lineNum]) {
+    const uids = window._lineMap[lineNum];
+    if (!uids || !uids.length) return;
+
+    // Take the first issue found on this line
+    const targetId = uids[0];
+    const resultEl = document.getElementById(targetId);
+    if (!resultEl) return;
+
+    // 1. Expand the parent Category drawer if closed
+    const categorySection = resultEl.closest('.category-section');
+    if (categorySection && !categorySection.classList.contains('open')) {
+      categorySection.classList.add('open');
+    }
+
+    // 2. Expand the specific result item if closed
+    if (!resultEl.classList.contains('expanded')) {
+      resultEl.classList.add('expanded');
+    }
+
+    // 3. Smooth scroll the right panel to show this item
+    setTimeout(() => {
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Briefly flash the background to draw the eye
+      const originalBg = resultEl.style.backgroundColor;
+      resultEl.style.transition = 'background-color 0.3s ease';
+      resultEl.style.backgroundColor = 'var(--accent-light)';
+      
+      setTimeout(() => {
+        resultEl.style.backgroundColor = originalBg;
+        setTimeout(() => { resultEl.style.transition = ''; }, 300); // cleanup
+      }, 700);
+    }, 50);
+  }
+});
 
 requestAnimationFrame(()=>{cm.refresh();cm.focus();});
 
