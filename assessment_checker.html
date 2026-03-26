@@ -203,7 +203,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.10</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.17</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -935,11 +935,27 @@ const AssessmentChecker = (() => {
     },
 
     'malformed-tags'(rule, qs, raw, lines) {
+      const CODES=['mc:radio:','essay:','tf:','fib:','matching:label:'];
       return lines.flatMap((line, i) => {
-        const o=(line.match(/</g)||[]).length, c=(line.match(/>/g)||[]).length;
-        if (o===c || !/<[a-zA-Z!]/.test(line)) return [];
-        const bad = line.match(/<[^>]*?(?=<|$)/);
-        return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',(bad?bad[0]:line.trim()).substring(0,60)),i+1,bad?bad[0]:null)];
+        // Suppress malformed tag errors if this line is just missing the < before span
+        const lower = line.toLowerCase();
+        const hasMissingLt = CODES.some(c => {
+            const idx = lower.indexOf(c);
+            return idx !== -1 && /^:?span\b/i.test(line.substring(idx + c.length));
+        });
+        if (hasMissingLt) return [];
+
+        // Suppress malformed tag errors caused purely by forbidden <mark> tags/remnants
+        // The mark-tag-check rule already rigorously flags these, preventing double-reporting
+        let checkLine = line
+            .replace(/<\/?mark\b[^>]*>?/gi, '') // Removes <mark>, </mark>, <mark, </mark
+            .replace(/\/?mark\b[^>]*>/gi, '');  // Removes mark>, /mark>
+
+        const o=(checkLine.match(/</g)||[]).length, c=(checkLine.match(/>/g)||[]).length;
+        if (o===c || !/<[a-zA-Z!]/.test(checkLine)) return [];
+        
+        const bad = checkLine.match(/<[^>]*?(?=<|$)/);
+        return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',(bad?bad[0]:checkLine.trim()).substring(0,60)),i+1,bad?bad[0]:null)];
       });
     },
 
@@ -1032,40 +1048,44 @@ const AssessmentChecker = (() => {
         const results = [];
         let tempLine = line;
 
+        // Helper to push full-line diffs safely so the smart engine highlights exact indices
+        const pushFullLineDiff = (matchIdx, matchLen, msgFound) => {
+          const actualFull = line;
+          const expectedFull = line.substring(0, matchIdx) + line.substring(matchIdx + matchLen);
+          results.push(fail(rule,
+            rule.message.replace('{line}', i+1).replace('{found}', msgFound),
+            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim() }
+          ));
+        };
+
         // 1. Complete pairs on the same line
         const pairRe = /<mark\b[^>]*>.*?<\/mark>/gi;
         let m;
         while ((m = pairRe.exec(tempLine)) !== null) {
-          const actual = m[0];
-          const expected = actual.replace(/<\/?mark\b[^>]*>/gi, ''); // strip the tags, keep inner text
+          const actualFull = line;
+          const innerText = m[0].replace(/<\/?mark\b[^>]*>/gi, '');
+          const expectedFull = line.substring(0, m.index) + innerText + line.substring(m.index + m[0].length);
+          
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', 'complete <mark>...</mark> pair'),
-            i+1, actual,
-            { type: 'contextual-diff', actual, expected }
+            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim() }
           ));
-          tempLine = tempLine.substring(0, m.index) + ' '.repeat(actual.length) + tempLine.substring(m.index + actual.length);
+          tempLine = tempLine.substring(0, m.index) + ' '.repeat(m[0].length) + tempLine.substring(m.index + m[0].length);
         }
 
         // 2. Orphaned single tags (opening or closing)
         const singleRe = /<mark\b[^>]*>|<\/mark>/gi;
         while ((m = singleRe.exec(tempLine)) !== null) {
-          const actual = m[0];
-          results.push(fail(rule,
-            rule.message.replace('{line}', i+1).replace('{found}', `orphaned ${actual} tag`),
-            i+1, actual,
-            { type: 'contextual-diff', actual, expected: '' }
-          ));
-          tempLine = tempLine.substring(0, m.index) + ' '.repeat(actual.length) + tempLine.substring(m.index + actual.length);
+          pushFullLineDiff(m.index, m[0].length, `orphaned ${m[0]} tag`);
+          tempLine = tempLine.substring(0, m.index) + ' '.repeat(m[0].length) + tempLine.substring(m.index + m[0].length);
         }
 
         // 3. Partial remnants
         for (const { re, label } of PARTIAL_PATTERNS) {
-          const pm = tempLine.match(re);
-          if (pm) {
-            results.push(fail(rule,
-              rule.message.replace('{line}', i+1).replace('{found}',
-                'partial mark remnant "' + pm[0].trim().substring(0, 40) + '" (' + label + ') — remove manually'),
-              i+1, pm[0].trim()));
+          let pm;
+          while ((pm = tempLine.match(re)) !== null) {
+            pushFullLineDiff(pm.index, pm[0].length, `partial mark remnant "${pm[0].trim().substring(0, 40)}" (${label})`);
+            tempLine = tempLine.substring(0, pm.index) + ' '.repeat(pm[0].length) + tempLine.substring(pm.index + pm[0].length);
           }
         }
 
@@ -1275,7 +1295,12 @@ const AssessmentChecker = (() => {
           let m, found=[];
           while((m=re.exec(img))!==null){
             const name=m[1].toLowerCase();
-            if(!ALLOWED.includes(name)){found.push(m[1]);continue;}
+            if(!ALLOWED.includes(name)){
+              // Ignore align="absmiddle" so the dedicated rule can handle it alone
+              if (name === 'align' && /\balign\s*=\s*["']?absmiddle["']?/i.test(img)) continue;
+              found.push(m[1]);
+              continue;
+            }
             if(name==='style'){
               const sv=img.match(/style\s*=\s*"([^"]*)"/i);
               if(sv&&sv[1].replace(/\s/g,'')!==ASTYLE.replace(/\s/g,'')) found.push('style="'+sv[1]+'"');
@@ -1359,7 +1384,12 @@ const AssessmentChecker = (() => {
     },
 
     'span-missing-check'(rule, qs) {
-      return qs.filter(q => !q.stem.includes('<span')).map(q => {
+      return qs.filter(q => {
+        if (q.stem.includes('<span')) return false;
+        // If it starts with "span", the < is missing. Let missing-lt-span-check handle it.
+        if (/^:?span\b/i.test(q.stem.trim())) return false; 
+        return true;
+      }).map(q => {
         const actual = q.code;
         const expected = `${q.code}<span data-standard-florida="[Standard]" data-complexity="LC" data-associatedlessons="01.01R">(01.01 LC)</span><br /><br />`;
         return fail(rule, rule.message.replace('{num}', q.num), q.startLine, null, { type: 'contextual-diff', actual, expected });
@@ -1370,8 +1400,8 @@ const AssessmentChecker = (() => {
       return qs.filter(q => q.stem.includes('<span') && !/\/span>/i.test(q.stem)).map(q => {
         const sm = q.stem.match(/<span([^>]*)>([^<]*)/i);
         if (sm) {
-            const actual = sm[0];
-            const expected = sm[0].trim() + '</span>';
+            const actual = sm[0].trim(); // Trim actual to perfectly align with expected
+            const expected = actual + '</span>';
             return fail(rule, rule.message.replace('{num}', q.num), q.startLine, null, { type: 'contextual-diff', actual, expected });
         }
         return fail(rule, rule.message.replace('{num}', q.num), q.startLine);
@@ -1851,13 +1881,13 @@ const AssessmentChecker = (() => {
         if (!imgs.length) return [];
         const results = [];
         for (const img of imgs) {
-          // Check if this image already has the correct style
+          // Muzzle: Ignore if it has align="absmiddle" so the dedicated rule handles it cleanly
+          if (/\balign\s*=\s*["']?absmiddle["']?/i.test(img)) continue;
+          
           const hasValign = /style\s*=\s*"[^"]*vertical-align\s*:\s*middle[^"]*"/i.test(img);
           if (hasValign) continue;
-          // Determine if the image is inline (has text neighbours on the same line, not just <br /> tags)
-          // Strip this img tag from the line and see what remains
+          
           const lineWithoutImg = line.replace(img, '').replace(/<br\s*\/>/gi, '').replace(/<[^>]+>/g, '').trim();
-          // If there's visible text on the same line alongside the image, it's inline
           if (lineWithoutImg.length > 0) {
             results.push(fail(rule, rule.message.replace('{line}', i+1), i+1));
           }
@@ -1869,8 +1899,48 @@ const AssessmentChecker = (() => {
     'img-absmiddle-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
         const imgs = line.match(/<img\b[^>]*>/gi) || [];
-        return imgs.filter(img => /\balign\s*=\s*["']?absmiddle["']?/i.test(img))
-          .map(() => fail(rule, rule.message.replace('{line}', i+1), i+1, 'align="absmiddle"'));
+        const results = [];
+        for (const img of imgs) {
+          if (!/\balign\s*=\s*["']?absmiddle["']?/i.test(img)) continue;
+          
+          const imgIdx = line.indexOf(img);
+          const before = line.substring(0, imgIdx).trim();
+          const after = line.substring(imgIdx + img.length).trim();
+          
+          // FIXED: Simplified regex to correctly detect <br> tags at the boundaries
+          const hasBrBefore = before === '' || /(?:<\/?\s*br\b[^>]*>\s*)+$/i.test(before);
+          const hasBrAfter = after === '' || /^(?:\s*<\/?\s*br\b[^>]*>)+/i.test(after);
+          
+          const strippedImg = img.replace(/\s*\balign\s*=\s*["']?absmiddle["']?/i, '');
+          let expectedImg;
+          let msgSuffix = '';
+          
+          if (hasBrBefore && hasBrAfter) {
+            // Condition 1: Standalone
+            expectedImg = strippedImg;
+            msgSuffix = ' (Standalone image — removing align attribute entirely)';
+          } else if (!hasBrBefore && !hasBrAfter) {
+            // Condition 2: Inline
+            const existingStyle = strippedImg.match(/\bstyle\s*=\s*"([^"]*)"/i);
+            if (existingStyle) {
+              expectedImg = strippedImg.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="vertical-align:middle; ' + existingStyle[1] + '"');
+            } else {
+              expectedImg = strippedImg.replace(/(\/?>)$/, ' style="vertical-align:middle;"$1');
+            }
+            msgSuffix = ' (Inline image — replacing with style="vertical-align:middle;")';
+          } else {
+            // Condition 3: Mixed/Unsure
+            expectedImg = strippedImg;
+            msgSuffix = ' (Intent unclear — image has <br /> on only one side. Removing attribute, but please review manually to add missing <br /> or style.)';
+          }
+          
+          results.push(fail(rule, 
+            rule.message.replace('{line}', i+1).replace('{found}', 'align="absmiddle"') + msgSuffix, 
+            i+1, null, 
+            { type: 'contextual-diff', actual: img, expected: expectedImg, truthAttr: img }
+          ));
+        }
+        return results;
       });
     },
 
@@ -2135,17 +2205,17 @@ const autoFixers={
       }
       return '<ol' + (attrsNoType ? ' '+attrsNoType : '') + ' style="list-style-type: '+styleVal+';">';
     }),
-  'img-absmiddle': text=>text.replace(/<img\b([^>]*)\balign\s*=\s*["']?absmiddle["']?([^>]*)>/gi,
-    (match, pre, post) => {
-      const attrsClean = (pre + post).replace(/\s*\balign\s*=\s*["']?absmiddle["']?/gi, '').trim();
-      const hasValign = /style\s*=\s*"[^"]*vertical-align\s*:\s*middle/i.test(attrsClean);
-      if (hasValign) return '<img ' + attrsClean + '>';
-      const existingStyle = attrsClean.match(/\bstyle\s*=\s*"([^"]*)"/i);
-      if (existingStyle) {
-        return '<img ' + attrsClean.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="vertical-align:middle; '+existingStyle[1]+'"') + '>';
+  'img-absmiddle': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
       }
-      return '<img' + (attrsClean ? ' '+attrsClean : '') + ' style="vertical-align:middle;">';
-    }),
+      return lines.join('\n');
+    }
+    return text;
+  },
 
   'underscore-format': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
@@ -2755,8 +2825,26 @@ function renderItem(r,lines){
             diffHtml = diffHtml.replace(safeTruth, `<mark style="background:#fef08a; padding:0 3px; border-radius:3px; color:#854d0e;">${safeTruth}</mark>`);
         }
         
-        // Apply Red/Green strike-through diff
-        const visualDiff = `<del style="color: #991b1b; background: #fee2e2; text-decoration: line-through; padding: 0 2px; border-radius: 2px;">${safeActual}</del> <ins style="color: #166534; background: #dcfce7; text-decoration: none; font-weight: bold; padding: 0 2px; border-radius: 2px;">${safeExpected}</ins>`;
+        // Apply Red/Green visual diff (smart character-level diffing)
+        let visualDiff;
+        let pLen = 0; // Find common prefix length
+        while (pLen < safeActual.length && pLen < safeExpected.length && safeActual[pLen] === safeExpected[pLen]) { pLen++; }
+        
+        let sLen = 0; // Find common suffix length
+        while (sLen < safeActual.length - pLen && sLen < safeExpected.length - pLen && safeActual[safeActual.length - 1 - sLen] === safeExpected[safeExpected.length - 1 - sLen]) { sLen++; }
+
+        const prefix = safeActual.substring(0, pLen);
+        const suffix = safeActual.substring(safeActual.length - sLen);
+        const deleted = safeActual.substring(pLen, safeActual.length - sLen);
+        const inserted = safeExpected.substring(pLen, safeExpected.length - sLen);
+
+        let diffMid = '';
+        if (deleted) diffMid += `<del style="color: #991b1b; background: #fee2e2; text-decoration: line-through; padding: 0 2px; border-radius: 2px;">${deleted}</del>`;
+        // Add a space between deleted and inserted blocks for readability, unless one is empty
+        if (inserted) diffMid += (deleted ? ' ' : '') + `<ins style="color: #166534; background: #dcfce7; text-decoration: none; font-weight: bold; padding: 0 2px; border-radius: 2px;">${inserted}</ins>`;
+
+        visualDiff = prefix + diffMid + suffix;
+        
         diffHtml = diffHtml.replace(safeActual, visualDiff);
         
         userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
