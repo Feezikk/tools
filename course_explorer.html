@@ -740,7 +740,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v6.11</span>
+                        Course Explorer Tool <span class="version-pill">v6.13</span>
                     </div>
                 </div>
             </div>
@@ -4544,6 +4544,8 @@ window.renderMediaDashboard = function renderMediaDashboard() {
         
         return true;
     });
+	
+	const uniqueImagesCount = new Set(filteredImages.map(img => img.src)).size;
 
     const filteredGlossary = courseGlossary.filter(g =>
         activeMediaModules.size === 0 ||
@@ -4657,7 +4659,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                     <div class="media-tab-group">
                         <button class="media-tab-btn ${currentMediaTab === 'images'       ? 'active' : ''}" onclick="setMediaTab('images')">
                             ${SVGS.image} Images
-                            <span style="font-size:0.8em; opacity:0.7;">(${filteredImages.length})</span>
+                            <span style="font-size:0.8em; opacity:0.7;">(${filteredImages.length} total, ${uniqueImagesCount} unique)</span>
                         </button>
                         <button class="media-tab-btn ${currentMediaTab === 'videos'       ? 'active' : ''}" onclick="setMediaTab('videos')">
                             ${SVGS.video} Videos
