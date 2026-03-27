@@ -740,7 +740,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v6.13</span>
+                        Course Explorer Tool <span class="version-pill">v6.15</span>
                     </div>
                 </div>
             </div>
@@ -1052,7 +1052,10 @@
 
 
     <div id="audit-top-bar">
-        <h2 style="margin:0; font-size:1.4rem; color:var(--primary);">Curriculum Map</h2>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <h2 style="margin:0; font-size:1.4rem; color:var(--primary);">Curriculum Map</h2>
+            <div id="audit-stats" style="font-size:0.85rem; color:var(--text-light); font-weight:600;"></div>
+        </div>
         <div class="flex-center gap-10">
             <button id="reconfig-btn"  class="action-btn btn-base" onclick="reconfigureAudit()"></button>
             <button id="download-btn"  class="action-btn btn-base"
@@ -4688,7 +4691,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                                 <div id="media-filter-dropdown" class="filter-dropdown-content ${isMediaFilterOpen ? 'show' : ''}" style="width:400px;" onclick="event.stopPropagation()">
                                     <div style="font-weight:700; font-size:0.75rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Modules</div>
                                     <div class="filter-actions" style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border);">
-                                        <button class="filter-action-btn" onclick="toggleAllMediaModules(false)">Clear All</button>
+                                        <button class="filter-action-btn" onclick="clearAllMediaFilters()">Clear All</button>
                                     </div>
                                     <div style="max-height:200px; overflow-y:auto; overflow-x:hidden; padding-right:5px; margin-bottom:${!isGlossary ? '15px' : '0'};">
                                         <div style="column-count:2; column-gap:20px;">${modCheckboxes}</div>
@@ -6473,10 +6476,17 @@ function buildValidModuleList() {
 
 function renderDashboardGrid() {
     elements.dashboardGrid.innerHTML = '';
+    const statsEl = document.getElementById('audit-stats');
+    
     if (!validModules.length) {
         elements.dashboardGrid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#999; padding:40px;">No modules found.</div>';
+        if (statsEl) statsEl.innerHTML = '';
         return;
     }
+
+    let totalMods = validModules.length;
+    let totalLess = 0;
+    let totalPgs = 0;
 
     const frag = document.createDocumentFragment();
 
@@ -6485,9 +6495,14 @@ function renderDashboardGrid() {
         let lessonCount   = mod.lessons?.length || 0;
         let pageCount     = 0;
         let moduleHasIssues = false;
+        
+        totalLess += lessonCount;
 
         (mod.lessons || []).forEach(lesson => {
-            if (lesson.pages) pageCount += lesson.pages.length;
+            if (lesson.pages) {
+                pageCount += lesson.pages.length;
+                totalPgs += lesson.pages.length;
+            }
             if (lesson._reqContent !== false && (!lesson._topic || !lesson._parsedObjectives?.length)) {
                 moduleHasIssues = true;
             }
@@ -6524,6 +6539,10 @@ function renderDashboardGrid() {
         frag.appendChild(card);
     });
 
+    if (statsEl) {
+        statsEl.innerHTML = `Total Modules: ${totalMods} &nbsp;|&nbsp; Total Lessons: ${totalLess} &nbsp;|&nbsp; Total Pages: ${totalPgs}`;
+    }
+    
     elements.dashboardGrid.appendChild(frag);
 }
 
