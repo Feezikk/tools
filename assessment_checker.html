@@ -203,24 +203,23 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.17</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.23</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
       placeholder="folder_name"
-      title="Enter the course-specific folder name. The base path //cdn.flvs.net/assessment_images/ is always required."
-      oninput="window._imgCourseFolder=this.value.trim();window._imgBasePath='//cdn.flvs.net/assessment_images/'+(this.value.trim()?this.value.trim()+'/':'')">
+      title="Enter the course-specific folder name. The base path //cdn.flvs.net/assessment_images/ is always required.">
   </label>
-  <button class="btn btn-dashboard" id="dashboard-btn" onclick="openDashboard()" disabled title="Run an audit first">⊞ Dashboard</button>
+  <button class="btn btn-dashboard" id="dashboard-btn" disabled title="Run an audit first">⊞ Dashboard</button>
 </header>
 
 <!-- DASHBOARD MODAL -->
-<div id="dashboard-overlay" class="dash-overlay" onclick="closeDashboard()"></div>
+<div id="dashboard-overlay" class="dash-overlay"></div>
 <div id="dashboard-modal" class="dash-modal">
   <div class="dash-header">
     <div class="dash-title">⊞ Exam Dashboard</div>
     <div class="dash-meta" id="dash-meta"></div>
-    <button class="dash-close" onclick="closeDashboard()">✕</button>
+    <button class="dash-close" id="dash-close-btn">✕</button>
   </div>
   <div class="dash-body">
     <table class="dash-table" id="dash-table">
@@ -245,8 +244,8 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
     <div class="panel-toolbar">
       <span class="panel-label">Input</span>
       <div class="tab-group">
-        <button class="tab active" onclick="switchTab('paste',this)">Paste Text</button>
-        <button class="tab" onclick="switchTab('upload',this)">Upload File</button>
+        <button class="tab active" data-tab="paste">Paste Text</button>
+        <button class="tab" data-tab="upload">Upload File</button>
       </div>
     </div>
     <div class="input-area">
@@ -254,22 +253,22 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
         <div class="editor-wrap"><div id="cm-editor"></div></div>
       </div>
       <div class="tab-content" id="tab-upload">
-        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-zone" id="upload-zone">
           <div class="upload-icon">📄</div>
           <div class="upload-label"><strong>Click to browse</strong> or drag &amp; drop<small>Accepts .txt and .html files</small></div>
         </div>
         <div class="file-pill" id="file-pill">
           📄 <span id="file-name-label"></span>
-          <button class="btn-link" onclick="clearFile()">✕ Remove</button>
+          <button class="btn-link" id="clear-file-btn">✕ Remove</button>
         </div>
-        <input type="file" id="file-input" accept=".txt,.html,.htm" style="display:none" onchange="handleFile(event)">
+        <input type="file" id="file-input" accept=".txt,.html,.htm" style="display:none">
       </div>
     </div>
     <div class="action-bar">
-      <button class="btn btn-primary" onclick="runAudit()">▶ Run Audit <span class="shortcut-hint">⌘↵</span></button>
-      <button class="btn btn-secondary" onclick="loadSample()">Load Sample</button>
-      <button class="btn btn-ghost" id="copy-btn" onclick="copyText(this)">⎘ Copy Text</button>
-      <button class="btn-link" onclick="clearAll()">Clear</button>
+      <button class="btn btn-primary" id="run-audit-btn">▶ Run Audit <span class="shortcut-hint">⌘↵</span></button>
+      <button class="btn btn-secondary" id="load-sample-btn">Load Sample</button>
+      <button class="btn btn-ghost" id="copy-btn">⎘ Copy Text</button>
+      <button class="btn-link" id="clear-all-btn">Clear</button>
     </div>
   </div>
 
@@ -283,7 +282,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
         <span class="chip chip-warn"  id="chip-warn"></span>
         <span class="chip chip-pass"  id="chip-pass"></span>
         <div class="q-pipe" style="margin: 0 4px;"></div>
-        <button class="btn-link" onclick="closeAllResults()" title="Collapse all items and categories">Collapse All</button>
+        <button class="btn-link" id="collapse-all-btn" title="Collapse all items and categories">Collapse All</button>
       </div>
     </div>
     <div class="q-strip" id="q-strip"></div>
@@ -301,11 +300,68 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 'use strict';
 
 // ─────────────────────────────────────────────────────────────────
+// APP STATE — centralised mutable state (replaces scattered window._ globals)
+// ─────────────────────────────────────────────────────────────────
+const AppState = {
+  lineMap:          {},   // lineNum → [uid, ...] for editor↔results binding
+  dashData:         null, // built by buildDashboardData after each audit
+  dashMeta:         null, // { questions, groups }
+  imgCourseFolder:  '',   // set by the header input
+  imgBasePath:      '',   // derived from imgCourseFolder
+};
+
+// ─────────────────────────────────────────────────────────────────
+// DOM CACHE — one lookup per element, used everywhere below
+// ─────────────────────────────────────────────────────────────────
+const DOM = (() => {
+  const $ = id => document.getElementById(id);
+  return {
+    // Header
+    imgBasePath:    $('img-base-path'),
+    dashboardBtn:   $('dashboard-btn'),
+    // Left panel
+    cmEditor:       $('cm-editor'),
+    uploadZone:     $('upload-zone'),
+    filePill:       $('file-pill'),
+    fileNameLabel:  $('file-name-label'),
+    fileInput:      $('file-input'),
+    // Action bar
+    runAuditBtn:    $('run-audit-btn'),
+    loadSampleBtn:  $('load-sample-btn'),
+    copyBtn:        $('copy-btn'),
+    clearAllBtn:    $('clear-all-btn'),
+    // Right panel
+    resultsBody:    $('results-body'),
+    summaryChips:   $('summary-chips'),
+    collapseAllBtn: $('collapse-all-btn'),
+    chipError:      $('chip-error'),
+    chipWarn:       $('chip-warn'),
+    chipPass:       $('chip-pass'),
+    qStrip:         $('q-strip'),
+    statusBar:      $('status-bar'),
+    statusText:     $('status-text'),
+    // Divider
+    divider:        $('divider'),
+    // Dashboard modal
+    dashOverlay:    $('dashboard-overlay'),
+    dashModal:      $('dashboard-modal'),
+    dashMeta:       $('dash-meta'),
+    dashTbody:      $('dash-tbody'),
+    // Tab buttons
+    clearFileBtn:   $('clear-file-btn'),
+    dashCloseBtn:   $('dash-close-btn'),
+  };
+})();
+
+// ─────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────
+const EMPTY_STATE_HTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Paste your assessment content and click <strong>Run Audit</strong> to check for formatting issues.</p></div>';
+const CDN_BASE = '//cdn.flvs.net/assessment_images/';
+
+// ─────────────────────────────────────────────────────────────────
 // RULES DATA
 // ─────────────────────────────────────────────────────────────────
-window._imgBasePath = '';
-window._imgCourseFolder = '';
-
 const RULES_DATA = {
   categories: {
     'question-structure': 'Question Structure',
@@ -329,7 +385,7 @@ const RULES_DATA = {
       type:'question-spacing',
       message:'{found} between Q{a} and Q{b} — must be exactly one blank line.',
       fix:{description:'Ensure exactly one blank line appears between each pair of questions. Remove extra blank lines or add a missing one.',
-           snippet:'points:2\ngroup:1\n\nmc:radio:<span ...  <- exactly one blank line between'} },
+           snippet:'points:2\ngroup:1\n                 <- exactly one blank line between\nmc:radio:<span ...'} },
 
     { id:'groups-sequential', category:'groups-points', severity:'error',
       description:'Groups must be sequential — all group 1 together, then group 2, etc.',
@@ -445,11 +501,11 @@ const RULES_DATA = {
            snippet:'<strong>text</strong>  <em>text</em>  <sup>2</sup>  <sub>2</sub>'} },
 
     { id:'lt-gt-entities', category:'html-tags', severity:'error',
-      description:'&lt; and &gt; must not appear as text — use <span>></span> or <span><</span>',
+      description:'Math/code symbols (<, >) and entities (&lt;, &gt;) must be wrapped in <span>',
       type:'lt-gt-entities-check',
-      message:'Line {line} contains "{found}" in question text — replace with <span>></span> or <span><</span> to prevent LMS parsing errors.',
-      fix:{description:'Replace &lt; with <span><</span> and &gt; with <span>></span> so the LMS does not misinterpret them as broken HTML tags.',
-           snippet:'<!-- Wrong -->\nx &gt; y\n\n<!-- Correct -->\nx <span>></span> y'} },
+      message:'Line {line} contains unspanned "{found}" — wrap in <span> to prevent LMS parsing errors.',
+      fix:{description:'Wrap naked < and > symbols (or their html entities) in <span> tags so the LMS does not misinterpret them as broken HTML.',
+           snippet:'\nx < y\np &gt; 5\n\n\nx <span><</span> y\np <span>></span> 5'} },
 
     { id:'img-has-alt', category:'images', severity:'error',
       description:'Every image must have a non-empty alt attribute',
@@ -663,10 +719,25 @@ const RULES_DATA = {
 
     { id:'img-inline-needs-valign', category:'images', severity:'error',
       description:'Images inline with text must have style="vertical-align:middle;"',
-      type:'img-inline-valign-check',
-      message:'Line {line} has an inline image without style="vertical-align:middle;" — add it or use align="absmiddle" replacement.',
-      fix:{description:'Add style="vertical-align:middle;" to any image that appears inline alongside text. Images on their own line (surrounded by <br />) do not need this.',
+      type:'img-inline-valign-check', subtype:'missing',
+      message:'Line {line} has an inline image (no <br /> on either side) without style="vertical-align:middle;".',
+      fix:{description:'Add style="vertical-align:middle;" to any image that appears inline alongside text. Images on their own line (surrounded by <br /> on both sides) do not need this.',
            snippet:'<!-- Inline image (needs vertical-align) -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text\n\n<!-- Standalone image (no vertical-align needed) -->\n<br /><img src="..." alt="..." /><br />'} },
+
+    { id:'img-standalone-has-valign', category:'images', severity:'error',
+      description:'Standalone images must not have style="vertical-align:middle;" — that style is only for images inline with text',
+      type:'img-inline-valign-check', subtype:'unnecessary',
+      message:'Line {line} has a standalone image (<br /> on both sides) with style="vertical-align:middle;" — remove it.',
+      fix:{description:'Remove style="vertical-align:middle;" from images that are on their own line (surrounded by <br /> on both sides). The style is only needed when an image appears inline alongside text content.',
+           snippet:'<!-- Standalone image — no vertical-align needed -->\n<br /><img src="..." alt="..." /><br />\n\n<!-- Inline image — vertical-align required -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
+
+    { id:'img-ambiguous-valign', category:'images', severity:'warning',
+      description:'Image has <br /> on one side only — intent is ambiguous, verify whether style="vertical-align:middle;" is correct',
+      type:'img-inline-valign-check', subtype:'ambiguous',
+      message:'Line {line} has an image with <br /> on one side only — confirm whether it is inline (needs vertical-align:middle;) or standalone (needs <br /> on both sides, no vertical-align).',
+      rationale:'A <br /> on one side but not the other suggests the image placement may be unintentional. If the image should be standalone, add a <br /> on the missing side and remove vertical-align:middle;. If it is inline with text, remove the <br /> and keep the style.',
+      fix:{description:'Decide whether the image is inline or standalone, then fix accordingly.\n\nIf standalone: ensure <br /> appears on both sides and remove style="vertical-align:middle;".\nIf inline: remove the stray <br /> and keep (or add) style="vertical-align:middle;".',
+           snippet:'<!-- Standalone (br on both sides, no valign) -->\n<br /><img src="..." alt="..." /><br />\n\n<!-- Inline (no br, valign present) -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
 
     { id:'img-absmiddle', category:'images', severity:'error',
       description:'align="absmiddle" on images is deprecated — replace with style="vertical-align:middle;"',
@@ -936,8 +1007,10 @@ const AssessmentChecker = (() => {
 
     'malformed-tags'(rule, qs, raw, lines) {
       const CODES=['mc:radio:','essay:','tf:','fib:','matching:label:'];
+      // List of HTML tags we reasonably expect to see, even if deprecated
+      const knownHtmlTags = ['span','img','br','strong','em','u','s','del','sup','sub','table','thead','tbody','tr','th','td','caption','ol','ul','li','p','div','mark','font','b','i','a','h1','h2','h3','h4','h5','h6','hr','blockquote','code','pre'];
+
       return lines.flatMap((line, i) => {
-        // Suppress malformed tag errors if this line is just missing the < before span
         const lower = line.toLowerCase();
         const hasMissingLt = CODES.some(c => {
             const idx = lower.indexOf(c);
@@ -945,17 +1018,35 @@ const AssessmentChecker = (() => {
         });
         if (hasMissingLt) return [];
 
-        // Suppress malformed tag errors caused purely by forbidden <mark> tags/remnants
-        // The mark-tag-check rule already rigorously flags these, preventing double-reporting
         let checkLine = line
-            .replace(/<\/?mark\b[^>]*>?/gi, '') // Removes <mark>, </mark>, <mark, </mark
-            .replace(/\/?mark\b[^>]*>/gi, '');  // Removes mark>, /mark>
+            .replace(/<\/?mark\b[^>]*>?/gi, '') 
+            .replace(/\/?mark\b[^>]*>/gi, '');  
 
         const o=(checkLine.match(/</g)||[]).length, c=(checkLine.match(/>/g)||[]).length;
-        if (o===c || !/<[a-zA-Z!]/.test(checkLine)) return [];
+        if (o===c) return [];
         
-        const bad = checkLine.match(/<[^>]*?(?=<|$)/);
-        return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',(bad?bad[0]:checkLine.trim()).substring(0,60)),i+1,bad?bad[0]:null)];
+        // If there's an unclosed <, check if it actually looks like a known HTML tag.
+        // If it doesn't (e.g. "< variable"), we ignore it here and let lt-gt-entities catch it.
+        let hasMalformedKnownTag = false;
+        let badMatch = null;
+
+        const chunks = checkLine.split('<');
+        for (let j = 1; j < chunks.length; j++) {
+           const chunk = chunks[j];
+           if (!chunk.includes('>')) {
+              const matchTag = chunk.match(/^\/?\s*([a-zA-Z0-9]+)\b/);
+              if (matchTag && knownHtmlTags.includes(matchTag[1].toLowerCase())) {
+                  hasMalformedKnownTag = true;
+                  badMatch = '<' + chunk;
+                  break;
+              }
+           }
+        }
+
+        if (hasMalformedKnownTag) {
+            return [fail(rule,rule.message.replace('{line}',i+1).replace('{found}',badMatch.substring(0,60)),i+1,badMatch)];
+        }
+        return [];
       });
     },
 
@@ -1120,19 +1211,31 @@ const AssessmentChecker = (() => {
       });
     },
 
-    'lt-gt-entities-check'(rule, qs, raw, lines) {
-      // Flag &lt; and &gt; appearing in question body text (not inside HTML tag attributes).
-      // Strip all HTML tags and their attribute content first so we only scan visible text.
+   'lt-gt-entities-check'(rule, qs, raw, lines) {
+      const allowedTagsRe = /<\/?\s*(span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre)\b[^>]*>/gi;
+      const validSpannedRe = /<span[^>]*>\s*(<|>|&lt;|&gt;)\s*<\/span>/gi;
+
       return lines.flatMap((line, i) => {
-        // Remove complete HTML tags (including attribute values) before scanning
-        const textOnly = line.replace(/<[^>]+>/g, '');
+        // 1. Mask valid, already-wrapped symbols with spaces so indices don't shift
+        let checkLine = line.replace(validSpannedRe, match => ' '.repeat(match.length));
+        
+        // 2. Mask all known/whitelisted HTML tags with spaces
+        checkLine = checkLine.replace(allowedTagsRe, match => ' '.repeat(match.length));
+        
+        // 3. Scan whatever is left for naked <, >, &lt;, or &gt;
         const results = [];
-        const re = /(&lt;|&gt;)/gi;
+        const re = /(<|>|&lt;|&gt;)/gi;
         let m;
-        while ((m = re.exec(textOnly)) !== null) {
+        while ((m = re.exec(checkLine)) !== null) {
+          const actualFull = line;
+          const replacement = m[0].includes('&') ? `<span>${m[0] === '&lt;' ? '<' : '>'}</span>` : `<span>${m[0]}</span>`;
+          // We use the exact index to reconstruct the corrected line
+          const expectedFull = line.substring(0, m.index) + replacement + line.substring(m.index + m[0].length);
+
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', m[0]),
-            i+1, m[0]));
+            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim() }
+          ));
         }
         return results;
       });
@@ -1326,8 +1429,8 @@ const AssessmentChecker = (() => {
     },
 
     'img-path-base-check'(rule, qs, raw, lines) {
-      const FIXED='cdn.flvs.net/assessment_images/';
-      const folder=(window._imgCourseFolder||'').trim().replace(/\/+$/,'');
+      const FIXED = CDN_BASE.replace(/^\/\//, '');  // 'cdn.flvs.net/assessment_images/'
+      const folder = AppState.imgCourseFolder.trim().replace(/\/+$/, '');
       const norm=s=>s.replace(/^https?:\/\//,'').replace(/^\/\//,'');
       const results=[];
       lines.forEach((line,i)=>{
@@ -1876,20 +1979,51 @@ const AssessmentChecker = (() => {
     },
 
     'img-inline-valign-check'(rule, qs, raw, lines) {
+      // Shared by three rules distinguished by subtype:
+      //   'missing'     — no <br /> either side, text present, no vertical-align:middle
+      //   'unnecessary' — <br /> on BOTH sides, has vertical-align:middle (shouldn't)
+      //   'ambiguous'   — <br /> on ONE side only (intent unclear, flag for review)
       return lines.flatMap((line, i) => {
         const imgs = line.match(/<img\b[^>]*>/gi) || [];
         if (!imgs.length) return [];
         const results = [];
         for (const img of imgs) {
-          // Muzzle: Ignore if it has align="absmiddle" so the dedicated rule handles it cleanly
+          // Defer to dedicated absmiddle rule
           if (/\balign\s*=\s*["']?absmiddle["']?/i.test(img)) continue;
-          
+
           const hasValign = /style\s*=\s*"[^"]*vertical-align\s*:\s*middle[^"]*"/i.test(img);
-          if (hasValign) continue;
-          
-          const lineWithoutImg = line.replace(img, '').replace(/<br\s*\/>/gi, '').replace(/<[^>]+>/g, '').trim();
-          if (lineWithoutImg.length > 0) {
+          const imgIdx    = line.indexOf(img);
+          const before    = line.substring(0, imgIdx).trim();
+          const after     = line.substring(imgIdx + img.length).trim();
+
+          // A side is "br-bounded" only if it actually contains a <br /> tag at its boundary.
+          // An empty string (start/end of line) does NOT count — that just means the image
+          // is at the edge of the line, which is ambiguous on its own.
+          const hasBrBefore = /(?:<\/?\s*br\b[^>]*>\s*)+$/i.test(before);
+          const hasBrAfter  = /^(?:\s*<\/?\s*br\b[^>]*>)+/i.test(after);
+
+          const isStandalone = hasBrBefore && hasBrAfter;
+          const isAmbiguous  = hasBrBefore !== hasBrAfter;  // exactly one side has <br />
+          const isInline     = !hasBrBefore && !hasBrAfter;
+
+          if (rule.subtype === 'missing' && isInline && !hasValign) {
             results.push(fail(rule, rule.message.replace('{line}', i+1), i+1));
+
+          } else if (rule.subtype === 'unnecessary' && isStandalone && hasValign) {
+            const styleMatch = img.match(/\s*style\s*=\s*"vertical-align\s*:\s*middle\s*;?"/i);
+            if (styleMatch) {
+              const expected = img.replace(styleMatch[0], '');
+              results.push(fail(rule,
+                rule.message.replace('{line}', i+1),
+                i+1, styleMatch[0].trim(),
+                { type: 'contextual-diff', actual: img, expected }));
+            }
+
+          } else if (rule.subtype === 'ambiguous' && isAmbiguous) {
+            const side = hasBrBefore ? 'before' : 'after';
+            results.push(fail(rule,
+              rule.message.replace('{line}', i+1) + ' (<br /> found ' + side + ' the image only)',
+              i+1));
           }
         }
         return results;
@@ -2165,7 +2299,17 @@ const autoFixers={
   }),
   'span-self-closing':  text=>text.replace(/(<span\b[^>]*)\s*\/>/gi, '$1>'),
   'missing-lt-span':    text=>text.replace(/(mc:radio:|essay:|tf:|fib:|matching:label:):?span\b/gi,(_,code)=>code+'<span'),
-  'lt-gt-entities':     text=>text.replace(/&gt;/gi,'<span>></span>').replace(/&lt;/gi,'<span><</span>'),
+  'lt-gt-entities': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'special-chars-auto': text=>text
     .replace(/\u201c/g,'&ldquo;').replace(/\u201d/g,'&rdquo;')
     .replace(/\u2018/g,'&lsquo;').replace(/\u2019/g,'&rsquo;')
@@ -2217,6 +2361,19 @@ const autoFixers={
     return text;
   },
 
+  'img-standalone-has-valign': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
+  // img-ambiguous-valign: no auto-fix — intent must be determined manually
+
   'underscore-format': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
@@ -2234,90 +2391,132 @@ const autoFixers={
 // ─────────────────────────────────────────────────────────────────
 // CODEMIRROR EDITOR
 // ─────────────────────────────────────────────────────────────────
-const cm=CodeMirror(document.getElementById('cm-editor'),{
-  lineNumbers:true,lineWrapping:true,mode:'text/plain',theme:'default',tabSize:2,
-  extraKeys:{'Ctrl-Enter':()=>runAudit(),'Cmd-Enter':()=>runAudit()}
+const cm = CodeMirror(DOM.cmEditor, {
+  lineNumbers: true, lineWrapping: true, mode: 'text/plain', theme: 'default', tabSize: 2,
+  extraKeys: { 'Ctrl-Enter': () => runAudit(), 'Cmd-Enter': () => runAudit() }
 });
-const ta={
-  get value(){return cm.getValue();},
-  set value(v){cm.setValue(v);},
-  focus(){cm.focus();}
-};
-let lineMarkHandles=[];
-const fixedLines=new Set();
 
-function clearLineMarks(){
-  lineMarkHandles.forEach(h=>{try{cm.removeLineClass(h,'background');cm.removeLineClass(h,'gutter');}catch(e){}});
-  lineMarkHandles=[];
+// Thin wrapper so handlers can read/write editor value like a textarea
+const ta = {
+  get value()  { return cm.getValue(); },
+  set value(v) { cm.setValue(v); },
+  focus()      { cm.focus(); }
+};
+
+let lineMarkHandles = [];
+const fixedLines = new Set();
+
+function clearLineMarks() {
+  lineMarkHandles.forEach(h => {
+    try { cm.removeLineClass(h, 'background'); cm.removeLineClass(h, 'gutter'); } catch(e) {}
+  });
+  lineMarkHandles = [];
 }
-function highlightLines(errLines,warnLines){
+
+function highlightLines(errLines, warnLines) {
   clearLineMarks();
-  fixedLines.forEach(n=>{const h=cm.getLineHandle(n-1);if(!h)return;cm.addLineClass(h,'background','cm-fixed-line');cm.addLineClass(h,'gutter','cm-fixed-gutter');lineMarkHandles.push(h);});
-  (warnLines||[]).forEach(n=>{if(fixedLines.has(n))return;const h=cm.getLineHandle(n-1);if(!h)return;cm.addLineClass(h,'background','cm-warn-line');cm.addLineClass(h,'gutter','cm-warn-gutter');lineMarkHandles.push(h);});
-  (errLines||[]).forEach(n=>{if(fixedLines.has(n))return;const h=cm.getLineHandle(n-1);if(!h)return;cm.addLineClass(h,'background','cm-error-line');cm.addLineClass(h,'gutter','cm-error-gutter');lineMarkHandles.push(h);});
+  fixedLines.forEach(n => {
+    const h = cm.getLineHandle(n - 1); if (!h) return;
+    cm.addLineClass(h, 'background', 'cm-fixed-line');
+    cm.addLineClass(h, 'gutter', 'cm-fixed-gutter');
+    lineMarkHandles.push(h);
+  });
+  (warnLines || []).forEach(n => {
+    if (fixedLines.has(n)) return;
+    const h = cm.getLineHandle(n - 1); if (!h) return;
+    cm.addLineClass(h, 'background', 'cm-warn-line');
+    cm.addLineClass(h, 'gutter', 'cm-warn-gutter');
+    lineMarkHandles.push(h);
+  });
+  (errLines || []).forEach(n => {
+    if (fixedLines.has(n)) return;
+    const h = cm.getLineHandle(n - 1); if (!h) return;
+    cm.addLineClass(h, 'background', 'cm-error-line');
+    cm.addLineClass(h, 'gutter', 'cm-error-gutter');
+    lineMarkHandles.push(h);
+  });
 }
-function markLineFixed(n){
-  fixedLines.add(n);const h=cm.getLineHandle(n-1);if(!h)return;
-  cm.removeLineClass(h,'background');cm.removeLineClass(h,'gutter');
-  cm.addLineClass(h,'background','cm-fixed-line');cm.addLineClass(h,'gutter','cm-fixed-gutter');
+
+function markLineFixed(n) {
+  fixedLines.add(n);
+  const h = cm.getLineHandle(n - 1); if (!h) return;
+  cm.removeLineClass(h, 'background');
+  cm.removeLineClass(h, 'gutter');
+  cm.addLineClass(h, 'background', 'cm-fixed-line');
+  cm.addLineClass(h, 'gutter', 'cm-fixed-gutter');
 }
-function jumpToLine(n){
-  const coords=cm.charCoords({line:n-1,ch:0},'local');
-  cm.scrollTo(null,Math.max(0,coords.top-cm.defaultTextHeight()*4));
-  cm.setCursor({line:n-1,ch:0});cm.focus();
+
+function jumpToLine(n) {
+  const coords = cm.charCoords({ line: n - 1, ch: 0 }, 'local');
+  cm.scrollTo(null, Math.max(0, coords.top - cm.defaultTextHeight() * 4));
+  cm.setCursor({ line: n - 1, ch: 0 });
+  cm.focus();
 }
-function switchTab(name,btn){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');document.getElementById('tab-'+name).classList.add('active');
-  if(name==='paste') requestAnimationFrame(()=>{cm.refresh();cm.focus();});
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'paste') requestAnimationFrame(() => { cm.refresh(); cm.focus(); });
 }
 
 // ─────────────────────────────────────────────────────────────────
 // FILE HANDLING
 // ─────────────────────────────────────────────────────────────────
-let uploadedText='';
-function handleFile(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const text=ev.target.result;
-    uploadedText=text;
-    // Load contents into the editor and switch to Paste Text tab for viewing/editing
-    ta.value=text;
-    const pasteTab=document.querySelectorAll('.tab')[0];
-    switchTab('paste',pasteTab);
-    requestAnimationFrame(()=>{cm.refresh();cm.scrollTo(0,0);});
+let uploadedText = '';
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedText = ev.target.result;
+    ta.value = uploadedText;
+    // Switch to Paste Text tab so user can review/edit
+    const pasteTab = document.querySelector('.tab[data-tab="paste"]');
+    switchTab('paste', pasteTab);
+    requestAnimationFrame(() => { cm.refresh(); cm.scrollTo(0, 0); });
     // Reset upload zone for next use
-    document.getElementById('upload-zone').style.display='flex';
-    document.getElementById('file-pill').style.display='none';
-    document.getElementById('file-input').value='';
+    DOM.uploadZone.style.display = 'flex';
+    DOM.filePill.style.display = 'none';
+    DOM.fileInput.value = '';
   };
   reader.readAsText(file);
 }
-function clearFile(){
-  uploadedText='';document.getElementById('upload-zone').style.display='flex';
-  document.getElementById('file-pill').style.display='none';document.getElementById('file-input').value='';
+
+function clearFile() {
+  uploadedText = '';
+  DOM.uploadZone.style.display = 'flex';
+  DOM.filePill.style.display = 'none';
+  DOM.fileInput.value = '';
 }
-const zone=document.getElementById('upload-zone');
-zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
-zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
-zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');const file=e.dataTransfer.files[0];if(file)handleFile({target:{files:[file]}});});
+
+DOM.uploadZone.addEventListener('dragover', e => { e.preventDefault(); DOM.uploadZone.classList.add('drag-over'); });
+DOM.uploadZone.addEventListener('dragleave', () => DOM.uploadZone.classList.remove('drag-over'));
+DOM.uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  DOM.uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile({ target: { files: [file] } });
+});
 
 // ─────────────────────────────────────────────────────────────────
 // CORE ACTIONS
 // ─────────────────────────────────────────────────────────────────
-function clearAll(){
-  ta.value='';clearFile();clearLineMarks();fixedLines.clear();
-  Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
-  window._lineMap = {};
-  document.getElementById('results-body').innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Paste your assessment content and click <strong>Run Audit</strong> to check for formatting issues.</p></div>';
-  document.getElementById('summary-chips').style.display='none';
-  document.getElementById('q-strip').classList.remove('visible');
-  document.getElementById('q-strip').innerHTML='';
-  document.getElementById('status-bar').classList.remove('visible');
-  document.getElementById('dashboard-btn').disabled = true;
-  window._dashData = null;
+function clearAll() {
+  ta.value = '';
+  clearFile();
+  clearLineMarks();
+  fixedLines.clear();
+  Object.keys(resultRegistry).forEach(k => delete resultRegistry[k]);
+  AppState.lineMap = {};
+  AppState.dashData = null;
+  DOM.resultsBody.innerHTML = EMPTY_STATE_HTML;
+  DOM.summaryChips.style.display = 'none';
+  DOM.qStrip.classList.remove('visible');
+  DOM.qStrip.innerHTML = '';
+  DOM.statusBar.classList.remove('visible');
+  DOM.dashboardBtn.disabled = true;
 }
 function loadSample(){
   ta.value = [
@@ -2568,28 +2767,39 @@ function loadSample(){
     'points:1',
     'group:28'
   ].join('\n');
-  document.querySelectorAll('.tab')[0].click();
-  requestAnimationFrame(()=>{cm.refresh();cm.focus();});
+  const pasteTab = document.querySelector('.tab[data-tab="paste"]');
+  switchTab('paste', pasteTab);
+  requestAnimationFrame(() => { cm.refresh(); cm.focus(); });
 }
 function runAudit(){
   const raw=ta.value.trim();
   if(!raw){alert('Please paste content or upload a file first.');return;}
-  document.getElementById('results-body').innerHTML='<div class="empty-state"><div class="spinner"></div><p>Running checks\u2026</p></div>';
+  DOM.resultsBody.innerHTML='<div class="empty-state"><div class="spinner"></div><p>Running checks\u2026</p></div>';
   Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
-  window._lineMap = {};
+  AppState.lineMap = {};
   fixedLines.clear();clearLineMarks();
   setTimeout(()=>{
     try{const lines=raw.split('\n');renderReport(AssessmentChecker.run(raw),lines);}
-    catch(err){document.getElementById('results-body').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: '+esc(err.message)+'</p></div>';}
+    catch(err){DOM.resultsBody.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: '+esc(err.message)+'</p></div>';}
   },50);
 }
-async function copyText(btn){
-  const text=ta.value;
-  if(!text.trim()){alert('Nothing to copy.');return;}
-  try{await navigator.clipboard.writeText(text);}
-  catch{const tmp=Object.assign(document.createElement('textarea'),{value:text,style:'position:fixed;top:-9999px;opacity:0'});document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);}
-  btn.textContent='✓ Copied!';btn.classList.add('copied');
-  setTimeout(()=>{btn.textContent='⎘ Copy Text';btn.classList.remove('copied');},2000);
+async function copyText(btn) {
+  const text = ta.value;
+  if (!text.trim()) { alert('Nothing to copy.'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const tmp = Object.assign(document.createElement('textarea'), {
+      value: text, style: 'position:fixed;top:-9999px;opacity:0'
+    });
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+  }
+  btn.textContent = '✓ Copied!';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '⎘ Copy Text'; btn.classList.remove('copied'); }, 2000);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2609,11 +2819,11 @@ function highlight(text,errorStr){
 }
 
 function renderReport(report,lines){
-  document.getElementById('summary-chips').style.display='flex';
-  document.getElementById('chip-error').textContent=report.totalErrors+' Error'+(report.totalErrors!==1?'s':'');
-  document.getElementById('chip-warn').textContent=report.totalWarnings+' Warning'+(report.totalWarnings!==1?'s':'');
-  document.getElementById('chip-pass').textContent='✓ '+report.totalPasses+' Passed';
-  document.getElementById('q-strip').classList.add('visible');
+  DOM.summaryChips.style.display='flex';
+  DOM.chipError.textContent=report.totalErrors+' Error'+(report.totalErrors!==1?'s':'');
+  DOM.chipWarn.textContent=report.totalWarnings+' Warning'+(report.totalWarnings!==1?'s':'');
+  DOM.chipPass.textContent='✓ '+report.totalPasses+' Passed';
+  DOM.qStrip.classList.add('visible');
 
   // Build group counts from questions
   const groupCounts = {};
@@ -2649,20 +2859,20 @@ function renderReport(report,lines){
     typeCounts.forEach(t => parts.push(stat(t.label, t.count)));
   }
 
-  document.getElementById('q-strip').innerHTML = parts.join('');
+  DOM.qStrip.innerHTML = parts.join('');
 
   // Build and cache dashboard data
-  window._dashData = buildDashboardData(report.questions);
-  window._dashMeta = { questions: report.questionCount, groups: groupNums.length };
-  document.getElementById('dashboard-btn').disabled = false;
-  document.getElementById('status-bar').classList.add('visible');
-  document.getElementById('status-text').innerHTML=
+  AppState.dashData = buildDashboardData(report.questions);
+  AppState.dashMeta = { questions: report.questionCount, groups: groupNums.length };
+  DOM.dashboardBtn.disabled = false;
+  DOM.statusBar.classList.add('visible');
+  DOM.statusText.innerHTML=
     '<strong>'+report.total+'</strong> rules &nbsp;·&nbsp; '+
     '<strong style="color:var(--error)">'+report.totalErrors+'</strong> errors &nbsp;·&nbsp; '+
     '<strong style="color:var(--warn)">'+report.totalWarnings+'</strong> warnings &nbsp;·&nbsp; '+
     '<strong style="color:var(--pass)">'+report.totalPasses+'</strong> passed';
   if(report.totalErrors===0&&report.totalWarnings===0){
-    document.getElementById('results-body').innerHTML='<div class="all-pass-banner"><div class="check">✅</div><h2>All checks passed!</h2><p>'+report.questionCount+' questions parsed. No formatting issues found.</p></div>';
+    DOM.resultsBody.innerHTML='<div class="all-pass-banner"><div class="check">✅</div><h2>All checks passed!</h2><p>'+report.questionCount+' questions parsed. No formatting issues found.</p></div>';
     return;
   }
   const errLines=[],warnLines=[];
@@ -2783,7 +2993,7 @@ function renderReport(report,lines){
       '<span class="cat-chevron">'+CHEVRON+'</span>'+label+' '+badges+'</button>'+
       '<div class="category-items">'+items+'</div></div>';
   }
-  document.getElementById('results-body').innerHTML = html;
+  DOM.resultsBody.innerHTML = html;
   highlightLines(errLines, warnLines);
 }
 
@@ -2794,9 +3004,8 @@ function renderItem(r,lines){
   const uid='ri-'+r.rule.id+(r.lineNum||'')+Math.random().toString(36).slice(2,6);
   resultRegistry[uid]=r;
   if(r.lineNum) {
-      window._lineMap = window._lineMap || {};
-      if(!window._lineMap[r.lineNum]) window._lineMap[r.lineNum] = [];
-      window._lineMap[r.lineNum].push(uid);
+      if (!AppState.lineMap[r.lineNum]) AppState.lineMap[r.lineNum] = [];
+      AppState.lineMap[r.lineNum].push(uid);
   }
   const lineBadge=r.lineNum?'<span class="line-badge" onclick="jumpToLine('+r.lineNum+');event.stopPropagation()">L'+r.lineNum+'</span>':'';
   const hasFixer=!isPassing&&!!r.rule.fix;
@@ -2977,15 +3186,32 @@ function closeAllResults() {
 // ─────────────────────────────────────────────────────────────────
 // RESIZABLE DIVIDER
 // ─────────────────────────────────────────────────────────────────
-(function(){
-  const divider=document.getElementById('divider');
-  const leftPanel=document.querySelector('.left-panel');
-  const workspace=document.querySelector('.workspace');
-  let dragging=false,startX=0,startW=0;
-  divider.addEventListener('mousedown',e=>{dragging=true;startX=e.clientX;startW=leftPanel.getBoundingClientRect().width;divider.classList.add('dragging');document.body.style.cssText='cursor:col-resize;user-select:none';e.preventDefault();});
-  document.addEventListener('mousemove',e=>{if(!dragging)return;const newW=Math.max(240,Math.min(startW+e.clientX-startX,workspace.getBoundingClientRect().width-245));leftPanel.style.width=newW+'px';cm.refresh();});
-  document.addEventListener('mouseup',()=>{if(!dragging)return;dragging=false;divider.classList.remove('dragging');document.body.style.cssText='';});
-})();
+(function initResizableDivider() {
+  const leftPanel = document.querySelector('.left-panel');
+  const workspace = document.querySelector('.workspace');
+  let dragging = false, startX = 0, startW = 0;
+
+  DOM.divider.addEventListener('mousedown', e => {
+    dragging = true;
+    startX = e.clientX;
+    startW = leftPanel.getBoundingClientRect().width;
+    DOM.divider.classList.add('dragging');
+    document.body.style.cssText = 'cursor:col-resize;user-select:none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const maxW = workspace.getBoundingClientRect().width - 245;
+    leftPanel.style.width = Math.max(240, Math.min(startW + e.clientX - startX, maxW)) + 'px';
+    cm.refresh();
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    DOM.divider.classList.remove('dragging');
+    document.body.style.cssText = '';
+  });
+}());
 
 // ─────────────────────────────────────────────────────────────────
 // TWO-WAY BINDING (EDITOR CLICK TO RESULTS)
@@ -2997,8 +3223,8 @@ cm.on('mousedown', (instance, e) => {
   const pos = instance.coordsChar({left: e.clientX, top: e.clientY});
   const lineNum = pos.line + 1; // Convert 0-indexed CM to 1-indexed
 
-  if (window._lineMap && window._lineMap[lineNum]) {
-    const uids = window._lineMap[lineNum];
+  if (AppState.lineMap && AppState.lineMap[lineNum]) {
+    const uids = AppState.lineMap[lineNum];
     if (!uids || !uids.length) return;
 
     // Take the first issue found on this line
@@ -3037,10 +3263,44 @@ cm.on('mousedown', (instance, e) => {
 requestAnimationFrame(()=>{cm.refresh();cm.focus();});
 
 // ─────────────────────────────────────────────────────────────────
+// EVENT LISTENERS — wired here instead of inline HTML attributes
+// ─────────────────────────────────────────────────────────────────
+
+// Header: course image folder input
+DOM.imgBasePath.addEventListener('input', function() {
+  AppState.imgCourseFolder = this.value.trim();
+  AppState.imgBasePath = CDN_BASE + (AppState.imgCourseFolder ? AppState.imgCourseFolder + '/' : '');
+});
+
+// Action bar
+DOM.runAuditBtn.addEventListener('click', () => runAudit());
+DOM.loadSampleBtn.addEventListener('click', () => loadSample());
+DOM.copyBtn.addEventListener('click', () => copyText(DOM.copyBtn));
+DOM.clearAllBtn.addEventListener('click', () => clearAll());
+
+// Tab switching
+document.querySelectorAll('.tab[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
+});
+
+// Upload zone
+DOM.uploadZone.addEventListener('click', () => DOM.fileInput.click());
+DOM.fileInput.addEventListener('change', e => handleFile(e));
+DOM.clearFileBtn.addEventListener('click', () => clearFile());
+
+// Results panel
+DOM.collapseAllBtn.addEventListener('click', () => closeAllResults());
+
+// Dashboard
+DOM.dashboardBtn.addEventListener('click', () => openDashboard());
+DOM.dashOverlay.addEventListener('click', () => closeDashboard());
+DOM.dashCloseBtn.addEventListener('click', () => closeDashboard());
+
+
+
+// ─────────────────────────────────────────────────────────────────
 // DASHBOARD
 // ─────────────────────────────────────────────────────────────────
-window._dashData = null;
-window._dashMeta = null;
 
 function buildDashboardData(questions) {
   const byGroup = {};
@@ -3086,12 +3346,12 @@ function buildDashboardData(questions) {
 }
 
 function openDashboard() {
-  const data = window._dashData;
+  const data = AppState.dashData;
   if (!data) return;
-  const meta = window._dashMeta || {};
-  document.getElementById('dash-meta').textContent =
+  const meta = AppState.dashMeta || {};
+  DOM.dashMeta.textContent =
     (meta.questions||0) + ' questions · ' + (meta.groups||0) + ' groups';
-  const tbody = document.getElementById('dash-tbody');
+  const tbody = DOM.dashTbody;
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="7" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
   } else {
@@ -3139,14 +3399,16 @@ function openDashboard() {
         '</tr>';
     }).join('');
   }
-  document.getElementById('dashboard-overlay').classList.add('open');
-  document.getElementById('dashboard-modal').classList.add('open');
+  DOM.dashOverlay.classList.add('open');
+  DOM.dashModal.classList.add('open');
 }
 
 function closeDashboard() {
-  document.getElementById('dashboard-overlay').classList.remove('open');
-  document.getElementById('dashboard-modal').classList.remove('open');
+  DOM.dashOverlay.classList.remove('open');
+  DOM.dashModal.classList.remove('open');
 }
+
+
 </script>
 </body>
 </html>
