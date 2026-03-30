@@ -1432,12 +1432,12 @@ window.clearRowData = function(sec, i, pIdx) {
   updateRowCalculations(i);
   refreshSummary();
   
-  if (sec === 'cl') renderChecklist(true);
-  if (sec === 'dv') renderDivs(true);
-  if (sec === 'gb') renderGradebuilder(true);
-  if (sec === 'ak') renderAnswerKeys(true);
-  if (sec === 'ipp') renderIPP(true);
-  if (sec === 'pc') renderPaceCharts(true);
+  if (sec === 'cl') renderChecklist();
+  if (sec === 'dv') renderDivs();
+  if (sec === 'gb') renderGradebuilder();
+  if (sec === 'ak') renderAnswerKeys();
+  if (sec === 'ipp') renderIPP();
+  if (sec === 'pc') renderPaceCharts();
 };
 
 function sortCSTitles() {
