@@ -121,16 +121,26 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .category-section.open .category-header.has-errors~.category-items{border-left-color:var(--error-border)}
 .category-section.open .category-header.has-warnings~.category-items{border-left-color:var(--warn-border)}
 .category-section.open .category-header.all-pass~.category-items{border-left-color:var(--pass-border)}
-.result-item{border:1px solid var(--border);border-radius:var(--r);background:var(--surface);overflow:hidden}
-.result-item.err{border-left:3px solid var(--error)}
-.result-item.warn{border-left:3px solid var(--warn)}
-.result-item.pass{border-left:3px solid var(--pass);opacity:.65}
+/* ── Filter bar ── */
+.filter-bar{display:none;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0}
+.filter-bar.visible{display:flex}
+.filter-label{font-size:11px;font-weight:600;color:var(--text-dim);margin-right:2px}
+.filter-btn{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text-mid);font-family:var(--sans);transition:all .12s}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.filter-btn.active-all{background:var(--text);border-color:var(--text);color:#fff}
+.filter-btn.active-err{background:var(--error);border-color:var(--error);color:#fff}
+.filter-btn.active-warn{background:var(--warn);border-color:var(--warn);color:#fff}
+/* ── Result cards ── */
+.result-item{border:1px solid var(--border);border-left:7px solid var(--border2);border-radius:var(--r);background:var(--surface);overflow:hidden;transition:box-shadow .12s}
+.result-item.err{border-left-color:var(--error);background:#fffafa}
+.result-item.warn{border-left-color:var(--warn);background:#fffdf5}
+.result-item.pass{border-left-color:var(--pass);opacity:.65}
 .result-rationale{font-size:11px;color:var(--warn);margin-top:3px;line-height:1.45;font-style:italic;padding:3px 8px;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:3px;display:inline-block;max-width:100%}
-.result-item.fixed{border-left:3px solid #ca8a04;background:#fefce8}
+.result-item.fixed{border-left-color:#ca8a04;background:#fefce8}
 .result-item.fixed .result-rule-name{color:#854d0e}
 .result-item.fixed .sev-icon{color:#ca8a04}
 .result-row{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;cursor:pointer}
-.result-row:hover{background:var(--surface2)}
+.result-row:hover{background:rgba(0,0,0,.025)}
 .result-chevron{margin-right:4px;opacity:.5;transition:transform .15s;align-self:center;display:flex;align-items:center;flex-shrink:0}
 .result-item.expanded .result-chevron{transform:rotate(180deg)}
 .caret-svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
@@ -138,12 +148,18 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .result-text{flex:1;min-width:0}
 .result-rule-name{font-size:12px;font-weight:600;color:var(--text);line-height:1.4}
 .result-msg{font-size:11px;color:var(--text-mid);margin-top:2px;line-height:1.4;font-family:var(--mono)}
+/* filtering */
+.result-item.hidden-by-filter{display:none}
+.category-section.all-hidden{display:none}
 mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radius:3px;font-weight:600}
 .line-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);flex-shrink:0;cursor:pointer;white-space:nowrap}
 .line-badge:hover{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
-.wand-btn{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--wand-bg);border:1px solid var(--wand-border);color:var(--wand);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0;transition:all .12s}
-.wand-btn:hover{background:var(--wand-border)}
-.wand-btn.applied{background:#fef9c3;border-color:#ca8a04;color:#854d0e;cursor:default}
+.wand-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0;transition:all .12s;white-space:nowrap;min-width:96px}
+.wand-btn[data-auto="true"]{background:var(--wand);border:1px solid var(--wand);color:#fff}
+.wand-btn[data-auto="true"]:hover{filter:brightness(1.12)}
+.wand-btn[data-auto="false"]{background:var(--surface);border:1px solid var(--border2);color:var(--text-mid)}
+.wand-btn[data-auto="false"]:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.wand-btn.applied{background:#fef9c3;border:1px solid #ca8a04;color:#854d0e;cursor:default;filter:none}
 .fix-panel{display:none; margin: 0 12px 12px 38px; padding-left: 14px; border-left: 2px solid var(--border2); background:transparent}
 .result-item.expanded .fix-panel{display:block}
 .fix-applied-banner{padding:7px 12px;background:#fef9c3;border:1px solid #fcd34d; border-radius: var(--r); font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px; margin-bottom: 10px}
@@ -203,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.23</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.34</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -286,6 +302,12 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       </div>
     </div>
     <div class="q-strip" id="q-strip"></div>
+    <div class="filter-bar" id="filter-bar">
+      <span class="filter-label">Show:</span>
+      <button class="filter-btn active-all" id="filter-all" onclick="setFilter('all')">All</button>
+      <button class="filter-btn" id="filter-err" onclick="setFilter('err')">Errors only</button>
+      <button class="filter-btn" id="filter-warn" onclick="setFilter('warn')">Warnings only</button>
+    </div>
     <div class="results-body" id="results-body">
       <div class="empty-state">
         <div class="empty-icon">📋</div>
@@ -303,7 +325,8 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 // APP STATE — centralised mutable state (replaces scattered window._ globals)
 // ─────────────────────────────────────────────────────────────────
 const AppState = {
-  lineMap:          {},   // lineNum → [uid, ...] for editor↔results binding
+  lineMap:          {},
+  activeFilter:     'all',   // current filter mode: 'all' | 'err' | 'warn'
   dashData:         null, // built by buildDashboardData after each audit
   dashMeta:         null, // { questions, groups }
   imgCourseFolder:  '',   // set by the header input
@@ -350,6 +373,10 @@ const DOM = (() => {
     // Tab buttons
     clearFileBtn:   $('clear-file-btn'),
     dashCloseBtn:   $('dash-close-btn'),
+    filterBar:      $('filter-bar'),
+    filterAll:      $('filter-all'),
+    filterErr:      $('filter-err'),
+    filterWarn:     $('filter-warn'),
   };
 })();
 
@@ -393,6 +420,13 @@ const RULES_DATA = {
       message:'Group sequence error: group:{found} appears after group:{previous}.',
       fix:{description:'Reorder so all group 1 questions come first, then group 2, etc.',
            snippet:'...group:1\n\n...group:1\n\n...group:2  <- group 2 starts here'} },
+
+    { id:'groups-contiguous', category:'groups-points', severity:'error',
+      description:'Group numbers must start at 1 and increase by exactly 1 with no gaps',
+      type:'group-numbering',
+      message:'Group numbering error: {found}.',
+      fix:{description:'Renumber groups so they start at 1 and increment by 1 with no gaps (1, 2, 3…). Every group number in the sequence must be used.',
+           snippet:'group:1  <- first group\ngroup:2  <- next\ngroup:3  <- no skipping'} },
 
     { id:'points-present', category:'groups-points', severity:'error',
       description:'Every question must have a points: line',
@@ -795,7 +829,7 @@ const RULES_DATA = {
       type:'table-check', subtype:'border-cellpadding',
       message:'Table at line {line}: {found}.',
       fix:{description:'The opening <table> tag must include border="1" and cellpadding="N" where N is a number (e.g. 5).',
-           snippet:'<table border="1" cellpadding="5">'} },
+           snippet:'<table border="1" cellpadding="10">'} },
 
     { id:'table-th-scope', category:'tables', severity:'warning',
       description:'<th> tags should include a scope attribute (col, row, colgroup, or rowgroup)',
@@ -880,6 +914,33 @@ const AssessmentChecker = (() => {
   const fail = (rule, msg, ln, err, extra) =>
     ({ status:'fail', rule, message:msg, lineNum:ln||null, errorStr:err||null, extra:extra||null });
 
+  // Helper to pretty-print table HTML for review
+  function formatTableHTML(html) {
+    // Slice to just the <table>…</table> span so surrounding question text is excluded
+    const tStart = html.search(/<table\b/i);
+    const tEnd   = html.lastIndexOf('<\/table>');
+    if (tStart >= 0 && tEnd >= 0) html = html.substring(tStart, tEnd + '<\/table>'.length);
+    else if (tStart >= 0)         html = html.substring(tStart);
+
+    let formatted = '';
+    let pad = 0;
+    // Break the HTML string apart at every tag
+    let split = html.replace(/(<[^>]+>)/g, '\n$1\n').split('\n').map(s => s.trim()).filter(Boolean);
+    const blockTags = ['table', 'thead', 'tbody', 'tfoot', 'tr', 'caption'];
+    
+    for (let node of split) {
+      let isClosing = /^<\//.test(node);
+      let isOpening = /^<[^\/]/.test(node);
+      let tagMatch = node.match(/<\/?([a-zA-Z0-9]+)/);
+      let tagName = tagMatch ? tagMatch[1].toLowerCase() : '';
+      
+      if (isClosing && blockTags.includes(tagName)) pad = Math.max(0, pad - 1);
+      formatted += '\t'.repeat(pad) + node + '\n';
+      if (isOpening && blockTags.includes(tagName) && !node.endsWith('/>')) pad++;
+    }
+    // Compress <td> and <th> content back onto a single line for readability
+    return formatted.replace(/(<(?:td|th)\b[^>]*>)\n\s*([\s\S]*?)\n\s*(<\/(?:td|th)\s*>)/gi, '$1$2$3').trim();
+  }
 
   // Find the dash separating left from right in a matching answer, skipping dashes inside HTML tags.
   function findMatchingDash(text) {
@@ -943,6 +1004,62 @@ const AssessmentChecker = (() => {
         idx === 0 ? {type:'group-sequence', sequence:seq} : null));
     },
 
+    'group-numbering'(rule, qs) {
+      // Collect the unique set of group numbers actually used, in first-seen order
+      const seen = new Map(); // group number → first question that used it
+      for (const q of qs) {
+        if (q.group === null) continue;
+        if (!seen.has(q.group)) seen.set(q.group, q);
+      }
+      if (!seen.size) return [];
+
+      const usedGroups = [...seen.keys()].sort((a, b) => a - b);
+      const violations = []; // { kind, found, expected, q }
+
+      // Check starts at 1
+      if (usedGroups[0] !== 1) {
+        violations.push({
+          kind: 'first-not-one',
+          found: usedGroups[0],
+          expected: 1,
+          q: seen.get(usedGroups[0])
+        });
+      }
+
+      // Check for gaps between consecutive group numbers
+      for (let i = 1; i < usedGroups.length; i++) {
+        const prev = usedGroups[i - 1];
+        const curr = usedGroups[i];
+        if (curr !== prev + 1) {
+          violations.push({
+            kind: 'gap',
+            found: curr,
+            expected: prev + 1,
+            q: seen.get(curr)
+          });
+        }
+      }
+
+      if (!violations.length) return [];
+
+      // Build the full sequence for the detail panel (same shape as group-sequence)
+      const seq = qs
+        .filter(q => q.group !== null)
+        .map(q => ({ num: q.num, group: q.group, line: q.groupLine }));
+
+      const firstV = violations[0];
+      const msgStr = firstV.kind === 'first-not-one'
+        ? 'groups must start at 1, but the first group number used is ' + firstV.found
+        : 'gap between group:' + (firstV.expected - 1) + ' and group:' + firstV.found + ' — group:' + firstV.expected + ' is missing';
+
+      return [fail(rule,
+        rule.message.replace('{found}', msgStr),
+        firstV.q ? firstV.q.groupLine : null,
+        String(firstV.found),
+        { type: 'group-numbering', violations, seq }
+      )];
+    },
+
     'question-has-field'(rule, qs) {
       return qs.filter(q => rule.field==='points' ? q.points===null : q.group===null)
                .map(q => fail(rule, rule.message.replace('{num}',q.num), q.startLine));
@@ -998,17 +1115,23 @@ const AssessmentChecker = (() => {
     'tf-answer-present'(rule, qs) {
       return qs.filter(q=>q.code==='tf:').flatMap(q => {
         const a = q.answers.map(a=>a.text.toLowerCase().trim());
-        // Only fire if NOT already caught by tf-answer-valid (both present)
+        // Skip if already caught by tf-answer (both true AND false present)
         if (a.includes('true') && a.includes('false')) return [];
-        return (!a.includes('true') && !a.includes('false'))
-          ? [fail(rule, rule.message.replace('{num}',q.num), q.startLine)] : [];
+        // Fire if neither a valid 'true' nor a valid 'false' answer is present
+        // This also catches misspellings like 'tru', 'flase', 'True', etc.
+        if (!a.includes('true') && !a.includes('false')) {
+          const found = q.answers.length ? ' (found: "' + q.answers.map(a=>a.text.trim()).join('", "') + '")' : '';
+          return [fail(rule, rule.message.replace('{num}',q.num) + found, q.startLine)];
+        }
+        return [];
       });
     },
 
     'malformed-tags'(rule, qs, raw, lines) {
       const CODES=['mc:radio:','essay:','tf:','fib:','matching:label:'];
       // List of HTML tags we reasonably expect to see, even if deprecated
-      const knownHtmlTags = ['span','img','br','strong','em','u','s','del','sup','sub','table','thead','tbody','tr','th','td','caption','ol','ul','li','p','div','mark','font','b','i','a','h1','h2','h3','h4','h5','h6','hr','blockquote','code','pre'];
+      // Note: Table tags are removed from here so they are exclusively handled by the dedicated table-check rule
+      const knownHtmlTags = ['span','img','br','strong','em','u','s','del','sup','sub','ol','ul','li','p','div','mark','font','b','i','a','h1','h2','h3','h4','h5','h6','hr','blockquote','code','pre'];
 
       return lines.flatMap((line, i) => {
         const lower = line.toLowerCase();
@@ -1068,6 +1191,11 @@ const AssessmentChecker = (() => {
         clean = clean.replace(/<ol([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, pre, styleVal, post) => {
           const norm = styleVal.replace(/\s/g,'').toLowerCase();
           return norm.startsWith('list-style-type:') ? '<ol'+pre+post+'>' : match;
+        });
+        // Remove allowed text-align styles from table elements (added by table-align-center fixer)
+        clean = clean.replace(/<(table|tr|td|th|caption)([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, tag, pre, styleVal, post) => {
+          const norm = styleVal.replace(/\s/g,'').toLowerCase();
+          return norm.startsWith('text-align:') ? '<'+tag+pre+post+'>' : match;
         });
         const m = clean.match(/style\s*=\s*["'][^"']*["']/i);
         return m ? [fail(rule,rule.message.replace('{line}',i+1),i+1,m[0])] : [];
@@ -1214,26 +1342,78 @@ const AssessmentChecker = (() => {
    'lt-gt-entities-check'(rule, qs, raw, lines) {
       const allowedTagsRe = /<\/?\s*(span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre)\b[^>]*>/gi;
       const validSpannedRe = /<span[^>]*>\s*(<|>|&lt;|&gt;)\s*<\/span>/gi;
+      // Fragments that look like broken/incomplete HTML tags — a bare < or > that is
+      // actually part of a malformed tag should be suppressed here; malformed-tags
+      // or table-tag-pairs will catch it instead.
+      // Pattern: <tagname with no closing >, or attributes> with no opening <
+      const KNOWN_TAGS = 'span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre';
+      // Orphaned opening: <tagname ... (no > before next < or end of line)
+      const orphanOpenRe = new RegExp('<\\/?('+KNOWN_TAGS+')\\b[^<>]*$', 'gi');
+      // Orphaned closing: ... attr="val"> where the < is missing — identified by a >
+      // preceded only by tag-like content (word chars, =, ", ', /, spaces, .) since last <
+      const looksLikeTagTailRe = /^[^<]*(?:[\w"'\-.\/=\s])*>/;
 
       return lines.flatMap((line, i) => {
-        // 1. Mask valid, already-wrapped symbols with spaces so indices don't shift
+        // 1. Mask valid, already-wrapped symbols
         let checkLine = line.replace(validSpannedRe, match => ' '.repeat(match.length));
-        
-        // 2. Mask all known/whitelisted HTML tags with spaces
+
+        // 2. Mask complete known HTML tags
         checkLine = checkLine.replace(allowedTagsRe, match => ' '.repeat(match.length));
-        
-        // 3. Scan whatever is left for naked <, >, &lt;, or &gt;
+
+        // 3. Mask orphaned opening fragments (e.g. "<strong" with no closing >)
+        //    These leave a bare < that would otherwise be flagged as a math symbol.
+        checkLine = checkLine.replace(orphanOpenRe, match => ' '.repeat(match.length));
+
+        // 4. Scan whatever is left for naked <, >, &lt;, or &gt;
         const results = [];
         const re = /(<|>|&lt;|&gt;)/gi;
         let m;
         while ((m = re.exec(checkLine)) !== null) {
+          const idx = m.index;
+          const sym = m[0];
+
+          // ── Suppress if this looks like part of a broken tag ──
+          // A bare > is likely a tag tail if everything between the previous unmasked
+          // character and this > looks like tag attribute content.
+          if (sym === '>') {
+            // Look back in the *original* line for an unclosed < — if the text between
+            // looks like a real tag tail (has = or quotes, indicating attributes, or is
+            // a known self-closing form like "/>"), suppress it.
+            const rawLine = line;
+            const lastLt = rawLine.lastIndexOf('<', idx);
+            if (lastLt !== -1) {
+              const between = rawLine.substring(lastLt, idx + 1);
+              // A real tag tail has attributes (key="val") or is "/>" or "<tagname>"
+              const hasAttr  = /=\s*["']/.test(between);
+              const isSelfClose = /\/>$/.test(between);
+              const isSimpleTag = /^<\/?[a-zA-Z][a-zA-Z0-9]*\s*>$/.test(between);
+              if (hasAttr || isSelfClose || isSimpleTag) continue;
+            } else {
+              // No < before this > at all — check if the content leading up to >
+              // looks like a tag tail: contains key="val" attribute syntax
+              const rawBefore = rawLine.substring(0, idx + 1);
+              // A tag tail has at least one attribute assignment or ends with />
+              if (/=\s*["'][^"']*["']/.test(rawBefore) || rawBefore.trimEnd().endsWith('/>')) continue;
+            }
+          }
+
+          if (sym === '<') {
+            // Look forward in checkLine for a > — if content between looks tag-like, suppress
+            const after = checkLine.substring(idx + 1);
+            const nextGt = after.indexOf('>');
+            if (nextGt !== -1) {
+              const between = after.substring(0, nextGt);
+              // Tag-like between: starts with optional / then letters (tag name or attribute)
+              if (/^\/?(\w)/.test(between.trim())) continue;
+            }
+          }
+
           const actualFull = line;
-          const replacement = m[0].includes('&') ? `<span>${m[0] === '&lt;' ? '<' : '>'}</span>` : `<span>${m[0]}</span>`;
-          // We use the exact index to reconstruct the corrected line
-          const expectedFull = line.substring(0, m.index) + replacement + line.substring(m.index + m[0].length);
+          const replacement = sym.includes('&') ? '<span>' + (sym === '&lt;' ? '<' : '>') + '</span>' : '<span>' + sym + '</span>';
+          const expectedFull = line.substring(0, m.index) + replacement + line.substring(m.index + sym.length);
 
           results.push(fail(rule,
-            rule.message.replace('{line}', i+1).replace('{found}', m[0]),
+            rule.message.replace('{line}', i+1).replace('{found}', sym),
             i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim() }
           ));
         }
@@ -1500,7 +1680,7 @@ const AssessmentChecker = (() => {
     },
 
     'span-unclosed-check'(rule, qs) {
-      return qs.filter(q => q.stem.includes('<span') && !/\/span>/i.test(q.stem)).map(q => {
+      return qs.filter(q => q.stem.includes('<span') && !/<\/span\s*>/i.test(q.stem)).map(q => {
         const sm = q.stem.match(/<span([^>]*)>([^<]*)/i);
         if (sm) {
             const actual = sm[0].trim(); // Trim actual to perfectly align with expected
@@ -1575,7 +1755,7 @@ const AssessmentChecker = (() => {
         if(bad.length) {
           const badVal = bad[0].trim();
           // Attempt to fix standard patterns, otherwise just append 'R'
-          const fixedVal = /^\d{2}\.\d{2}$/.test(badVal) ? badVal + 'R' : badVal + 'R'; 
+          const fixedVal = /^\d{2}\.\d{2}$/.test(badVal) ? badVal + 'R' : (badVal.replace(/[RH]+$/i,'') + 'R'); 
           
           results.push(fail(rule, `Question ${q.num} data-associatedlessons "${badVal}" must end with R or H.`, q.startLine, badVal, 
             { type: 'contextual-diff', actual: badVal, expected: fixedVal, truthAttr: lm[0] }));
@@ -1614,7 +1794,7 @@ const AssessmentChecker = (() => {
         if(!cm2||!lm) continue;
         
         const complexity=cm2[1].trim();
-        const firstLesson=lm[1].split('|')[0].trim().replace(/[RH]$/i,'');
+        const firstLesson=lm[1].split('|')[0].trim().replace(/[RH]+$/i,'');
         
         // If the source attributes are empty, skip this check.
         // We let the span-attribute-check handle the empty attributes first
@@ -1652,7 +1832,7 @@ const AssessmentChecker = (() => {
     'matching-format'(rule, qs) {
       // Valid format: term-definition  (non-empty content on both sides of the dash)
       return qs.filter(q=>q.code==='matching:label:').flatMap(q=>
-        q.answers.filter(a=>!/^.+-.+$/.test(a.text.trim()))
+        q.answers.filter(a=>!/^\S[\s\S]*-[\s\S]*\S$/.test(a.text.trim()))
           .map(a=>fail(rule,rule.message.replace('{num}',q.num).replace('{line}',a.lineNum),a.lineNum)));
     },
 
@@ -1673,13 +1853,18 @@ const AssessmentChecker = (() => {
           results.push(fail(rule,
             rule.message.replace('{line}',i+1).replace('{found}','°').replace('{fix}','replace with &deg; or spell out "degrees"'),
             i+1,'°'));
-        const minusRe=/\s-\d/g;
-        while((m=minusRe.exec(clean))!==null){
-          const before=clean.slice(Math.max(0,m.index-5),m.index+1);
-          if(!/&\w*$/.test(before))
-            results.push(fail(rule,
-              rule.message.replace('{line}',i+1).replace('{found}',m[0].trim()).replace('{fix}','replace math minus with &minus;'),
-              i+1,m[0].trim()));
+        // Math minus: match space(s) followed by minus and digit, but not inside a tag
+        // and not on lines that are answer choices (starting with x- or being plain answer text)
+        const isAnswerLine = /^\s*x?-/.test(line.trim());
+        if (!isAnswerLine) {
+          const minusRe=/(?<=\s)-(?=\d)/g;
+          while((m=minusRe.exec(clean))!==null){
+            const before=clean.slice(Math.max(0,m.index-5),m.index+1);
+            if(!/&\w*$/.test(before))
+              results.push(fail(rule,
+                rule.message.replace('{line}',i+1).replace('{found}','-'+clean[m.index+1]).replace('{fix}','replace math minus with &minus;'),
+                i+1,'-'+clean[m.index+1]));
+          }
         }
         return results;
       });
@@ -2094,6 +2279,11 @@ const AssessmentChecker = (() => {
           buf = []; depth = 0;
         }
       }
+      // If depth > 0 after the loop, a <table> was never closed — flush the buffer
+      // and mark it so tag-pairs can report the missing </table> directly.
+      if (depth > 0 && buf.length > 0) {
+        tables.push({ startLine, html: buf.join('\n'), unclosedTable: true });
+      }
       if (!tables.length) return [];
 
       const results = [];
@@ -2106,34 +2296,120 @@ const AssessmentChecker = (() => {
         // ── sub: tag-pairs ──
         if (rule.subtype === 'tag-pairs') {
           const STRUCT = ['table','thead','tbody','tr','th','td','caption'];
-          for (const tag of STRUCT) {
-            const opens  = (h.match(new RegExp('<'+tag+'\\b','gi'))  || []).length;
-            const closes = (h.match(new RegExp('</'+tag+'>','gi')) || []).length;
-            if (opens === closes) continue;
-            const diff = opens > closes
-              ? (opens - closes) + ' unclosed <'+tag+'> (missing </'+tag+'>)'
-              : (closes - opens) + ' extra </'+tag+'> (no matching <'+tag+'>)';
-            results.push(fail(rule, msg(t, diff), sl, tag));
+          const issues = []; // { tag, type, lineNum, label, hIndex, matchLen }
+
+          const lineAt = idx => sl + (h.substring(0, idx).match(/\n/g) || []).length;
+
+          // ── Pre-seed: unclosed <table> detected by the extractor ──
+          if (t.unclosedTable) {
+            const tableOpenIdx = h.indexOf('<table');
+            issues.push({
+              tag: 'table', type: 'unclosed',
+              lineNum: sl,
+              label: '<table> opened but never closed — add </table>',
+              hIndex: tableOpenIdx >= 0 ? tableOpenIdx : 0,
+              matchLen: tableOpenIdx >= 0 ? h.match(/<table\b[^>]*>/i)[0].length : 7
+            });
           }
-          // Check nesting order — thead/tbody must be inside table, tr inside thead/tbody, cells inside tr
-          if (/<thead[\s\S]*?<tbody/i.test(h) === false && /<tbody/i.test(h) && /<thead/i.test(h)) {
-            // tbody appearing before thead
-            if (h.indexOf('<tbody') < h.indexOf('<thead')) {
-              results.push(fail(rule, msg(t, '<tbody> appears before <thead> — wrong order'), sl, 'order'));
+
+          // ── Pass 1: malformed tags missing their '>' (e.g. </tr<tr> or <tr<tr>) ──
+          // Covers both closing (</tag) and opening (<tag) variants.
+          const malformedRe = /<\/?([a-zA-Z][a-zA-Z0-9]*)(?=[^>]*<)/g;
+          let mc;
+          const malformedPositions = new Set();
+          while ((mc = malformedRe.exec(h)) !== null) {
+            const tag2 = mc[1].toLowerCase();
+            if (!STRUCT.includes(tag2)) continue;
+            const fragment = h.substring(mc.index);
+            const nextLt = fragment.indexOf('<', 1);
+            const nextGt = fragment.indexOf('>');
+            if (nextGt === -1 || (nextLt !== -1 && nextLt < nextGt)) {
+              malformedPositions.add(mc.index);
+              const isClose = mc[0].startsWith('</');
+              issues.push({
+                tag: tag2, type: 'malformed',
+                lineNum: lineAt(mc.index),
+                label: (isClose ? '</' : '<') + tag2 + '> tag is malformed — missing its closing ">"',
+                hIndex: mc.index, matchLen: mc[0].length
+              });
             }
           }
-        }
 
+          // ── Pass 2: unmatched open/close pairs per tag type ──
+          for (const tag of STRUCT) {
+            const tagRe = new RegExp('<' + tag + '\\b[^>]*>|<\\/' + tag + '\\s*>', 'gi');
+            let m;
+            const stack = [];
+            const tagErrors = [];
+
+            while ((m = tagRe.exec(h)) !== null) {
+              if (malformedPositions.has(m.index)) continue;
+              if (m[0].startsWith('</')) {
+                if (stack.length > 0) stack.pop();
+                else tagErrors.push({ type: 'extra', match: m[0], index: m.index });
+              } else {
+                stack.push({ match: m[0], index: m.index });
+              }
+            }
+            for (const u of stack) tagErrors.push({ type: 'unclosed', match: u.match, index: u.index });
+
+            for (const err of tagErrors) {
+              issues.push({
+                tag,
+                type: err.type,
+                lineNum: lineAt(err.index),
+                label: err.type === 'unclosed'
+                  ? '<' + tag + '> opened but never closed — add </' + tag + '>'
+                  : '</' + tag + '> found with no matching opening <' + tag + '>',
+                hIndex: err.index, matchLen: err.match.length
+              });
+            }
+          }
+
+          // ── Pass 3: nesting order (tbody before thead) ──
+          if (/<tbody/i.test(h) && /<thead/i.test(h) && h.indexOf('<tbody') < h.indexOf('<thead')) {
+            const tbodyIdx = h.indexOf('<tbody');
+            issues.push({
+              tag: 'thead/tbody', type: 'order',
+              lineNum: sl + (h.substring(0, tbodyIdx).match(/\n/g) || []).length,
+              label: '<tbody> appears before <thead> — sections are in the wrong order',
+              hIndex: tbodyIdx, matchLen: 6
+            });
+          }
+
+          if (issues.length) {
+            issues.sort((a, b) => {
+              if (a.type === 'malformed' && b.type !== 'malformed') return -1;
+              if (b.type === 'malformed' && a.type !== 'malformed') return 1;
+              return a.lineNum - b.lineNum;
+            });
+
+            const errorCount = issues.length;
+            const summaryMsg = errorCount === 1
+              ? issues[0].label
+              : errorCount + ' tag pair issues — see details below';
+
+            t.hasTagPairErrors = true;
+
+            results.push(fail(
+              rule,
+              msg(t, summaryMsg),
+              issues[0].lineNum,
+              h.substring(issues[0].hIndex, issues[0].hIndex + issues[0].matchLen),
+              { type: 'table-issues', issues, rawHtml: h }
+            ));
+          }
+        }
         // ── sub: required-sections ──
         else if (rule.subtype === 'required-sections') {
           if (!/<thead\b/i.test(h))
-            results.push(fail(rule, msg(t, 'missing <thead> section'), sl, '<thead>'));
+            results.push(fail(rule, msg(t, 'missing <thead> section'), sl, 'missing <thead>'));
           if (!/<\/thead>/i.test(h) && /<thead\b/i.test(h))
-            results.push(fail(rule, msg(t, '<thead> is not closed with </thead>'), sl, '</thead>'));
+            results.push(fail(rule, msg(t, '<thead> is not closed with </thead>'), sl, 'not closed'));
           if (!/<tbody\b/i.test(h))
-            results.push(fail(rule, msg(t, 'missing <tbody> section'), sl, '<tbody>'));
+            results.push(fail(rule, msg(t, 'missing <tbody> section'), sl, 'missing <tbody>'));
           if (!/<th\b/i.test(h))
-            results.push(fail(rule, msg(t, 'no <th> header cells found — tables must have column or row headers'), sl, '<th>'));
+            results.push(fail(rule, msg(t, 'no <th> header cells found — tables must have column or row headers'), sl, 'no <th>'));
         }
 
         // ── sub: border-cellpadding ──
@@ -2142,12 +2418,12 @@ const AssessmentChecker = (() => {
           if (tableTag) {
             const attrs = tableTag[1];
             if (!/\bborder\s*=\s*["']?1["']?/i.test(attrs))
-              results.push(fail(rule, msg(t, 'missing or incorrect border="1" on <table>'), sl, 'border'));
+              results.push(fail(rule, msg(t, 'missing or incorrect border="1" on <table>'), sl, 'border="1"'));
             const cpMatch = attrs.match(/\bcellpadding\s*=\s*["']?(\d*)["']?/i);
             if (!cpMatch)
-              results.push(fail(rule, msg(t, 'missing cellpadding attribute on <table>'), sl, 'cellpadding'));
+              results.push(fail(rule, msg(t, 'missing cellpadding attribute on <table>'), sl, 'missing cellpadding'));
             else if (!cpMatch[1])
-              results.push(fail(rule, msg(t, 'cellpadding is empty — must be a number (e.g. cellpadding="5")'), sl, 'cellpadding=""'));
+              results.push(fail(rule, msg(t, 'cellpadding is empty — must be a number (e.g. cellpadding="5")'), sl, 'cellpadding is empty'));
           }
         }
 
@@ -2168,25 +2444,47 @@ const AssessmentChecker = (() => {
           const thRe = /<th\b([^>]*)>/gi;
           let m;
           while ((m = thRe.exec(h)) !== null) {
+            const actualTag = m[0];
             const attrs = m[1];
+            
+            // Calculate the exact line number where this specific <th> tag lives
+            const lineOffset = (h.substring(0, m.index).match(/\n/g) || []).length;
+            const actualLineNum = sl + lineOffset;
+            
             const scopeM = attrs.match(/\bscope\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+            
             if (!scopeM) {
               const suggestion = suggestedScope
                 ? ' — suggested: scope="'+suggestedScope+'"'
                 : ' — review: could not auto-determine scope (mixed th placement)';
-              results.push(fail(rule, msg(t, '<th> missing scope attribute'+suggestion), sl, 'scope'));
+              
+              const suggestedVal = suggestedScope || 'col';
+              const expectedTag = actualTag.replace(/<th\b/i, '<th scope="' + suggestedVal + '"');
+              
+              results.push(fail(rule, msg(t, '<th> missing scope attribute'+suggestion), actualLineNum, null, {
+                type: 'contextual-diff', actual: actualTag, expected: expectedTag, truthAttr: actualTag
+              }));
             } else {
               const val = (scopeM[1] || scopeM[2] || '').trim().toLowerCase();
-              if (!val)
-                results.push(fail(rule, msg(t, '<th> has empty scope="" — must be col, row, colgroup, or rowgroup'), sl, 'scope=""'));
-              else if (!VALID_SCOPE.includes(val))
-                results.push(fail(rule, msg(t, '<th> has unrecognised scope="'+val+'" — valid values: col, row, colgroup, rowgroup'), sl, val));
+              if (!val) {
+                const expectedTag = actualTag.replace(/\bscope\s*=\s*["']{2}/i, 'scope="col"');
+                results.push(fail(rule, msg(t, '<th> has empty scope="" — must be col, row, colgroup, or rowgroup'), actualLineNum, null, {
+                  type: 'contextual-diff', actual: actualTag, expected: expectedTag, truthAttr: actualTag
+                }));
+              } else if (!VALID_SCOPE.includes(val)) {
+                const expectedTag = actualTag.replace(/\bscope\s*=\s*["']([^"']*)["']/i, 'scope="col"');
+                results.push(fail(rule, msg(t, '<th> has unrecognised scope="'+val+'" — valid values: col, row, colgroup, rowgroup'), actualLineNum, null, {
+                  type: 'contextual-diff', actual: actualTag, expected: expectedTag, truthAttr: actualTag
+                }));
+              }
             }
           }
         }
 
-        // ── sub: structure ──
+       // ── sub: structure ──
         else if (rule.subtype === 'structure') {
+          // Skip if tag-pairs already found issues — broken tags make column counts unreliable
+          if (t.hasTagPairErrors) continue;
           // Determine column count from the header row (most reliable baseline)
           const theadBlock = h.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/i);
           let colCount = 0;
@@ -2206,19 +2504,31 @@ const AssessmentChecker = (() => {
           // Check every tbody row
           const tbodyBlock = h.match(/<tbody\b[^>]*>([\s\S]*?)<\/tbody>/i);
           if (!tbodyBlock) continue;
-          const rows = tbodyBlock[1].match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-          rows.forEach((row, ri) => {
-            const cells = row.match(/<(?:td|th)\b[^>]*>/gi) || [];
+          
+          let ri = 0;
+          const trRe = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+          let mRow;
+          
+          while ((mRow = trRe.exec(tbodyBlock[1])) !== null) {
+            const rowHtml = mRow[0];
+            const cells = rowHtml.match(/<(?:td|th)\b[^>]*>/gi) || [];
             const effective = cells.reduce((sum, c) => {
               const cs = c.match(/colspan\s*=\s*["']?(\d+)["']?/i);
               return sum + (cs ? parseInt(cs[1]) : 1);
             }, 0);
+            
             if (effective !== colCount) {
+              // Calculate exact line number of this <tr>
+              const globalIndex = h.indexOf(tbodyBlock[1]) + mRow.index;
+              const lineOffset = (h.substring(0, globalIndex).match(/\n/g) || []).length;
+              const actualLineNum = sl + lineOffset;
+              
               results.push(fail(rule,
                 msg(t, 'tbody row '+(ri+1)+' has '+effective+' effective column(s) but header has '+colCount+' — check for missing or extra cells'),
-                sl, 'row '+(ri+1)));
+                actualLineNum, 'check for missing or extra cells', { type: 'formatted-code', code: formatTableHTML(h) })); 
             }
-          });
+            ri++;
+          }
         }
 
         // ── sub: align-center ──
@@ -2228,9 +2538,12 @@ const AssessmentChecker = (() => {
           let m;
           while ((m = TABLE_TAGS.exec(h)) !== null) {
             if (/\balign\s*=\s*["']?center["']?/i.test(m[0])) {
+              const tagName = m[0].match(/<(\w+)/)[1];
+              const lineOffset = (h.substring(0, m.index).match(/\n/g) || []).length;
+              const actualLineNum = sl + lineOffset;
               results.push(fail(rule,
-                msg(t, 'align="center" found on '+m[0].match(/<(\w+)/)[1]+' tag'),
-                sl, 'align="center"'));
+                msg(t, 'align="center" found on '+tagName+' tag'),
+                actualLineNum, 'align="center"'));
             }
           }
         }
@@ -2321,6 +2634,22 @@ const autoFixers={
     .replace(/\u00a0/g,' '),
   'img-no-dimensions':  text=>text.replace(/<img([^>]*)>/gi,(_,a)=>'<img'+a.replace(/\s*\bwidth\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'').replace(/\s*\bheight\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'')+'>'),
   'mark-tag':           text => text.replace(/<mark\b[^>]*>|<\/mark>/gi, ''),
+  'table-border-cellpadding': text => text.replace(/<table\b([^>]*)>/gi, (match, attrs) => {
+    let a = attrs;
+    // border: add if missing, correct if not "1"
+    if (!/\bborder\s*=/i.test(a)) {
+      a = ' border="1"' + a;
+    } else {
+      a = a.replace(/\bborder\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, 'border="1"');
+    }
+    // cellpadding: add if missing or empty, correct value to 10
+    if (!/\bcellpadding\s*=/i.test(a)) {
+      a = a + ' cellpadding="10"';
+    } else {
+      a = a.replace(/\bcellpadding\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, 'cellpadding="10"');
+    }
+    return '<table' + a + '>';
+  }),
   'table-align-center': text => text.replace(/(<(?:table|tr|td|th|caption)\b[^>]*?)\s*\balign\s*=\s*["']?center["']?([^>]*>)/gi,
     (match, pre, post) => {
       // Add style="text-align: center;" if no style attr present, or merge into existing
@@ -2331,6 +2660,17 @@ const autoFixers={
       }
       return pre + ' style="text-align: center;"' + post;
     }),
+	'table-th-scope': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'font-tag-replace':   text=>text.replace(/<font\s+face\s*=\s*"([^"]*)"[^>]*>([\s\S]*?)<\/font>/gi,(_,face,inner)=>{
     const f=face.trim();
     const family=/courier\s*new/i.test(f)?"'Courier New', Courier, monospace":"'"+f+"'";
@@ -2517,6 +2857,8 @@ function clearAll() {
   DOM.qStrip.innerHTML = '';
   DOM.statusBar.classList.remove('visible');
   DOM.dashboardBtn.disabled = true;
+  DOM.filterBar.classList.remove('visible');
+  AppState.activeFilter = 'all';
 }
 function loadSample(){
   ta.value = [
@@ -2805,6 +3147,116 @@ async function copyText(btn) {
 // ─────────────────────────────────────────────────────────────────
 // RENDER
 // ─────────────────────────────────────────────────────────────────
+// Pretty-print table HTML with error highlights injected as <mark> spans.
+// html: raw table HTML string; issues: array of { highlight } from table-issues extra.
+function formatTableHTMLWithHighlights(html, issues) {
+  // ── Step 1: trim html to just the <table>…</table> span ──
+  // The extractor stores full source lines which may include question text before
+  // the opening <table> tag. We slice to table-only so the pretty-print is clean.
+  const tableStart = html.search(/<table\b/i);
+  const tableEndMatch = html.match(/[\s\S]*(<\/table>)/i);
+  const tableEnd = tableEndMatch ? html.lastIndexOf('</table>') + '</table>'.length : html.length;
+  const tableOnly = tableStart >= 0 ? html.substring(tableStart, tableEnd) : html;
+  // Offset added to hIndex values so error ranges still map into tableOnly correctly
+  const hOffset = tableStart >= 0 ? tableStart : 0;
+
+  // ── Step 2 (was Step 1): split tableOnly into tokens, tracking original char offsets ──
+  const tokens = [];
+  const tokenRe = /(<[^>]*>|[^<]+)/g;
+  let tm;
+  while ((tm = tokenRe.exec(tableOnly)) !== null) {
+    tokens.push({ text: tm[0], start: hOffset + tm.index });
+  }
+
+  // ── Step 3: format (same logic as formatTableHTML) ──
+  const blockTags = ['table','thead','tbody','tfoot','tr','caption'];
+  let pad = 0;
+  // Each entry: { raw, start } where start = offset in original html
+  const formattedLines = []; // { text: string, origStart: number, origEnd: number }
+
+  for (const tok of tokens) {
+    const trimmed = tok.text.trim();
+    if (!trimmed) continue;
+    const isClosing = /^<\//.test(trimmed);
+    const isOpening = /^<[^\/!]/.test(trimmed);
+    const tagMatch  = trimmed.match(/<\/?([a-zA-Z0-9]+)/);
+    const tagName   = tagMatch ? tagMatch[1].toLowerCase() : '';
+
+    if (isClosing && blockTags.includes(tagName)) pad = Math.max(0, pad - 1);
+    formattedLines.push({
+      text: '\t'.repeat(pad) + trimmed,
+      origStart: tok.start,
+      origEnd: tok.start + tok.text.length
+    });
+    if (isOpening && blockTags.includes(tagName) && !trimmed.endsWith('/>')) pad++;
+  }
+
+  // ── Step 4: compress <td>/<th> content onto one line ──
+  // Find consecutive open-cell / content / close-cell triples and merge them
+  const merged = [];
+  let i = 0;
+  while (i < formattedLines.length) {
+    const line = formattedLines[i];
+    const cellOpen = line.text.trim().match(/^(<(?:td|th)\b[^>]*>)$/i);
+    if (cellOpen && i + 2 < formattedLines.length) {
+      const content = formattedLines[i + 1];
+      const closeL  = formattedLines[i + 2];
+      const cellClose = closeL.text.trim().match(/^(<\/(?:td|th)\s*>)$/i);
+      if (cellClose) {
+        const indent = line.text.match(/^\t*/)[0];
+        merged.push({
+          text: indent + line.text.trim() + content.text.trim() + closeL.text.trim(),
+          origStart: line.origStart,
+          origEnd: closeL.origEnd
+        });
+        i += 3;
+        continue;
+      }
+    }
+    merged.push(line);
+    i++;
+  }
+
+  // ── Step 5: build error ranges (adjusted for hOffset) ──
+  // Each issue carries hIndex + matchLen pointing into the original html string.
+  const errorRanges = (issues || [])
+    .filter(iss => iss.hIndex != null)
+    .map(iss => ({ start: iss.hIndex, end: iss.hIndex + iss.matchLen }));
+  // (hIndex values are offsets into the original full html; tokens also use those same
+  //  absolute offsets via hOffset, so no adjustment needed — they share the same frame.)
+
+  // ── Step 6: render, injecting highlights on lines that overlap error ranges ──
+  return merged.map(line => {
+    const hasError = errorRanges.some(r =>
+      r.start < line.origEnd && r.end > line.origStart
+    );
+    const escapedText = esc(line.text);
+    if (!hasError) return escapedText;
+
+    // Find the specific token(s) on this line that overlap an error range and
+    // highlight just them (rather than the whole line) for precision.
+    // We re-tokenize just this line's original source span.
+    const lineSource = html.substring(line.origStart, line.origEnd);
+    const indent = line.text.match(/^\t*/)[0];
+
+    let result = esc(indent);
+    let localPos = 0;
+    const localTokenRe = /(<[^>]*>|[^<]+)/g;
+    let lt;
+    while ((lt = localTokenRe.exec(lineSource)) !== null) {
+      const tokStart = line.origStart + lt.index;
+      const tokEnd   = tokStart + lt[0].length;
+      const isErr = errorRanges.some(r => r.start < tokEnd && r.end > tokStart);
+      if (isErr) {
+        result += '<mark style="background:#fecaca;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:600">' +
+          esc(lt[0]) + '</mark>';
+      } else {
+        result += esc(lt[0]);
+      }
+    }
+    return result;
+  }).join('\n');
+}
 const CHEVRON='<svg class="caret-svg" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';
 const resultRegistry={};
 
@@ -2995,6 +3447,16 @@ function renderReport(report,lines){
   }
   DOM.resultsBody.innerHTML = html;
   highlightLines(errLines, warnLines);
+  // Auto-expand groups that contain errors
+  document.querySelectorAll('.category-section').forEach(sec => {
+    const hdr = sec.querySelector('.category-header');
+    if (hdr && hdr.classList.contains('has-errors')) sec.classList.add('open');
+  });
+  // Show filter bar
+  AppState.activeFilter = 'all';
+  DOM.filterBar.classList.add('visible');
+  ['filterAll','filterErr','filterWarn'].forEach(k => DOM[k].className = 'filter-btn');
+  DOM.filterAll.classList.add('active-all');
 }
 
 function renderItem(r,lines){
@@ -3010,7 +3472,11 @@ function renderItem(r,lines){
   const lineBadge=r.lineNum?'<span class="line-badge" onclick="jumpToLine('+r.lineNum+');event.stopPropagation()">L'+r.lineNum+'</span>':'';
   const hasFixer=!isPassing&&!!r.rule.fix;
   const hasAuto=hasFixer&&typeof autoFixers[r.rule.id]==='function';
-  const wandBtn=hasFixer?'<button class="wand-btn" onclick="applyFix(\''+uid+'\',event)">'+(hasAuto?'✦ Apply Fix':'✦ Show Fix')+'</button>':'';
+  const wandBtn=hasFixer
+    ? hasAuto
+      ? '<button class="wand-btn" data-auto="true" onclick="applyFix(\''+uid+'\',event)" title="Automatically fix this issue in the editor">&#x26A1; Apply Fix</button>'
+      : '<button class="wand-btn" data-auto="false" onclick="applyFix(\''+uid+'\',event)" title="View guidance and example for fixing this issue manually">&#x1F4D6; View Guide</button>'
+    : '';
   const displayMsg=isPassing?'':highlight(r.message||'',r.errorStr);
   const isWarn=!isPassing&&r.rule.severity==='warning';
   const rationaleHtml=(isWarn&&r.rule.rationale)
@@ -3052,7 +3518,10 @@ function renderItem(r,lines){
         // Add a space between deleted and inserted blocks for readability, unless one is empty
         if (inserted) diffMid += (deleted ? ' ' : '') + `<ins style="color: #166534; background: #dcfce7; text-decoration: none; font-weight: bold; padding: 0 2px; border-radius: 2px;">${inserted}</ins>`;
 
-        visualDiff = prefix + diffMid + suffix;
+        // Dim unchanged context text so eyes snap to the changed characters
+        const dimPrefix = prefix ? '<span style="opacity:.4">'+prefix+'</span>' : '';
+        const dimSuffix = suffix ? '<span style="opacity:.4">'+suffix+'</span>' : '';
+        visualDiff = dimPrefix + diffMid + dimSuffix;
         
         diffHtml = diffHtml.replace(safeActual, visualDiff);
         
@@ -3066,7 +3535,45 @@ function renderItem(r,lines){
     }
     
     let extraPanel='';
-    if(r.extra&&r.extra.type==='group-points'){
+    if(r.extra&&r.extra.type==='table-issues'){
+      const {issues, rawHtml} = r.extra;
+      const TYPE_ICON = { malformed:'⚠', unclosed:'', extra:'', order:'' };
+      const TYPE_COLOR = { malformed:'var(--error)', unclosed:'var(--error)', extra:'var(--error)', order:'var(--warn)' };
+      const rows = issues.map(issue => {
+        const jump = issue.lineNum
+          ? '<span class="line-badge" onclick="jumpToLine('+issue.lineNum+');event.stopPropagation()">L'+issue.lineNum+'</span>'
+          : '';
+        const icon = TYPE_ICON[issue.type] || '';
+        const color = TYPE_COLOR[issue.type] || 'var(--error)';
+        const tagBadge = '<code style="font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;color:var(--text-mid);margin-right:6px">&lt;'+esc(issue.tag)+'&gt;</code>';
+        return '<tr style="border-bottom:1px solid var(--border)">'+
+          '<td style="padding:5px 8px;font-size:13px;color:'+color+';width:22px;text-align:center">'+icon+'</td>'+
+          '<td style="padding:5px 6px">'+tagBadge+'</td>'+
+          '<td style="padding:5px 8px;font-size:11px;color:var(--text);flex:1">'+esc(issue.label)+'</td>'+
+          '<td style="padding:5px 8px;text-align:right;white-space:nowrap">'+jump+'</td>'+
+          '</tr>';
+      }).join('');
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--error);text-transform:uppercase;letter-spacing:.5px;background:var(--error-bg)">'+
+          ' '+issues.length+' Issue'+(issues.length!==1?'s':'')+' Found'+
+        '</div>'+
+        '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border)">'+
+          '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
+            '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);width:22px"></th>'+
+            '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Tag</th>'+
+            '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Issue</th>'+
+            '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th>'+
+          '</tr>'+
+          rows+
+        '</table>'+
+        '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">'+
+          'Fix each issue above in order — malformed tags can cause cascading errors in the rows below.'+
+        '</div>'+
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table (For Reference)</div>'+
+        '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues)+'</pre></div>';
+    } else if(r.extra&&r.extra.type==='formatted-code'){
+      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table Structure (For Review)</div><div style="padding: 0 12px 10px 12px;"><pre class="fix-snippet" style="background:var(--surface); color:var(--text); tab-size:4; border-radius:var(--r); border-top:1px solid var(--border); margin:0;">'+formatTableHTMLWithHighlights(r.extra.code, [])+'</pre></div>';
+    } else if(r.extra&&r.extra.type==='group-points'){
       const{group,expected,items}=r.extra;
       const rows=items.map(item=>{
         const off=String(item.points)!==String(expected);
@@ -3074,6 +3581,51 @@ function renderItem(r,lines){
         return '<tr style="'+(off?'background:var(--error-bg)':'background:var(--pass-bg)')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);'+(off?'color:var(--error);font-weight:700':'color:var(--pass);font-weight:700')+'">points:'+item.points+'<span style="font-size:10px;background:'+(off?'var(--error)':'var(--pass)')+';color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">'+(off?'✕ wrong':'✓')+'</span></td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Point Values</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Most common value: <strong>points:'+expected+'</strong> — update highlighted rows to match.</div>';
+    } else if(r.extra&&r.extra.type==='group-numbering'){
+      const {violations, seq} = r.extra;
+      // Build set of gap group numbers for quick lookup
+      const badGroups = new Set(violations.map(v => v.found));
+      const missingGroups = new Set(violations.filter(v=>v.kind==='gap').map(v=>v.expected));
+      // Build unique group rows (one row per group, not per question)
+      const groupsSeen = new Map();
+      seq.forEach(item => { if(!groupsSeen.has(item.group)) groupsSeen.set(item.group, item); });
+      const sortedGroups = [...groupsSeen.keys()].sort((a,b)=>a-b);
+
+      // Interleave missing gaps into the display
+      const displayItems = [];
+      for (let i = 0; i < sortedGroups.length; i++) {
+        const g = sortedGroups[i];
+        if (i === 0 && g !== 1) {
+          displayItems.push({ type:'missing', group:1 });
+          for (let m = 2; m < g; m++) displayItems.push({ type:'missing', group:m });
+        }
+        displayItems.push({ type:'present', group:g, item:groupsSeen.get(g) });
+        if (i + 1 < sortedGroups.length) {
+          const next = sortedGroups[i+1];
+          for (let m = g+1; m < next; m++) displayItems.push({ type:'missing', group:m });
+        }
+      }
+
+      const rows = displayItems.map(di => {
+        if (di.type === 'missing') {
+          return '<tr style="background:var(--error-bg);border-bottom:1px solid var(--border)">'+
+            '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">—</td>'+
+            '<td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600;color:var(--error)">group:'+di.group+
+              '<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">missing</span></td>'+
+            '<td style="padding:5px 10px;text-align:right"></td></tr>';
+        }
+        const isBad = badGroups.has(di.group);
+        const jump = di.item.line ? '<span class="line-badge" onclick="jumpToLine('+di.item.line+');event.stopPropagation()">L'+di.item.line+'</span>' : '';
+        return '<tr style="'+(isBad?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)">'+
+          '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">Q'+di.item.num+'…</td>'+
+          '<td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600">group:'+di.group+
+            (isBad?'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">⚠ wrong</span>':'')+'</td>'+
+          '<td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
+      }).join('');
+
+      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group Numbering — All Groups</div>'+
+        '<table style="width:100%;border-collapse:collapse">'+rows+'</table>'+
+        '<div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Groups must form an unbroken sequence starting at 1. Add any missing groups or renumber existing ones.</div>';
     } else if(r.extra&&r.extra.type==='group-sequence'){
       let prev=null;
       const rows=r.extra.sequence.map(item=>{
@@ -3130,9 +3682,9 @@ function renderItem(r,lines){
       if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
     }
     const isGroupExtra=!!extraPanel;
-    fixPanel='<div class="fix-panel"><div class="fix-description">'+esc(r.rule.fix.description)+'</div>'+
-      (isGroupExtra?extraPanel:userSnippet+standardFixPanel)+
-      '</div>';
+    // Diff/snippet first, description below — matches how users scan
+    const descHtml='<div class="fix-description">'+esc(r.rule.fix.description)+'</div>';
+    fixPanel='<div class="fix-panel">'+(isGroupExtra?extraPanel:userSnippet+standardFixPanel+descHtml)+'</div>';
   }
   return '<div class="result-item '+cls+'" id="'+uid+'">'+
     '<div class="result-row" onclick="document.getElementById(\''+uid+'\').classList.toggle(\'expanded\')">'+
@@ -3160,7 +3712,7 @@ function applyFix(uid,event){
       if(!el||el.classList.contains('fixed')) return;
       el.classList.remove('err','warn');el.classList.add('fixed');
       const ic=el.querySelector('.sev-icon');if(ic) ic.textContent='✦';
-      const w=el.querySelector('.wand-btn');if(w){w.textContent='✓ Fixed';w.classList.add('applied');w.disabled=true;}
+      const w=el.querySelector('.wand-btn');if(w){w.textContent='✓ Applied';w.classList.add('applied');w.disabled=true;w.removeAttribute('data-auto');}
       if(itemResult.lineNum) markLineFixed(itemResult.lineNum);
     });
     itemEl.classList.add('expanded');
@@ -3175,6 +3727,26 @@ function applyFix(uid,event){
 }
 
 function toggleCat(id){document.getElementById(id).classList.toggle('open');}
+
+function setFilter(mode){
+  AppState.activeFilter = mode;
+  // Update button states
+  DOM.filterAll.className  = 'filter-btn' + (mode==='all'  ? ' active-all'  : '');
+  DOM.filterErr.className  = 'filter-btn' + (mode==='err'  ? ' active-err'  : '');
+  DOM.filterWarn.className = 'filter-btn' + (mode==='warn' ? ' active-warn' : '');
+  // Show/hide individual result cards
+  document.querySelectorAll('.result-item').forEach(el => {
+    const isErr  = el.classList.contains('err');
+    const isWarn = el.classList.contains('warn');
+    const hide = (mode==='err' && !isErr) || (mode==='warn' && !isWarn);
+    el.classList.toggle('hidden-by-filter', hide);
+  });
+  // Hide entire category sections if all their cards are filtered out
+  document.querySelectorAll('.category-section').forEach(sec => {
+    const visible = sec.querySelectorAll('.result-item:not(.hidden-by-filter)').length;
+    sec.classList.toggle('all-hidden', visible === 0);
+  });
+}
 
 function closeAllResults() {
   // Close all category drawers
