@@ -650,7 +650,8 @@ const RAW_DATA = {
     ["3.13","AI Assistant","2026-03-12","Dynamic Exam Weights Calculation Grids","","","","Updated Segment Exam Weights to support unlimited calculation versions. Enabled horizontal scrolling for grids and added the ability to manually rename calculation titles to better document what each grid computes."],
     ["3.14","AI Assistant","2026-03-30","Sticky Headers Fix","","","","Fixed an issue where the scrolling table headers would overlap and hide the sticky toolbars. The table headers now calculate the active toolbar's height and stack neatly underneath it."],
    ["3.15","AI Assistant","2026-03-30","Smart Bulk Paste Updates","","","","Updated Bulk Paste across all sections to track the user's active row, allowing targeted pasting. Added overflow notifications when pasting more data than available rows, and overwrite warnings if existing data is detected."],
-    ["3.17","AI Assistant","2026-03-30","Clear Section Data","","","","Added 'Clear All' buttons to the toolbars of all downstream tabs (Checklist, Divs, Gradebuilder, Answer Keys, IPP, and Pace Charts) to allow users to quickly wipe out all data in a specific section."]
+   ["3.17","AI Assistant","2026-03-30","Clear Section Data","","","","Added 'Clear All' buttons to the toolbars of all downstream tabs (Checklist, Divs, Gradebuilder, Answer Keys, IPP, and Pace Charts) to allow users to quickly wipe out all data in a specific section."],
+    ["3.18","AI Assistant","2026-03-30","Quick Clear Rows","","","","Added a reset button (↺) to every row across all downstream validation tabs, allowing users to instantly clear the manually entered data for that specific row or multi-part child."]
   ]
 };
 
@@ -1263,7 +1264,7 @@ function renderChecklist(skipCalc) {
   document.getElementById('cl-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="cl-row-${i}" class="${modClass(r.cs.title)}">
     <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
     <td class="ds-stk-3 cs-from">${cv(r.cs.points)}</td><td class="ds-stk-4 ds-stk-last cs-from" id="cl-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
-    <td>${ed(r.cl.sitemapTitle,'cl','sitemapTitle',i)}</td><td>${ed(r.cl.sitemapPts,'cl','sitemapPts',i)}</td><td>${ed(r.cl.sitemapTime,'cl','sitemapTime',i)}</td><td></td>
+    <td>${ed(r.cl.sitemapTitle,'cl','sitemapTitle',i)}</td><td>${ed(r.cl.sitemapPts,'cl','sitemapPts',i)}</td><td>${ed(r.cl.sitemapTime,'cl','sitemapTime',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('cl',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
   </tr>`).join('');
   if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
 }
@@ -1277,7 +1278,7 @@ function renderDivs(skipCalc) {
       <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
       <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
       <td>${ed(r.dv.divTitle,'dv','divTitle',i)}</td><td id="dv-hr-${i}"></td>
-      <td>${ed(r.dv.rubricTitle,'dv','rubricTitle',i)}</td><td>${ed(r.dv.rubricPts,'dv','rubricPts',i)}</td><td></td>
+      <td>${ed(r.dv.rubricTitle,'dv','rubricTitle',i)}</td><td>${ed(r.dv.rubricPts,'dv','rubricPts',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('dv',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
     </tr>`;
 
     if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
@@ -1288,7 +1289,7 @@ function renderDivs(skipCalc) {
           <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
           <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
           <td>${ed(pdv.divTitle,'dvpart','divTitle',i,'',pIdx)}</td><td id="dvpart-hr-${i}-${pIdx}"></td>
-          <td>${ed(pdv.rubricTitle,'dvpart','rubricTitle',i,'',pIdx)}</td><td>${ed(pdv.rubricPts,'dvpart','rubricPts',i,'',pIdx)}</td><td></td>
+          <td>${ed(pdv.rubricTitle,'dvpart','rubricTitle',i,'',pIdx)}</td><td>${ed(pdv.rubricPts,'dvpart','rubricPts',i,'',pIdx)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('dv',${i},${pIdx})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
         </tr>`;
       });
     }
@@ -1305,7 +1306,7 @@ function renderGradebuilder(skipCalc) {
     html += `<tr id="gb-row-${i}" class="${mc}">
       <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
       <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
-      <td>${ed(r.gb.gbTitle,'gb','gbTitle',i)}</td><td>${ed(r.gb.gbPts,'gb','gbPts',i)}</td><td></td>
+      <td>${ed(r.gb.gbTitle,'gb','gbTitle',i)}</td><td>${ed(r.gb.gbPts,'gb','gbPts',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('gb',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
     </tr>`;
 
     if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
@@ -1315,7 +1316,7 @@ function renderGradebuilder(skipCalc) {
           <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
           <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
           <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
-          <td>${ed(pgb.gbTitle,'gbpart','gbTitle',i,'',pIdx)}</td><td>${ed(pgb.gbPts,'gbpart','gbPts',i,'',pIdx)}</td><td></td>
+          <td>${ed(pgb.gbTitle,'gbpart','gbTitle',i,'',pIdx)}</td><td>${ed(pgb.gbPts,'gbpart','gbPts',i,'',pIdx)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('gb',${i},${pIdx})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
         </tr>`;
       });
     }
@@ -1328,7 +1329,7 @@ function renderAnswerKeys(skipCalc) {
   document.getElementById('ak-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="ak-row-${i}" class="${modClass(r.cs.title)}">
     <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
     <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
-    <td>${ed(r.ak.akTitle,'ak','akTitle',i)}</td><td>${ed(r.ak.akPts,'ak','akPts',i)}</td><td></td>
+    <td>${ed(r.ak.akTitle,'ak','akTitle',i)}</td><td>${ed(r.ak.akPts,'ak','akPts',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('ak',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
   </tr>`).join('');
   if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
 }
@@ -1337,7 +1338,7 @@ function renderIPP(skipCalc) {
     <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
     <td class="ds-stk-3 ds-stk-last cs-from" id="ipp-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
     <td>${ed(r.ipp.ippGsTitle,'ipp','ippGsTitle',i)}</td><td>${ed(r.ipp.ippGsTime,'ipp','ippGsTime',i)}</td>
-    <td>${ed(r.ipp.ippFlTitle,'ipp','ippFlTitle',i)}</td><td>${ed(r.ipp.ippFlTime,'ipp','ippFlTime',i)}</td><td></td>
+    <td>${ed(r.ipp.ippFlTitle,'ipp','ippFlTitle',i)}</td><td>${ed(r.ipp.ippFlTime,'ipp','ippFlTime',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('ipp',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
   </tr>`).join('');
   if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
 }
@@ -1345,7 +1346,7 @@ function renderPaceCharts(skipCalc) {
   document.getElementById('pc-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="pc-row-${i}" class="${modClass(r.cs.title)}">
     <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 ds-stk-last cs-from">${r.cs.title}</td>
     <td>${ed(r.pc.tradTitle,'pc','tradTitle',i)}</td><td>${ed(r.pc.accelTitle,'pc','accelTitle',i)}</td>
-    <td>${ed(r.pc.seg2Title,'pc','seg2Title',i)}</td><td></td>
+    <td>${ed(r.pc.seg2Title,'pc','seg2Title',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('pc',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
   </tr>`).join('');
   if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
 }
@@ -1412,6 +1413,32 @@ function clearSection(sec) {
   
   showToast(`${names[sec]} data cleared.`, 'warn');
 }
+
+window.clearRowData = function(sec, i, pIdx) {
+  const r = APP_STATE[i];
+  if (pIdx !== undefined && pIdx !== null) {
+    const p = r.cs.multiPartData[pIdx];
+    if (sec === 'dv' && p.dv) { p.dv.divTitle = ''; p.dv.rubricTitle = ''; p.dv.rubricPts = ''; }
+    if (sec === 'gb' && p.gb) { p.gb.gbTitle = ''; p.gb.gbPts = ''; }
+  } else {
+    if (sec === 'cl') { r.cl.sitemapTitle = ''; r.cl.sitemapPts = ''; r.cl.sitemapTime = ''; }
+    if (sec === 'dv') { r.dv.divTitle = ''; r.dv.rubricTitle = ''; r.dv.rubricPts = ''; }
+    if (sec === 'gb') { r.gb.gbTitle = ''; r.gb.gbPts = ''; }
+    if (sec === 'ak') { r.ak.akTitle = ''; r.ak.akPts = ''; }
+    if (sec === 'ipp') { r.ipp.ippGsTitle = ''; r.ipp.ippGsTime = ''; r.ipp.ippFlTitle = ''; r.ipp.ippFlTime = ''; }
+    if (sec === 'pc') { r.pc.tradTitle = ''; r.pc.accelTitle = ''; r.pc.seg2Title = ''; }
+  }
+
+  updateRowCalculations(i);
+  refreshSummary();
+  
+  if (sec === 'cl') renderChecklist(true);
+  if (sec === 'dv') renderDivs(true);
+  if (sec === 'gb') renderGradebuilder(true);
+  if (sec === 'ak') renderAnswerKeys(true);
+  if (sec === 'ipp') renderIPP(true);
+  if (sec === 'pc') renderPaceCharts(true);
+};
 
 function sortCSTitles() {
   const filled = APP_STATE.filter(r => r.cs.title?.trim());
