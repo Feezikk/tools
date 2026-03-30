@@ -252,7 +252,7 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
 <div id="toast-container"></div>
 <div id="modal-backdrop" class="modal-backdrop" onclick="closeModal()"></div>
 <nav id="sidebar">
-  <div class="logo"><h1>CB Title Assessment<br>Audit</h1><span class="vtag">v3.14 &middot; Unlimited Exam Weights</span></div>
+  <div class="logo"><h1>CB Title Assessment<br>Audit</h1><span class="vtag">v3.18 &middot; Smart Bulk Paste</span></div>
   <div class="ns"><div class="nsl">Overview</div>
     <div class="ni active" onclick="show('cover',this)"><span class="dot"></span>Cover &amp; Guide</div>
     <div class="ni" onclick="show('summary',this)"><span class="dot"></span>Summary</div>
@@ -383,10 +383,12 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="cs-toolbar sticky-bar u-mb-14">
     <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('cl-body',this.value)">
     <button class="tbtn" onclick="toggleCLPaste()">&#x1F4CB; Paste from CB Checklists</button>
+    <button class="tbtn tbtn-clear" onclick="clearSection('cl')">&ldca; Clear All</button>
     <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
   </div>
   <div id="cl-paste-zone" class="paste-zone">
-    <div class="paste-label"><strong>Bulk Paste:</strong> Copy 3 columns (Title, Points, Time) and paste below.</div>
+    <div class="paste-label"><strong>Bulk Paste:</strong> Copy 3 columns (Title, Points, Time) and paste below. Paste will begin at the row specified below. <em>(Tip: Select any cell in the table first to auto-select its row).</em></div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Start at Row:</label><input type="number" id="cl-paste-start" class="si" style="width:60px;padding:4px;" value="1" min="1"></div>
     <textarea id="cl-paste-input" class="paste-textarea"></textarea>
     <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyCLPaste()">Apply Paste</button><button class="tbtn" onclick="toggleCLPaste()">Cancel</button></div>
   </div>
@@ -397,6 +399,7 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="ph"><h2>3 &middot; Divs &amp; Rubrics</h2><p>Titles auto-populated from CS Source.</p></div>
   <div class="cs-toolbar sticky-bar u-mb-14">
     <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('dv-body',this.value)">
+    <button class="tbtn tbtn-clear" onclick="clearSection('dv')">&ldca; Clear All</button>
     <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
   </div>
   <div class="tw"><table id="dv-table"><colgroup id="dv-colgroup"></colgroup><thead id="dv-thead"></thead><tbody id="dv-body"></tbody></table></div>
@@ -407,10 +410,12 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="cs-toolbar sticky-bar u-mb-14">
     <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('gb-body',this.value)">
     <button class="tbtn" onclick="toggleGBPaste()">&#x1F4CB; Paste Gradebuilder Export</button>
+    <button class="tbtn tbtn-clear" onclick="clearSection('gb')">&ldca; Clear All</button>
     <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
   </div>
   <div id="gb-paste-zone" class="paste-zone">
-    <div class="paste-label"><strong>Bulk Paste:</strong> Copy 2 columns (Title, Points) from Excel and paste below.</div>
+    <div class="paste-label"><strong>Bulk Paste:</strong> Copy 2 columns (Title, Points) from Excel and paste below. Paste will begin at the row specified below. <em>(Tip: Click any cell in the table first to auto-select its row).</em></div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Start at Row:</label><input type="number" id="gb-paste-start" class="si" style="width:60px;padding:4px;" value="1" min="1"></div>
     <textarea id="gb-paste-input" class="paste-textarea"></textarea>
     <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyGBPaste()">Apply Paste</button><button class="tbtn" onclick="toggleGBPaste()">Cancel</button></div>
   </div>
@@ -422,10 +427,12 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="cs-toolbar sticky-bar u-mb-14">
     <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('ak-body',this.value)">
     <button class="tbtn" onclick="toggleAKPaste()">&#x1F4CB; Paste Word TOC</button>
+    <button class="tbtn tbtn-clear" onclick="clearSection('ak')">&ldca; Clear All</button>
     <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
   </div>
   <div id="ak-paste-zone" class="paste-zone">
-    <div class="paste-label"><strong>Bulk Paste:</strong> Copy the Table of Contents from your Word Document and paste below.</div>
+    <div class="paste-label"><strong>Bulk Paste:</strong> Copy the Table of Contents from your Word Document and paste below. Paste will begin at the row specified below. <em>(Tip: Click any cell in the table first to auto-select its row).</em></div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Start at Row:</label><input type="number" id="ak-paste-start" class="si" style="width:60px;padding:4px;" value="1" min="1"></div>
     <textarea id="ak-paste-input" class="paste-textarea"></textarea>
     <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyAKPaste()">Apply Paste</button><button class="tbtn" onclick="toggleAKPaste()">Cancel</button></div>
   </div>
@@ -437,12 +444,16 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="cs-toolbar sticky-bar u-mb-14">
     <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('ipp-body',this.value)">
     <button class="tbtn" onclick="toggleIPPPaste()">&#x1F4CB; Paste from IPP Site</button>
+    <button class="tbtn tbtn-clear" onclick="clearSection('ipp')">&ldca; Clear All</button>
     <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
   </div>
   <div id="ipp-paste-zone" class="paste-zone">
-    <div class="paste-label u-mb-12"><strong>Bulk Paste:</strong> Copy 3 columns (Title, Segment, Time) and paste below.</div>
-    <div class="u-mb-10 u-flex u-items-center u-gap-8"><label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Apply to:</label>
-      <select id="ipp-paste-type" class="ui-select"><option value="GS">GS (Global School)</option><option value="FL">FL (Florida)</option></select></div>
+    <div class="paste-label u-mb-12"><strong>Bulk Paste:</strong> Copy 3 columns (Title, Segment, Time) and paste below. Paste will begin at the row specified below. <em>(Tip: Click any cell in the table first to auto-select its row).</em></div>
+    <div class="u-mb-10 u-flex u-items-center u-gap-8">
+      <label class="u-text-11" style="font-weight:600;text-transform:uppercase;">Apply to:</label>
+      <select id="ipp-paste-type" class="ui-select"><option value="GS">GS (Global School)</option><option value="FL">FL (Florida)</option></select>
+      <label class="u-text-11 u-ml-auto" style="font-weight:600;text-transform:uppercase;">Start at Row:</label><input type="number" id="ipp-paste-start" class="si" style="width:60px;padding:4px;" value="1" min="1">
+    </div>
     <textarea id="ipp-paste-input" class="paste-textarea"></textarea>
     <div class="u-flex u-gap-10"><button class="tbtn tbtn-add" onclick="applyIPPPaste()">Apply Paste</button><button class="tbtn" onclick="toggleIPPPaste()">Cancel</button></div>
   </div>
@@ -453,6 +464,7 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="ph"><h2>7 &middot; Pace Charts</h2><p>Titles auto-populated from CS Source.</p></div>
   <div class="cs-toolbar sticky-bar u-mb-14">
     <input class="si u-max-w-260" type="text" placeholder="Search titles&hellip;" oninput="filterTbl('pc-body',this.value)">
+    <button class="tbtn tbtn-clear" onclick="clearSection('pc')">&ldca; Clear All</button>
     <div class="ms-filter-container u-ml-auto" style="display:none;"><select class="ui-select ms-filter-select" onchange="changeStateFilter(this.value)"><option value="ALL">All States</option><option value="NONE">No States Only</option></select></div>
   </div>
   <div class="tw"><table id="pc-table"><colgroup id="pc-colgroup"></colgroup><thead id="pc-thead"></thead><tbody id="pc-body"></tbody></table></div>
@@ -575,6 +587,7 @@ let ACTIVE_STATE_FILTER = 'ALL';
 let MULTI_PART_ENABLED  = false;
 let APP_STATE           = [];
 let RUNTIME_VERSION_LOG = [];
+let lastActiveRowIdx    = 0;
 let paceViewMode        = { rp:'standard', hp:'standard' };
 let dragSrcIndex = null, dragPaceType = null, dragSrcGrid = null;
 window.lastSegPts = { ids:{1:[],2:[]}, qa:{1:[],2:[]} };
@@ -635,7 +648,9 @@ const RAW_DATA = {
     ["3.11","AI Assistant","2026-03-09","Refined Stats Tab & Exam Weights Ref","","","","Modified the Stats table to highlight the Course row in blue and alternate row shading for readability. Restyled the Segment Exam Weights reference to clearly bold the parent lesson above any indented multi-part exams."],
     ["3.12","AI Assistant","2026-03-12","Added Multi-State Downstream Filtering","","","","Implemented dynamic state filters in downstream tabs. When Multi-State is enabled, toolbars display a dropdown to filter visible lessons by specific states or 'No States', while globally applicable (blank state) lessons remain visible across all filters."],
     ["3.13","AI Assistant","2026-03-12","Dynamic Exam Weights Calculation Grids","","","","Updated Segment Exam Weights to support unlimited calculation versions. Enabled horizontal scrolling for grids and added the ability to manually rename calculation titles to better document what each grid computes."],
-    ["3.14","AI Assistant","2026-03-30","Sticky Headers Fix","","","","Fixed an issue where the scrolling table headers would overlap and hide the sticky toolbars. The table headers now calculate the active toolbar's height and stack neatly underneath it."]
+    ["3.14","AI Assistant","2026-03-30","Sticky Headers Fix","","","","Fixed an issue where the scrolling table headers would overlap and hide the sticky toolbars. The table headers now calculate the active toolbar's height and stack neatly underneath it."],
+   ["3.15","AI Assistant","2026-03-30","Smart Bulk Paste Updates","","","","Updated Bulk Paste across all sections to track the user's active row, allowing targeted pasting. Added overflow notifications when pasting more data than available rows, and overwrite warnings if existing data is detected."],
+    ["3.17","AI Assistant","2026-03-30","Clear Section Data","","","","Added 'Clear All' buttons to the toolbars of all downstream tabs (Checklist, Divs, Gradebuilder, Answer Keys, IPP, and Pace Charts) to allow users to quickly wipe out all data in a specific section."]
   ]
 };
 
@@ -1162,7 +1177,7 @@ function renderDownstreamHeaders() {
   document.getElementById('gb-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Gradebuilder Title</th><th>Points</th><th></th></tr>`;
   
   document.getElementById('ak-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
-  document.getElementById('ak-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>AK Title</th><th>Points</th><th></th></tr>`;
+  document.getElementById('ak-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Title in Answer Key</th><th>Points</th><th></th></tr>`;
   
   document.getElementById('ipp-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
   document.getElementById('ipp-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Time: From CS</th><th>IPP GS Title</th><th>GS Time</th><th>IPP FL Title</th><th>FL Time</th><th></th></tr>`;
@@ -1367,6 +1382,37 @@ function addCSRow() {
 }
 function deleteCSRow(i) { if (APP_STATE.length <= 1) return alert('Cannot delete the last row.'); APP_STATE.splice(i,1); renderAllTables(); }
 function clearAllCS() { if (!confirm('Clear all CS Source rows and reset to 35 blank rows?')) return; APP_STATE = Array.from({length:35}, () => createEmptyRow()); renderAllTables(); }
+
+function clearSection(sec) {
+  const names = { cl: 'Checklist', dv: 'Divs & Rubrics', gb: 'Gradebuilder', ak: 'Answer Keys', ipp: 'IPP', pc: 'Pace Charts' };
+  if (!confirm(`Are you sure you want to clear all data in the ${names[sec]} section?`)) return;
+  
+  APP_STATE.forEach(r => {
+    if (sec === 'cl') { r.cl.sitemapTitle = ''; r.cl.sitemapPts = ''; r.cl.sitemapTime = ''; }
+    if (sec === 'dv') { r.dv.divTitle = ''; r.dv.rubricTitle = ''; r.dv.rubricPts = ''; }
+    if (sec === 'gb') { r.gb.gbTitle = ''; r.gb.gbPts = ''; }
+    if (sec === 'ak') { r.ak.akTitle = ''; r.ak.akPts = ''; }
+    if (sec === 'ipp') { r.ipp.ippGsTitle = ''; r.ipp.ippGsTime = ''; r.ipp.ippFlTitle = ''; r.ipp.ippFlTime = ''; }
+    if (sec === 'pc') { r.pc.tradTitle = ''; r.pc.accelTitle = ''; r.pc.seg2Title = ''; }
+    
+    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
+      r.cs.multiPartData.forEach(p => {
+        if (sec === 'dv' && p.dv) { p.dv.divTitle = ''; p.dv.rubricTitle = ''; p.dv.rubricPts = ''; }
+        if (sec === 'gb' && p.gb) { p.gb.gbTitle = ''; p.gb.gbPts = ''; }
+      });
+    }
+  });
+  
+  if (sec === 'cl') renderChecklist();
+  if (sec === 'dv') renderDivs();
+  if (sec === 'gb') renderGradebuilder();
+  if (sec === 'ak') renderAnswerKeys();
+  if (sec === 'ipp') renderIPP();
+  if (sec === 'pc') renderPaceCharts();
+  
+  showToast(`${names[sec]} data cleared.`, 'warn');
+}
+
 function sortCSTitles() {
   const filled = APP_STATE.filter(r => r.cs.title?.trim());
   const blanks  = APP_STATE.filter(r => !r.cs.title?.trim());
@@ -1382,54 +1428,54 @@ function onCSDragOver(e,i){ e.preventDefault(); document.querySelectorAll('#cs-b
 function onCSDrop(e,i){ e.preventDefault(); if(dragSrcIndex===null||dragSrcIndex===i)return; const [row]=APP_STATE.splice(dragSrcIndex,1); APP_STATE.splice(i,0,row); renderAllTables(); }
 
 // ── PASTE HANDLERS ────────────────────────────────────────────────────────────
-function togglePaste(zoneId, inputId) { const el=document.getElementById(zoneId); el.style.display=el.style.display==='none'?'block':'none'; if(el.style.display==='block') document.getElementById(inputId).value=''; }
-function toggleCLPaste(){  togglePaste('cl-paste-zone',  'cl-paste-input'); }
-function toggleGBPaste(){  togglePaste('gb-paste-zone',  'gb-paste-input'); }
-function toggleIPPPaste(){ togglePaste('ipp-paste-zone', 'ipp-paste-input'); }
-function toggleAKPaste(){  togglePaste('ak-paste-zone',  'ak-paste-input'); }
+function togglePaste(zoneId, inputId, startId) { const el=document.getElementById(zoneId); el.style.display=el.style.display==='block'?'none':'block'; if(el.style.display==='block'){ document.getElementById(inputId).value=''; const se=document.getElementById(startId); if(se) se.value = lastActiveRowIdx + 1; } }
+function toggleCLPaste(){  togglePaste('cl-paste-zone',  'cl-paste-input', 'cl-paste-start'); }
+function toggleGBPaste(){  togglePaste('gb-paste-zone',  'gb-paste-input', 'gb-paste-start'); }
+function toggleIPPPaste(){ togglePaste('ipp-paste-zone', 'ipp-paste-input', 'ipp-paste-start'); }
+function toggleAKPaste(){  togglePaste('ak-paste-zone',  'ak-paste-input', 'ak-paste-start'); }
 
 function applyCLPaste() {
   const text=document.getElementById('cl-paste-input').value; if(!text.trim()) return toggleCLPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
-  APP_STATE.forEach(r => { if(!r.cs.title||li>=lines.length)return; const c=lines[li++].split('\t'); r.cl.sitemapTitle=c[0]?c[0].replace(/[\r\n]+/g,''):''; r.cl.sitemapPts=c[1]?c[1].replace(/(points?|pts?)/gi,'').trim:''; r.cl.sitemapTime=c[2]?c[2].replace(/(minutes?|mins?)/gi,'').trim():''; });
-  toggleCLPaste(); renderChecklist(); showToast('Checklist data pasted.','success');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('cl-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
+  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){ if(APP_STATE[i].cs.title) tgts.push({r:APP_STATE[i],l:lines[li++]}); }
+  if(tgts.some(t=>t.r.cl.sitemapTitle||t.r.cl.sitemapPts||t.r.cl.sitemapTime) && !confirm("Existing data found. Overwrite?")) return;
+  tgts.forEach(t=>{ const c=t.l.split('\t'); t.r.cl.sitemapTitle=c[0]?c[0].replace(/[\r\n]+/g,'').trim():''; t.r.cl.sitemapPts=c[1]?c[1].replace(/(points?|pts?)/gi,'').trim():''; t.r.cl.sitemapTime=c[2]?c[2].replace(/(minutes?|mins?)/gi,'').trim():''; });
+  toggleCLPaste(); renderChecklist(); const over=lines.length-tgts.length;
+  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast('Checklist data pasted.','success');
 }
 
 function applyGBPaste() {
   const text=document.getElementById('gb-paste-input').value; if(!text.trim()) return toggleGBPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
-  APP_STATE.forEach(r => { 
-    if(!r.cs.title||li>=lines.length) return; 
-    const c=lines[li++].split('\t'); 
-    r.gb.gbTitle=c[0]?c[0].replace(/[\r\n]+/g,'').replace(/^[\.\s]+/,'').trim():''; 
-    r.gb.gbPts=c[1]?c[1].replace(/[^\d.-]/g,''):''; 
-    
-    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
-      r.cs.multiPartData.forEach((p, pIdx) => {
-        if(li>=lines.length) return;
-        const pc = lines[li++].split('\t');
-        if(!p.gb) p.gb = {gbTitle:'',gbPts:''};
-        p.gb.gbTitle = pc[0]?pc[0].replace(/[\r\n]+/g,'').replace(/^[\.\s]+/,'').trim():'';
-        p.gb.gbPts = pc[1]?pc[1].replace(/[^\d.-]/g,''):'';
-      });
-    }
-  });
-  toggleGBPaste(); renderGradebuilder(); showToast('Gradebuilder data pasted.','success');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('gb-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
+  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){
+    const r=APP_STATE[i]; if(!r.cs.title) continue; tgts.push({r,l:lines[li++],p:null});
+    if(MULTI_PART_ENABLED&&r.cs.multiPart&&r.cs.multiPartData.length){ r.cs.multiPartData.forEach(p=>{ if(li<lines.length) tgts.push({r,p,l:lines[li++]}); }); }
+  }
+  if(tgts.some(t=>t.p?(t.p.gb&&(t.p.gb.gbTitle||t.p.gb.gbPts)):(t.r.gb.gbTitle||t.r.gb.gbPts)) && !confirm("Existing data found. Overwrite?")) return;
+  tgts.forEach(t=>{ const c=t.l.split('\t'), tVal=c[0]?c[0].replace(/[\r\n]+/g,'').replace(/^[\.\s]+/,'').trim():'', pVal=c[1]?c[1].replace(/[^\d.-]/g,''):''; if(t.p){if(!t.p.gb)t.p.gb={gbTitle:'',gbPts:''}; t.p.gb.gbTitle=tVal; t.p.gb.gbPts=pVal;}else{t.r.gb.gbTitle=tVal; t.r.gb.gbPts=pVal;} });
+  toggleGBPaste(); renderGradebuilder(); const over=lines.length-tgts.length;
+  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast('Gradebuilder data pasted.','success');
 }
 
 function applyAKPaste() {
   const text=document.getElementById('ak-paste-input').value; if(!text.trim()) return toggleAKPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
-  APP_STATE.forEach(r => { if(!r.cs.title||li>=lines.length)return; const raw=lines[li++].split('\t')[0]||''; r.ak.akTitle=raw.replace(/\.{2,}\s*\d+\s*$/,'').replace(/\s*\d+\s*$/,'').trim(); r.ak.akPts=lines[li]?(lines[li].split('\t')[1]||'').replace(/[^\d.-]/g,''):''; });
-  toggleAKPaste(); renderAnswerKeys(); showToast('Answer Keys TOC pasted.','success');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('ak-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
+  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){ if(APP_STATE[i].cs.title){ const tRaw=lines[li++].split('\t')[0]||'', pRaw=lines[li]?(lines[li].split('\t')[1]||''):''; tgts.push({r:APP_STATE[i],tRaw,pRaw}); } }
+  if(tgts.some(t=>t.r.ak.akTitle||t.r.ak.akPts) && !confirm("Existing data found. Overwrite?")) return;
+  tgts.forEach(t=>{ t.r.ak.akTitle=t.tRaw.replace(/\.{2,}\s*\d+\s*$/,'').replace(/\s*\d+\s*$/,'').trim(); t.r.ak.akPts=t.pRaw.replace(/[^\d.-]/g,''); });
+  toggleAKPaste(); renderAnswerKeys(); const over=lines.length-tgts.length;
+  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast('Answer Keys TOC pasted.','success');
 }
 
 function applyIPPPaste() {
-  const text=document.getElementById('ipp-paste-input').value, target=document.getElementById('ipp-paste-type').value;
+  const text=document.getElementById('ipp-paste-input').value, tType=document.getElementById('ipp-paste-type').value;
   if(!text.trim()) return toggleIPPPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let li=0;
-  APP_STATE.forEach(r => { if(!r.cs.title||li>=lines.length)return; const c=lines[li++].split('\t'); const t=c[0]?c[0].replace(/[\r\n]+/g,''):''; const time=c[2]?c[2].replace(/[^\d.-]/g,''):''; if(target==='GS'){r.ipp.ippGsTitle=t;r.ipp.ippGsTime=time;}else{r.ipp.ippFlTitle=t;r.ipp.ippFlTime=time;} });
-  toggleIPPPaste(); renderIPP(); showToast(`IPP ${target} data pasted.`,'success');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('ipp-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
+  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){ if(APP_STATE[i].cs.title) tgts.push({r:APP_STATE[i],l:lines[li++]}); }
+  if(tgts.some(t=>tType==='GS'?(t.r.ipp.ippGsTitle||t.r.ipp.ippGsTime):(t.r.ipp.ippFlTitle||t.r.ipp.ippFlTime)) && !confirm(`Existing ${tType} data found. Overwrite?`)) return;
+  tgts.forEach(t=>{ const c=t.l.split('\t'), title=c[0]?c[0].replace(/[\r\n]+/g,'').trim():'', time=c[2]?c[2].replace(/[^\d.-]/g,''):''; if(tType==='GS'){t.r.ipp.ippGsTitle=title; t.r.ipp.ippGsTime=time;}else{t.r.ipp.ippFlTitle=title; t.r.ipp.ippFlTime=time;} });
+  toggleIPPPaste(); renderIPP(); const over=lines.length-tgts.length;
+  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast(`IPP ${tType} data pasted.`,'success');
 }
 
 // ── TABLE FILTER ──────────────────────────────────────────────────────────────
@@ -1602,6 +1648,30 @@ const refreshSummary = debounce(() => {
 },300);
 
 // ── EVENT DELEGATION ──────────────────────────────────────────────────────────
+function syncPasteRow(idx) {
+  if (isNaN(idx) || idx < 0) return;
+  lastActiveRowIdx = idx;
+  // Update all paste start inputs universally, whether the box is open or closed
+  ['cl', 'gb', 'ak', 'ipp'].forEach(prefix => {
+    const input = document.getElementById(`${prefix}-paste-start`);
+    if (input) input.value = lastActiveRowIdx + 1;
+  });
+}
+
+document.addEventListener('mousedown', e => {
+  const tr = e.target.closest('tr');
+  if (tr && tr.id) {
+    const match = tr.id.match(/-row-(\d+)/);
+    if (match) syncPasteRow(parseInt(match[1]));
+  }
+});
+
+document.addEventListener('focusin', e => { 
+  if (e.target.dataset && e.target.dataset.index) {
+    syncPasteRow(parseInt(String(e.target.dataset.index).split('-')[0]));
+  }
+});
+
 document.addEventListener('paste', e => { if(e.target?.classList?.contains('editable')){e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text/plain'));} });
 
 document.getElementById('main').addEventListener('input', e => {
