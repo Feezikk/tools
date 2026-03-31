@@ -53,6 +53,8 @@
       --sky-orb:   var(--sun);
       --orb-y:     -14px; 
       --cloud-fill: rgba(255, 255, 255, 0.9);
+      --cutout-x:  20px;
+      --cutout-y:  -20px;
     }
 
     [data-theme="sunset"] {
@@ -67,6 +69,8 @@
       --sky-orb:   #FF9F1C;
       --orb-y:     14px; 
       --cloud-fill: rgba(255, 209, 102, 0.6); 
+      --cutout-x:  20px;
+      --cutout-y:  -20px;
     }
 
     [data-theme="night"] {
@@ -82,6 +86,10 @@
       --sky-orb:   #F3EAD8;
       --orb-y:     -10px; 
       --cloud-fill: rgba(142, 151, 184, 0.4); 
+      
+      /* Crescent Moon Variables */
+      --cutout-x:  0px;
+      --cutout-y:  0px;
     }
 
     ::selection {
@@ -101,7 +109,7 @@
       transition: background-color 1.5s ease, color 1.5s ease;
     }
 
-    /* ─── BACKGROUND TEXTURE & DUST ──────────────────────────────── */
+    /* ─── BACKGROUND TEXTURE, STARS & DUST ───────────────────────── */
     body::before {
       content: '';
       position: fixed;
@@ -114,10 +122,34 @@
       z-index: 0;
     }
 
-    body::after {
-      content: '';
+    #stars {
       position: fixed;
       inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+      background-image: 
+        radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 160px 120px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 240px 60px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 300px 90px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 350px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 400px 100px, #fff, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 450px 150px;
+    }
+
+    [data-theme="night"] #stars {
+      opacity: 0.6;
+      animation: twinkle 4s ease-in-out infinite alternate;
+    }
+
+    #dust {
+      position: fixed;
+      inset: -30px; /* Oversized to prevent edges showing during parallax */
       pointer-events: none;
       z-index: 0;
       background-image:
@@ -127,7 +159,9 @@
       background-position: 0 0, 40px 60px;
       animation: dustDrift 60s linear infinite;
       opacity: 0.7;
-      will-change: background-position;
+      will-change: background-position, transform;
+      transform: translate(var(--mouse-x, 0px), var(--mouse-y, 0px));
+      transition: transform 0.1s ease-out;
     }
 
     /* ─── THEME TOGGLE ───────────────────────────────────────────── */
@@ -234,6 +268,12 @@
       transform: translateY(var(--orb-y));
       transition: fill 1.5s ease, transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    
+    .moon-cutout {
+      transform-origin: 165px 25px;
+      transform: translate(var(--cutout-x, 20px), var(--cutout-y, -20px));
+      transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
     .mtn-back {
       fill: var(--mtn-back);
@@ -253,7 +293,6 @@
     .cloud-svg {
       fill: var(--cloud-fill);
       transition: fill 1.5s ease;
-      /* The base opacity is controlled by JS for variety, but we ensure fill transitions smoothly */
     }
 
     @keyframes driftAcross {
@@ -395,18 +434,18 @@
     .mini-cards-column {
       display: flex;
       flex-direction: column;
-      gap: 20px; /* Matches the grid gap perfectly */
+      gap: 20px; 
     }
 
     .tool-card.mini {
       flex-direction: row;
       align-items: center;
       padding: 20px 24px;
-      flex: 1; /* Allows them to stretch and share the vertical space evenly */
+      flex: 1; 
     }
 
     .tool-card.mini .card-content {
-      flex: 1; /* Pushes the arrow to the right edge */
+      flex: 1; 
     }
 
     .tool-card.mini .card-name {
@@ -419,8 +458,8 @@
     }
 
     .tool-card.mini .card-arrow {
-      margin-top: 0; /* Overrides the standard card's margin-top: auto */
-      flex-shrink: 0; /* Prevents the arrow circle from squishing */
+      margin-top: 0; 
+      flex-shrink: 0; 
     }
 
     /* ─── IN DEV BADGE ───────────────────────────────────────────── */
@@ -501,6 +540,40 @@
       z-index: 5;
     }
 
+    .mascot-tooltip {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      opacity: 0;
+      background: var(--terracotta);
+      color: #FFF;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      white-space: nowrap;
+      z-index: 10;
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+    .mascot-tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 4px 4px 0;
+      border-style: solid;
+      border-color: var(--terracotta) transparent transparent transparent;
+    }
+    .mascot-wrap:hover .mascot-tooltip,
+    .mascot-wrap:focus-visible .mascot-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     /* ─── KEYFRAMES & ANIMATIONS ─────────────────────────────────── */
     @keyframes fadeDown {
       from { opacity: 0; transform: translateY(-20px); }
@@ -515,6 +588,11 @@
     @keyframes dustDrift {
       0% { background-position: 0px 0px, 0px 0px; }
       100% { background-position: 100vw 100vh, -50vw 50vh; }
+    }
+    
+    @keyframes twinkle {
+      0% { opacity: 0.3; }
+      100% { opacity: 0.8; }
     }
 
     @keyframes cardWiggle {
@@ -616,7 +694,7 @@
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
       }
-      body::after { animation: none; }
+      #dust { animation: none; transform: none !important; }
       .mascot-wrap, .ear-left, .ear-right, .dev-badge, html[data-theme="night"] .z1, html[data-theme="night"] .z2, html[data-theme="night"] .z3 {
         animation: none !important; 
       }
@@ -629,6 +707,9 @@
   </style>
 </head>
 <body>
+
+  <div id="stars"></div>
+  <div id="dust"></div>
 
   <button id="themeToggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
 
@@ -644,10 +725,14 @@
 		  <clipPath id="horizon-clip">
 			<rect x="0" y="0" width="320" height="50" />
 		  </clipPath>
+          <mask id="moon-mask">
+            <rect x="0" y="0" width="320" height="60" fill="white" />
+            <circle class="moon-cutout" cx="165" cy="25" r="10" fill="black" />
+          </mask>
 		</defs>
 
 		<g clip-path="url(#horizon-clip)">
-		  <circle class="celestial-orb" cx="160" cy="30" r="10" />
+		  <circle class="celestial-orb" cx="160" cy="30" r="10" mask="url(#moon-mask)" />
 		</g>
 
 		<g id="cloud-layer-back"></g>
@@ -714,8 +799,6 @@
         <div class="card-arrow">→</div>
       </a>
 		
-		
-
      <div class="mini-cards-column">
         <a class="tool-card mini" href="extract_objectives.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #81B29A; animation-delay: .70s;">
           <div class="card-content">
@@ -738,8 +821,6 @@
         <span class="plus">＋</span>
         <p>More tools grazing<br>in the fields — coming soon.</p>
       </div>
-
-		
 		
     </div>
   </main>
@@ -748,6 +829,7 @@
     <p class="footer-note">Made with <span class="heart">♥</span> and a sprinkle of llama magic</p>
 
     <div class="mascot-wrap" tabindex="0" role="button" aria-label="Pet the llama">
+      <div class="mascot-tooltip">Give me a pet!</div>
       <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" width="160" height="160" aria-label="Llama mascot">
         <ellipse cx="80" cy="112" rx="38" ry="28" fill="#E8C9A0"/>
         <rect x="66" y="68" width="28" height="46" rx="14" fill="#E8C9A0"/>
@@ -878,7 +960,19 @@
 
     initTheme();
 
-    // --- 2. Card Animation Fix ---
+    // --- 2. Interactive Parallax Dust ---
+    document.addEventListener('mousemove', (e) => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      // Slight shift values (up to 15px depending on mouse position)
+      const x = (e.clientX / window.innerWidth - 0.5) * 15;
+      const y = (e.clientY / window.innerHeight - 0.5) * 15;
+      
+      // We shift in the opposite direction of the mouse for that depth feel
+      document.body.style.setProperty('--mouse-x', `${-x}px`);
+      document.body.style.setProperty('--mouse-y', `${-y}px`);
+    });
+
+    // --- 3. Card Animation Fix ---
     document.querySelectorAll('.tool-card').forEach(card => {
       card.addEventListener('animationend', (e) => {
         if (e.animationName === 'fadeUp') {
@@ -894,7 +988,7 @@
       }, { once: true });
     });
 
-    // --- 3. Easter Egg: Pet the Llama ---
+    // --- 4. Easter Egg: Pet the Llama ---
     const mascotWrap = document.querySelector('.mascot-wrap');
     const leftEar = document.querySelector('.ear-left');
     const rightEar = document.querySelector('.ear-right');
@@ -931,7 +1025,7 @@
       });
     }
 
-    // --- 4. Dynamic Sky Elements (Clouds) ---
+    // --- 5. Dynamic Sky Elements (Clouds) ---
     function spawnClouds() {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
