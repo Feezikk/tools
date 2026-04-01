@@ -813,7 +813,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.21</span>
+                        Course Explorer Tool <span class="version-pill">v7.25</span>
                     </div>
                 </div>
             </div>
@@ -1049,8 +1049,7 @@
                         <option value="early_elem">Early Elementary (K-2)</option>
                         <option value="upper_elem">Upper Elementary (3-5)</option>
                         <option value="middle">Middle School (6-8)</option>
-                        <option value="high">High School (9-12)</option>
-                        <option value="adult" selected>Adult / Higher Ed</option>
+                        <option value="high" selected>High School (9-12)</option>
                         <option value="custom">Custom Range...</option>
                     </select>
                 </div>
@@ -1458,8 +1457,7 @@ const GRADE_LEVEL_THRESHOLDS = {
     early_elem: { name: "Early Elem (K-2)", wpm: 80,  maxWords: 12, targetMin: 0,  targetMax: 2.9 },
     upper_elem: { name: "Upper Elem (3-5)", wpm: 130, maxWords: 15, targetMin: 3,  targetMax: 5.9 },
     middle:     { name: "Middle (6-8)",     wpm: 170, maxWords: 20, targetMin: 6,  targetMax: 8.9 },
-    high:       { name: "High (9-12)",      wpm: 220, maxWords: 25, targetMin: 9,  targetMax: 12.9 },
-    adult:      { name: "Adult / Higher Ed",wpm: 250, maxWords: 30, targetMin: 13, targetMax: 20 }
+    high:       { name: "High (9-12)",      wpm: 220, maxWords: 25, targetMin: 9,  targetMax: 12.9 }
 };
 
 // =============================================================================
@@ -1546,7 +1544,7 @@ let previousModalState       = null;
 let currentAudioBlobUrl      = null;
 // Readability Dashboard State
 let readabilityHierarchy = [];
-let currentTargetGrade   = 'adult';
+let currentTargetGrade   = 'high';
 
 // =============================================================================
 // ADVANCED SEARCH AST & QUERY PARSER
@@ -2672,7 +2670,7 @@ window.buildReadabilityHierarchy = function() {
 
 window.getCurrentGradeThresholds = function() {
     const targetSelect = document.getElementById('target-grade-select');
-    const val = targetSelect ? targetSelect.value : 'adult';
+    const val = targetSelect ? targetSelect.value : 'high';
     
     if (val === 'custom') {
         const maxG = parseFloat(document.getElementById('custom-max').value) || 12;
@@ -2856,6 +2854,7 @@ window.renderReadabilityDashboard = function() {
             const statsObj = {
                 title: node.locationId || node.title,
                 fkGrade: node.fkGrade.toFixed(1),
+                targetMin: currentGradeObj.targetMin,
                 targetMax: currentGradeObj.targetMax,
                 maxWords: currentGradeObj.maxWords, // <-- Added this
                 words: node.words,
@@ -3003,7 +3002,7 @@ window.openReadabilityStatsModal = function(encStats) {
             <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:8px; padding:15px; text-align:center;">
                 <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-light); font-weight:700;">F-K Grade</div>
                 <div style="font-size:1.5rem; color:var(--primary); font-weight:bold;">${stats.fkGrade}</div>
-                <div style="font-size:0.75rem; color:var(--text-light);">Target Max: ${stats.targetMax}</div>
+                <div style="font-size:0.75rem; color:var(--text-light);">Target: ${stats.targetMin} - ${stats.targetMax}</div>
             </div>
             <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:8px; padding:15px; text-align:center;">
                 <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-light); font-weight:700;">Avg Words/Sent</div>
@@ -3410,8 +3409,8 @@ async function runIndexingAndShowUI(wasRefreshed) {
         if (displayTitle) {
             customCourseName = displayTitle;
             localStorage.setItem(NAME_KEY, customCourseName);
-            elements.mainTitle.textContent = `${customCourseName} Explorer`;
-            document.title = `${customCourseName} Course Explorer`;
+            elements.mainTitle.textContent = customCourseName;
+            document.title = customCourseName;
         }
 
         const sitemapFile =
@@ -7328,8 +7327,8 @@ window.applyAuditConfig = function applyAuditConfig() {
         localStorage.setItem(NAME_KEY, customCourseName);
     }
     if (customCourseName) {
-        elements.mainTitle.textContent = `${customCourseName} Explorer`;
-        document.title = `${customCourseName} Course Explorer`;
+        elements.mainTitle.textContent = customCourseName;
+        document.title = customCourseName;
     } else {
         elements.mainTitle.textContent = "Course Explorer";
         document.title = "Course Explorer";
