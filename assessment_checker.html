@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.34</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.36</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -331,6 +331,8 @@ const AppState = {
   dashMeta:         null, // { questions, groups }
   imgCourseFolder:  '',   // set by the header input
   imgBasePath:      '',   // derived from imgCourseFolder
+  hasRunOnce:       false,
+  openCategories:   new Set(),
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -1395,6 +1397,16 @@ const AssessmentChecker = (() => {
               // A tag tail has at least one attribute assignment or ends with />
               if (/=\s*["'][^"']*["']/.test(rawBefore) || rawBefore.trimEnd().endsWith('/>')) continue;
             }
+            // Also suppress if the content just before > looks like a malformed tag
+            // whose opening < is missing — e.g. "/tr>" or "tagname>" or "/tagname attr>"
+            // This catches orphaned tag tails like /tr> that are missing their <
+            const KNOWN_TAGS_GT = 'span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre';
+            // Anchored at ^ so the whole trimmed text must BE a tag tail, not just contain one.
+            // Require tag name be followed by a non-word char (space, /) or end-of-string
+            // so that "greater" (containing "tr") doesn't falsely match.
+            const orphanTailRe = new RegExp('^\\/?(?:' + KNOWN_TAGS_GT + ')(?:[^a-zA-Z0-9][^<>]*)?$', 'i');
+            const textBeforeGt = rawLine.substring(Math.max(0, lastLt !== -1 ? lastLt + 1 : 0), idx);
+            if (orphanTailRe.test(textBeforeGt.trim())) continue;
           }
 
           if (sym === '<') {
@@ -2851,6 +2863,8 @@ function clearAll() {
   Object.keys(resultRegistry).forEach(k => delete resultRegistry[k]);
   AppState.lineMap = {};
   AppState.dashData = null;
+  AppState.hasRunOnce = false;
+  AppState.openCategories.clear();
   DOM.resultsBody.innerHTML = EMPTY_STATE_HTML;
   DOM.summaryChips.style.display = 'none';
   DOM.qStrip.classList.remove('visible');
@@ -3116,6 +3130,15 @@ function loadSample(){
 function runAudit(){
   const raw=ta.value.trim();
   if(!raw){alert('Please paste content or upload a file first.');return;}
+  
+  // Capture open categories before wiping the results panel
+  if (AppState.hasRunOnce) {
+    AppState.openCategories.clear();
+    document.querySelectorAll('.category-section.open').forEach(sec => {
+      if (sec.id) AppState.openCategories.add(sec.id);
+    });
+  }
+
   DOM.resultsBody.innerHTML='<div class="empty-state"><div class="spinner"></div><p>Running checks\u2026</p></div>';
   Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
   AppState.lineMap = {};
@@ -3224,6 +3247,41 @@ function formatTableHTMLWithHighlights(html, issues) {
     .map(iss => ({ start: iss.hIndex, end: iss.hIndex + iss.matchLen }));
   // (hIndex values are offsets into the original full html; tokens also use those same
   //  absolute offsets via hOffset, so no adjustment needed — they share the same frame.)
+
+  // ── Step 5b: also detect malformed tags not already covered by issues ──
+  // These are tag fragments missing their '>' (e.g. "<tr" followed immediately by another
+  // '<') or orphaned tag tails missing their '<' (e.g. "/tr>" with no '<' before it).
+  // We scan tableOnly for these and add them to errorRanges.
+  const STRUCT_TAG_NAMES = 'table|thead|tbody|tfoot|tr|th|td|caption';
+  // Malformed open/close: <tagname or </tagname with no '>' before next '<'
+  const malformedOpenRe = new RegExp('<\\/?('+STRUCT_TAG_NAMES+')\\b[^<>]*(?=<|$)', 'gi');
+  let malMtch;
+  while ((malMtch = malformedOpenRe.exec(tableOnly)) !== null) {
+    const fragment = tableOnly.substring(malMtch.index);
+    const nextLt = fragment.indexOf('<', 1);
+    const nextGt = fragment.indexOf('>');
+    if (nextGt === -1 || (nextLt !== -1 && nextLt < nextGt)) {
+      const absStart = hOffset + malMtch.index;
+      // Only add if not already covered
+      if (!errorRanges.some(r => r.start <= absStart && r.end >= absStart + malMtch[0].length)) {
+        errorRanges.push({ start: absStart, end: absStart + malMtch[0].length });
+      }
+    }
+  }
+  // Orphaned closing tail: /tagname> or tagname> with no '<' before it on the same "token"
+  // These show up in tableOnly as text nodes (not matched as tags by the <[^>]*> pattern)
+  // e.g. the text "/tr>" sitting between two tags.
+  const orphanTailRe = new RegExp('(?:^|(?<=>|\\s))\\/?(?:'+STRUCT_TAG_NAMES+')(?:[^<>]*)>', 'gi');
+  let orphMtch;
+  while ((orphMtch = orphanTailRe.exec(tableOnly)) !== null) {
+    // Confirm there is no '<' within this match (it would have been caught as a proper tag)
+    if (orphMtch[0].includes('<')) continue;
+    const absStart = hOffset + orphMtch.index + (orphMtch[0].match(/^(\s*)/) || [''])[0].length;
+    const absEnd   = hOffset + orphMtch.index + orphMtch[0].length;
+    if (!errorRanges.some(r => r.start <= absStart && r.end >= absEnd)) {
+      errorRanges.push({ start: absStart, end: absEnd });
+    }
+  }
 
   // ── Step 6: render, injecting highlights on lines that overlap error ranges ──
   return merged.map(line => {
@@ -3447,11 +3505,16 @@ function renderReport(report,lines){
   }
   DOM.resultsBody.innerHTML = html;
   highlightLines(errLines, warnLines);
-  // Auto-expand groups that contain errors
-  document.querySelectorAll('.category-section').forEach(sec => {
-    const hdr = sec.querySelector('.category-header');
-    if (hdr && hdr.classList.contains('has-errors')) sec.classList.add('open');
-  });
+  
+  // Restore category open state on subsequent runs, keep all closed on first run
+  if (!AppState.hasRunOnce) {
+    AppState.hasRunOnce = true;
+  } else {
+    document.querySelectorAll('.category-section').forEach(sec => {
+      if (AppState.openCategories.has(sec.id)) sec.classList.add('open');
+    });
+  }
+  
   // Show filter bar
   AppState.activeFilter = 'all';
   DOM.filterBar.classList.add('visible');
