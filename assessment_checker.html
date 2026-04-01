@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.36</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.37</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2220,7 +2220,8 @@ const AssessmentChecker = (() => {
             const side = hasBrBefore ? 'before' : 'after';
             results.push(fail(rule,
               rule.message.replace('{line}', i+1) + ' (<br /> found ' + side + ' the image only)',
-              i+1));
+              i+1, null,
+              { type: 'br-ambiguous', rawLine: line, img, side }));
           }
         }
         return results;
@@ -3636,6 +3637,38 @@ function renderItem(r,lines){
         '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues)+'</pre></div>';
     } else if(r.extra&&r.extra.type==='formatted-code'){
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table Structure (For Review)</div><div style="padding: 0 12px 10px 12px;"><pre class="fix-snippet" style="background:var(--surface); color:var(--text); tab-size:4; border-radius:var(--r); border-top:1px solid var(--border); margin:0;">'+formatTableHTMLWithHighlights(r.extra.code, [])+'</pre></div>';
+    } else if(r.extra&&r.extra.type==='br-ambiguous'){
+      // Render the raw line with <br /> tags highlighted in amber and the <img> dimmed,
+      // so the user can immediately see which side the lone <br /> is on.
+      const {rawLine, img, side} = r.extra;
+      const BRhighlight = (tag) =>
+        '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:3px;font-weight:700">' + esc(tag) + '</mark>';
+      const IMGdim = (tag) =>
+        '<span style="opacity:.4;font-style:italic">' + esc(tag) + '</span>';
+      // Walk the line, replacing <br …> tags and the img tag token-by-token
+      let annotated = '';
+      let pos = 0;
+      const tokenRe = /(<[^>]*>)/g;
+      let tm;
+      while ((tm = tokenRe.exec(rawLine)) !== null) {
+        // text before this token
+        if (tm.index > pos) annotated += esc(rawLine.substring(pos, tm.index));
+        const tok = tm[1];
+        if (/^<\/?\s*br\b/i.test(tok)) {
+          annotated += BRhighlight(tok);
+        } else if (tok === img) {
+          annotated += IMGdim(tok);
+        } else {
+          annotated += esc(tok);
+        }
+        pos = tm.index + tok.length;
+      }
+      if (pos < rawLine.length) annotated += esc(rawLine.substring(pos));
+      const sideLabel = side === 'before' ? '⬆ <code style="font-family:var(--mono)">&lt;br /&gt;</code> is <strong>before</strong> the image — none after' : '⬇ <code style="font-family:var(--mono)">&lt;br /&gt;</code> is <strong>after</strong> the image — none before';
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.5px;background:var(--warn-bg)">⚠ Ambiguous Image Placement</div>'+
+        '<div style="padding:6px 14px 4px;font-size:11px;color:var(--text-mid)">'+sideLabel+'</div>'+
+        '<div style="padding:4px 12px 10px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);white-space:pre-wrap;word-break:break-all;margin:0">'+annotated+'</pre></div>';
     } else if(r.extra&&r.extra.type==='group-points'){
       const{group,expected,items}=r.extra;
       const rows=items.map(item=>{
