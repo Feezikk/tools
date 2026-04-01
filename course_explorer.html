@@ -813,7 +813,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.16</span>
+                        Course Explorer Tool <span class="version-pill">v7.21</span>
                     </div>
                 </div>
             </div>
@@ -2626,7 +2626,7 @@ window.buildReadabilityHierarchy = function() {
 
         // Assign Page
         lesNode.children.push({
-            title: `Page ${pgNum}: ${item.filename.split('/').pop()}`,
+            title: `Page ${pgNum}`,
             type: "page", locationId: item.locationId, filename: item.filename,
             words: metrics.words, sentences: metrics.sentences, syllables: metrics.syllables,
             longSentences: metrics.longSentences, fkGrade: metrics.fkGrade
@@ -2854,7 +2854,7 @@ window.renderReadabilityDashboard = function() {
             
             // Package all stats to send to the modal
             const statsObj = {
-                title: node.title,
+                title: node.locationId || node.title,
                 fkGrade: node.fkGrade.toFixed(1),
                 targetMax: currentGradeObj.targetMax,
                 maxWords: currentGradeObj.maxWords, // <-- Added this
@@ -2962,12 +2962,12 @@ window.openReadabilityStatsModal = function(encStats) {
     const modalBody   = document.getElementById('modal-body-content');
 
     modalHeader.innerHTML = `
-        <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
-            📊 Readability Analysis
-        </h3>
-        <div style="font-size:0.85rem; color:var(--text-light);">
-            <span>${escapeHtml(stats.title)}</span>
-        </div>`;
+            <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
+                📊 Readability Analysis
+            </h3>
+            <div style="font-size:0.85rem; color:var(--text-light);">
+                <span class="id-number"># ${escapeHtml(stats.title)}</span>
+            </div>`;
 
    let reasons = [];
     if (parseFloat(stats.avgWps) > 20) reasons.push("<li><strong>High Words per Sentence:</strong> Long sentences increase cognitive load. <em>(Target: &lt; 20)</em></li>");
@@ -3597,8 +3597,24 @@ function extractContentRecursive(obj) {
         note:   { clean: [], raw: [] },
         media:  { clean: [], raw: [] }
     };
-    const ignoreKeys = new Set(['id', 'type', 'contentType', 'status', 'classes', 'version']);
-    const mediaKeys  = new Set(['altText', 'caption', 'captionHeader', 'textVersion', 'copyright']);
+
+    // LAYER 1: Aggressively stripped blocklist
+    const ignoreKeys = new Set([
+        // Structural / layout keys
+        'id', 'type', 'contenttype', 'status', 'classes', 'version',
+        'grid', 'combotype', 'print', 'reveal', 'revealtitle',
+        'imgclasses', 'lightbox', 'animation', 'animbutton', 'animduration', 'unlock',
+        'layout', 'align', 'alignment', 'position', 'role', 'ariahidden', 'tabindex', 'src',
+        // Page metadata — block entire info subtree
+        'title', 'recoveredcontent', 'complexity', 'designedfor', 'duration', 'grades',
+        'badstandardmatches', 'info',
+        // Quiz / interactive feedback keys — not prose, skews readability scores
+            'correct', 'incorrect', 'failed', 'quiz', 'answer', 'directions',
+            // Machine Learning / Chat History
+            'chathistory', 'ml'
+        ]);
+
+    const mediaKeys = new Set(['alttext', 'caption', 'captionheader', 'textversion', 'copyright']);
     const hasTags    = /<[^>]+>/;
 
     function traverse(o, ctx) {
@@ -3606,15 +3622,29 @@ function extractContentRecursive(obj) {
         if (Array.isArray(o)) { for (const item of o) traverse(item, ctx); return; }
         if (typeof o === 'object') {
             for (const key in o) {
-                if (ignoreKeys.has(key)) continue;
+                // STRIP ALL SPACES AND SYMBOLS from the key name to catch authoring tool quirks
+                const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+                if (ignoreKeys.has(safeKey)) continue;
+
                 let nextCtx = ctx;
-                if      (key === 'ml'        || key === 'chatHistory') nextCtx = 'ml';
-                else if (key === 'standards' || key === 'standard')    nextCtx = 'std';
-                else if (key === 'notes'     || key === 'note')        nextCtx = 'note';
-                else if (mediaKeys.has(key))                           nextCtx = 'media';
+                if      (safeKey === 'ml'        || safeKey === 'chathistory') nextCtx = 'ml';
+                else if (safeKey === 'standards' || safeKey === 'standard')    nextCtx = 'std';
+                else if (safeKey === 'notes'     || safeKey === 'note')        nextCtx = 'note';
+                else if (mediaKeys.has(safeKey))                               nextCtx = 'media';
 
                 const val = o[key];
                 if (typeof val === 'string' && val.trim() !== '') {
+                    // LAYER 2: Value Sniper — exact-match structural noise
+                    const cleanVal = val.trim();
+                    if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(cleanVal)) continue;
+                    if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden)$/i.test(cleanVal)) continue;
+
+                    // LAYER 3: Contains-match for structural artifacts that slipped through
+                    if (/col-(md|sm|xs|lg)-\d+/.test(cleanVal)) continue;
+                    if (/"contentType"\s*:/.test(cleanVal)) continue;
+                    if (/"fieldValues"\s*:/.test(cleanVal)) continue;
+
                     streams[nextCtx].raw.push(val);
                     streams[nextCtx].clean.push(hasTags.test(val) ? stripHtml(val) : val);
                 } else {
@@ -3626,17 +3656,27 @@ function extractContentRecursive(obj) {
 
     traverse(obj, 'normal');
 
+    // Helper to ensure every extracted text block acts like a proper sentence
+    function formatStream(arr) {
+        return arr.map(s => {
+            let str = s.trim();
+            // If the string doesn't end with punctuation, force a period so the math treats it as a separate sentence
+            if (str && !/[.!?]$/.test(str)) str += ".";
+            return str;
+        }).join(" ");
+    }
+
     return {
-        normalClean: streams.normal.clean.join(" "),
-        normalRaw:   streams.normal.raw.join(" "),
-        mlClean:     streams.ml.clean.join(" "),
-        mlRaw:       streams.ml.raw.join(" "),
-       stdClean:    streams.std.clean.join(" "),
-        stdRaw:      streams.std.raw.join(" "),
-        noteClean:   streams.note.clean.join(" "),
-        noteRaw:     streams.note.raw.join(" "),
-        mediaClean:  streams.media.clean.join(" "),
-        mediaRaw:    streams.media.raw.join(" "),
+        normalClean: formatStream(streams.normal.clean),
+        normalRaw:   formatStream(streams.normal.raw),
+        mlClean:     formatStream(streams.ml.clean),
+        mlRaw:       formatStream(streams.ml.raw),
+        stdClean:    formatStream(streams.std.clean),
+        stdRaw:      formatStream(streams.std.raw),
+        noteClean:   formatStream(streams.note.clean),
+        noteRaw:     formatStream(streams.note.raw),
+        mediaClean:  formatStream(streams.media.clean),
+        mediaRaw:    formatStream(streams.media.raw),
     };
 }
 
