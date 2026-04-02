@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.41</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.45</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1749,14 +1749,14 @@ const AssessmentChecker = (() => {
           // Provide a visual diff suggesting LC if complexity is empty
           const expectedAttr = rule.attribute === 'data-complexity' ? 'LC' : '01.01R';
           results.push(fail(rule, `Question ${q.num} span is missing a value for ${rule.attribute}.`, q.startLine, `""`, 
-            { type: 'contextual-diff', actual: `${rule.attribute}=""`, expected: `${rule.attribute}="${expectedAttr}"` }));
+            { type: 'contextual-diff', actual: `${rule.attribute}=""`, expected: `${rule.attribute}="${expectedAttr}"`, truthAttr: sm[0] }));
           continue;
         }
         
         if(rule.validValues && !rule.validValues.includes(val)) {
           // Suggest the first valid value (e.g. LC) visually
           results.push(fail(rule, `Question ${q.num} span has invalid ${rule.attribute} "${val}". Valid: ${rule.validValues.join(', ')}.`, q.startLine, val, 
-            { type: 'contextual-diff', actual: `${rule.attribute}="${val}"`, expected: `${rule.attribute}="${rule.validValues[0]}"` }));
+            { type: 'contextual-diff', actual: `${rule.attribute}="${val}"`, expected: `${rule.attribute}="${rule.validValues[0]}"`, truthAttr: sm[0] }));
         }
       }
       return results;
@@ -2660,6 +2660,36 @@ const autoFixers={
     .replace(/<italic>([\s\S]*?)<\/italic>/gi,'<em>$1</em>')
     .replace(/<\/b>/gi,'</strong>').replace(/<\/i>/gi,'</em>')
     .replace(/<\/u>/gi,'</span>').replace(/<\/s>/gi,'</del>'),
+  'question-spacing': (text) => {
+    // Normalise the blank-line gap between every pair of consecutive questions to exactly one.
+    // A question boundary is identified by the last metadata line (group:N, points:N) or the
+    // question code line itself, followed by the next question code line.
+    const Q_CODE = /^(mc:radio:|essay:|fib:|tf:|matching:label:)/;
+    const META   = /^(points:\d+|group:\d+)$/;
+    const lines  = text.split('\n');
+    const out    = [];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      out.push(line);
+      // After a metadata line (group:/points:) or a question-code line, look ahead to see
+      // if the next non-blank line is a question code — if so, ensure exactly one blank gap.
+      const isBoundary = META.test(line.trim()) || Q_CODE.test(line.trim());
+      if (isBoundary) {
+        // Skip any existing blank lines
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim() === '') j++;
+        // If the next content line is a question code, normalise to exactly one blank
+        if (j < lines.length && Q_CODE.test(lines[j].trim())) {
+          out.push(''); // exactly one blank line
+          i = j;       // jump past all the old blanks (and the boundary line already pushed)
+          continue;
+        }
+      }
+      i++;
+    }
+    return out.join('\n');
+  },
   'points-before-group':text=>text.replace(/(group:\d+)\n(points:\d+)/g,'$2\n$1'),
   'span-followed-by-br':text=>text.replace(/(<\/span>)(?:\s*<\/?\s*br\b[^><]*(?:>|(?=<|$)))*/gi,'$1 <br /><br />'),
   'img-has-alt':        text=>text.replace(/<img([^>]*?)(\/?>)/gi,(match,attrs,close)=>{
@@ -3645,7 +3675,7 @@ function renderItem(r,lines){
         
         diffHtml = diffHtml.replace(safeActual, visualDiff);
         
-        userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text with Suggested Fix (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
+        userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text with <span style=\"color:#166534;font-weight:700\">Suggested Fix</span> (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
         standardFixPanel = '';
     } else {
         userSnippet = userLine ? '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--error);">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>' : '';
