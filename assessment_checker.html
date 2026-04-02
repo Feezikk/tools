@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.37</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.41</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -730,6 +730,13 @@ const RULES_DATA = {
       message:'Question {num} line {line}: HTML or image tag found on the right side of the dash. Move it to the left side by swapping the two halves.',
       fix:{description:'The LMS cannot render HTML or images on the right side of a matching pair. Swap the left and right sides so the HTML/image is on the left.\n\nSwapping example:\n  Before: plain text-<img src="..." alt="..." />\n  After:  <img src="..." alt="..." />-plain text',
            snippet:'<!-- Wrong: HTML on right -->\nplain label-<img src="..." alt="..." />\n\n<!-- Correct: HTML on left -->\n<img src="..." alt="..." />-plain label'} },
+
+    { id:'matching-img-align', category:'images', severity:'error',
+      description:'Images in matching answers must not use the align attribute — use style="vertical-align:middle;" or no alignment at all',
+      type:'matching-img-align-check',
+      message:'Question {num} line {line}: matching image uses align="{found}" — remove this attribute. Use style="vertical-align:middle;" if needed, or no alignment attribute at all.',
+      fix:{description:'The align attribute is not valid on images in matching answers. Remove it entirely. You may optionally add style="vertical-align:middle;" if needed for rendering, but no alignment attribute is also correct.',
+           snippet:'<!-- Wrong -->\n<img src="..." alt="..." align="middle" />\n<img src="..." alt="..." align="absmiddle" />\n\n<!-- Correct (with optional style) -->\n<img src="..." alt="..." style="vertical-align:middle;" />\n\n<!-- Also correct (no alignment) -->\n<img src="..." alt="..." />'} },
 
     { id:'span-lang-valid', category:'html-tags', severity:'error',
       description:'<span lang="..."> tags must be well-formed with a valid, non-empty language code',
@@ -2078,6 +2085,27 @@ const AssessmentChecker = (() => {
       );
     },
 
+    'matching-img-align-check'(rule, qs) {
+      const checkImgs = (text, lineNum, qNum) => {
+        const imgs = text.match(/<img\b[^>]*>/gi) || [];
+        return imgs.flatMap(img => {
+          const alignMatch = img.match(/\balign\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+          if (!alignMatch) return [];
+          const alignVal = (alignMatch[1] || alignMatch[2] || alignMatch[3] || '').trim();
+          const expected = img.replace(alignMatch[0], '').replace(/\s{2,}/g, ' ').trim();
+          return [fail(rule,
+            rule.message.replace('{num}', qNum).replace('{line}', lineNum).replace('{found}', alignVal),
+            lineNum, alignMatch[0],
+            { type: 'contextual-diff', actual: img, expected, truthAttr: alignMatch[0] }
+          )];
+        });
+      };
+      return qs.filter(q => q.code === 'matching:label:').flatMap(q => [
+        ...checkImgs(q.stem, q.startLine, q.num),
+        ...q.answers.flatMap(a => checkImgs(a.text, a.lineNum, q.num))
+      ]);
+    },
+
     'span-lang-check'(rule, qs, raw, lines) {
       // Valid BCP-47: primary subtag 2-3 letters, optional region/script subtags after hyphen
       const VALID_LANG = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/;
@@ -2180,7 +2208,16 @@ const AssessmentChecker = (() => {
       //   'missing'     — no <br /> either side, text present, no vertical-align:middle
       //   'unnecessary' — <br /> on BOTH sides, has vertical-align:middle (shouldn't)
       //   'ambiguous'   — <br /> on ONE side only (intent unclear, flag for review)
+      // All lines belonging to a matching question are exempt — images there follow
+      // different rules: vertical-align:middle is optional, no <br /> needed.
+      const matchingLines = new Set(
+        qs.filter(q => q.code === 'matching:label:').flatMap(q => [
+          ...q.stemLines,
+          ...q.answers.map(a => a.lineNum)
+        ])
+      );
       return lines.flatMap((line, i) => {
+        if (matchingLines.has(i + 1)) return [];
         const imgs = line.match(/<img\b[^>]*>/gi) || [];
         if (!imgs.length) return [];
         const results = [];
@@ -2229,7 +2266,15 @@ const AssessmentChecker = (() => {
     },
 
     'img-absmiddle-check'(rule, qs, raw, lines) {
+      // All lines belonging to a matching question are exempt — the matching-img-align rule covers them.
+      const matchingLines = new Set(
+        qs.filter(q => q.code === 'matching:label:').flatMap(q => [
+          ...q.stemLines,
+          ...q.answers.map(a => a.lineNum)
+        ])
+      );
       return lines.flatMap((line, i) => {
+        if (matchingLines.has(i + 1)) return [];
         const imgs = line.match(/<img\b[^>]*>/gi) || [];
         const results = [];
         for (const img of imgs) {
@@ -2702,6 +2747,17 @@ const autoFixers={
       }
       return '<ol' + (attrsNoType ? ' '+attrsNoType : '') + ' style="list-style-type: '+styleVal+';">';
     }),
+  'matching-img-align': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'img-absmiddle': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
@@ -3589,11 +3645,8 @@ function renderItem(r,lines){
         
         diffHtml = diffHtml.replace(safeActual, visualDiff);
         
-        userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
-        
-        // Generate contextual suggested fix
-        const exactCorrectedLine = safeLine.replace(safeActual, safeExpected);
-        standardFixPanel = `<div><div class="snippet-hdr" style="background:var(--pass-bg); color:var(--pass);">Suggested Fix</div><pre class="fix-snippet" style="background:var(--surface);">${exactCorrectedLine}</pre></div>`;
+        userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text with Suggested Fix (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
+        standardFixPanel = '';
     } else {
         userSnippet = userLine ? '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--error);">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>' : '';
     }
