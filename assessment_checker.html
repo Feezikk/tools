@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.51</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.52</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1889,10 +1889,23 @@ const AssessmentChecker = (() => {
         if(cC!==complexity){issues.push('complexity');errStr=errStr||cC;}
         
         if(issues.length) {
-            results.push(fail(rule,
-                `Question ${q.num} span content "${content}" does not match its attributes. Expected "${expectedText}" based on the attributes.`,
-                q.startLine, errStr, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim() }
-            ));
+            // Detect the specific case: only the lesson differs, and it's just a missing leading zero
+            // e.g. attribute has "01.03", span content has "1.03"
+            const onlyLessonMismatch = issues.length === 1 && issues[0] === 'lesson';
+            const isPadOnly = onlyLessonMismatch && ('0' + cL === firstLesson);
+
+            if (isPadOnly) {
+                results.push(fail(rule,
+                    `Question ${q.num} span content "${content}" is missing a leading zero — should be "${expectedText}" to match data-associatedlessons.`,
+                    q.startLine, cL,
+                    { type: 'contextual-diff', actual: content, expected: expectedText, truthAttr: content }
+                ));
+            } else {
+                results.push(fail(rule,
+                    `Question ${q.num} span content "${content}" does not match its attributes. Expected "${expectedText}" based on the attributes.`,
+                    q.startLine, errStr, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim() }
+                ));
+            }
         }
       }
       return results;
@@ -2764,6 +2777,17 @@ const autoFixers={
     return '<img'+attrs+' alt="[Describe image here]"'+close;
   }),
   'span-self-closing':  text=>text.replace(/(<span\b[^>]*)\s*\/>/gi, '$1>'),
+  'span-content-match': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'missing-lt-span':    text=>text.replace(/(mc:radio:|essay:|tf:|fib:|matching:label:):?span\b/gi,(_,code)=>code+'<span'),
   'lt-gt-entities': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
