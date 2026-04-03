@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.46</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.47</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2905,6 +2905,17 @@ function jumpToLine(n) {
   cm.setCursor({ line: n - 1, ch: 0 });
   cm.focus();
 }
+
+function toggleItem(uid, lineNum) {
+  const el = document.getElementById(uid);
+  if (!el) return;
+  const wasExpanded = el.classList.contains('expanded');
+  el.classList.toggle('expanded');
+  // When opening an item that has a line number, jump the editor to that line
+  if (!wasExpanded && lineNum) {
+    jumpToLine(lineNum);
+  }
+}
 function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -3880,7 +3891,7 @@ function renderItem(r,lines){
     fixPanel='<div class="fix-panel">'+(isGroupExtra?extraPanel:userSnippet+standardFixPanel+descHtml)+'</div>';
   }
   return '<div class="result-item '+cls+'" id="'+uid+'">'+
-    '<div class="result-row" onclick="document.getElementById(\''+uid+'\').classList.toggle(\'expanded\')">'+
+    '<div class="result-row" onclick="toggleItem(\''+uid+'\','+( r.lineNum || 'null' )+')">'+
     '<div class="result-chevron">'+(hasFixer?CHEVRON:'')+'</div>'+
     '<span class="sev-icon">'+icon+'</span>'+
     '<div class="result-text"><div class="result-rule-name">'+esc(r.rule.description)+'</div>'+
