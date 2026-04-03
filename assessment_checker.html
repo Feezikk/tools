@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.45</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.46</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -501,11 +501,11 @@ const RULES_DATA = {
            snippet:'<br />  (correct)\n<br>  <BR>  </br>  (wrong)'} },
 
     { id:'no-inline-styles', category:'html-tags', severity:'error',
-      description:'Inline style attributes are not allowed except on img (vertical-align:middle) and ol (list-style-type)',
+      description:'Inline style attributes are not allowed except on img (vertical-align:middle), ol (list-style-type), table elements (text-align), and any element with style="text-align: ..." or dir="..."',
       type:'inline-style-check',
       message:'Line {line} has a disallowed inline style attribute.',
-      fix:{description:'Remove the style attribute. Allowed exceptions: style="vertical-align:middle;" on img tags, and style="list-style-type:..." on ol tags.',
-           snippet:'<img src="..." alt="..." style="vertical-align:middle;" />\n<ol style="list-style-type: upper-roman;">'} },
+      fix:{description:'Remove the style attribute. Allowed exceptions: style="vertical-align:middle;" on img tags, style="list-style-type:..." on ol tags, style="text-align: [any]" on any element, and dir="[any]" on any element.',
+           snippet:'<img src="..." alt="..." style="vertical-align:middle;" />\n<ol style="list-style-type: upper-roman;">\n<p style="text-align: center;">text</p>\n<p dir="rtl">text</p>'} },
 
     { id:'no-deprecated-tags', category:'html-tags', severity:'error',
       description:'Deprecated tags <b>, <i>, <u>, <s> must be replaced with semantic equivalents',
@@ -1206,6 +1206,13 @@ const AssessmentChecker = (() => {
           const norm = styleVal.replace(/\s/g,'').toLowerCase();
           return norm.startsWith('text-align:') ? '<'+tag+pre+post+'>' : match;
         });
+        // Remove allowed style="text-align: [any]" from any element
+        clean = clean.replace(/<([a-zA-Z][a-zA-Z0-9]*)([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, tag, pre, styleVal, post) => {
+          const norm = styleVal.replace(/\s/g,'').toLowerCase();
+          return norm.startsWith('text-align:') ? '<'+tag+pre+post+'>' : match;
+        });
+        // Remove allowed dir="[any]" attribute from any element
+        clean = clean.replace(/\s*\bdir\s*=\s*"[^"]*"/gi, '');
         const m = clean.match(/style\s*=\s*["'][^"']*["']/i);
         return m ? [fail(rule,rule.message.replace('{line}',i+1),i+1,m[0])] : [];
       });
@@ -1428,7 +1435,14 @@ const AssessmentChecker = (() => {
           }
 
           const actualFull = line;
-          const replacement = sym.includes('&') ? '<span>' + (sym === '&lt;' ? '<' : '>') + '</span>' : '<span>' + sym + '</span>';
+          // Encode the raw symbol as an HTML entity inside the span for full LMS compatibility
+          let encodedSym;
+          if (sym === '<' || sym === '&lt;') {
+            encodedSym = '&lt;';
+          } else {
+            encodedSym = '&gt;';
+          }
+          const replacement = '<span>' + encodedSym + '</span>';
           const expectedFull = line.substring(0, m.index) + replacement + line.substring(m.index + sym.length);
 
           results.push(fail(rule,
