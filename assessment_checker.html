@@ -219,7 +219,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.47</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.51</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -668,11 +668,11 @@ const RULES_DATA = {
            snippet:'<span data-associatedlessons="02.01R" ...>(02.01 LC)</span>'} },
 
     { id:'span-associatedlessons-format', category:'span-metadata', severity:'error',
-      description:'Each lesson in data-associatedlessons must end with R or H (e.g. 03.01R)',
+      description:'Each lesson in data-associatedlessons must follow ##.##R or ##.##H format with two-digit numbers',
       type:'span-associatedlessons-format-check',
-      message:'Question {num} data-associatedlessons "{found}" — each entry must end with R or H.',
-      fix:{description:'Append R or H to each lesson. Separate multiples with |.',
-           snippet:'data-associatedlessons="03.01R"\ndata-associatedlessons="03.01R|03.02H"'} },
+      message:'Question {num} data-associatedlessons "{found}" — each entry must match ##.##R or ##.##H format.',
+      fix:{description:'Each lesson must be exactly ##.##R or ##.##H — two digits on each side of the dot, ending with R or H. Separate multiples with |.',
+           snippet:'data-associatedlessons="03.01R"\ndata-associatedlessons="03.01R|03.02H"\n\n1.03R  →  01.03R  (zero-pad single digits)'} },
 
     { id:'span-followed-by-br', category:'span-metadata', severity:'error',
       description:'Metadata span must be immediately followed by <br /><br />',
@@ -1780,18 +1780,54 @@ const AssessmentChecker = (() => {
       const results=[];
       for(const q of qs){
         if(!q.stem.includes('<span') || !/\/span>/i.test(q.stem)) continue;
-        const sm=q.stem.match(/<span([^>]*)>/i); if(!sm) continue;
+        const sm=q.stem.match(/<span([^>]*)>([\s\S]*?)<\/span>/i); if(!sm) continue;
         const lm=sm[1].match(/data-associatedlessons\s*=\s*"([^"]*)"/i);
         if(!lm||!lm[1].trim()) continue;
-        
+
         const bad=lm[1].split('|').filter(e=>!/^\d{2}\.\d{2}[RH]$/i.test(e.trim()));
         if(bad.length) {
           const badVal = bad[0].trim();
-          // Attempt to fix standard patterns, otherwise just append 'R'
-          const fixedVal = /^\d{2}\.\d{2}$/.test(badVal) ? badVal + 'R' : (badVal.replace(/[RH]+$/i,'') + 'R'); 
-          
-          results.push(fail(rule, `Question ${q.num} data-associatedlessons "${badVal}" must end with R or H.`, q.startLine, badVal, 
-            { type: 'contextual-diff', actual: badVal, expected: fixedVal, truthAttr: lm[0] }));
+          // Diagnose the specific problem and build the correct fix
+          const noSuffix = /^\d{2}\.\d{2}$/.test(badVal);      // correct format, just missing R/H
+          const needsPad = /^\d\.\d{2}[RH]?$/i.test(badVal);   // single leading digit, needs zero-pad
+          let fixedVal;
+          if (needsPad) {
+            fixedVal = '0' + badVal.replace(/[RH]*$/i, '') + (/[RH]$/i.test(badVal) ? badVal.slice(-1).toUpperCase() : 'R');
+          } else if (noSuffix) {
+            fixedVal = badVal + 'R';
+          } else {
+            fixedVal = badVal.replace(/[RH]+$/i,'') + 'R';
+          }
+
+          // Check if the span content (e.g. "(1.03 MC)") also uses the same un-padded lesson number
+          const spanContent = sm[2].trim(); // e.g. "(1.03 MC)"
+          const badLesson = badVal.replace(/[RH]*$/i, '');   // strip suffix → "1.03"
+          const fixedLesson = fixedVal.replace(/[RH]*$/i,''); // padded   → "01.03"
+          const contentHasSameBadLesson = needsPad && spanContent.includes(badLesson) && !spanContent.includes(fixedLesson);
+
+          let diagMsg;
+          let extra;
+
+          if (contentHasSameBadLesson) {
+            // Both the attribute value and the span text need the leading zero
+            const fixedContent = spanContent.replace(badLesson, fixedLesson);
+            const rawLine = q.stem; // the full stem as stored
+            const fixedLine = rawLine
+              .replace(lm[0], lm[0].replace(badVal, fixedVal))   // fix attribute
+              .replace(spanContent, fixedContent);                 // fix span text
+
+            diagMsg = `Question ${q.num} data-associatedlessons "${badVal}" and span content "${spanContent}" both need a leading zero (e.g. 01.03R not 1.03R).`;
+            extra = { type: 'dual-pad-fix', actual: rawLine, expected: fixedLine, lineNum: q.startLine,
+                      attrActual: badVal, attrExpected: fixedVal,
+                      contentActual: spanContent, contentExpected: fixedContent };
+          } else {
+            diagMsg = needsPad
+              ? `Question ${q.num} data-associatedlessons "${badVal}" — lesson number must use two digits (e.g. 01.03R not 1.03R).`
+              : `Question ${q.num} data-associatedlessons "${badVal}" — each entry must match ##.##R or ##.##H format.`;
+            extra = { type: 'contextual-diff', actual: badVal, expected: fixedVal, truthAttr: lm[0] };
+          }
+
+          results.push(fail(rule, diagMsg, q.startLine, badVal, extra));
         }
       }
       return results;
@@ -2706,6 +2742,21 @@ const autoFixers={
   },
   'points-before-group':text=>text.replace(/(group:\d+)\n(points:\d+)/g,'$2\n$1'),
   'span-followed-by-br':text=>text.replace(/(<\/span>)(?:\s*<\/?\s*br\b[^><]*(?:>|(?=<|$)))*/gi,'$1 <br /><br />'),
+  'span-associatedlessons-format': (text, result) => {
+    if (!result.extra || !result.lineNum) return text;
+    const lines = text.split('\n');
+    const idx = result.lineNum - 1;
+    if (!lines[idx]) return text;
+    if (result.extra.type === 'dual-pad-fix') {
+      // Fix both the data-associatedlessons attribute value and the span content text
+      lines[idx] = lines[idx]
+        .replace(result.extra.attrActual, result.extra.attrExpected)
+        .replace(result.extra.contentActual, result.extra.contentExpected);
+    } else if (result.extra.type === 'contextual-diff') {
+      lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+    }
+    return lines.join('\n');
+  },
   'img-has-alt':        text=>text.replace(/<img([^>]*?)(\/?>)/gi,(match,attrs,close)=>{
     if(/alt\s*=\s*"[^"]+"/.test(attrs)) return match;
     if(/alt\s*=\s*""/.test(attrs)) return '<img'+attrs.replace(/alt\s*=\s*""/,'alt="[Describe image here]"')+close;
@@ -3701,6 +3752,32 @@ function renderItem(r,lines){
         diffHtml = diffHtml.replace(safeActual, visualDiff);
         
         userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text with <span style=\"color:#166534;font-weight:700\">Suggested Fix</span> (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
+        standardFixPanel = '';
+    } else if (r.extra && r.extra.type === 'dual-pad-fix') {
+        // Show two separate inline diffs: one for the attribute, one for the span content
+        function makeDiff(actual, expected) {
+          const a = esc(actual), e = esc(expected);
+          let pLen = 0;
+          while (pLen < a.length && pLen < e.length && a[pLen] === e[pLen]) pLen++;
+          let sLen = 0;
+          while (sLen < a.length - pLen && sLen < e.length - pLen && a[a.length-1-sLen] === e[e.length-1-sLen]) sLen++;
+          const prefix = a.substring(0, pLen);
+          const suffix = a.substring(a.length - sLen);
+          const del = a.substring(pLen, a.length - sLen);
+          const ins = e.substring(pLen, e.length - sLen);
+          let mid = '';
+          if (del) mid += `<del style="color:#991b1b;background:#fee2e2;text-decoration:line-through;padding:0 2px;border-radius:2px;">${del}</del>`;
+          if (ins) mid += (del?' ':'') + `<ins style="color:#166534;background:#dcfce7;text-decoration:none;font-weight:bold;padding:0 2px;border-radius:2px;">${ins}</ins>`;
+          return (prefix?`<span style="opacity:.4">${prefix}</span>`:'') + mid + (suffix?`<span style="opacity:.4">${suffix}</span>`:'');
+        }
+        const attrDiff    = makeDiff(r.extra.attrActual,    r.extra.attrExpected);
+        const contentDiff = makeDiff(r.extra.contentActual, r.extra.contentExpected);
+        userSnippet =
+          '<div><div class="snippet-hdr" style="background:var(--error-bg);color:var(--error);">Two fixes needed on Line '+r.lineNum+' — <span style="color:#166534;font-weight:700">both will be applied</span></div>' +
+          '<pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;border-radius:var(--r) var(--r) 0 0;">' +
+          '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">① data-associatedlessons attribute</div>' + attrDiff +
+          '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-top:10px;margin-bottom:4px;">② span content text</div>' + contentDiff +
+          '</pre></div>';
         standardFixPanel = '';
     } else {
         userSnippet = userLine ? '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--error);">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>' : '';
