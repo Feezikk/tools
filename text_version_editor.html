@@ -337,7 +337,10 @@
         <symbol id="icon-conv" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></symbol>
         <symbol id="icon-rev" viewBox="0 0 24 24"><path d="M18.5 12c0-3.59-2.91-6.5-6.5-6.5h-10l4-4-1.41-1.41L.17 4.5 4.59 8.91 6 7.5l-4-4 10 0c2.48 0 4.5 2.02 4.5 4.5s-2.02 4.5-4.5 4.5h-10v2h10c3.59 0 6.5-2.91 6.5-6.5z"/></symbol>
         <symbol id="icon-quote" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></symbol>
-        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+       <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+        <symbol id="icon-align-left" viewBox="0 0 24 24"><path d="M15 15H3v2h12v-2zm0-8H3v2h12V7zM3 13h18v-2H3v2zm0 8h18v-2H3v2zM3 3v2h18V3H3z"/></symbol>
+        <symbol id="icon-align-center" viewBox="0 0 24 24"><path d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/></symbol>
+        <symbol id="icon-align-right" viewBox="0 0 24 24"><path d="M3 21h18v-2H3v2zm6-4h12v-2H9v2zm-6-4h18v-2H3v2zm6-4h12V7H9v2zM3 3v2h18V3H3z"/></symbol>
     </defs>
 </svg>
 
@@ -346,7 +349,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.19</h1>
+            <h1>Text Version Editor v2.23</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -363,7 +366,7 @@
         </div>
     </div>
 
-    <div id="insertModal" class="fr-modal" style="width: 320px; top: 120px; left: 50%; transform: translateX(-50%);">
+    <div id="insertModal" class="fr-modal" style="width: 320px; top: 120px; bottom: auto; height: max-content; left: 0; right: 0; margin: 0 auto; transform-origin: top center;">
         <div class="tg-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="font-size:15px; margin: 0;">Insert Element</h3>
             <button class="modal-close" style="position: static;" data-action="closeInsertModal">×</button>
@@ -521,7 +524,7 @@
 
     <div id="findReplaceModal">
         <div class="fr-input-group">
-            <input type="text" id="findInput" class="fr-input" placeholder="🔍 Find what...">
+            <input type="text" id="findInput" class="fr-input" placeholder="Find what...">
             <input type="text" id="replaceInput" class="fr-input" placeholder="Replace with...">
         </div>
         <div class="fr-buttons">
@@ -573,14 +576,16 @@
                 <button class="tb-btn" data-action="tbSplit">Split</button>
             </div>
             <div class="tb-tool-group" title="Format">
-                <button class="tb-btn" data-action="tbAlign" data-align="left" title="Align Left">⫷</button>
-                <button class="tb-btn" data-action="tbAlign" data-align="center" title="Align Center">☰</button>
-                <button class="tb-btn" data-action="tbAlign" data-align="right" title="Align Right">⫸</button>
+               <button class="tb-btn" data-action="tbAlign" data-align="left" title="Align Left" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-left"></use></svg></button>
+                <button class="tb-btn" data-action="tbAlign" data-align="center" title="Align Center" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-center"></use></svg></button>
+                <button class="tb-btn" data-action="tbAlign" data-align="right" title="Align Right" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-right"></use></svg></button>
                 <div style="width:1px; height:20px; background:var(--border-strong); margin:0 4px;"></div>
                 <button class="tb-btn" data-action="tbFormat" data-format="bold"><strong>B</strong></button>
                 <button class="tb-btn" data-action="tbFormat" data-format="italic"><em>I</em></button>
                 <div style="width:1px; height:20px; background:var(--border-strong); margin:0 4px;"></div>
-                <button class="tb-btn" data-action="tbFormat" data-format="insertUnorderedList">• List</button>
+                <button class="tb-btn" data-action="tbFormat" data-format="insertUnorderedList">• List</button><button class="tb-btn" data-action="tbAlign" data-align="left" title="Align Left" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-left"></use></svg></button>
+                <button class="tb-btn" data-action="tbAlign" data-align="center" title="Align Center" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-center"></use></svg></button>
+                <button class="tb-btn" data-action="tbAlign" data-align="right" title="Align Right" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-right"></use></svg></button>
                 <button class="tb-btn" data-action="tbFormat" data-format="insertOrderedList">1. List</button>
             </div>
         </div>
