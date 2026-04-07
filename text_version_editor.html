@@ -168,8 +168,8 @@
         .fr-input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
         
         /* New Docked Find & Replace Bar */
-        #findReplaceModal { background: var(--bg-surface-alt); border-top: 1px solid var(--border-main); padding: 12px 20px; display: none; flex-direction: row; gap: 15px; align-items: center; flex-shrink: 0; width: 100%; z-index: 10; animation: slideUp 0.15s ease-out; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #findReplaceModal { background: var(--bg-surface-alt); border-top: 1px solid var(--border-main); padding: 12px 20px; display: none; flex-direction: row; gap: 15px; align-items: center; flex-shrink: 0; width: 100%; z-index: 10; animation: slideUp Smooth 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         #findReplaceModal .fr-input-group { flex-direction: row; flex: 2; gap: 10px; margin: 0; }
         #findReplaceModal .fr-buttons { margin-top: 0; gap: 8px; flex: 1; display: flex; flex-shrink: 0; }
         
@@ -349,7 +349,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.23</h1>
+            <h1>Text Version Editor v2.26</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -583,10 +583,8 @@
                 <button class="tb-btn" data-action="tbFormat" data-format="bold"><strong>B</strong></button>
                 <button class="tb-btn" data-action="tbFormat" data-format="italic"><em>I</em></button>
                 <div style="width:1px; height:20px; background:var(--border-strong); margin:0 4px;"></div>
-                <button class="tb-btn" data-action="tbFormat" data-format="insertUnorderedList">• List</button><button class="tb-btn" data-action="tbAlign" data-align="left" title="Align Left" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-left"></use></svg></button>
-                <button class="tb-btn" data-action="tbAlign" data-align="center" title="Align Center" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-center"></use></svg></button>
-                <button class="tb-btn" data-action="tbAlign" data-align="right" title="Align Right" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-align-right"></use></svg></button>
-                <button class="tb-btn" data-action="tbFormat" data-format="insertOrderedList">1. List</button>
+                <button class="tb-btn" data-action="tbFormat" data-format="insertUnorderedList" title="Bullet List" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-ul"></use></svg></button>
+                <button class="tb-btn" data-action="tbFormat" data-format="insertOrderedList" title="Numbered List" style="padding: 6px 10px; display: flex; align-items: center;"><svg style="width: 16px; height: 16px; fill: currentColor; pointer-events: none;"><use href="#icon-ol"></use></svg></button>
             </div>
         </div>
         <div class="tb-workspace" id="tbWorkspace"><div class="tb-table-wrapper" id="tbWrapper"></div></div>
