@@ -160,17 +160,43 @@
         .ac-desc { font-size: 12px; color: var(--text-muted); }
 
         /* --- MODALS & POPUPS --- */
-        .fr-modal { position: absolute; top: 70px; right: 20px; width: 340px; background: var(--bg-surface); border: 1px solid var(--border-main); border-radius: 8px; box-shadow: var(--shadow-md); padding: 15px; z-index: 100; display: none; flex-direction: column; gap: 10px; }
+        .fr-modal { position: absolute; top: auto; bottom: 65px; left: 20px; width: 340px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); padding: 15px; z-index: 100; display: none; flex-direction: column; gap: 10px; transform-origin: bottom left; animation: popUp 0.2s ease-out; }
+        @keyframes popUp { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .fr-modal.active { display: flex; }
         .fr-input-group { display: flex; flex-direction: column; gap: 5px; }
         .fr-input { padding: 8px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 13px; background: var(--bg-input); color: var(--text-main); width: 100%; box-sizing: border-box;}
         .fr-input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
+        
+        /* New Docked Find & Replace Bar */
+        #findReplaceModal { background: var(--bg-surface-alt); border-top: 1px solid var(--border-main); padding: 12px 20px; display: none; flex-direction: row; gap: 15px; align-items: center; flex-shrink: 0; width: 100%; z-index: 10; animation: slideUp 0.15s ease-out; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #findReplaceModal .fr-input-group { flex-direction: row; flex: 2; gap: 10px; margin: 0; }
+        #findReplaceModal .fr-buttons { margin-top: 0; gap: 8px; flex: 1; display: flex; flex-shrink: 0; }
+        
+        /* Improved Close Button */
+        #findReplaceModal .modal-close { position: static; width: 28px; height: 28px; border-radius: 50%; background: transparent; color: var(--text-muted); font-size: 20px; box-shadow: none; border: none; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
+        #findReplaceModal .modal-close:hover { color: var(--color-danger); transform: none; background: var(--bg-hover); }
+        
         .fr-buttons { display: flex; gap: 6px; justify-content: space-between; margin-top: 5px; }
-        .fr-btn { flex: 1; padding: 6px 4px; font-size: 11px; font-weight: 600; border: none; border-radius: 4px; cursor: pointer; color: white; white-space: nowrap; }
-        .fr-btn-find { background: var(--color-primary); } .fr-btn-find:hover { background: var(--color-primary-hover); }
-        .fr-btn-findall { background: #d69e2e; } .fr-btn-findall:hover { background: #b7791f; }
-        .fr-btn-replace { background: var(--color-success); } .fr-btn-replace:hover { background: var(--color-success-hover); }
-        .fr-btn-all { background: var(--color-accent); } .fr-btn-all:hover { background: var(--color-accent-hover); }
+        
+        /* Apply the outlined style to all Find/Replace buttons */
+        .fr-btn { 
+            flex: 1; 
+            padding: 6px 8px; 
+            font-size: 11px; 
+            font-weight: 600; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            white-space: nowrap; 
+            background: transparent; 
+            color: var(--text-main); 
+            border: 1px solid var(--border-strong); 
+        }
+        
+        .fr-btn:hover { 
+            background: var(--bg-hover); 
+        }
         .modal-close { position: absolute; top: -10px; right: -10px; background: var(--color-danger); border: 2px solid var(--bg-surface); color: white; font-size: 16px; cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 0.2s; }
         .modal-close:hover { background: var(--color-danger-hover); transform: scale(1.1); }
 
@@ -320,7 +346,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.14</h1>
+            <h1>Text Version Editor v2.19</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -330,24 +356,10 @@
                 <option value="es">Spanish</option>
             </select>
 
-            <button class="icon-btn" id="findReplaceBtn" data-action="toggleFindReplace" title="Find & Replace (Ctrl+F)" style="display:none;">🔍</button>
+            
             <button class="icon-btn" data-action="toggleDarkMode"><span id="darkModeIcon">🌙</span> <span id="darkModeText">Dark</span></button>
             <button class="icon-btn action-btn-header btn-clear-all" id="clearAllBtn" data-action="clearAll" title="Clear all text (Ctrl+Z to undo)">Clear</button>
             <button class="icon-btn action-btn-header btn-reset" id="resetBtn" data-action="resetEditor" title="Discard file and return to start screen">Reset</button>
-        </div>
-    </div>
-
-    <div id="findReplaceModal" class="fr-modal">
-        <button class="modal-close" data-action="frClose" title="Close">×</button>
-        <div class="fr-input-group">
-            <input type="text" id="findInput" class="fr-input" placeholder="Find what...">
-            <input type="text" id="replaceInput" class="fr-input" placeholder="Replace with...">
-        </div>
-        <div class="fr-buttons">
-            <button class="fr-btn fr-btn-find" data-action="frFindNext">Find Next</button>
-            <button class="fr-btn fr-btn-findall" data-action="frFindAll">Find All</button>
-            <button class="fr-btn fr-btn-replace" data-action="frReplace">Replace</button>
-            <button class="fr-btn fr-btn-all" data-action="frReplaceAll">Replace All</button>
         </div>
     </div>
 
@@ -507,7 +519,24 @@
         <textarea id="inputLayer" class="code-layer" spellcheck="false" placeholder="Content will appear here..."></textarea>
     </div>
 
+    <div id="findReplaceModal">
+        <div class="fr-input-group">
+            <input type="text" id="findInput" class="fr-input" placeholder="🔍 Find what...">
+            <input type="text" id="replaceInput" class="fr-input" placeholder="Replace with...">
+        </div>
+        <div class="fr-buttons">
+            <button class="fr-btn fr-btn-find" data-action="frFindNext" style="padding: 8px 12px;">Find Next</button>
+            <button class="fr-btn fr-btn-findall" data-action="frFindAll" style="padding: 8px 12px;">Find All</button>
+            <button class="fr-btn fr-btn-replace" data-action="frReplace" style="padding: 8px 12px;">Replace</button>
+            <button class="fr-btn fr-btn-all" data-action="frReplaceAll" style="padding: 8px 12px;">Replace All</button>
+        </div>
+        <button class="modal-close" data-action="frClose" title="Close">×</button>
+    </div>
+
     <div class="action-footer hidden" id="actionFooter">
+        <div style="margin-right: auto;">
+            <button class="btn-action" id="findReplaceBtn" data-action="toggleFindReplace" style="background: var(--bg-surface-alt); color: var(--text-main); border: 1px solid var(--border-strong);">🔍 Find & Replace</button>
+        </div>
         <button class="btn-action copy-btn" id="copyBtn" data-action="copy"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-copy"></use></svg> Copy</button>
         <button class="btn-action save-btn" data-action="save"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-save"></use></svg> Save</button>
     </div>
@@ -698,7 +727,6 @@ const App = (function() {
             this.wrapper.classList.add('active');
             
             document.querySelectorAll('.action-btn-header').forEach(btn => btn.classList.add('active'));
-            document.getElementById('findReplaceBtn').style.display = 'inline-block';
             document.getElementById('langSelect').style.display = 'inline-block';
             
             Lang.renderButtons();
@@ -719,7 +747,6 @@ const App = (function() {
             this.wrapper.classList.remove('active');
             
             document.querySelectorAll('.action-btn-header').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('findReplaceBtn').style.display = 'none';
             document.getElementById('langSelect').style.display = 'none';
             document.getElementById('findReplaceModal').style.display = 'none';
             document.getElementById('insertModal').style.display = 'none';
@@ -1234,15 +1261,39 @@ const App = (function() {
                 if (el.tagName === 'I') { let em = document.createElement('em'); em.innerHTML = el.innerHTML; el.replaceWith(em); }
             });
 
-            // V1.03 robust replacement logic to prevent regex collision
-            let htmlStr = clone.outerHTML.replace(/\s*[\r\n]+\s*/g, '').replace(/>\s+</g, '><')
-                .replace(/<caption/ig, '\n  <caption').replace(/<\/caption>/ig, '</caption>')
-                .replace(/<thead/ig, '\n  <thead').replace(/<\/thead>/ig, '\n  </thead>')
-                .replace(/<tbody/ig, '\n  <tbody').replace(/<\/tbody>/ig, '\n  </tbody>')
-                .replace(/<tfoot/ig, '\n  <tfoot').replace(/<\/tfoot>/ig, '\n  </tfoot>')
-                .replace(/<tr/ig, '\n    <tr').replace(/<\/tr>/ig, '\n    </tr>')
-                .replace(/<th/ig, '\n      <th').replace(/<td/ig, '\n      <td')
-                .replace(/<\/table>/ig, '\n</table>').replace(/\n\s*\n/g, '\n');
+            // --- DOM-BASED FORMATTER ---
+            function formatNode(node, depth = 0) {
+                const indent = '  '.repeat(depth);
+                
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.textContent.trim() ? `\n${indent}${node.textContent.trim()}` : '';
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+                let tag = node.tagName.toLowerCase();
+                let html = `\n${indent}<${tag}`;
+                
+                for (let attr of node.attributes) {
+                    html += ` ${attr.name}="${attr.value}"`;
+                }
+                html += '>';
+
+                const inlineTags = ['th', 'td', 'caption', 'strong', 'em', 'span'];
+                
+                if (inlineTags.includes(tag)) {
+                    html += node.innerHTML.trim();
+                    html += `</${tag}>`;
+                } else {
+                    Array.from(node.childNodes).forEach(child => {
+                        html += formatNode(child, depth + 1);
+                    });
+                    html += `\n${indent}</${tag}>`;
+                }
+                return html;
+            }
+
+            let htmlStr = formatNode(clone).trim();
+            // ---------------------------
             
             if (this.editRange) {
                 State.save(); DOM.input.setRangeText(htmlStr, this.editRange.start, this.editRange.end, 'select');
@@ -1410,8 +1461,7 @@ const App = (function() {
         document.querySelector('.header-controls').addEventListener('click', e => {
             const btn = e.target.closest('button'); if(!btn) return;
             const a = btn.dataset.action;
-            if(a==='toggleFindReplace') { fr.m.style.display = fr.m.style.display==='flex'?'none':'flex'; if(fr.m.style.display==='flex') fr.i.focus(); else { State.setSearchTerm(null); Editor.updateHighlight(); } }
-            else if(a==='toggleDarkMode') DOM.toggleDarkMode();
+            if(a==='toggleDarkMode') DOM.toggleDarkMode();
             else if(a==='clearAll') Editor.clearAll();
             else if(a==='resetEditor') DOM.resetEditor();
         });
@@ -1455,7 +1505,12 @@ const App = (function() {
 
         DOM.actionFooter.addEventListener('click', e => {
             const btn = e.target.closest('button'); if(!btn) return; const a = btn.dataset.action;
-            if(a==='copy') Tools.copy(); else if(a==='save') Tools.saveTxt();
+            if(a==='toggleFindReplace') { 
+                const isVisible = fr.m.style.display === 'flex';
+                fr.m.style.display = isVisible ? 'none' : 'flex'; 
+                if(!isVisible) fr.i.focus(); else { State.setSearchTerm(null); Editor.updateHighlight(); } 
+            }
+            else if(a==='copy') Tools.copy(); else if(a==='save') Tools.saveTxt();
         });
 
         DOM.langToolbar.addEventListener('click', e => {
