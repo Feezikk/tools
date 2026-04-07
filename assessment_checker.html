@@ -80,6 +80,11 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .btn-ghost.copied{background:var(--pass-bg);color:var(--pass);border-color:var(--pass-border)}
 .btn-link{background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:var(--sans);margin-left:auto}
 .btn-link:hover{color:var(--error)}
+.btn-qmode{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text-mid);font-family:var(--sans);transition:all .12s;white-space:nowrap;margin-left:auto}
+.btn-qmode:hover{border-color:var(--accent);color:var(--accent)}
+.btn-qmode.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.cm-group-divider{width:100%;padding:0 0 0 4px;font-size:10px;font-weight:700;font-family:var(--mono);color:var(--text-dim);background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);line-height:20px;letter-spacing:.5px;user-select:none;box-sizing:border-box}
+.CodeMirror-linenumber.cm-q-label{color:var(--accent)!important;font-weight:700!important}
 .shortcut-hint{font-size:11px;color:var(--text-dim);font-family:var(--mono);opacity:.7}
 .results-header{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px}
 .summary-chips{display:flex;gap:6px;margin-left:auto}
@@ -104,23 +109,22 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .all-pass-banner .check{font-size:52px}
 .all-pass-banner h2{font-size:20px;font-weight:700;color:var(--pass);margin:12px 0 6px}
 .all-pass-banner p{color:var(--text-dim);font-size:13px}
-.category-section{margin-bottom:8px}
-.category-header{width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text-mid);text-align:left;transition:background .12s}
+/* ── Group / category sections ── */
+.category-section{margin-bottom:12px}
+.category-header{width:100%;display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-mid);text-align:left;transition:background .12s}
 .category-header:hover{background:var(--border)}
 .category-header.has-errors{background:var(--error-bg);border-color:var(--error-border);color:var(--error)}
 .category-header.has-warnings{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn)}
 .category-header.all-pass{background:var(--pass-bg);border-color:var(--pass-border);color:var(--pass)}
-.cat-count{font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700}
-.cat-count-error{background:var(--error);color:#fff}
-.cat-count-warn{background:var(--warn);color:#fff}
-.cat-count-pass{background:var(--pass);color:#fff}
-.cat-chevron{margin-right:4px;opacity:.6;transition:transform .15s;display:flex;align-items:center;flex-shrink:0}
+/* Badge pills inside category header — text labels like "2 Errors" */
+.cat-count{font-size:11px;padding:2px 10px;border-radius:99px;font-weight:700;white-space:nowrap}
+.cat-count-error{background:var(--error-bg);color:var(--error);border:1px solid var(--error-border)}
+.cat-count-warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border)}
+.cat-count-pass{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-border)}
+.cat-chevron{margin-left:auto;opacity:.5;transition:transform .15s;display:flex;align-items:center;flex-shrink:0}
 .category-section.open .cat-chevron{transform:rotate(180deg)}
-.category-items{display:none;flex-direction:column;gap:4px;margin-top:4px;padding-left:14px;border-left:2px solid var(--border2);margin-left:6px}
+.category-items{display:none;flex-direction:column;gap:4px;margin-top:8px;padding-left:16px;border-left:2px solid var(--border);margin-left:12px}
 .category-section.open .category-items{display:flex}
-.category-section.open .category-header.has-errors~.category-items{border-left-color:var(--error-border)}
-.category-section.open .category-header.has-warnings~.category-items{border-left-color:var(--warn-border)}
-.category-section.open .category-header.all-pass~.category-items{border-left-color:var(--pass-border)}
 /* ── Filter bar ── */
 .filter-bar{display:none;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0}
 .filter-bar.visible{display:flex}
@@ -130,21 +134,35 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .filter-btn.active-all{background:var(--text);border-color:var(--text);color:#fff}
 .filter-btn.active-err{background:var(--error);border-color:var(--error);color:#fff}
 .filter-btn.active-warn{background:var(--warn);border-color:var(--warn);color:#fff}
-/* ── Result cards ── */
-.result-item{border:1px solid var(--border);border-left:7px solid var(--border2);border-radius:var(--r);background:var(--surface);overflow:hidden;transition:box-shadow .12s}
-.result-item.err{border-left-color:var(--error);background:#fffafa}
-.result-item.warn{border-left-color:var(--warn);background:#fffdf5}
-.result-item.pass{border-left-color:var(--pass);opacity:.65}
-.result-rationale{font-size:11px;color:var(--warn);margin-top:3px;line-height:1.45;font-style:italic;padding:3px 8px;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:3px;display:inline-block;max-width:100%}
-.result-item.fixed{border-left-color:#ca8a04;background:#fefce8}
+/* ── Result cards — table-like stacked rows ── */
+.result-item{border:1px solid var(--border);border-radius:0;background:var(--surface);overflow:hidden;transition:box-shadow .12s;margin-top:-1px}
+.category-items>.result-item:first-child{border-radius:var(--r) var(--r) 0 0;margin-top:0}
+.category-items>.result-item:last-child{border-radius:0 0 var(--r) var(--r)}
+.category-items>.result-item:only-child{border-radius:var(--r)}
+.result-item.err{border-color:var(--error-border);background:#fffafa}
+.result-item.warn{border-color:var(--warn-border);background:#fffdf5}
+.result-item.pass{opacity:.65}
+.result-item.fixed{background:#fefce8;border-color:#fcd34d}
 .result-item.fixed .result-rule-name{color:#854d0e}
 .result-item.fixed .sev-icon{color:#ca8a04}
-.result-row{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;cursor:pointer}
+/* Severity stripe — left border via box-shadow so it doesn't shift layout */
+.result-item.err{box-shadow:inset 2px 0 0 var(--error)}
+.result-item.warn{box-shadow:inset 2px 0 0 var(--warn)}
+.result-item.pass{box-shadow:inset 2px 0 0 var(--pass)}
+.result-item.fixed{box-shadow:inset 2px 0 0 #ca8a04}
+/* Row — the always-visible summary line — table-like grid */
+.result-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0;padding:0;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
 .result-row:hover{background:rgba(0,0,0,.025)}
-.result-chevron{margin-right:4px;opacity:.5;transition:transform .15s;align-self:center;display:flex;align-items:center;flex-shrink:0}
+/* Icon + line-badge column */
+.result-col-icon{display:flex;align-items:center;gap:6px;padding:9px 10px 9px 14px;flex-shrink:0;white-space:nowrap;border-right:1px solid var(--border);min-width:80px}
+/* Rule name + message column */
+.result-text{flex:1;min-width:0;padding:9px 12px}
+/* Actions column */
+.result-col-action{display:flex;align-items:center;gap:6px;padding:9px 12px 9px 10px;flex-shrink:0;border-left:1px solid var(--border);min-width:100px;justify-content:flex-end}
+.result-chevron{opacity:.4;transition:transform .15s;display:flex;align-items:center;flex-shrink:0}
 .result-item.expanded .result-chevron{transform:rotate(180deg)}
-.caret-svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.sev-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.caret-svg{width:14px;height:14px;display:block;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.sev-icon{font-size:14px;flex-shrink:0}
 .result-text{flex:1;min-width:0}
 .result-rule-name{font-size:12px;font-weight:600;color:var(--text);line-height:1.4}
 .result-msg{font-size:11px;color:var(--text-mid);margin-top:2px;line-height:1.4;font-family:var(--mono)}
@@ -154,18 +172,50 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radius:3px;font-weight:600}
 .line-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);flex-shrink:0;cursor:pointer;white-space:nowrap}
 .line-badge:hover{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
-.wand-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0;transition:all .12s;white-space:nowrap;min-width:96px}
-.wand-btn[data-auto="true"]{background:var(--wand);border:1px solid var(--wand);color:#fff}
-.wand-btn[data-auto="true"]:hover{filter:brightness(1.12)}
+/* Apply Fix / View Guide buttons — now inline in the row */
+.wand-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);flex-shrink:0;transition:all .12s;white-space:nowrap}
+.wand-btn[data-auto="true"]{background:#16a34a;border:1px solid #16a34a;color:#fff}
+.wand-btn[data-auto="true"]:hover{filter:brightness(1.1)}
 .wand-btn[data-auto="false"]{background:var(--surface);border:1px solid var(--border2);color:var(--text-mid)}
 .wand-btn[data-auto="false"]:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
 .wand-btn.applied{background:#fef9c3;border:1px solid #ca8a04;color:#854d0e;cursor:default;filter:none}
-.fix-panel{display:none; margin: 0 12px 12px 38px; padding-left: 14px; border-left: 2px solid var(--border2); background:transparent}
-.result-item.expanded .fix-panel{display:block}
-.fix-applied-banner{padding:7px 12px;background:#fef9c3;border:1px solid #fcd34d; border-radius: var(--r); font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px; margin-bottom: 10px}
-.fix-description{padding:2px 0 10px 0;font-size:12px;color:var(--text-mid);line-height:1.5}
-.fix-snippet{padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word; border-radius: 0 0 var(--r) var(--r); border: 1px solid var(--border); border-top: none; margin: 0 0 10px 0}
-.snippet-hdr{font-size:10px; padding:6px 12px; font-weight:700; text-transform:uppercase; border: 1px solid var(--border); border-radius: var(--r) var(--r) 0 0; border-bottom: none}
+/* Show details toggle link */
+.show-details-btn{background:none;border:none;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text-dim);cursor:pointer;padding:0;display:flex;align-items:center;gap:3px;flex-shrink:0;white-space:nowrap;transition:color .12s}
+.show-details-btn:hover{color:var(--accent)}
+.result-item.details-open .show-details-btn{color:var(--accent)}
+/* Fix detail panel — hidden until "Show Details" clicked */
+.fix-panel{display:none;padding:0 28px 14px 38px;background:transparent}
+.result-item.details-open .fix-panel{display:block}
+.fix-applied-banner{padding:7px 12px;background:#fef9c3;border:1px solid #fcd34d;border-radius:var(--r);font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.fix-description{padding:4px 0 10px 0;font-size:12px;color:var(--text-mid);line-height:1.5}
+/* Dark code diff block */
+.diff-block{background:#1e1e2e;border-radius:var(--r);overflow:hidden;margin-bottom:10px;font-family:var(--mono);font-size:12px;line-height:1.7}
+.diff-block-hdr{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#2a2a3e;color:#a0a0b8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.diff-block-hdr .diff-label{flex:1}
+.diff-block-body{padding:10px 14px}
+.diff-line{display:flex;gap:10px;padding:1px 0;white-space:pre-wrap;word-break:break-all}
+.diff-line-del{background:rgba(239,68,68,.15);color:#fca5a5;border-radius:3px;padding:1px 4px;margin:-1px -4px}
+.diff-line-del .diff-sigil{color:#f87171;font-weight:700;flex-shrink:0;user-select:none}
+.diff-line-del .diff-text{color:#fca5a5}
+.diff-line-del del{text-decoration:line-through;opacity:.8}
+.diff-line-ins{background:rgba(34,197,94,.13);border-radius:3px;padding:1px 4px;margin:-1px -4px}
+.diff-line-ins .diff-sigil{color:#4ade80;font-weight:700;flex-shrink:0;user-select:none}
+.diff-line-ins .diff-text{color:#86efac}
+.diff-line-ins ins{text-decoration:none;font-weight:bold;color:#4ade80}
+.diff-line-ins ins.dim{color:#86efac;font-weight:normal}
+/* Apply Fix + Copy buttons inside diff block header */
+.diff-action-btn{display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:var(--sans);transition:all .12s;white-space:nowrap}
+.diff-apply-btn{background:#16a34a;color:#fff}
+.diff-apply-btn:hover{filter:brightness(1.1)}
+.diff-apply-btn.applied{background:#ca8a04;color:#fff;cursor:default}
+.diff-copy-btn{background:transparent;border:1px solid rgba(255,255,255,.2)!important;color:#a0a0b8;font-size:11px}
+.diff-copy-btn:hover{border-color:rgba(255,255,255,.5)!important;color:#fff}
+/* Context / Best Practice callout */
+.context-panel{margin-top:8px;margin-bottom:6px;padding:10px 14px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:var(--r);font-size:12px;color:#1e3a5f;line-height:1.6}
+.context-panel-hdr{font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px;font-size:12px}
+/* Legacy snippet support (for non-diff extra panels) */
+.fix-snippet{padding:10px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;white-space:pre-wrap;word-break:break-word;border-radius:0 0 var(--r) var(--r);border:1px solid var(--border);border-top:none;margin:0 0 10px 0}
+.snippet-hdr{font-size:10px;padding:6px 12px;font-weight:700;text-transform:uppercase;border:1px solid var(--border);border-radius:var(--r) var(--r) 0 0;border-bottom:none}
 .status-bar{padding:7px 16px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text-dim);display:none;align-items:center;gap:4px}
 .status-bar.visible{display:flex}
 /* Dashboard button */
@@ -219,7 +269,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.52</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.75</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -263,6 +313,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
         <button class="tab active" data-tab="paste">Paste Text</button>
         <button class="tab" data-tab="upload">Upload File</button>
       </div>
+      <button class="btn-qmode" id="qmode-btn" title="Toggle Question Number view" style="display:none">Q# View</button>
     </div>
     <div class="input-area">
       <div class="tab-content active" id="tab-paste">
@@ -333,6 +384,8 @@ const AppState = {
   imgBasePath:      '',   // derived from imgCourseFolder
   hasRunOnce:       false,
   openCategories:   new Set(),
+  qMode:            false,   // question-number gutter mode
+  qLineMap:         {},      // lineNum (1-based) → { qNum, group } built after audit
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -379,6 +432,7 @@ const DOM = (() => {
     filterAll:      $('filter-all'),
     filterErr:      $('filter-err'),
     filterWarn:     $('filter-warn'),
+    qmodeBtn:       $('qmode-btn'),
   };
 })();
 
@@ -982,16 +1036,34 @@ const AssessmentChecker = (() => {
         // End of current question: use groupLine if set, else pointsLine, else last stem line
         const endLine = curr.groupLine || curr.pointsLine || curr.startLine;
         const startNext = next.startLine;
-        // Count blank lines in the gap between endLine and startNext (exclusive on both ends)
-        let blanks = 0;
+        // Collect the gap lines between questions (exclusive on both ends)
+        const gapLines = [];
         for (let ln = endLine + 1; ln < startNext; ln++) {
-          if (lines[ln - 1] !== undefined && lines[ln - 1].trim() === '') blanks++;
+          if (lines[ln - 1] !== undefined) gapLines.push({ ln, text: lines[ln - 1] });
         }
-        if (blanks === 1) continue; // exactly one blank line — correct
+        const blanks = gapLines.filter(g => g.text.trim() === '').length;
+        if (blanks === 1 && gapLines.length === 1) continue; // exactly one blank line — correct
         const found = blanks === 0 ? 'No blank line' : blanks + ' blank lines';
-        results.push(fail(rule,
-          rule.message.replace('{found}', found).replace('{a}', curr.num).replace('{b}', next.num),
-          endLine + 1));
+        const lastCurrLine = lines[endLine - 1] || '';
+        const firstNextLine = lines[startNext - 1] || '';
+
+        if (blanks === 0) {
+          // Missing blank line — use special type for custom green-insert rendering
+          results.push(fail(rule,
+            rule.message.replace('{found}', found).replace('{a}', curr.num).replace('{b}', next.num),
+            endLine,
+            null,
+            { type: 'spacing-insert-blank', lastCurrLine, firstNextLine }
+          ));
+        } else {
+          // Too many blank lines — dedicated type for explicit before/after rendering
+          results.push(fail(rule,
+            rule.message.replace('{found}', found).replace('{a}', curr.num).replace('{b}', next.num),
+            endLine,
+            null,
+            { type: 'spacing-remove-blanks', lastCurrLine, firstNextLine, blanks, gapLines: gapLines.map(g => g.text) }
+          ));
+        }
       }
       return results;
     },
@@ -1074,9 +1146,17 @@ const AssessmentChecker = (() => {
                .map(q => fail(rule, rule.message.replace('{num}',q.num), q.startLine));
     },
 
-    'field-order'(rule, qs) {
+    'field-order'(rule, qs, raw, lines) {
       return qs.filter(q => q.pointsLine && q.groupLine && q.groupLine < q.pointsLine)
-               .map(q => fail(rule, rule.message.replace('{num}',q.num), q.groupLine));
+               .map(q => {
+                 const groupText  = lines[q.groupLine  - 1] || '';
+                 const pointsText = lines[q.pointsLine - 1] || '';
+                 // actual: group: then points: (wrong order); expected: points: then group:
+                 const actual   = groupText + '\n' + pointsText;
+                 const expected = pointsText + '\n' + groupText;
+                 return fail(rule, rule.message.replace('{num}',q.num), q.groupLine, null,
+                   { type: 'contextual-diff', actual, expected });
+               });
     },
 
     'group-type-consistency'(rule, qs) {
@@ -2137,13 +2217,17 @@ const AssessmentChecker = (() => {
           const text = a.text.trim();
           const dashIdx = findMatchingDash(text);
           if (dashIdx === -1) return [];
+          const leftRaw  = text.slice(0, dashIdx);
           const rightRaw = text.slice(dashIdx + 1);
           // Flag if the right side contains any HTML tag or image tag
-          return /<[a-zA-Z!][^>]*>/.test(rightRaw)
-            ? [fail(rule,
-                rule.message.replace('{num}', q.num).replace('{line}', a.lineNum),
-                a.lineNum, (rightRaw.match(/<[^>]+>/) || [''])[0])]
-            : [];
+          if (!/<[a-zA-Z!][^>]*>/.test(rightRaw)) return [];
+          // Build contextual-diff: swap the two sides
+          const swapped = rightRaw + '-' + leftRaw;
+          return [fail(rule,
+            rule.message.replace('{num}', q.num).replace('{line}', a.lineNum),
+            a.lineNum, (rightRaw.match(/<[^>]+>/) || [''])[0],
+            { type: 'contextual-diff', actual: text, expected: swapped }
+          )];
         })
       );
     },
@@ -2535,16 +2619,26 @@ const AssessmentChecker = (() => {
 
         // ── sub: border-cellpadding ──
         else if (rule.subtype === 'border-cellpadding') {
-          const tableTag = h.match(/<table\b([^>]*)>/i);
-          if (tableTag) {
-            const attrs = tableTag[1];
-            if (!/\bborder\s*=\s*["']?1["']?/i.test(attrs))
-              results.push(fail(rule, msg(t, 'missing or incorrect border="1" on <table>'), sl, 'border="1"'));
+          const tableTagM = h.match(/<table\b([^>]*)>/i);
+          if (tableTagM) {
+            const actualTag = tableTagM[0];
+            let attrs = tableTagM[1];
+            const hasBorderOk = /\bborder\s*=\s*["']?1["']?/i.test(attrs);
             const cpMatch = attrs.match(/\bcellpadding\s*=\s*["']?(\d*)["']?/i);
-            if (!cpMatch)
-              results.push(fail(rule, msg(t, 'missing cellpadding attribute on <table>'), sl, 'missing cellpadding'));
-            else if (!cpMatch[1])
-              results.push(fail(rule, msg(t, 'cellpadding is empty — must be a number (e.g. cellpadding="5")'), sl, 'cellpadding is empty'));
+            const hasCpOk = cpMatch && cpMatch[1];
+            if (!hasBorderOk || !hasCpOk) {
+              let fixed = attrs;
+              if (!/\bborder\s*=/i.test(fixed)) fixed = ' border="1"' + fixed;
+              else fixed = fixed.replace(/\bborder\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, 'border="1"');
+              if (!/\bcellpadding\s*=/i.test(fixed)) fixed = fixed + ' cellpadding="10"';
+              else fixed = fixed.replace(/\bcellpadding\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, 'cellpadding="10"');
+              const expectedTag = '<table' + fixed + '>';
+              const issues = [];
+              if (!hasBorderOk) issues.push('missing or incorrect border="1"');
+              if (!hasCpOk) issues.push(!cpMatch ? 'missing cellpadding attribute' : 'cellpadding is empty');
+              results.push(fail(rule, msg(t, issues.join('; ') + ' on <table>'), sl, actualTag,
+                { type: 'contextual-diff', actual: actualTag, expected: expectedTag, truthAttr: actualTag }));
+            }
           }
         }
 
@@ -2662,9 +2756,20 @@ const AssessmentChecker = (() => {
               const tagName = m[0].match(/<(\w+)/)[1];
               const lineOffset = (h.substring(0, m.index).match(/\n/g) || []).length;
               const actualLineNum = sl + lineOffset;
+              const actualTag = m[0];
+              // Build expected: remove align="center" and add/merge style="text-align: center;"
+              let expectedTag = actualTag.replace(/\s*\balign\s*=\s*["']?center["']?/gi, '');
+              const existingStyle = expectedTag.match(/\bstyle\s*=\s*"([^"]*)"/i);
+              if (existingStyle) {
+                const merged = existingStyle[1].replace(/text-align\s*:[^;]*(;|$)/i, '').trim().replace(/;$/, '');
+                expectedTag = expectedTag.replace(/\bstyle\s*=\s*"([^"]*)"/i, 'style="text-align: center;' + (merged ? ' ' + merged + ';' : '') + '"');
+              } else {
+                expectedTag = expectedTag.replace(/<(\w+)/, '<$1 style="text-align: center;"');
+              }
               results.push(fail(rule,
                 msg(t, 'align="center" found on '+tagName+' tag'),
-                actualLineNum, 'align="center"'));
+                actualLineNum, 'align="center"',
+                { type: 'contextual-diff', actual: actualTag, expected: expectedTag, truthAttr: actualTag }));
             }
           }
         }
@@ -2866,6 +2971,17 @@ const autoFixers={
       }
       return '<ol' + (attrsNoType ? ' '+attrsNoType : '') + ' style="list-style-type: '+styleVal+';">';
     }),
+  'matching-html-on-right': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'matching-img-align': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
@@ -2921,6 +3037,8 @@ const autoFixers={
 // ─────────────────────────────────────────────────────────────────
 const cm = CodeMirror(DOM.cmEditor, {
   lineNumbers: true, lineWrapping: true, mode: 'text/plain', theme: 'default', tabSize: 2,
+  gutters: ['CodeMirror-linenumbers'],
+  lineNumberFormatter: n => n,
   extraKeys: { 'Ctrl-Enter': () => runAudit(), 'Cmd-Enter': () => runAudit() }
 });
 
@@ -2930,6 +3048,70 @@ const ta = {
   set value(v) { cm.setValue(v); },
   focus()      { cm.focus(); }
 };
+
+// ─────────────────────────────────────────────────────────────────
+// Q-MODE — question-number gutter
+// ─────────────────────────────────────────────────────────────────
+let qModeWidgets = []; // line widget handles for group dividers
+
+function buildQLineMap(questions) {
+  // Build lineNum → { qNum, group, isStart } from parsed questions
+  const map = {};
+  const Q_CODES = ['mc:radio:','essay:','fib:','matching:label:','tf:'];
+  questions.forEach(q => {
+    map[q.startLine] = { qNum: q.num, group: q.group, isStart: true };
+  });
+  AppState.qLineMap = map;
+}
+
+function applyQMode() {
+  const questions = AppState.dashData ? null : null; // will use qLineMap built after audit
+  const map = AppState.qLineMap;
+
+  // Remove existing group divider widgets
+  qModeWidgets.forEach(w => { try { w.clear(); } catch(e) {} });
+  qModeWidgets = [];
+
+  if (!AppState.qMode) {
+    // Restore plain line numbers
+    cm.setOption('lineNumberFormatter', n => n);
+    cm.refresh();
+    return;
+  }
+
+  // Set formatter: show Qn on question start lines, blank elsewhere
+  cm.setOption('lineNumberFormatter', n => {
+    const entry = map[n];
+    return entry ? 'Q' + entry.qNum : ' ';
+  });
+
+  // Insert group divider line widgets — one above each question that starts a new group
+  let lastGroup = null;
+  const lineCount = cm.lineCount();
+  // Collect all question start lines sorted
+  const qStarts = Object.keys(map).map(Number).sort((a,b)=>a-b);
+  qStarts.forEach(ln => {
+    const entry = map[ln];
+    if (entry.group !== null && entry.group !== lastGroup) {
+      lastGroup = entry.group;
+      const lineHandle = cm.getLineHandle(ln - 1);
+      if (!lineHandle) return;
+      const el = document.createElement('div');
+      el.className = 'cm-group-divider';
+      el.textContent = '// ───────── Group ' + entry.group + ' ───────── //';
+      const widget = cm.addLineWidget(ln - 1, el, { above: true, noHScroll: true });
+      qModeWidgets.push(widget);
+    }
+  });
+
+  cm.refresh();
+}
+
+function toggleQMode() {
+  AppState.qMode = !AppState.qMode;
+  DOM.qmodeBtn.classList.toggle('active', AppState.qMode);
+  applyQMode();
+}
 
 let lineMarkHandles = [];
 const fixedLines = new Set();
@@ -2984,8 +3166,8 @@ function jumpToLine(n) {
 function toggleItem(uid, lineNum) {
   const el = document.getElementById(uid);
   if (!el) return;
-  const wasExpanded = el.classList.contains('expanded');
-  el.classList.toggle('expanded');
+  const wasExpanded = el.classList.contains('details-open');
+  el.classList.toggle('details-open');
   // When opening an item that has a line number, jump the editor to that line
   if (!wasExpanded && lineNum) {
     jumpToLine(lineNum);
@@ -3052,6 +3234,13 @@ function clearAll() {
   AppState.dashData = null;
   AppState.hasRunOnce = false;
   AppState.openCategories.clear();
+  AppState.qLineMap = {};
+  qModeWidgets.forEach(w => { try { w.clear(); } catch(e) {} });
+  qModeWidgets = [];
+  if (AppState.qMode) cm.setOption('lineNumberFormatter', n => n);
+  AppState.qMode = false;
+  DOM.qmodeBtn.classList.remove('active');
+  DOM.qmodeBtn.style.display = 'none';
   DOM.resultsBody.innerHTML = EMPTY_STATE_HTML;
   DOM.summaryChips.style.display = 'none';
   DOM.qStrip.classList.remove('visible');
@@ -3558,9 +3747,12 @@ function renderReport(report,lines){
 
   DOM.qStrip.innerHTML = parts.join('');
 
-  // Build and cache dashboard data
+  // Build and cache dashboard data + qMode line map
   AppState.dashData = buildDashboardData(report.questions);
   AppState.dashMeta = { questions: report.questionCount, groups: groupNums.length };
+  buildQLineMap(report.questions);
+  DOM.qmodeBtn.style.display = '';
+  if (AppState.qMode) applyQMode();
   DOM.dashboardBtn.disabled = false;
   DOM.statusBar.classList.add('visible');
   DOM.statusText.innerHTML=
@@ -3655,8 +3847,8 @@ function renderReport(report,lines){
     const warnCount = fails.filter(f => f.rule.severity === 'warning').length;
     const hCls = errCount ? 'has-errors' : 'has-warnings';
     const badges =
-      (errCount ? '<span class="cat-count cat-count-error">'+errCount+'</span>' : '') +
-      (warnCount ? '<span class="cat-count cat-count-warn">'+warnCount+'</span>' : '');
+      (errCount ? '<span class="cat-count cat-count-error">'+errCount+' Error'+(errCount!==1?'s':'')+'</span>' : '') +
+      (warnCount ? '<span class="cat-count cat-count-warn">'+warnCount+' Warning'+(warnCount!==1?'s':'')+'</span>' : '');
 
     let label;
     if (gk === 'general') {
@@ -3687,7 +3879,8 @@ function renderReport(report,lines){
     const catId = 'grp-' + gk;
     html += '<div class="category-section" id="'+catId+'">'+
       '<button class="category-header '+hCls+'" onclick="toggleCat(\''+catId+'\')">'+
-      '<span class="cat-chevron">'+CHEVRON+'</span>'+label+' '+badges+'</button>'+
+      label+' '+badges+
+      '<span class="cat-chevron">'+CHEVRON+'</span></button>'+
       '<div class="category-items">'+items+'</div></div>';
   }
   DOM.resultsBody.innerHTML = html;
@@ -3709,106 +3902,234 @@ function renderReport(report,lines){
   DOM.filterAll.classList.add('active-all');
 }
 
+function makeDiffLine(actual, expected) {
+  // Produces the two-line dark diff: ~~old~~ / + new with character-level highlights
+  const a = esc(actual), e = esc(expected);
+  let pLen = 0;
+  while (pLen < a.length && pLen < e.length && a[pLen] === e[pLen]) pLen++;
+  let sLen = 0;
+  while (sLen < a.length - pLen && sLen < e.length - pLen && a[a.length-1-sLen] === e[e.length-1-sLen]) sLen++;
+  const aPre = a.substring(0, pLen), aSuf = a.substring(a.length - sLen);
+  const eDel = a.substring(pLen, a.length - sLen);
+  const eIns = e.substring(pLen, e.length - sLen);
+  const ePost = e.substring(e.length - sLen);
+  const delLine =
+    (aPre ? '<span style="opacity:.45">'+aPre+'</span>' : '') +
+    (eDel ? '<del style="background:rgba(239,68,68,.35);color:#fca5a5;text-decoration:line-through;border-radius:2px;padding:0 2px;">'+eDel+'</del>' : '') +
+    (aSuf ? '<span style="opacity:.45">'+aSuf+'</span>' : '');
+  const insLine =
+    (aPre ? '<span style="opacity:.45">'+aPre+'</span>' : '') +
+    (eIns ? '<ins style="background:rgba(34,197,94,.3);color:#4ade80;font-weight:700;text-decoration:none;border-radius:2px;padding:0 2px;">'+eIns+'</ins>' : '') +
+    (ePost ? '<span style="opacity:.45">'+ePost+'</span>' : '');
+  return { delLine, insLine };
+}
+
+function renderDiffBlock(uid, actual, expected, lineNum, hasAuto, applyLabel) {
+  const applyBtn = hasAuto
+    ? '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" title="Apply fix in editor">\u2713 Apply Fix</button>'
+    : '';
+  const copyBtn = '<button class="diff-action-btn diff-copy-btn" onclick="copyDiff(\''+uid+'\',event)" title="Copy corrected text">\u2398</button>';
+  const lineLabel = lineNum ? 'Line '+lineNum : '';
+
+  const aLines = actual.split('\n');
+  const eLines = expected.split('\n');
+  let bodyHtml = '';
+
+  if (aLines.length === 1 && eLines.length === 1) {
+    // Single-line: character-level highlight
+    const { delLine, insLine } = makeDiffLine(actual, expected);
+    bodyHtml =
+      '<div class="diff-line diff-line-del"><span class="diff-sigil">~~</span><span class="diff-text">'+delLine+'</span></div>'+
+      '<div class="diff-line diff-line-ins"><span class="diff-sigil">+&nbsp;</span><span class="diff-text">'+insLine+'</span></div>';
+  } else {
+    // Multi-line: LCS-based diff — all dels in a hunk before all ins
+    const renderCtx = l => '<div class="diff-line" style="color:#a0a0b8"><span class="diff-sigil" style="opacity:.4">&nbsp;&nbsp;</span><span class="diff-text">'+(l===''?'<span style="opacity:.3;font-style:italic">&#x23CE; blank line</span>':esc(l))+'</span></div>';
+    const renderDel = l => '<div class="diff-line diff-line-del"><span class="diff-sigil">~~</span><span class="diff-text">'+(l===''?'<span style="font-style:italic">&#x23CE; blank line</span>':esc(l))+'</span></div>';
+    const renderIns = l => '<div class="diff-line diff-line-ins"><span class="diff-sigil">+&nbsp;</span><span class="diff-text">'+(l===''?'<span style="font-style:italic">&#x23CE; blank line</span>':esc(l))+'</span></div>';
+
+    // Build LCS table
+    const m = aLines.length, n = eLines.length;
+    const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+    for (let i = m-1; i >= 0; i--)
+      for (let j = n-1; j >= 0; j--)
+        dp[i][j] = aLines[i] === eLines[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+
+    // Walk LCS to produce edit script: 'ctx', 'del', 'ins'
+    const ops = []; // {type, line}
+    let i = 0, j = 0;
+    while (i < m || j < n) {
+      if (i < m && j < n && aLines[i] === eLines[j]) {
+        ops.push({type:'ctx', line:aLines[i]}); i++; j++;
+      } else if (j < n && (i >= m || dp[i][j+1] >= dp[i+1][j])) {
+        ops.push({type:'ins', line:eLines[j]}); j++;
+      } else {
+        ops.push({type:'del', line:aLines[i]}); i++;
+      }
+    }
+
+    // Render: group consecutive del/ins runs so all dels come before all ins in each hunk
+    let k = 0;
+    while (k < ops.length) {
+      if (ops[k].type === 'ctx') {
+        bodyHtml += renderCtx(ops[k].line); k++;
+      } else {
+        // Collect the full del+ins hunk
+        const hunkDels = [], hunkIns = [];
+        while (k < ops.length && ops[k].type === 'del') hunkDels.push(ops[k++].line);
+        while (k < ops.length && ops[k].type === 'ins') hunkIns.push(ops[k++].line);
+        // If ins came before del in ops (shouldn't with our LCS direction but guard anyway)
+        while (k < ops.length && ops[k].type === 'del') hunkDels.push(ops[k++].line);
+        hunkDels.forEach(l => { bodyHtml += renderDel(l); });
+        hunkIns.forEach(l  => { bodyHtml += renderIns(l); });
+      }
+    }
+  }
+
+  return '<div class="diff-block">'+
+    '<div class="diff-block-hdr"><span class="diff-label">'+(applyLabel||'Suggested Fix')+(lineLabel?' <span style="opacity:.5;font-weight:400">('+lineLabel+')</span>':'')+'</span>'+applyBtn+copyBtn+'</div>'+
+    '<div class="diff-block-body">'+bodyHtml+'</div></div>';
+}
+
 function renderItem(r,lines){
   const isPassing=r.status==='pass';
   const cls=isPassing?'pass':r.rule.severity==='error'?'err':'warn';
-  const icon=isPassing?'✓':r.rule.severity==='error'?'':'⚠';
+  const icon=isPassing?'✓':r.rule.severity==='error'?'🔴':'🟡';
   const uid='ri-'+r.rule.id+(r.lineNum||'')+Math.random().toString(36).slice(2,6);
   resultRegistry[uid]=r;
   if(r.lineNum) {
       if (!AppState.lineMap[r.lineNum]) AppState.lineMap[r.lineNum] = [];
       AppState.lineMap[r.lineNum].push(uid);
   }
-  const lineBadge=r.lineNum?'<span class="line-badge" onclick="jumpToLine('+r.lineNum+');event.stopPropagation()">L'+r.lineNum+'</span>':'';
+  function getQLabel(lineNum) {
+    if (!lineNum || !AppState.qMode) return lineNum ? 'L'+lineNum : null;
+    // Direct hit
+    if (AppState.qLineMap[lineNum]) return 'Q'+AppState.qLineMap[lineNum].qNum;
+    // Find the question whose start line is <= this line (nearest question above)
+    const starts = Object.keys(AppState.qLineMap).map(Number).sort((a,b)=>a-b);
+    let best = null;
+    for (const s of starts) { if (s <= lineNum) best = s; else break; }
+    return best ? 'Q'+AppState.qLineMap[best].qNum : 'L'+lineNum;
+  }
+  const badgeLabel = getQLabel(r.lineNum);
+  const lineBadge = badgeLabel ? '<span class="line-badge" onclick="jumpToLine('+r.lineNum+');event.stopPropagation()">'+badgeLabel+'</span>' : '';
   const hasFixer=!isPassing&&!!r.rule.fix;
   const hasAuto=hasFixer&&typeof autoFixers[r.rule.id]==='function';
-  const wandBtn=hasFixer
-    ? hasAuto
-      ? '<button class="wand-btn" data-auto="true" onclick="applyFix(\''+uid+'\',event)" title="Automatically fix this issue in the editor">&#x26A1; Apply Fix</button>'
-      : '<button class="wand-btn" data-auto="false" onclick="applyFix(\''+uid+'\',event)" title="View guidance and example for fixing this issue manually">&#x1F4D6; View Guide</button>'
+
+  // "Show Details / Code Fix" toggle — Apply Fix is only inside the fix panel, not the row
+  const showDetailsBtn = hasFixer
+    ? '<button class="show-details-btn" onclick="toggleDetails(\''+uid+'\',event)">Details / Fix <svg style="width:11px;height:11px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>'
     : '';
+
   const displayMsg=isPassing?'':highlight(r.message||'',r.errorStr);
-  const isWarn=!isPassing&&r.rule.severity==='warning';
-  const rationaleHtml=(isWarn&&r.rule.rationale)
-    ?'<div class="result-rationale">ℹ '+esc(r.rule.rationale)+'</div>':'';
-  let fixPanel='';
-  if(hasFixer){
-    const escSnip=esc(r.rule.fix.snippet||'');
-    const userLine=r.lineNum&&lines?lines[r.lineNum-1]:'';
-    let userSnippet='';
-    let standardFixPanel = '<div><div class="snippet-hdr" style="background:var(--pass-bg); color:var(--pass);">Example Fix</div><pre class="fix-snippet" style="background:var(--surface);">'+escSnip+'</pre></div>';
-    
-    if (r.extra && r.extra.type === 'contextual-diff') {
-        const safeLine = esc(userLine.trim());
-        const safeActual = esc(r.extra.actual || r.errorStr);
-        const safeExpected = esc(r.extra.expected);
-        const safeTruth = esc(r.extra.truthAttr);
-        
-        // Highlight the source of truth (yellow background)
-        let diffHtml = safeLine;
-        if (safeTruth) {
-            diffHtml = diffHtml.replace(safeTruth, `<mark style="background:#fef08a; padding:0 3px; border-radius:3px; color:#854d0e;">${safeTruth}</mark>`);
-        }
-        
-        // Apply Red/Green visual diff (smart character-level diffing)
-        let visualDiff;
-        let pLen = 0; // Find common prefix length
-        while (pLen < safeActual.length && pLen < safeExpected.length && safeActual[pLen] === safeExpected[pLen]) { pLen++; }
-        
-        let sLen = 0; // Find common suffix length
-        while (sLen < safeActual.length - pLen && sLen < safeExpected.length - pLen && safeActual[safeActual.length - 1 - sLen] === safeExpected[safeExpected.length - 1 - sLen]) { sLen++; }
 
-        const prefix = safeActual.substring(0, pLen);
-        const suffix = safeActual.substring(safeActual.length - sLen);
-        const deleted = safeActual.substring(pLen, safeActual.length - sLen);
-        const inserted = safeExpected.substring(pLen, safeExpected.length - sLen);
+  // ── Build fix panel content ──
+  let fixPanelContent = '';
+  if (hasFixer) {
+    const userLine = r.lineNum && lines ? lines[r.lineNum-1] : '';
 
-        let diffMid = '';
-        if (deleted) diffMid += `<del style="color: #991b1b; background: #fee2e2; text-decoration: line-through; padding: 0 2px; border-radius: 2px;">${deleted}</del>`;
-        // Add a space between deleted and inserted blocks for readability, unless one is empty
-        if (inserted) diffMid += (deleted ? ' ' : '') + `<ins style="color: #166534; background: #dcfce7; text-decoration: none; font-weight: bold; padding: 0 2px; border-radius: 2px;">${inserted}</ins>`;
+    // Context / Best Practice panel (replaces old italic rationale)
+    const contextPanel = r.rule.rationale
+      ? '<div class="context-panel"><div class="context-panel-hdr">💡 Context / Best Practice</div>'+esc(r.rule.rationale)+'</div>'
+      : '';
 
-        // Dim unchanged context text so eyes snap to the changed characters
-        const dimPrefix = prefix ? '<span style="opacity:.4">'+prefix+'</span>' : '';
-        const dimSuffix = suffix ? '<span style="opacity:.4">'+suffix+'</span>' : '';
-        visualDiff = dimPrefix + diffMid + dimSuffix;
-        
-        diffHtml = diffHtml.replace(safeActual, visualDiff);
-        
-        userSnippet = '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text with <span style=\"color:#166534;font-weight:700\">Suggested Fix</span> (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text);">'+diffHtml+'</pre></div>';
-        standardFixPanel = '';
+    if (r.extra && r.extra.type === 'spacing-insert-blank') {
+      // Missing blank line — show last line of question as context, then green inserted blank
+      const applyBtn = hasAuto
+        ? '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" title="Apply fix in editor">✓ Apply Fix</button>'
+        : '';
+      const copyBtn = '<button class="diff-action-btn diff-copy-btn" onclick="copyDiff(\''+uid+'\',event)" title="Copy corrected text">⎘</button>';
+      const contextLine = r.extra.lastCurrLine ? '<div class="diff-line" style="color:#a0a0b8"><span class="diff-sigil" style="opacity:.4">&nbsp;&nbsp;</span><span class="diff-text">'+esc(r.extra.lastCurrLine)+'</span></div>' : '';
+      const insertedBlank = '<div class="diff-line diff-line-ins"><span class="diff-sigil">+&nbsp;</span><span class="diff-text" style="font-style:italic">&#x23CE; blank line</span></div>';
+      const nextPreview = r.extra.firstNextLine ? (r.extra.firstNextLine.length > 60 ? r.extra.firstNextLine.slice(0,60)+'…' : r.extra.firstNextLine) : '';
+      const nextLine = nextPreview ? '<div class="diff-line" style="color:#a0a0b8"><span class="diff-sigil" style="opacity:.4">&nbsp;&nbsp;</span><span class="diff-text">'+esc(nextPreview)+'</span></div>' : '';
+      fixPanelContent = '<div class="diff-block">'+
+        '<div class="diff-block-hdr"><span class="diff-label">Suggested Fix</span>'+applyBtn+copyBtn+'</div>'+
+        '<div class="diff-block-body">'+contextLine+insertedBlank+nextLine+'</div></div>' + contextPanel;
+
+    } else if (r.extra && r.extra.type === 'spacing-remove-blanks') {
+      // Too many blank lines — show explicit before block then fix block
+      const applyBtn = hasAuto
+        ? '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" title="Apply fix in editor">✓ Apply Fix</button>'
+        : '';
+      const copyBtn = '<button class="diff-action-btn diff-copy-btn" onclick="copyDiff(\''+uid+'\',event)" title="Copy corrected text">⎘</button>';
+
+      // ── Suggested Fix block only: context line, one blank kept, excess struck, next question line ──
+      const keepCount = 1;
+      const removeCount = r.extra.blanks - keepCount;
+      const blankKept = '<div class="diff-line" style="color:#a0a0b8"><span class="diff-sigil" style="opacity:.4">&nbsp;&nbsp;</span><span class="diff-text" style="font-style:italic">&#x23CE; blank line</span></div>';
+      const blankRemoved = '<div class="diff-line diff-line-del"><span class="diff-sigil">~~</span><span class="diff-text" style="font-style:italic">&#x23CE; blank line</span></div>';
+      let afterRows = '';
+      if (r.extra.lastCurrLine) afterRows += '<div class="diff-line" style="color:#a0a0b8"><span class="diff-sigil" style="opacity:.4">&nbsp;&nbsp;</span><span class="diff-text">'+esc(r.extra.lastCurrLine)+'</span></div>';
+      afterRows += blankKept;
+      for (let i = 0; i < removeCount; i++) afterRows += blankRemoved;
+      if (r.extra.firstNextLine) {
+        const preview = r.extra.firstNextLine.length > 60 ? r.extra.firstNextLine.slice(0, 60) + '…' : r.extra.firstNextLine;
+        afterRows += '<div class="diff-line" style="color:#a0a0b8"><span class="diff-sigil" style="opacity:.4">&nbsp;&nbsp;</span><span class="diff-text">'+esc(preview)+'</span></div>';
+      }
+      const afterBlock = '<div class="diff-block">'+
+        '<div class="diff-block-hdr"><span class="diff-label">Suggested Fix</span>'+applyBtn+copyBtn+'</div>'+
+        '<div class="diff-block-body">'+afterRows+'</div></div>';
+
+      fixPanelContent = afterBlock + contextPanel;
+
+    } else if (r.extra && r.extra.type === 'contextual-diff') {
+      fixPanelContent = renderDiffBlock(uid, r.extra.actual, r.extra.expected, r.lineNum, hasAuto) + contextPanel;
+
     } else if (r.extra && r.extra.type === 'dual-pad-fix') {
-        // Show two separate inline diffs: one for the attribute, one for the span content
-        function makeDiff(actual, expected) {
-          const a = esc(actual), e = esc(expected);
-          let pLen = 0;
-          while (pLen < a.length && pLen < e.length && a[pLen] === e[pLen]) pLen++;
-          let sLen = 0;
-          while (sLen < a.length - pLen && sLen < e.length - pLen && a[a.length-1-sLen] === e[e.length-1-sLen]) sLen++;
-          const prefix = a.substring(0, pLen);
-          const suffix = a.substring(a.length - sLen);
-          const del = a.substring(pLen, a.length - sLen);
-          const ins = e.substring(pLen, e.length - sLen);
-          let mid = '';
-          if (del) mid += `<del style="color:#991b1b;background:#fee2e2;text-decoration:line-through;padding:0 2px;border-radius:2px;">${del}</del>`;
-          if (ins) mid += (del?' ':'') + `<ins style="color:#166534;background:#dcfce7;text-decoration:none;font-weight:bold;padding:0 2px;border-radius:2px;">${ins}</ins>`;
-          return (prefix?`<span style="opacity:.4">${prefix}</span>`:'') + mid + (suffix?`<span style="opacity:.4">${suffix}</span>`:'');
-        }
-        const attrDiff    = makeDiff(r.extra.attrActual,    r.extra.attrExpected);
-        const contentDiff = makeDiff(r.extra.contentActual, r.extra.contentExpected);
-        userSnippet =
-          '<div><div class="snippet-hdr" style="background:var(--error-bg);color:var(--error);">Two fixes needed on Line '+r.lineNum+' — <span style="color:#166534;font-weight:700">both will be applied</span></div>' +
-          '<pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;border-radius:var(--r) var(--r) 0 0;">' +
-          '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">① data-associatedlessons attribute</div>' + attrDiff +
-          '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-top:10px;margin-bottom:4px;">② span content text</div>' + contentDiff +
-          '</pre></div>';
-        standardFixPanel = '';
+      const attrDiff    = renderDiffBlock(uid+'a', r.extra.attrActual,    r.extra.attrExpected,    r.lineNum, false, '① data-associatedlessons');
+      const contentDiff = renderDiffBlock(uid+'b', r.extra.contentActual, r.extra.contentExpected, r.lineNum, false, '② Span content text');
+      const applyBoth = '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" style="margin-bottom:8px;display:inline-flex;">✓ Apply Both Fixes</button>';
+      fixPanelContent = applyBoth + attrDiff + contentDiff + contextPanel;
+
+    } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'group-points' ||
+               r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
+               r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous')) {
+      // These have their own rich extra panels — build them the existing way then wrap
+      fixPanelContent = buildExtraPanel(r, lines, uid, hasAuto) + contextPanel;
+
     } else {
-        userSnippet = userLine ? '<div><div class="snippet-hdr" style="background:var(--error-bg); color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface); color:var(--error);">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>' : '';
+      // Standard: if hasAuto, compute a live diff from the autofixer; otherwise show example snippet
+      const escSnip = esc(r.rule.fix.snippet||'');
+      if (hasAuto && userLine) {
+        // Run the fixer on just this line to produce a before/after diff
+        const fixer = autoFixers[r.rule.id];
+        let fixedLine = userLine;
+        try { fixedLine = fixer(userLine, r); } catch(e) {}
+        if (fixedLine !== userLine) {
+          fixPanelContent = renderDiffBlock(uid, userLine.trim(), fixedLine.trim(), r.lineNum, true) + contextPanel;
+        } else {
+          // Fixer runs globally — show example snippet as fallback
+          const exSnippet = escSnip ? '<div><div class="snippet-hdr" style="background:var(--pass-bg);color:var(--pass);">Example Fix</div><pre class="fix-snippet" style="background:var(--surface);">'+escSnip+'</pre></div>' : '';
+          const applyBtn = '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" style="margin-bottom:8px;display:inline-flex;">✓ Apply Fix</button>';
+          fixPanelContent = applyBtn + exSnippet + contextPanel;
+        }
+      } else {
+        const userSnippet = userLine
+          ? '<div style="margin-bottom:8px;"><div class="snippet-hdr" style="background:var(--error-bg);color:var(--error);">Your Text (Line '+r.lineNum+')</div><pre class="fix-snippet" style="background:var(--surface);color:var(--error);">'+highlight(userLine.trim(),r.errorStr)+'</pre></div>'
+          : '';
+        const exSnippet = escSnip ? '<div><div class="snippet-hdr" style="background:var(--pass-bg);color:var(--pass);">Suggested Fix</div><pre class="fix-snippet" style="background:var(--surface);">'+escSnip+'</pre></div>' : '';
+        fixPanelContent = userSnippet + exSnippet + contextPanel;
+      }
     }
-    
-    let extraPanel='';
-    if(r.extra&&r.extra.type==='table-issues'){
+
+    const descHtml = '<div class="fix-description">'+esc(r.rule.fix.description)+'</div>';
+    fixPanelContent = '<div class="fix-panel" id="fp-'+uid+'"><div class="fix-applied-banner" style="display:none">✦ Fix applied — review and re-audit when done</div>' + descHtml + fixPanelContent + '</div>';
+  }
+
+  return '<div class="result-item '+cls+'" id="'+uid+'">'+
+    '<div class="result-row" onclick="toggleItem(\''+uid+'\','+( r.lineNum || 'null' )+')">'+
+    '<span class="result-col-icon"><span class="sev-icon">'+icon+'</span>'+lineBadge+'</span>'+
+    '<div class="result-text">'+
+      '<div class="result-rule-name">'+esc(r.rule.description)+'</div>'+
+      (displayMsg?'<div class="result-msg">'+displayMsg+'</div>':'')+
+    '</div>'+
+    (hasFixer ? '<span class="result-col-action">' + showDetailsBtn + '</span>' : '<span class="result-col-action"></span>') +
+    '</div>'+
+    (fixPanelContent||'')+'</div>';
+}
+function buildExtraPanel(r, lines, uid, hasAuto) {
+  let extraPanel = '';
+  if(r.extra&&r.extra.type==='table-issues'){
       const {issues, rawHtml} = r.extra;
       const TYPE_ICON = { malformed:'⚠', unclosed:'', extra:'', order:'' };
       const TYPE_COLOR = { malformed:'var(--error)', unclosed:'var(--error)', extra:'var(--error)', order:'var(--warn)' };
@@ -3816,60 +4137,43 @@ function renderItem(r,lines){
         const jump = issue.lineNum
           ? '<span class="line-badge" onclick="jumpToLine('+issue.lineNum+');event.stopPropagation()">L'+issue.lineNum+'</span>'
           : '';
-        const icon = TYPE_ICON[issue.type] || '';
+        const ic = TYPE_ICON[issue.type] || '';
         const color = TYPE_COLOR[issue.type] || 'var(--error)';
         const tagBadge = '<code style="font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;color:var(--text-mid);margin-right:6px">&lt;'+esc(issue.tag)+'&gt;</code>';
         return '<tr style="border-bottom:1px solid var(--border)">'+
-          '<td style="padding:5px 8px;font-size:13px;color:'+color+';width:22px;text-align:center">'+icon+'</td>'+
+          '<td style="padding:5px 8px;font-size:13px;color:'+color+';width:22px;text-align:center">'+ic+'</td>'+
           '<td style="padding:5px 6px">'+tagBadge+'</td>'+
           '<td style="padding:5px 8px;font-size:11px;color:var(--text);flex:1">'+esc(issue.label)+'</td>'+
           '<td style="padding:5px 8px;text-align:right;white-space:nowrap">'+jump+'</td>'+
           '</tr>';
       }).join('');
       extraPanel =
-        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--error);text-transform:uppercase;letter-spacing:.5px;background:var(--error-bg)">'+
-          ' '+issues.length+' Issue'+(issues.length!==1?'s':'')+' Found'+
-        '</div>'+
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--error);text-transform:uppercase;letter-spacing:.5px;background:var(--error-bg)"> '+issues.length+' Issue'+(issues.length!==1?'s':'')+' Found</div>'+
         '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border)">'+
           '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
             '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);width:22px"></th>'+
             '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Tag</th>'+
             '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Issue</th>'+
             '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th>'+
-          '</tr>'+
-          rows+
+          '</tr>'+rows+
         '</table>'+
-        '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">'+
-          'Fix each issue above in order — malformed tags can cause cascading errors in the rows below.'+
-        '</div>'+
+        '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Fix each issue above in order — malformed tags can cause cascading errors below.</div>'+
         '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table (For Reference)</div>'+
         '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues)+'</pre></div>';
-    } else if(r.extra&&r.extra.type==='formatted-code'){
-      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table Structure (For Review)</div><div style="padding: 0 12px 10px 12px;"><pre class="fix-snippet" style="background:var(--surface); color:var(--text); tab-size:4; border-radius:var(--r); border-top:1px solid var(--border); margin:0;">'+formatTableHTMLWithHighlights(r.extra.code, [])+'</pre></div>';
-    } else if(r.extra&&r.extra.type==='br-ambiguous'){
-      // Render the raw line with <br /> tags highlighted in amber and the <img> dimmed,
-      // so the user can immediately see which side the lone <br /> is on.
+  } else if(r.extra&&r.extra.type==='formatted-code'){
+      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table Structure (For Review)</div><div style="padding:0 12px 10px 12px;"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0;">'+formatTableHTMLWithHighlights(r.extra.code, [])+'</pre></div>';
+  } else if(r.extra&&r.extra.type==='br-ambiguous'){
       const {rawLine, img, side} = r.extra;
-      const BRhighlight = (tag) =>
-        '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:3px;font-weight:700">' + esc(tag) + '</mark>';
-      const IMGdim = (tag) =>
-        '<span style="opacity:.4;font-style:italic">' + esc(tag) + '</span>';
-      // Walk the line, replacing <br …> tags and the img tag token-by-token
-      let annotated = '';
-      let pos = 0;
-      const tokenRe = /(<[^>]*>)/g;
-      let tm;
+      const BRhighlight = (tag) => '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:3px;font-weight:700">'+esc(tag)+'</mark>';
+      const IMGdim = (tag) => '<span style="opacity:.4;font-style:italic">'+esc(tag)+'</span>';
+      let annotated = '', pos = 0;
+      const tokenRe = /(<[^>]*>)/g; let tm;
       while ((tm = tokenRe.exec(rawLine)) !== null) {
-        // text before this token
         if (tm.index > pos) annotated += esc(rawLine.substring(pos, tm.index));
         const tok = tm[1];
-        if (/^<\/?\s*br\b/i.test(tok)) {
-          annotated += BRhighlight(tok);
-        } else if (tok === img) {
-          annotated += IMGdim(tok);
-        } else {
-          annotated += esc(tok);
-        }
+        if (/^<\/?\s*br\b/i.test(tok)) annotated += BRhighlight(tok);
+        else if (tok === img) annotated += IMGdim(tok);
+        else annotated += esc(tok);
         pos = tm.index + tok.length;
       }
       if (pos < rawLine.length) annotated += esc(rawLine.substring(pos));
@@ -3878,7 +4182,7 @@ function renderItem(r,lines){
         '<div style="border-top:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.5px;background:var(--warn-bg)">⚠ Ambiguous Image Placement</div>'+
         '<div style="padding:6px 14px 4px;font-size:11px;color:var(--text-mid)">'+sideLabel+'</div>'+
         '<div style="padding:4px 12px 10px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);white-space:pre-wrap;word-break:break-all;margin:0">'+annotated+'</pre></div>';
-    } else if(r.extra&&r.extra.type==='group-points'){
+  } else if(r.extra&&r.extra.type==='group-points'){
       const{group,expected,items}=r.extra;
       const rows=items.map(item=>{
         const off=String(item.points)!==String(expected);
@@ -3886,52 +4190,27 @@ function renderItem(r,lines){
         return '<tr style="'+(off?'background:var(--error-bg)':'background:var(--pass-bg)')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);'+(off?'color:var(--error);font-weight:700':'color:var(--pass);font-weight:700')+'">points:'+item.points+'<span style="font-size:10px;background:'+(off?'var(--error)':'var(--pass)')+';color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">'+(off?'✕ wrong':'✓')+'</span></td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Point Values</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Most common value: <strong>points:'+expected+'</strong> — update highlighted rows to match.</div>';
-    } else if(r.extra&&r.extra.type==='group-numbering'){
+  } else if(r.extra&&r.extra.type==='group-numbering'){
       const {violations, seq} = r.extra;
-      // Build set of gap group numbers for quick lookup
       const badGroups = new Set(violations.map(v => v.found));
-      const missingGroups = new Set(violations.filter(v=>v.kind==='gap').map(v=>v.expected));
-      // Build unique group rows (one row per group, not per question)
       const groupsSeen = new Map();
       seq.forEach(item => { if(!groupsSeen.has(item.group)) groupsSeen.set(item.group, item); });
       const sortedGroups = [...groupsSeen.keys()].sort((a,b)=>a-b);
-
-      // Interleave missing gaps into the display
       const displayItems = [];
       for (let i = 0; i < sortedGroups.length; i++) {
         const g = sortedGroups[i];
-        if (i === 0 && g !== 1) {
-          displayItems.push({ type:'missing', group:1 });
-          for (let m = 2; m < g; m++) displayItems.push({ type:'missing', group:m });
-        }
+        if (i === 0 && g !== 1) { displayItems.push({ type:'missing', group:1 }); for (let m = 2; m < g; m++) displayItems.push({ type:'missing', group:m }); }
         displayItems.push({ type:'present', group:g, item:groupsSeen.get(g) });
-        if (i + 1 < sortedGroups.length) {
-          const next = sortedGroups[i+1];
-          for (let m = g+1; m < next; m++) displayItems.push({ type:'missing', group:m });
-        }
+        if (i + 1 < sortedGroups.length) { const next = sortedGroups[i+1]; for (let m = g+1; m < next; m++) displayItems.push({ type:'missing', group:m }); }
       }
-
       const rows = displayItems.map(di => {
-        if (di.type === 'missing') {
-          return '<tr style="background:var(--error-bg);border-bottom:1px solid var(--border)">'+
-            '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">—</td>'+
-            '<td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600;color:var(--error)">group:'+di.group+
-              '<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">missing</span></td>'+
-            '<td style="padding:5px 10px;text-align:right"></td></tr>';
-        }
+        if (di.type === 'missing') return '<tr style="background:var(--error-bg);border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">—</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600;color:var(--error)">group:'+di.group+'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">missing</span></td><td style="padding:5px 10px;text-align:right"></td></tr>';
         const isBad = badGroups.has(di.group);
         const jump = di.item.line ? '<span class="line-badge" onclick="jumpToLine('+di.item.line+');event.stopPropagation()">L'+di.item.line+'</span>' : '';
-        return '<tr style="'+(isBad?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)">'+
-          '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">Q'+di.item.num+'…</td>'+
-          '<td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600">group:'+di.group+
-            (isBad?'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">⚠ wrong</span>':'')+'</td>'+
-          '<td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
+        return '<tr style="'+(isBad?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">Q'+di.item.num+'…</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600">group:'+di.group+(isBad?'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">⚠ wrong</span>':'')+'</td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
-
-      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group Numbering — All Groups</div>'+
-        '<table style="width:100%;border-collapse:collapse">'+rows+'</table>'+
-        '<div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Groups must form an unbroken sequence starting at 1. Add any missing groups or renumber existing ones.</div>';
-    } else if(r.extra&&r.extra.type==='group-sequence'){
+      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group Numbering — All Groups</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Groups must form an unbroken sequence starting at 1.</div>';
+  } else if(r.extra&&r.extra.type==='group-sequence'){
       let prev=null;
       const rows=r.extra.sequence.map(item=>{
         const isBreak=prev!==null&&item.group<prev; prev=item.group;
@@ -3939,30 +4218,24 @@ function renderItem(r,lines){
         return '<tr style="'+(isBreak?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600">group:'+item.group+(isBreak?'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">↑ out of order</span>':'')+'</td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group Sequence — All Questions</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Highlighted rows are out of order. Questions in the same group must appear together.</div>';
-    } else if(r.extra&&r.extra.type==='special-chars'){
+  } else if(r.extra&&r.extra.type==='special-chars'){
       const isAuto=r.extra.tier==='auto';
       const hdrColor=isAuto?'var(--error)':'var(--warn)';
       const hdrBg=isAuto?'var(--error-bg)':'var(--warn-bg)';
-      
-      // 1. Build the Highlighted Snippet Preview
       const affectedLines = [...new Set(r.extra.chars.flatMap(c => c.lineNums))].sort((a,b)=>a-b);
       let snippetHtml = '';
       affectedLines.forEach(ln => {
-         let text = lines[ln-1] || '';
-         let safeText = esc(text);
-         // Highlight all bad chars in this specific line
-         r.extra.chars.forEach(c => {
-             if (c.lineNums.includes(ln)) {
-                 const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
-                 safeText = safeText.replace(charRegex, '<mark style="background:#fee2e2; color:#991b1b; padding:0 2px; border-radius:2px; font-weight:bold;">' + esc(c.char) + '</mark>');
-             }
-         });
-         snippetHtml += '<div style="color:var(--text-dim); font-size:9px; margin-bottom:2px; user-select:none; text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
+        let text = lines[ln-1] || '';
+        let safeText = esc(text);
+        r.extra.chars.forEach(c => {
+          if (c.lineNums.includes(ln)) {
+            const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+            safeText = safeText.replace(charRegex, '<mark style="background:#fee2e2;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:bold;">'+esc(c.char)+'</mark>');
+          }
+        });
+        snippetHtml += '<div style="color:var(--text-dim);font-size:9px;margin-bottom:2px;user-select:none;text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
       });
-      
-      const previewPanel = '<div><div class="snippet-hdr" style="background:'+hdrBg+'; color:'+hdrColor+'; border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface); color:var(--text); border-bottom:none; margin-bottom:0; border-radius:0;">'+snippetHtml+'</pre></div>';
-
-      // 2. Build the Info Table
+      const previewPanel = '<div><div class="snippet-hdr" style="background:'+hdrBg+';color:'+hdrColor+';border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;margin-bottom:0;border-radius:0;">'+snippetHtml+'</pre></div>';
       const rows=r.extra.chars.map(c=>{
         const lineList=c.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
         return '<tr style="border-bottom:1px solid var(--border)">'+
@@ -3973,32 +4246,42 @@ function renderItem(r,lines){
           '<td style="padding:5px 10px;text-align:right">'+lineList+'</td>'+
           '</tr>';
       }).join('');
-      
-      extraPanel= previewPanel + '<div style="border-top:1px solid var(--border); border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding:8px 12px 4px;font-size:11px;font-weight:700;color:'+hdrColor+';background:'+hdrBg+';text-transform:uppercase;letter-spacing:.5px">'+(isAuto?'✕ Must Fix':'⚠ Review Required')+' — Special Characters Found</div>'+
-        '<table style="width:100%;border-collapse:collapse; border-left: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); border-radius: 0 0 var(--r) var(--r); margin-bottom: 10px;">'+
+      extraPanel = previewPanel +
+        '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:'+hdrColor+';background:'+hdrBg+';text-transform:uppercase;letter-spacing:.5px">'+(isAuto?'✕ Must Fix':'⚠ Review Required')+' — Special Characters Found</div>'+
+        '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 var(--r) var(--r);margin-bottom:10px;">'+
         '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
-        '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Char</th>'+
-        '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Code</th>'+
-        '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Name</th>'+
-        '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Replace with</th>'+
-        '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line(s)</th>'+
+          '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Char</th>'+
+          '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Code</th>'+
+          '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Name</th>'+
+          '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Replace with</th>'+
+          '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line(s)</th>'+
         '</tr>'+rows+'</table>';
-        
       if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
-    }
-    const isGroupExtra=!!extraPanel;
-    // Diff/snippet first, description below — matches how users scan
-    const descHtml='<div class="fix-description">'+esc(r.rule.fix.description)+'</div>';
-    fixPanel='<div class="fix-panel">'+(isGroupExtra?extraPanel:userSnippet+standardFixPanel+descHtml)+'</div>';
   }
-  return '<div class="result-item '+cls+'" id="'+uid+'">'+
-    '<div class="result-row" onclick="toggleItem(\''+uid+'\','+( r.lineNum || 'null' )+')">'+
-    '<div class="result-chevron">'+(hasFixer?CHEVRON:'')+'</div>'+
-    '<span class="sev-icon">'+icon+'</span>'+
-    '<div class="result-text"><div class="result-rule-name">'+esc(r.rule.description)+'</div>'+
-    (displayMsg?'<div class="result-msg">'+displayMsg+'</div>':'')+
-    rationaleHtml+
-    '</div>'+lineBadge+wandBtn+'</div>'+fixPanel+'</div>';
+  return extraPanel;
+}
+
+function toggleDetails(uid, event) {
+  if (event) event.stopPropagation();
+  const el = document.getElementById(uid);
+  if (!el) return;
+  el.classList.toggle('details-open');
+}
+
+function copyDiff(uid, event) {
+  if (event) event.stopPropagation();
+  const result = resultRegistry[uid];
+  if (!result || !result.extra) return;
+  let text = '';
+  if (result.extra.type === 'spacing-insert-blank') {
+    text = (result.extra.lastCurrLine || '') + '\n\n';
+  } else if (result.extra.type === 'spacing-remove-blanks') {
+    text = (result.extra.lastCurrLine || '') + '\n\n';
+  } else {
+    text = result.extra.expected || result.extra.attrExpected || '';
+  }
+  if (!text) return;
+  navigator.clipboard.writeText(text).catch(() => {});
 }
 
 function applyFix(uid,event){
@@ -4006,7 +4289,7 @@ function applyFix(uid,event){
   const result=resultRegistry[uid]; if(!result) return;
   const{rule}=result;
   const itemEl=document.getElementById(uid); if(!itemEl) return;
-  if(itemEl.classList.contains('fixed')){itemEl.classList.toggle('expanded');return;}
+  if(itemEl.classList.contains('fixed')){itemEl.classList.toggle('details-open');return;}
   const fixer=autoFixers[rule.id];
   if(typeof fixer==='function'){
     const before=ta.value,after=fixer(before,result);
@@ -4017,17 +4300,18 @@ function applyFix(uid,event){
       if(!el||el.classList.contains('fixed')) return;
       el.classList.remove('err','warn');el.classList.add('fixed');
       const ic=el.querySelector('.sev-icon');if(ic) ic.textContent='✦';
-      const w=el.querySelector('.wand-btn');if(w){w.textContent='✓ Applied';w.classList.add('applied');w.disabled=true;w.removeAttribute('data-auto');}
+      // Mark all Apply Fix buttons in this item (row btn + diff block btn)
+      el.querySelectorAll('.wand-btn[data-auto="true"],.diff-apply-btn').forEach(w=>{
+        w.textContent='✓ Applied';w.classList.add('applied');w.disabled=true;w.removeAttribute('data-auto');
+      });
       if(itemResult.lineNum) markLineFixed(itemResult.lineNum);
     });
-    itemEl.classList.add('expanded');
-    const panel=itemEl.querySelector('.fix-panel');
-    if(panel&&!panel.querySelector('.fix-applied-banner')){
-      const b=document.createElement('div');b.className='fix-applied-banner';
-      b.textContent='✦ Fix applied — review and re-audit when done';panel.prepend(b);
-    }
+    // Show the fix panel so the applied banner is visible
+    itemEl.classList.add('details-open');
+    const banner = itemEl.querySelector('.fix-applied-banner');
+    if (banner) banner.style.display = 'flex';
   } else {
-    itemEl.classList.toggle('expanded');
+    itemEl.classList.toggle('details-open');
   }
 }
 
@@ -4054,10 +4338,8 @@ function setFilter(mode){
 }
 
 function closeAllResults() {
-  // Close all category drawers
   document.querySelectorAll('.category-section.open').forEach(el => el.classList.remove('open'));
-  // Close all individual result items
-  document.querySelectorAll('.result-item.expanded').forEach(el => el.classList.remove('expanded'));
+  document.querySelectorAll('.result-item.details-open').forEach(el => el.classList.remove('details-open'));
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -4116,8 +4398,8 @@ cm.on('mousedown', (instance, e) => {
     }
 
     // 2. Expand the specific result item if closed
-    if (!resultEl.classList.contains('expanded')) {
-      resultEl.classList.add('expanded');
+    if (!resultEl.classList.contains('details-open')) {
+      resultEl.classList.add('details-open');
     }
 
     // 3. Smooth scroll the right panel to show this item
@@ -4164,6 +4446,9 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
 DOM.uploadZone.addEventListener('click', () => DOM.fileInput.click());
 DOM.fileInput.addEventListener('change', e => handleFile(e));
 DOM.clearFileBtn.addEventListener('click', () => clearFile());
+
+// Q-mode toggle
+DOM.qmodeBtn.addEventListener('click', () => toggleQMode());
 
 // Results panel
 DOM.collapseAllBtn.addEventListener('click', () => closeAllResults());
