@@ -964,6 +964,7 @@ const AssessmentChecker = (() => {
         // not starting with an HTML tag (answer choices can have inline markup),
         // and the stem hasn't already branched into multi-line.
         const looksLikeAnswer = t.startsWith('x-') || t.startsWith('<')
+          || cur.code === 'matching:label:'
           || (cur.code === 'tf:' && (t.toLowerCase() === 'true' || t.toLowerCase() === 'false'));
         if (cur.answers.length === 0 && !looksLikeAnswer
             && cur.stemLines.length > 0 && cur.stem && !cur.stem.includes('\n')) {
@@ -3554,11 +3555,13 @@ function loadSample(){
     'points:4',
     'group:26',
     '',
-    // ── Q28 — matching: HTML image tag on right side of dash ──────────────────
+    // ── Q28 — matching: first pair has image on right, next two have image on left ──
+    // Bug scenario: first pair "value scale-<img/>" must be detected as an answer (not
+    // absorbed into the stem), AND all three pairs must be checked for HTML-on-right.
     'matching:label:Match each term to its image.',
     'value scale-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_value_scale.jpg" alt="A value scale." />',
-    'hatching-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_hatching.jpg" alt="Hatching lines." />',
-    'stippling-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_stippling.jpg" alt="Stippling dots." />',
+    '<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_hatching.jpg" alt="Hatching lines." />-hatching',
+    '<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_stippling.jpg" alt="Stippling dots." />-stippling',
     'points:3',
     'group:27',
     '',
