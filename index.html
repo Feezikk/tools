@@ -907,18 +907,32 @@
   </footer>
 
   <script>
-    // --- 1. Theme Management (Auto & Manual) ---
-    const themeToggle = document.getElementById('themeToggle');
-    const root = document.documentElement;
-    let timeCheckInterval;
+   // --- 1. Theme Management (Auto & Manual) ---
+const themeToggle = document.getElementById('themeToggle');
+const root = document.documentElement;
+let timeCheckInterval;
 
-    function calculateTimeTheme() {
-      const hour = new Date().getHours();
-      if (hour >= 12 && hour < 17) return 'afternoon';
-      if (hour >= 17 && hour < 20) return 'sunset';
-      if (hour >= 20 || hour < 6) return 'night';
-      return 'morning';
-    }
+/**
+ * Robust, data-driven theme calculation.
+ * The array is checked in order; it returns the first theme where the 
+ * current hour is less than the 'upTo' value.
+ */
+function calculateTimeTheme() {
+  const hour = new Date().getHours();
+  const themes = [
+    { upTo: 6,  name: 'night' },      // 00:00 - 05:59
+    { upTo: 12, name: 'morning' },    // 06:00 - 11:59
+    { upTo: 17, name: 'afternoon' },  // 12:00 - 16:59
+    { upTo: 20, name: 'sunset' },     // 17:00 - 19:59
+    { upTo: 24, name: 'night' }       // 20:00 - 23:59
+  ];
+  
+  // .find() is efficient here as it stops as soon as it hits the first match
+  const match = themes.find(t => hour < t.upTo);
+  return match ? match.name : 'morning'; // Fallback to morning just in case
+}
+
+// Keep your applyTheme, startAutoTheme, and initTheme functions as they are...
 
     function applyTheme(theme) {
       if (theme === 'morning') {
