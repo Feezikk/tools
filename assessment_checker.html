@@ -60,10 +60,10 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .CodeMirror-selected{background:var(--accent-light)!important}
 .cm-error-line{background:#fde8e8!important}
 .cm-warn-line{background:#fff3cd!important}
-.cm-fixed-line{background:#fef9c3!important}
+.cm-fixed-line{background:#dcfce7!important}
 .cm-error-gutter{background:#fde8e8;color:var(--error)!important;font-weight:600}
 .cm-warn-gutter{background:#fff3cd;color:var(--warn)!important;font-weight:600}
-.cm-fixed-gutter{background:#fef9c3;color:#854d0e!important;font-weight:600}
+.cm-fixed-gutter{background:#dcfce7;color:var(--pass)!important;font-weight:600}
 .upload-zone{flex:1;margin:20px;border:2px dashed var(--border2);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:all .15s;padding:40px;text-align:center}
 .upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:var(--accent-light)}
 .upload-icon{font-size:36px}
@@ -272,7 +272,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.83</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.84</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -963,7 +963,8 @@ const AssessmentChecker = (() => {
         // Stem continuation: only if no answers yet, not an x- correct marker,
         // not starting with an HTML tag (answer choices can have inline markup),
         // and the stem hasn't already branched into multi-line.
-        const looksLikeAnswer = t.startsWith('x-') || t.startsWith('<');
+        const looksLikeAnswer = t.startsWith('x-') || t.startsWith('<')
+          || (cur.code === 'tf:' && (t.toLowerCase() === 'true' || t.toLowerCase() === 'false'));
         if (cur.answers.length === 0 && !looksLikeAnswer
             && cur.stemLines.length > 0 && cur.stem && !cur.stem.includes('\n')) {
           cur.stem += '\n' + t;
