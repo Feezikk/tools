@@ -30,6 +30,9 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .cdn-prefix{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.07);padding:3px 6px;border-radius:4px 0 0 4px;border:1px solid rgba(255,255,255,.18);border-right:none;white-space:nowrap;line-height:1}
 .cdn-input{padding:3px 7px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-family:var(--mono);font-size:11px;outline:none}
 .cdn-input-folder{width:220px;border-radius:0 4px 4px 0;border-left:none}
+.cdn-input-folder.auto-detected{border-color:#4ade80;box-shadow:0 0 0 1px #4ade80}
+.cdn-auto-badge{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;background:#16a34a;color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px;display:none;align-items:center;line-height:1;white-space:nowrap}
+.cdn-auto-badge.visible{display:flex}
 .workspace{display:flex;height:calc(100vh - 52px);overflow:hidden}
 .left-panel{display:flex;flex-direction:column;background:var(--surface);overflow:hidden;min-width:240px;width:520px;flex-shrink:0;min-height:0}
 .right-panel{display:flex;flex-direction:column;overflow:hidden;flex:1;min-width:240px;min-height:0}
@@ -142,14 +145,14 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .result-item.err{border-color:var(--error-border);background:#fffafa}
 .result-item.warn{border-color:var(--warn-border);background:#fffdf5}
 .result-item.pass{opacity:.65}
-.result-item.fixed{background:#fefce8;border-color:#fcd34d}
-.result-item.fixed .result-rule-name{color:#854d0e}
-.result-item.fixed .sev-icon{color:#ca8a04}
+.result-item.fixed{background:var(--pass-bg);border-color:var(--pass-border)}
+.result-item.fixed .result-rule-name{color:var(--pass)}
+.result-item.fixed .sev-icon{color:var(--pass)}
 /* Severity stripe — left border via box-shadow so it doesn't shift layout */
 .result-item.err{box-shadow:inset 2px 0 0 var(--error)}
 .result-item.warn{box-shadow:inset 2px 0 0 var(--warn)}
 .result-item.pass{box-shadow:inset 2px 0 0 var(--pass)}
-.result-item.fixed{box-shadow:inset 2px 0 0 #ca8a04}
+.result-item.fixed{box-shadow:inset 2px 0 0 var(--pass)}
 /* Row — the always-visible summary line — table-like grid */
 .result-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0;padding:0;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
 .result-row:hover{background:rgba(0,0,0,.025)}
@@ -186,7 +189,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 /* Fix detail panel — hidden until "Show Details" clicked */
 .fix-panel{display:none;padding:0 28px 14px 38px;background:transparent}
 .result-item.details-open .fix-panel{display:block}
-.fix-applied-banner{padding:7px 12px;background:#fef9c3;border:1px solid #fcd34d;border-radius:var(--r);font-size:11px;color:#854d0e;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.fix-applied-banner{padding:7px 12px;background:var(--pass-bg);border:1px solid var(--pass-border);border-radius:var(--r);font-size:11px;color:var(--pass);font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .fix-description{padding:4px 0 10px 0;font-size:12px;color:var(--text-mid);line-height:1.5}
 /* Dark code diff block */
 .diff-block{background:#1e1e2e;border-radius:var(--r);overflow:hidden;margin-bottom:10px;font-family:var(--mono);font-size:12px;line-height:1.7}
@@ -269,12 +272,12 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.75</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.83</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
       placeholder="folder_name"
-      title="Enter the course-specific folder name. The base path //cdn.flvs.net/assessment_images/ is always required.">
+      title="Enter the course-specific folder name. The base path //cdn.flvs.net/assessment_images/ is always required."><span id="cdn-auto-badge" class="cdn-auto-badge" title="Folder auto-detected from image paths in the content">auto</span>
   </label>
   <button class="btn btn-dashboard" id="dashboard-btn" disabled title="Run an audit first">⊞ Dashboard</button>
 </header>
@@ -298,6 +301,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
           <th>Complexity</th>
           <th>Lesson</th>
           <th>Standard</th>
+          <th title="Group contains at least one image">Images</th>
         </tr>
       </thead>
       <tbody id="dash-tbody"></tbody>
@@ -396,6 +400,7 @@ const DOM = (() => {
   return {
     // Header
     imgBasePath:    $('img-base-path'),
+    cdnAutoBadge:   $('cdn-auto-badge'),
     dashboardBtn:   $('dashboard-btn'),
     // Left panel
     cmEditor:       $('cm-editor'),
@@ -671,12 +676,11 @@ const RULES_DATA = {
       fix:{description:'Rename file and update path to lowercase and without spaces.',
            snippet:'//cdn.flvs.net/assessment_images/course/my_image.jpg'} },
 
-    { id:'img-path-base', category:'images', severity:'warning',
+    { id:'img-path-base', category:'images', severity:'error',
       description:'Image src must use the required CDN base path',
       type:'img-path-base-check',
       message:'Line {line} image src "{found}" — expected path starting with {expected}.',
-      rationale:'All images must be served from //cdn.flvs.net/assessment_images/ followed by the course folder. Enter the course folder name in the header to also validate the full path.',
-      fix:{description:'Update the src to use the correct CDN base path and course folder.',
+      fix:{description:'Update the src to use the correct CDN base path and course folder. Use Apply Fix to replace the folder segment automatically when a course folder is set.',
            snippet:'<img src="//cdn.flvs.net/assessment_images/my_course_v1/image.jpg" alt="..." />'} },
 
     { id:'missing-lt-span', category:'span-metadata', severity:'error',
@@ -1363,13 +1367,16 @@ const AssessmentChecker = (() => {
         const results = [];
         let tempLine = line;
 
-        // Helper to push full-line diffs safely so the smart engine highlights exact indices
+        // Helper to push full-line diffs safely so the smart engine highlights exact indices.
+        // removeToken is the exact substring to delete; actual/expected show the full-line diff
+        // for the UI, while removeToken lets the fixer work even after sibling fixes have run.
         const pushFullLineDiff = (matchIdx, matchLen, msgFound) => {
           const actualFull = line;
+          const removeToken = line.substring(matchIdx, matchIdx + matchLen);
           const expectedFull = line.substring(0, matchIdx) + line.substring(matchIdx + matchLen);
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', msgFound),
-            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim() }
+            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim(), removeToken }
           ));
         };
 
@@ -1378,12 +1385,13 @@ const AssessmentChecker = (() => {
         let m;
         while ((m = pairRe.exec(tempLine)) !== null) {
           const actualFull = line;
+          const removeToken = m[0];
           const innerText = m[0].replace(/<\/?mark\b[^>]*>/gi, '');
           const expectedFull = line.substring(0, m.index) + innerText + line.substring(m.index + m[0].length);
-          
+          // replaceWith carries what to substitute (inner text), removeToken is the full match
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', 'complete <mark>...</mark> pair'),
-            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim() }
+            i+1, null, { type: 'contextual-diff', actual: actualFull.trim(), expected: expectedFull.trim(), removeToken, replaceWith: innerText }
           ));
           tempLine = tempLine.substring(0, m.index) + ' '.repeat(m[0].length) + tempLine.substring(m.index + m[0].length);
         }
@@ -1731,19 +1739,37 @@ const AssessmentChecker = (() => {
         imgs.forEach(img=>{
           const re=/src\s*=\s*"([^"]+)"/gi; let m;
           while((m=re.exec(img))!==null){
-            const normed=norm(m[1]);
+            const src = m[1];
+            const normed=norm(src);
             if(!normed.startsWith(FIXED)){
+              // Wrong base entirely — suggest correct base + folder (or placeholder)
+              const expectedBase = '//'+FIXED+(folder?folder+'/':'<folder>/');
+              // Build a best-guess corrected src: keep just the filename
+              const filename = src.split('/').pop();
+              const fixedSrc = folder
+                ? '//'+FIXED+folder+'/'+filename
+                : null; // can't auto-fix without a folder
+              const actualAttr = m[0];           // src="..."
+              const expectedAttr = fixedSrc ? 'src="'+fixedSrc+'"' : null;
               results.push(fail(rule,
-                rule.message.replace('{line}',i+1).replace('{found}',m[1]).replace('{expected}','//'+FIXED+(folder?folder+'/':'<folder>/')),
-                i+1,m[1]));
+                rule.message.replace('{line}',i+1).replace('{found}',src).replace('{expected}',expectedBase),
+                i+1, src,
+                expectedAttr ? { type:'contextual-diff', actual:actualAttr, expected:expectedAttr, truthAttr:img } : null));
               continue;
             }
             if(folder){
               const afterBase=normed.slice(FIXED.length);
               if(!afterBase.startsWith(folder+'/')){
+                // Right base, wrong folder segment — replace just the folder part
+                const actualFolder = afterBase.split('/')[0];
+                const filename = afterBase.split('/').slice(1).join('/');
+                const fixedSrc = '//'+FIXED+folder+'/'+(filename||afterBase.split('/').slice(1).join('/'));
+                const actualAttr = m[0];
+                const expectedAttr = 'src="'+fixedSrc+'"';
                 results.push(fail(rule,
-                  rule.message.replace('{line}',i+1).replace('{found}',m[1]).replace('{expected}','//'+FIXED+folder+'/'),
-                  i+1,m[1]));
+                  rule.message.replace('{line}',i+1).replace('{found}',src).replace('{expected}','//'+FIXED+folder+'/'),
+                  i+1, src,
+                  { type:'contextual-diff', actual:actualAttr, expected:expectedAttr, truthAttr:img }));
               }
             }
           }
@@ -2915,7 +2941,33 @@ const autoFixers={
     .replace(/\u00f7/g,'&divide;')
     .replace(/\u00a0/g,' '),
   'img-no-dimensions':  text=>text.replace(/<img([^>]*)>/gi,(_,a)=>'<img'+a.replace(/\s*\bwidth\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'').replace(/\s*\bheight\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'')+'>'),
-  'mark-tag':           text => text.replace(/<mark\b[^>]*>|<\/mark>/gi, ''),
+  'mark-tag': (text, result) => {
+    if (result && result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx] !== undefined) {
+        const line = lines[idx];
+        const removeToken = result.extra.removeToken;
+        const replaceWith = result.extra.replaceWith !== undefined ? result.extra.replaceWith : '';
+        if (removeToken && line.includes(removeToken)) {
+          // Replace only the first occurrence — handles cases where the same token
+          // might appear more than once, applying one fix at a time
+          lines[idx] = line.replace(removeToken, replaceWith);
+        } else {
+          // Fallback: try the full-line swap (actual→expected, both trimmed)
+          const actual   = result.extra.actual;
+          const expected = result.extra.expected;
+          if (line.trim() === actual) {
+            const leadingWS = line.match(/^\s*/)[0];
+            lines[idx] = leadingWS + expected;
+          }
+        }
+      }
+      return lines.join('\n');
+    }
+    // Fallback: global strip of well-formed mark tags only
+    return text.replace(/<mark\b[^>]*>|<\/mark>/gi, '');
+  },
   'table-border-cellpadding': text => text.replace(/<table\b([^>]*)>/gi, (match, attrs) => {
     let a = attrs;
     // border: add if missing, correct if not "1"
@@ -3018,6 +3070,17 @@ const autoFixers={
   },
   // img-ambiguous-valign: no auto-fix — intent must be determined manually
 
+  'img-path-base': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'underscore-format': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
@@ -3249,6 +3312,12 @@ function clearAll() {
   DOM.dashboardBtn.disabled = true;
   DOM.filterBar.classList.remove('visible');
   AppState.activeFilter = 'all';
+  // Reset folder field and auto-detected state
+  DOM.imgBasePath.value = '';
+  DOM.imgBasePath.classList.remove('auto-detected');
+  DOM.cdnAutoBadge.classList.remove('visible');
+  AppState.imgCourseFolder = '';
+  AppState.imgBasePath = '';
 }
 function loadSample(){
   ta.value = [
@@ -3506,7 +3575,28 @@ function loadSample(){
 function runAudit(){
   const raw=ta.value.trim();
   if(!raw){alert('Please paste content or upload a file first.');return;}
-  
+
+  // ── Auto-detect course image folder from img src paths (only when field is blank) ──
+  if (!DOM.imgBasePath.value.trim()) {
+    const folderRe = /\/\/cdn\.flvs\.net\/assessment_images\/([^/\s"']+)\//gi;
+    const tally = {};
+    let m;
+    while ((m = folderRe.exec(raw)) !== null) {
+      const f = m[1];
+      tally[f] = (tally[f] || 0) + 1;
+    }
+    const entries = Object.entries(tally);
+    if (entries.length) {
+      // Pick the most common folder name
+      const best = entries.sort((a, b) => b[1] - a[1])[0][0];
+      DOM.imgBasePath.value = best;
+      AppState.imgCourseFolder = best;
+      AppState.imgBasePath = CDN_BASE + best + '/';
+      DOM.imgBasePath.classList.add('auto-detected');
+      DOM.cdnAutoBadge.classList.add('visible');
+    }
+  }
+
   // Capture open categories before wiping the results panel
   if (AppState.hasRunOnce) {
     AppState.openCategories.clear();
@@ -4292,20 +4382,30 @@ function applyFix(uid,event){
   if(itemEl.classList.contains('fixed')){itemEl.classList.toggle('details-open');return;}
   const fixer=autoFixers[rule.id];
   if(typeof fixer==='function'){
+    // Save scroll position — cm.setValue() resets it to the top
+    const scrollInfo = cm.getScrollInfo();
+    const cursor = cm.getCursor();
     const before=ta.value,after=fixer(before,result);
     if(after!==before) ta.value=after;
     Object.entries(resultRegistry).forEach(([itemUid,itemResult])=>{
       if(itemResult.rule.id!==rule.id) return;
       const el=document.getElementById(itemUid);
       if(!el||el.classList.contains('fixed')) return;
+      if(itemUid !== uid) {
+        const siblingAfter = fixer(ta.value, itemResult);
+        if(siblingAfter === ta.value) return;
+        ta.value = siblingAfter;
+      }
       el.classList.remove('err','warn');el.classList.add('fixed');
       const ic=el.querySelector('.sev-icon');if(ic) ic.textContent='✦';
-      // Mark all Apply Fix buttons in this item (row btn + diff block btn)
       el.querySelectorAll('.wand-btn[data-auto="true"],.diff-apply-btn').forEach(w=>{
         w.textContent='✓ Applied';w.classList.add('applied');w.disabled=true;w.removeAttribute('data-auto');
       });
       if(itemResult.lineNum) markLineFixed(itemResult.lineNum);
     });
+    // Restore scroll and cursor position
+    cm.scrollTo(scrollInfo.left, scrollInfo.top);
+    cm.setCursor(cursor);
     // Show the fix panel so the applied banner is visible
     itemEl.classList.add('details-open');
     const banner = itemEl.querySelector('.fix-applied-banner');
@@ -4429,6 +4529,9 @@ requestAnimationFrame(()=>{cm.refresh();cm.focus();});
 DOM.imgBasePath.addEventListener('input', function() {
   AppState.imgCourseFolder = this.value.trim();
   AppState.imgBasePath = CDN_BASE + (AppState.imgCourseFolder ? AppState.imgCourseFolder + '/' : '');
+  // If the user is typing manually, clear the auto-detected styling
+  this.classList.remove('auto-detected');
+  DOM.cdnAutoBadge.classList.remove('visible');
 });
 
 // Action bar
@@ -4475,11 +4578,18 @@ function buildDashboardData(questions) {
   };
   for (const q of questions) {
     if (q.group === null) continue;
-    if (!byGroup[q.group]) byGroup[q.group] = { count: 0, types: new Set(), points: new Set(), complexities: new Set(), lessons: new Set(), standards: new Set() };
+    if (!byGroup[q.group]) byGroup[q.group] = { count: 0, types: new Set(), points: new Set(), complexities: new Set(), lessons: new Set(), standards: new Set(), hasImages: false };
     const g = byGroup[q.group];
     g.count++;
     if (q.code) g.types.add(TYPE_LABELS[q.code] || q.code);
     if (q.points !== null) g.points.add(q.points);
+    // Check if this question's stem or answers contain an <img> tag
+    if (!g.hasImages && /<img\b/i.test(q.stem)) g.hasImages = true;
+    if (!g.hasImages) {
+      for (const ans of (q.answers || [])) {
+        if (/<img\b/i.test(ans.text)) { g.hasImages = true; break; }
+      }
+    }
     const spanMatch = q.stem.match(/<span([^>]*)>/i);
     if (spanMatch) {
       const attrs = spanMatch[1];
@@ -4503,7 +4613,8 @@ function buildDashboardData(questions) {
     points: [...data.points].sort((a,b)=>a-b),
     complexities: [...data.complexities],
     lessons: [...data.lessons],
-    standards: [...data.standards]
+    standards: [...data.standards],
+    hasImages: data.hasImages
   })).sort((a,b) => a.group - b.group);
 }
 
@@ -4515,7 +4626,7 @@ function openDashboard() {
     (meta.questions||0) + ' questions · ' + (meta.groups||0) + ' groups';
   const tbody = DOM.dashTbody;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
   } else {
     tbody.innerHTML = data.map((row, idx) => {
       // Count
@@ -4550,6 +4661,9 @@ function openDashboard() {
       const stdHtml = row.standards.length
         ? '<span class="dash-standard">' + row.standards.map(s => esc(s)).join('<br>') + '</span>'
         : '<span style="color:var(--text-dim);font-style:italic;font-size:11px">—</span>';
+      const imgHtml = row.hasImages
+        ? '<span style="font-size:15px;color:var(--pass)" title="This group contains images">✓</span>'
+        : '<span style="color:var(--text-dim);font-size:13px" title="No images in this group">—</span>';
       return '<tr' + (idx % 2 === 1 ? ' class="dash-row-alt"' : '') + '>' +
         '<td>' + typeHtml + '</td>' +
         '<td><span class="dash-group-num">' + row.group + '</span></td>' +
@@ -4558,6 +4672,7 @@ function openDashboard() {
         '<td>' + cxHtml + '</td>' +
         '<td>' + lessonHtml + '</td>' +
         '<td>' + stdHtml + '</td>' +
+        '<td style="text-align:center">' + imgHtml + '</td>' +
         '</tr>';
     }).join('');
   }
