@@ -349,7 +349,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.29</h1>
+            <h1>Text Version Editor v2.30</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -1437,7 +1437,7 @@ const App = (function() {
             if(txt) DOM.input.setRangeText(txt.replace(/\s+/g, ' ').trim(), s, e, 'select'); else DOM.input.value = DOM.input.value.replace(/\s+/g, ' ').trim();
             Editor.updateHighlight();
         },
-        customTag(label, useP, useB) {
+       customTag(label, useP, useB) {
             const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value, sel=txt.substring(s,e);
             if (useP && Editor.checkBlockNesting(s)) return DOM.showToast("Cannot nest paragraphs.", "error");
             State.save();
@@ -1451,7 +1451,9 @@ const App = (function() {
             const res = padPre + (useP?"<p>":"") + (useB?"<strong>":"") + (label?`[${label}: `:`[`) + sel + "]" + (useB?"</strong>":"") + (useP?"</p>":"") + padPost;
             DOM.input.setRangeText(res, s, e, sel.length>0?'select':'end');
             if(!sel) DOM.input.setSelectionRange(s+padPre.length+(useP?3:0)+(useB?8:0)+(label?label.length+3:1), s+padPre.length+(useP?3:0)+(useB?8:0)+(label?label.length+3:1));
+            
             Editor.updateHighlight();
+            DOM.input.focus(); // <--- This forces the blinking cursor to reappear!
         },
         copy() {
             const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
