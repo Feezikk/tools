@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.91</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.92</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2361,6 +2361,9 @@ const AssessmentChecker = (() => {
     'bare-url-check'(rule, qs, raw, lines) {
       // Match URLs not inside HTML tag attributes (src=, href=, etc.) and not inside <span>...</span>
       // Patterns: https?://, www., or bare domain like example.com
+      // The bare-domain branch excludes common file extensions (.txt, .js, .css, etc.) that are
+      // not real TLDs and would produce false positives on filenames like style.txt
+      const FILE_EXT_RE = /\.(?:txt|js|css|html?|jsx?|tsx?|py|rb|php|java|c|cpp|h|sh|bat|cmd|json|xml|csv|md|pdf|docx?|xlsx?|pptx?|zip|tar|gz|log|ini|cfg|yaml|yml|svg|png|jpe?g|gif|webp|ico|mp4|mp3|wav|avi|mov)$/i;
       const URL_RE = /(?<![="'`])\b((?:https?:\/\/|www\.)[^\s<>"']+|[a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z]{2,})+(?:\/[^\s<>"']*)?)/g;
       return lines.flatMap((line, i) => {
         // Strip all HTML tags — we only want to find URLs in visible text
@@ -2368,25 +2371,19 @@ const AssessmentChecker = (() => {
         const noImgs = line.replace(/<img\b[^>]*>/gi, '');
         // Remove content inside HTML tags (attribute values etc.)
         const textOnly = noImgs.replace(/<[^>]+>/g, '\x00'); // replace tags with null byte placeholder
-        // Remove URLs already inside <span>...</span> — find spans in original and mark positions
-        // Strategy: collect character ranges that are inside <span>...</span> in the original line
-        const spanRanges = [];
-        const spanRe = /<span[^>]*>([\s\S]*?)<\/span>/gi;
-        let sm;
-        while ((sm = spanRe.exec(line)) !== null) {
-          spanRanges.push([sm.index, sm.index + sm[0].length]);
-        }
+        // Collect text ranges that are inside <span>...</span> in textOnly
+        // by masking span content directly in textOnly (avoids index-mapping errors)
+        const maskedForSpans = noImgs.replace(/<span\b[^>]*>[\s\S]*?<\/span>/gi, m => '\x00'.repeat(m.replace(/<[^>]+>/g, '\x00').length))
+                                     .replace(/<[^>]+>/g, '\x00');
         const results = [];
         let um;
         URL_RE.lastIndex = 0;
         while ((um = URL_RE.exec(textOnly)) !== null) {
-          // Map index back to original line (null bytes are same length as removed tags characters... 
-          // not perfect, but for bare text URLs this is close enough since URLs won't span tags)
-          const idx = um.index;
-          // Check not inside an already-spanned region in original
-          const inSpan = spanRanges.some(([s, e]) => idx >= s && idx < e);
-          if (inSpan) continue;
           const url = um[1];
+          // Skip if inside a span (position is masked in maskedForSpans)
+          if (maskedForSpans[um.index] === '\x00') continue;
+          // Skip filenames with common non-TLD extensions (e.g. style.txt, script.js)
+          if (FILE_EXT_RE.test(url)) continue;
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', url.length > 50 ? url.slice(0,50)+'…' : url),
             i+1, url));
