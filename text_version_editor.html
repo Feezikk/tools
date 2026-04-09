@@ -349,7 +349,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.26</h1>
+            <h1>Text Version Editor v2.29</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -361,8 +361,8 @@
 
             
             <button class="icon-btn" data-action="toggleDarkMode"><span id="darkModeIcon">🌙</span> <span id="darkModeText">Dark</span></button>
-            <button class="icon-btn action-btn-header btn-clear-all" id="clearAllBtn" data-action="clearAll" title="Clear all text (Ctrl+Z to undo)">Clear</button>
-            <button class="icon-btn action-btn-header btn-reset" id="resetBtn" data-action="resetEditor" title="Discard file and return to start screen">Reset</button>
+            <button class="icon-btn action-btn-header btn-clear-all" data-action="clearAll" title="Clear all text (Ctrl+Z to undo)">Clear</button>
+            <button class="icon-btn action-btn-header btn-reset" data-action="resetEditor" title="Discard file and return to start screen">Reset</button>
         </div>
     </div>
 
@@ -402,7 +402,7 @@
     </div>
 
     <div class="start-screen" id="dropZone">
-        <div class="start-options" onclick="event.stopPropagation()">
+        <div class="start-options">
             <label class="checkbox-label"><input type="checkbox" id="rawTextCheckbox"> Import as Raw Text (Skip Smart HTML Wrapping)</label>
         </div>
 
@@ -538,7 +538,7 @@
 
     <div class="action-footer hidden" id="actionFooter">
         <div style="margin-right: auto;">
-            <button class="btn-action" id="findReplaceBtn" data-action="toggleFindReplace" style="background: var(--bg-surface-alt); color: var(--text-main); border: 1px solid var(--border-strong);">🔍 Find & Replace</button>
+            <button class="btn-action" data-action="toggleFindReplace" style="background: var(--bg-surface-alt); color: var(--text-main); border: 1px solid var(--border-strong);">🔍 Find & Replace</button>
         </div>
         <button class="btn-action copy-btn" id="copyBtn" data-action="copy"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-copy"></use></svg> Copy</button>
         <button class="btn-action save-btn" data-action="save"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-save"></use></svg> Save</button>
@@ -939,6 +939,12 @@ const App = (function() {
                 State.save(); DOM.input.value = text; State.foldedTables = {}; 
                 this.updateHighlight(); DOM.showToast("All tables expanded.", "success");
             } else DOM.showToast("No collapsed tables found.", "info");
+        },
+
+        getUnfoldedText() { 
+            let t = DOM.input.value; 
+            for(let id in State.foldedTables) t = t.replace(`[[FOLDED_TABLE_${id}]]`, State.foldedTables[id]); 
+            return t.split('\n').filter(l=>l.trim()!=='').join('\n'); 
         }
     };
 
@@ -1122,8 +1128,14 @@ const App = (function() {
                 const search1 = direction === 'toEntities' ? item.c : item.e, replace1 = direction === 'toEntities' ? item.e : item.c;
                 const search2 = direction === 'toEntities' ? item.uc : item.ue, replace2 = direction === 'toEntities' ? item.ue : item.uc;
                 
-                if (search1 && replace1) { const r = new RegExp(search1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); const m = text.match(r); if(m) count+=m.length; text = text.replace(r, replace1); }
-                if (search2 && replace2 && search2 !== search1) { const r = new RegExp(search2.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); const m = text.match(r); if(m) count+=m.length; text = text.replace(r, replace2); }
+               if (search1 && replace1) { 
+                    const r = new RegExp(search1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); 
+                    text = text.replace(r, () => { count++; return replace1; }); 
+                }
+                if (search2 && replace2 && search2 !== search1) { 
+                    const r = new RegExp(search2.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); 
+                    text = text.replace(r, () => { count++; return replace2; }); 
+                }
             });
             if (count > 0) { DOM.input.value = text; Editor.updateHighlight(); DOM.showToast(`${direction === 'toEntities' ? 'Converted' : 'Reverted'} ${count} items`, 'success'); }
         }
@@ -1301,7 +1313,7 @@ const App = (function() {
             if (this.editRange) {
                 State.save(); DOM.input.setRangeText(htmlStr, this.editRange.start, this.editRange.end, 'select');
                 this.editRange = null; Editor.updateHighlight(); DOM.showToast('Table Updated Successfully!', 'success');
-            } else { Editor.insertStr(htmlStr + "\n<br>\n", true); }
+            } else { Editor.insertStr(htmlStr + "\n\n", true); }
             this.close();
         },
 
@@ -1442,11 +1454,25 @@ const App = (function() {
             Editor.updateHighlight();
         },
         copy() {
-            const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value; // Fallback
-            if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(this.copyAnim).catch(e=>this.fallbackCopy(txt));
-            else this.fallbackCopy(txt);
+            const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
+            const ta = document.createElement("textarea"); 
+            ta.value = txt; 
+            ta.style.position = "fixed"; 
+            ta.style.left = "-9999px"; 
+            document.body.appendChild(ta); 
+            ta.focus(); 
+            ta.select(); 
+            
+            // Attach the secret handshake specifically to this temporary element
+            ta.addEventListener('copy', e => {
+                e.clipboardData.setData('text/plain', txt);
+                e.clipboardData.setData('application/x-tve-internal', 'true');
+                e.preventDefault();
+            });
+
+            try { document.execCommand('copy'); this.copyAnim(); } catch(e) {} 
+            document.body.removeChild(ta);
         },
-        fallbackCopy(t) { const ta = document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.left="-9999px"; document.body.appendChild(ta); ta.focus(); ta.select(); try{document.execCommand('copy');this.copyAnim();}catch(e){} document.body.removeChild(ta); },
         copyAnim() { const b = document.getElementById('copyBtn'), o = b.innerHTML; b.innerHTML = '<svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-check"></use></svg> Copied!'; b.style.background="var(--color-success)"; setTimeout(()=>{b.innerHTML=o;b.style.background="";},2000); DOM.showToast("Copied!", "success"); },
         async saveTxt() {
             const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
@@ -1454,7 +1480,7 @@ const App = (function() {
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'})); a.download = State.fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
     };
-    Editor.getUnfoldedText = function() { let t = DOM.input.value; for(let id in State.foldedTables) t = t.replace(`[[FOLDED_TABLE_${id}]]`, State.foldedTables[id]); return t.split('\n').filter(l=>l.trim()!=='').join('\n'); };
+   
 
     // --- 9. EVENT BINDINGS ---
     function initEvents() {
@@ -1683,9 +1709,40 @@ const App = (function() {
         DOM.input.addEventListener('paste', e => {
             if (document.getElementById('rawTextCheckbox').checked) return;
             const html = e.clipboardData.getData('text/html'), plain = e.clipboardData.getData('text/plain');
+            
+            // CHECK FOR OUR SECRET HANDSHAKE FLAG
+            if (e.clipboardData.getData('application/x-tve-internal') === 'true') {
+                e.preventDefault(); 
+                Editor.insertStr(plain, true); 
+                return DOM.showToast('Internal text pasted', 'success');
+            }
+
             if (plain && /<(h[1-6]|p|ul|ol|li|table|div|span|blockquote|a|b|i|strong|em)\b/i.test(plain)) { e.preventDefault(); Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(plain)), true); return DOM.showToast('HTML code pasted', 'success'); }
             if (html) { e.preventDefault(); Editor.insertStr(Parser.sanitizeHTML((html.includes('urn:schemas-microsoft-com:office:word') || html.includes('mso-list')) ? Parser.cleanWordHTML(html) : html), true); DOM.showToast('HTML pasted', 'success'); }
             else if (plain) { e.preventDefault(); Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(plain)), true); DOM.showToast('Text pasted', 'success'); }
+        });
+		
+		// Intercept normal keyboard Copy
+        DOM.input.addEventListener('copy', e => {
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd;
+            const sel = DOM.input.value.substring(start, end);
+            if (sel) {
+                e.clipboardData.setData('text/plain', sel);
+                e.clipboardData.setData('application/x-tve-internal', 'true'); // The Secret Handshake
+                e.preventDefault();
+            }
+        });
+
+        // Intercept normal keyboard Cut
+        DOM.input.addEventListener('cut', e => {
+            const start = DOM.input.selectionStart, end = DOM.input.selectionEnd;
+            const sel = DOM.input.value.substring(start, end);
+            if (sel) {
+                e.clipboardData.setData('text/plain', sel);
+                e.clipboardData.setData('application/x-tve-internal', 'true'); // The Secret Handshake
+                e.preventDefault();
+                Editor.insertStr('', true); // Remove the cut text
+            }
         });
 
         document.getElementById('fontSlider').addEventListener('input', e => {
