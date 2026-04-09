@@ -83,6 +83,15 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .btn-ghost.copied{background:var(--pass-bg);color:var(--pass);border-color:var(--pass-border)}
 .btn-link{background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:var(--sans);margin-left:auto}
 .btn-link:hover{color:var(--error)}
+.btn-autofix{background:var(--wand-bg);color:var(--wand);border:1px solid var(--wand-border);font-size:13px;font-weight:600}
+.btn-autofix:hover{filter:brightness(.95)}
+.btn-autofix:active{transform:scale(.98)}
+.btn-autofix:disabled{opacity:.45;cursor:not-allowed;filter:none;transform:none}
+.cat-fix-all{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--wand-border);background:var(--wand-bg);color:var(--wand);font-family:var(--sans);flex-shrink:0;transition:all .12s;white-space:nowrap;margin-left:6px}
+.cat-fix-all:hover{filter:brightness(.93)}
+.cat-fix-all:disabled{opacity:.4;cursor:not-allowed}
+.autofix-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1d26;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:toastIn .2s ease;pointer-events:none}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .btn-qmode{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text-mid);font-family:var(--sans);transition:all .12s;white-space:nowrap;margin-left:auto}
 .btn-qmode:hover{border-color:var(--accent);color:var(--accent)}
 .btn-qmode.active{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -113,20 +122,26 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .all-pass-banner h2{font-size:20px;font-weight:700;color:var(--pass);margin:12px 0 6px}
 .all-pass-banner p{color:var(--text-dim);font-size:13px}
 /* ── Group / category sections ── */
-.category-section{margin-bottom:12px}
-.category-header{width:100%;display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-mid);text-align:left;transition:background .12s}
-.category-header:hover{background:var(--border)}
-.category-header.has-errors{background:var(--error-bg);border-color:var(--error-border);color:var(--error)}
-.category-header.has-warnings{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn)}
-.category-header.all-pass{background:var(--pass-bg);border-color:var(--pass-border);color:var(--pass)}
-/* Badge pills inside category header — text labels like "2 Errors" */
-.cat-count{font-size:11px;padding:2px 10px;border-radius:99px;font-weight:700;white-space:nowrap}
+.category-section{margin-bottom:8px}
+.category-header{width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px 10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);transition:background .12s;user-select:none;box-sizing:border-box;border-left-width:3px}
+.category-header:hover{background:var(--surface2)}
+.category-header.has-errors{border-left-color:var(--error)}
+.category-header.has-warnings{border-left-color:var(--warn)}
+.category-header.all-pass{border-left-color:var(--pass)}
+.cat-q-label{font-weight:500;font-size:11px;color:var(--text-mid);flex-shrink:0}
+/* Badge pills inside category header — passive status indicators only */
+.cat-count{font-size:11px;padding:2px 9px;border-radius:99px;font-weight:700;white-space:nowrap;flex-shrink:0}
 .cat-count-error{background:var(--error-bg);color:var(--error);border:1px solid var(--error-border)}
 .cat-count-warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border)}
 .cat-count-pass{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-border)}
-.cat-chevron{margin-left:auto;opacity:.5;transition:transform .15s;display:flex;align-items:center;flex-shrink:0}
+/* Auto Fix button — right-pinned action, solid so it reads as a button not a badge */
+.cat-fix-all{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:var(--wand);color:#fff;font-family:var(--sans);flex-shrink:0;transition:filter .12s;white-space:nowrap;margin-left:auto}
+.cat-fix-all:hover{filter:brightness(1.12)}
+.cat-fix-all:active{filter:brightness(.95)}
+.cat-fix-all:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.cat-chevron{opacity:.4;transition:transform .15s;display:flex;align-items:center;flex-shrink:0}
 .category-section.open .cat-chevron{transform:rotate(180deg)}
-.category-items{display:none;flex-direction:column;gap:4px;margin-top:8px;padding-left:16px;border-left:2px solid var(--border);margin-left:12px}
+.category-items{display:none;flex-direction:column;gap:0;margin-top:4px;padding-left:14px;border-left:2px solid var(--border);margin-left:14px}
 .category-section.open .category-items{display:flex}
 /* ── Filter bar ── */
 .filter-bar{display:none;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0}
@@ -142,17 +157,17 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .category-items>.result-item:first-child{border-radius:var(--r) var(--r) 0 0;margin-top:0}
 .category-items>.result-item:last-child{border-radius:0 0 var(--r) var(--r)}
 .category-items>.result-item:only-child{border-radius:var(--r)}
-.result-item.err{border-color:var(--error-border);background:#fffafa}
-.result-item.warn{border-color:var(--warn-border);background:#fffdf5}
+.result-item.err{border-color:var(--border)}
+.result-item.warn{border-color:var(--border)}
 .result-item.pass{opacity:.65}
 .result-item.fixed{background:var(--pass-bg);border-color:var(--pass-border)}
 .result-item.fixed .result-rule-name{color:var(--pass)}
 .result-item.fixed .sev-icon{color:var(--pass)}
-/* Severity stripe — left border via box-shadow so it doesn't shift layout */
-.result-item.err{box-shadow:inset 2px 0 0 var(--error)}
-.result-item.warn{box-shadow:inset 2px 0 0 var(--warn)}
-.result-item.pass{box-shadow:inset 2px 0 0 var(--pass)}
-.result-item.fixed{box-shadow:inset 2px 0 0 var(--pass)}
+/* Severity stripe — colored left border only, backgrounds stay neutral */
+.result-item.err{box-shadow:inset 3px 0 0 var(--error)}
+.result-item.warn{box-shadow:inset 3px 0 0 var(--warn)}
+.result-item.pass{box-shadow:inset 3px 0 0 var(--pass)}
+.result-item.fixed{box-shadow:inset 3px 0 0 var(--pass)}
 /* Row — the always-visible summary line — table-like grid */
 .result-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0;padding:0;cursor:pointer;user-select:none;border-bottom:1px solid transparent}
 .result-row:hover{background:rgba(0,0,0,.025)}
@@ -272,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.84</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.91</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -339,6 +354,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       <button class="btn btn-primary" id="run-audit-btn">▶ Run Audit <span class="shortcut-hint">⌘↵</span></button>
       <button class="btn btn-secondary" id="load-sample-btn">Load Sample</button>
       <button class="btn btn-ghost" id="copy-btn">⎘ Copy Text</button>
+      <button class="btn btn-autofix" id="autofix-all-btn" disabled title="Run Audit first, then click to apply all safe auto-fixes at once">✨ Auto-Fix All</button>
       <button class="btn-link" id="clear-all-btn">Clear</button>
     </div>
   </div>
@@ -413,6 +429,7 @@ const DOM = (() => {
     loadSampleBtn:  $('load-sample-btn'),
     copyBtn:        $('copy-btn'),
     clearAllBtn:    $('clear-all-btn'),
+    autoFixAllBtn:  $('autofix-all-btn'),
     // Right panel
     resultsBody:    $('results-body'),
     summaryChips:   $('summary-chips'),
@@ -2765,10 +2782,15 @@ const AssessmentChecker = (() => {
               const globalIndex = h.indexOf(tbodyBlock[1]) + mRow.index;
               const lineOffset = (h.substring(0, globalIndex).match(/\n/g) || []).length;
               const actualLineNum = sl + lineOffset;
-              
+
+              // Record the char range of this <tr>…</tr> in h for highlighting
+              const trAbsStart = h.indexOf(tbodyBlock[1]) + mRow.index;
+              const trAbsEnd   = trAbsStart + mRow[0].length;
+
               results.push(fail(rule,
                 msg(t, 'tbody row '+(ri+1)+' has '+effective+' effective column(s) but header has '+colCount+' — check for missing or extra cells'),
-                actualLineNum, 'check for missing or extra cells', { type: 'formatted-code', code: formatTableHTML(h) })); 
+                actualLineNum, 'check for missing or extra cells',
+                { type: 'formatted-code', rawHtml: h, colCount, mismatchRanges: [{ start: trAbsStart, end: trAbsEnd, rowIdx: ri, effective }] }));
             }
             ri++;
           }
@@ -2838,6 +2860,16 @@ const AssessmentChecker = (() => {
   }
   return{run};
 })();
+window._checker_run = text => {
+  // Thin wrapper that returns a flat results array alongside the normal report,
+  // used by the bulk-fix engine's silent re-audit (Pass 1 → Pass 2 bridge).
+  const report = AssessmentChecker.run(text);
+  const results = [];
+  for (const cat of Object.values(report.grouped)) {
+    for (const r of cat.failures) results.push(r);
+  }
+  return { ...report, results };
+};
 
 // ─────────────────────────────────────────────────────────────────
 // AUTO-FIXERS
@@ -3183,7 +3215,14 @@ const fixedLines = new Set();
 
 function clearLineMarks() {
   lineMarkHandles.forEach(h => {
-    try { cm.removeLineClass(h, 'background'); cm.removeLineClass(h, 'gutter'); } catch(e) {}
+    try {
+      cm.removeLineClass(h, 'background', 'cm-error-line');
+      cm.removeLineClass(h, 'background', 'cm-warn-line');
+      cm.removeLineClass(h, 'background', 'cm-fixed-line');
+      cm.removeLineClass(h, 'gutter', 'cm-error-gutter');
+      cm.removeLineClass(h, 'gutter', 'cm-warn-gutter');
+      cm.removeLineClass(h, 'gutter', 'cm-fixed-gutter');
+    } catch(e) {}
   });
   lineMarkHandles = [];
 }
@@ -3215,8 +3254,10 @@ function highlightLines(errLines, warnLines) {
 function markLineFixed(n) {
   fixedLines.add(n);
   const h = cm.getLineHandle(n - 1); if (!h) return;
-  cm.removeLineClass(h, 'background');
-  cm.removeLineClass(h, 'gutter');
+  cm.removeLineClass(h, 'background', 'cm-error-line');
+  cm.removeLineClass(h, 'background', 'cm-warn-line');
+  cm.removeLineClass(h, 'gutter', 'cm-error-gutter');
+  cm.removeLineClass(h, 'gutter', 'cm-warn-gutter');
   cm.addLineClass(h, 'background', 'cm-fixed-line');
   cm.addLineClass(h, 'gutter', 'cm-fixed-gutter');
 }
@@ -3312,6 +3353,7 @@ function clearAll() {
   DOM.qStrip.innerHTML = '';
   DOM.statusBar.classList.remove('visible');
   DOM.dashboardBtn.disabled = true;
+  DOM.autoFixAllBtn.disabled = true;
   DOM.filterBar.classList.remove('visible');
   AppState.activeFilter = 'all';
   // Reset folder field and auto-detected state
@@ -3641,8 +3683,9 @@ async function copyText(btn) {
 // RENDER
 // ─────────────────────────────────────────────────────────────────
 // Pretty-print table HTML with error highlights injected as <mark> spans.
-// html: raw table HTML string; issues: array of { highlight } from table-issues extra.
-function formatTableHTMLWithHighlights(html, issues) {
+// html: raw table HTML string; issues: array of { hIndex, matchLen } from table-issues extra.
+// mismatchRanges: optional array of { start, end } char ranges for mismatched <tr> rows.
+function formatTableHTMLWithHighlights(html, issues, mismatchRanges) {
   // ── Step 1: trim html to just the <table>…</table> span ──
   // The extractor stores full source lines which may include question text before
   // the opening <table> tag. We slice to table-only so the pretty-print is clean.
@@ -3754,12 +3797,16 @@ function formatTableHTMLWithHighlights(html, issues) {
   }
 
   // ── Step 6: render, injecting highlights on lines that overlap error ranges ──
+  const mismatchSet = (mismatchRanges || []);
   return merged.map(line => {
     const hasError = errorRanges.some(r =>
       r.start < line.origEnd && r.end > line.origStart
     );
+    const hasMismatch = !hasError && mismatchSet.some(r =>
+      r.start < line.origEnd && r.end > line.origStart
+    );
     const escapedText = esc(line.text);
-    if (!hasError) return escapedText;
+    if (!hasError && !hasMismatch) return escapedText;
 
     // Find the specific token(s) on this line that overlap an error range and
     // highlight just them (rather than the whole line) for precision.
@@ -3768,15 +3815,18 @@ function formatTableHTMLWithHighlights(html, issues) {
     const indent = line.text.match(/^\t*/)[0];
 
     let result = esc(indent);
-    let localPos = 0;
     const localTokenRe = /(<[^>]*>|[^<]+)/g;
     let lt;
     while ((lt = localTokenRe.exec(lineSource)) !== null) {
       const tokStart = line.origStart + lt.index;
       const tokEnd   = tokStart + lt[0].length;
-      const isErr = errorRanges.some(r => r.start < tokEnd && r.end > tokStart);
+      const isErr      = errorRanges.some(r => r.start < tokEnd && r.end > tokStart);
+      const isMismatch = !isErr && mismatchSet.some(r => r.start < tokEnd && r.end > tokStart);
       if (isErr) {
         result += '<mark style="background:#fecaca;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:600">' +
+          esc(lt[0]) + '</mark>';
+      } else if (isMismatch) {
+        result += '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:2px;font-weight:600">' +
           esc(lt[0]) + '</mark>';
       } else {
         result += esc(lt[0]);
@@ -3848,6 +3898,7 @@ function renderReport(report,lines){
   DOM.qmodeBtn.style.display = '';
   if (AppState.qMode) applyQMode();
   DOM.dashboardBtn.disabled = false;
+  DOM.autoFixAllBtn.disabled = false;
   DOM.statusBar.classList.add('visible');
   DOM.statusText.innerHTML=
     '<strong>'+report.total+'</strong> rules &nbsp;·&nbsp; '+
@@ -3944,7 +3995,7 @@ function renderReport(report,lines){
       (errCount ? '<span class="cat-count cat-count-error">'+errCount+' Error'+(errCount!==1?'s':'')+'</span>' : '') +
       (warnCount ? '<span class="cat-count cat-count-warn">'+warnCount+' Warning'+(warnCount!==1?'s':'')+'</span>' : '');
 
-    let label;
+    let label, qLabel = '';
     if (gk === 'general') {
       label = '⚠ File-level / General Checks';
     } else {
@@ -3957,7 +4008,7 @@ function renderReport(report,lines){
         return q ? q.num : null;
       }).filter(Boolean))].sort((a,b)=>a-b);
       label = 'Group ' + gk;
-      if (qNums.length) label += ' <span style="font-weight:400;font-size:10px;opacity:.7">(Q' + qNums.join(', Q') + ')</span>';
+      if (qNums.length) qLabel = '<span class="cat-q-label">(Q' + qNums.join(', Q') + ')</span>';
     }
 
     let items = '';
@@ -3971,10 +4022,18 @@ function renderReport(report,lines){
       if (r.lineNum) (r.rule.severity === 'error' ? errLines : warnLines).push(r.lineNum);
     }
     const catId = 'grp-' + gk;
+    // Collect uids stamped by renderItem — only items that have an auto-fixer
+    const fixableUids = sorted
+      .filter(r => r._uid && typeof autoFixers[r.rule.id] === 'function')
+      .map(r => r._uid);
+    const catFixBtn = fixableUids.length
+      ? '<button class="cat-fix-all" onclick="applyGroupFixes(\''+catId+'\',event)" title="Apply all safe auto-fixes in this group">✨ Auto Fix ('+ fixableUids.length +')</button>'
+      : '';
     html += '<div class="category-section" id="'+catId+'">'+
-      '<button class="category-header '+hCls+'" onclick="toggleCat(\''+catId+'\')">'+
-      label+' '+badges+
-      '<span class="cat-chevron">'+CHEVRON+'</span></button>'+
+      '<div class="category-header '+hCls+'" onclick="toggleCat(\''+catId+'\')">'+
+      label+' '+qLabel+' '+badges+
+      (catFixBtn ? catFixBtn : '<span style="margin-left:auto"></span>')+
+      '<span class="cat-chevron">'+CHEVRON+'</span></div>'+
       '<div class="category-items">'+items+'</div></div>';
   }
   DOM.resultsBody.innerHTML = html;
@@ -4089,6 +4148,7 @@ function renderItem(r,lines){
   const cls=isPassing?'pass':r.rule.severity==='error'?'err':'warn';
   const icon=isPassing?'✓':r.rule.severity==='error'?'🔴':'🟡';
   const uid='ri-'+r.rule.id+(r.lineNum||'')+Math.random().toString(36).slice(2,6);
+  r._uid = uid; // stamp so category Fix All can reference it
   resultRegistry[uid]=r;
   if(r.lineNum) {
       if (!AppState.lineMap[r.lineNum]) AppState.lineMap[r.lineNum] = [];
@@ -4175,7 +4235,8 @@ function renderItem(r,lines){
       const applyBoth = '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" style="margin-bottom:8px;display:inline-flex;">✓ Apply Both Fixes</button>';
       fixPanelContent = applyBoth + attrDiff + contentDiff + contextPanel;
 
-    } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'group-points' ||
+    } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'formatted-code' ||
+               r.extra.type === 'group-points' ||
                r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
                r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous')) {
       // These have their own rich extra panels — build them the existing way then wrap
@@ -4255,7 +4316,27 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table (For Reference)</div>'+
         '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues)+'</pre></div>';
   } else if(r.extra&&r.extra.type==='formatted-code'){
-      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table Structure (For Review)</div><div style="padding:0 12px 10px 12px;"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0;">'+formatTableHTMLWithHighlights(r.extra.code, [])+'</pre></div>';
+      const rawHtml = r.extra.rawHtml || r.extra.code || '';
+      const mismatchRanges = r.extra.mismatchRanges || [];
+      const colCount = r.extra.colCount || null;
+      const mismatchCount = mismatchRanges.length;
+      const headerLabel = mismatchCount
+        ? mismatchCount + ' mismatched row'+(mismatchCount!==1?'s':'')+' highlighted below'
+        : 'Formatted Table (For Reference)';
+      const headerColor = mismatchCount ? 'var(--warn)' : 'var(--text-mid)';
+      const headerBg    = mismatchCount ? 'var(--warn-bg)' : 'var(--surface2)';
+      const legend = mismatchCount && colCount
+        ? '<div style="padding:4px 12px 6px;font-size:11px;color:var(--text-mid);border-left:1px solid var(--border);border-right:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap">'+
+            '<span><mark style="background:#fef08a;color:#854d0e;padding:0 4px;border-radius:2px;font-weight:600">amber</mark> = mismatched row (wrong column count)</span>'+
+            '<span style="color:var(--text-dim)">Header expects <strong style="color:var(--text)">'+colCount+'</strong> column'+(colCount!==1?'s':'')+'</span>'+
+          '</div>'
+        : '';
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);padding:7px 12px;font-size:11px;font-weight:700;color:'+headerColor+';text-transform:uppercase;letter-spacing:.5px;background:'+headerBg+'">'+headerLabel+'</div>'+
+        legend+
+        '<div style="padding:0 12px 10px 12px;border-top:1px solid var(--border)"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:0 0 var(--r) var(--r);border:none;margin:0;">'+
+          formatTableHTMLWithHighlights(rawHtml, [], mismatchRanges)+
+        '</pre></div>';
   } else if(r.extra&&r.extra.type==='br-ambiguous'){
       const {rawLine, img, side} = r.extra;
       const BRhighlight = (tag) => '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:3px;font-weight:700">'+esc(tag)+'</mark>';
@@ -4378,6 +4459,178 @@ function copyDiff(uid, event) {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
+// ─────────────────────────────────────────────────────────────────
+// BULK AUTO-FIX ENGINE  (Two-Pass approach per spec)
+//
+// Pass 1 — Global/stateless fixers: whole-string .replace() with no
+//           dependency on line numbers. Chained sequentially, safe.
+// Silent re-audit — re-parse so line numbers are accurate before Pass 2.
+// Pass 2 — Contextual/line-based fixers: applied bottom-up (highest
+//           line number first) so earlier fixes can't shift later ones.
+// Final commit — single cm.operation() → one Ctrl-Z undoes everything.
+// ─────────────────────────────────────────────────────────────────
+
+// Fixers that rewrite the whole string with no result.lineNum dependency.
+const GLOBAL_FIXERS = new Set([
+  'self-closing-br','no-inline-styles','img-double-quotes','img-alt-quotes',
+  'no-deprecated-tags','question-spacing','points-before-group','span-followed-by-br',
+  'img-has-alt','span-self-closing','missing-lt-span','special-chars-auto',
+  'img-no-dimensions','table-border-cellpadding','table-align-center',
+  'font-tag-replace','ol-use-style-not-type',
+]);
+
+function showToast(msg) {
+  const old = document.querySelector('.autofix-toast');
+  if (old) old.remove();
+  const el = document.createElement('div');
+  el.className = 'autofix-toast';
+  el.innerHTML = msg;
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity .4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 420);
+  }, 3000);
+}
+
+// Collect all fixable, non-fixed result objects.
+// If catId is given, restrict to items inside that category section element.
+function collectFixableResults(catId) {
+  const results = [];
+  const seenGlobal = new Set(); // global fixers only need one result object each
+  for (const [uid, r] of Object.entries(resultRegistry)) {
+    if (r.status === 'pass') continue;
+    if (typeof autoFixers[r.rule.id] !== 'function') continue;
+    const el = document.getElementById(uid);
+    if (!el || el.classList.contains('fixed')) continue;
+    if (catId) {
+      const sec = document.getElementById(catId);
+      if (!sec || !sec.contains(el)) continue;
+    }
+    if (GLOBAL_FIXERS.has(r.rule.id)) {
+      if (seenGlobal.has(r.rule.id)) continue;
+      seenGlobal.add(r.rule.id);
+    }
+    results.push({ uid, r });
+  }
+  return results;
+}
+
+function runBulkFix(fixableResults) {
+  if (!fixableResults.length) { showToast('✨ Nothing new to auto-fix.'); return; }
+
+  const rawBefore = ta.value;
+  let text = rawBefore;
+
+  // ── Pass 1: global stateless fixers ──────────────────────────────
+  const pass1Ids = new Set();
+  for (const { r } of fixableResults) {
+    if (!GLOBAL_FIXERS.has(r.rule.id)) continue;
+    if (pass1Ids.has(r.rule.id)) continue;
+    pass1Ids.add(r.rule.id);
+    const after = autoFixers[r.rule.id](text, r);
+    if (after !== undefined) text = after;
+  }
+
+  // ── Silent re-audit for fresh line numbers ────────────────────────
+  // Run the checker privately so Pass 2 has accurate coordinates.
+  let freshByRule = {};
+  try {
+    const freshReport = window._checker_run ? window._checker_run(text) : null;
+    if (freshReport) {
+      for (const r of freshReport.results || []) {
+        if (r.status !== 'fail' || typeof autoFixers[r.rule.id] !== 'function') continue;
+        (freshByRule[r.rule.id] = freshByRule[r.rule.id] || []).push(r);
+      }
+    }
+  } catch(e) {}
+
+  // ── Pass 2: contextual line-based fixers, bottom-up ──────────────
+  const contextual = fixableResults.filter(({ r }) => !GLOBAL_FIXERS.has(r.rule.id));
+  const pass2List = [];
+  const usedFresh = {};
+  for (const { r } of contextual) {
+    const pool = freshByRule[r.rule.id] || [];
+    // Match by closest original line number to handle any offset from Pass 1
+    let bestIdx = -1, bestDist = Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      if ((usedFresh[r.rule.id] || new Set()).has(i)) continue;
+      const d = Math.abs((pool[i].lineNum || 0) - (r.lineNum || 0));
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    if (bestIdx !== -1) {
+      if (!usedFresh[r.rule.id]) usedFresh[r.rule.id] = new Set();
+      usedFresh[r.rule.id].add(bestIdx);
+      pass2List.push(pool[bestIdx]);
+    } else {
+      pass2List.push(r); // fallback: stale result (lines may not have shifted)
+    }
+  }
+  // Bottom-up: apply from the highest line number down
+  pass2List.sort((a, b) => (b.lineNum || 0) - (a.lineNum || 0));
+  for (const fr of pass2List) {
+    const after = autoFixers[fr.rule.id](text, fr);
+    if (after !== undefined && after !== text) text = after;
+  }
+
+  const totalFixed = pass1Ids.size + pass2List.length;
+
+  if (text === rawBefore) {
+    showToast('✨ Nothing changed — fixes may already be applied.');
+    return;
+  }
+
+  // ── Final commit: single undoable operation ───────────────────────
+  cm.operation(() => { cm.setValue(text); });
+
+  // Mark all corresponding UI cards as fixed
+  for (const { uid, r } of fixableResults) {
+    const el = document.getElementById(uid);
+    if (!el || el.classList.contains('fixed')) continue;
+    el.classList.remove('err','warn'); el.classList.add('fixed');
+    const ic = el.querySelector('.sev-icon'); if (ic) ic.textContent = '✦';
+    el.querySelectorAll('.wand-btn[data-auto="true"],.diff-apply-btn').forEach(w => {
+      w.textContent = '✓ Applied'; w.classList.add('applied');
+      w.disabled = true; w.removeAttribute('data-auto');
+    });
+    if (r.lineNum) markLineFixed(r.lineNum);
+  }
+
+  const label = totalFixed === 1 ? '1 fix' : totalFixed + ' fixes';
+  showToast('✨ <strong>' + label + '</strong> applied — re-running audit…');
+
+  // Re-run audit so the results panel reflects the clean state
+  setTimeout(() => runAudit(), 60);
+}
+
+function applyAllFixes(event) {
+  if (event) event.stopPropagation();
+  runBulkFix(collectFixableResults(null));
+}
+
+function applyGroupFixes(catId, event) {
+  if (event) event.stopPropagation();
+  runBulkFix(collectFixableResults(catId));
+}
+
+function reapplyHighlights() {
+  const errLines = [], warnLines = [];
+  for (const [uid, r] of Object.entries(resultRegistry)) {
+    if (!r.lineNum) continue;
+    const el = document.getElementById(uid);
+    if (!el) continue;
+    if (el.classList.contains('fixed')) {
+      // Already fixed — green highlight handled by markLineFixed
+      continue;
+    }
+    if (r.rule.severity === 'error') errLines.push(r.lineNum);
+    else warnLines.push(r.lineNum);
+  }
+  highlightLines(errLines, warnLines);
+  // Re-apply green for all fixed lines (highlightLines clears everything first)
+  fixedLines.forEach(n => markLineFixed(n));
+}
+
 function applyFix(uid,event){
   if(event) event.stopPropagation();
   const result=resultRegistry[uid]; if(!result) return;
@@ -4407,7 +4660,8 @@ function applyFix(uid,event){
       });
       if(itemResult.lineNum) markLineFixed(itemResult.lineNum);
     });
-    // Restore scroll and cursor position
+    // Restore highlights (cm.setValue wipes all line marks), scroll, and cursor
+    reapplyHighlights();
     cm.scrollTo(scrollInfo.left, scrollInfo.top);
     cm.setCursor(cursor);
     // Show the fix panel so the applied banner is visible
@@ -4543,6 +4797,7 @@ DOM.runAuditBtn.addEventListener('click', () => runAudit());
 DOM.loadSampleBtn.addEventListener('click', () => loadSample());
 DOM.copyBtn.addEventListener('click', () => copyText(DOM.copyBtn));
 DOM.clearAllBtn.addEventListener('click', () => clearAll());
+DOM.autoFixAllBtn.addEventListener('click', e => applyAllFixes(e));
 
 // Tab switching
 document.querySelectorAll('.tab[data-tab]').forEach(btn => {
