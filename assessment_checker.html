@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.00</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.04</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1150,10 +1150,21 @@ const AssessmentChecker = (() => {
     },
 
     'group-type-consistency'(rule, qs) {
+      const TYPE_LABELS = {
+        'mc:radio:':'MC','mc:check:':'MC','essay:':'Essay',
+        'fib:':'FIB','tf:':'T/F','matching:label:':'Matching'
+      };
       const byG = {};
-      for (const q of qs) { if (q.group===null) continue; (byG[q.group]=byG[q.group]||[]).push(q.code); }
-      return Object.entries(byG).filter(([,c])=>new Set(c).size>1)
-        .map(([g,c]) => fail(rule, rule.message.replace('{group}',g).replace('{types}',[...new Set(c)].join(', '))));
+      for (const q of qs) {
+        if (q.group===null) continue;
+        (byG[q.group]=byG[q.group]||[]).push({num:q.num,code:q.code});
+      }
+      return Object.entries(byG).filter(([,c])=>new Set(c.map(i=>i.code)).size>1)
+        .map(([g,c]) => {
+          const types = [...new Set(c.map(i=>i.code))];
+          return fail(rule, rule.message.replace('{group}',g).replace('{types}',types.map(t=>TYPE_LABELS[t]||t).join(', ')),
+            null, null, {type:'group-type-consistency', group:g, items:c.map(i=>({num:i.num,label:TYPE_LABELS[i.code]||i.code}))});
+        });
     },
 
     'group-points-consistency'(rule, qs) {
@@ -1275,6 +1286,11 @@ const AssessmentChecker = (() => {
         clean = clean.replace(/<([a-zA-Z][a-zA-Z0-9]*)([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, tag, pre, styleVal, post) => {
           const norm = styleVal.replace(/\s/g,'').toLowerCase();
           return norm.startsWith('text-align:') ? '<'+tag+pre+post+'>' : match;
+        });
+        // Remove allowed style="font-family: ..." from span tags (produced by font-tag-replace auto-fix)
+        clean = clean.replace(/<span([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, pre, styleVal, post) => {
+          const norm = styleVal.replace(/\s/g,'').toLowerCase();
+          return norm.startsWith('font-family:') ? '<span'+pre+post+'>' : match;
         });
         // Remove allowed dir="[any]" attribute from any element
         clean = clean.replace(/\s*\bdir\s*=\s*"[^"]*"/gi, '');
@@ -2345,7 +2361,7 @@ const AssessmentChecker = (() => {
           if (FILE_EXT_RE.test(url)) continue;
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', url.length > 50 ? url.slice(0,50)+'…' : url),
-            i+1, url));
+            i+1, url, {type:'contextual-diff', actual:url, expected:'<span>'+url+'</span>'}));
         }
         return results;
       });
@@ -2403,6 +2419,15 @@ const AssessmentChecker = (() => {
 
           } else if (rule.subtype === 'ambiguous' && isAmbiguous) {
             const side = hasBrBefore ? 'before' : 'after';
+            // If <br /> is before the image but not after, check whether the image is
+            // the last item in the question stem — if so, a trailing <br /> is not required.
+            if (hasBrBefore && !hasBrAfter) {
+              const stemQuestion = qs.find(q => q.stemLines.includes(i + 1));
+              const isLastStemLine = stemQuestion &&
+                stemQuestion.stemLines[stemQuestion.stemLines.length - 1] === i + 1;
+              const nothingAfterImg = after.replace(/<\/?\s*br\b[^>]*>/gi, '').trim() === '';
+              if (isLastStemLine && nothingAfterImg) continue;
+            }
             results.push(fail(rule,
               rule.message.replace('{line}', i+1) + ' (<br /> found ' + side + ' the image only)',
               i+1, null,
@@ -3092,6 +3117,17 @@ const autoFixers={
       const idx = result.lineNum - 1;
       if (lines[idx]) {
         // Targeted replacement using the exact snippet from the contextual diff
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
+  'bare-url-in-text': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
         lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
       }
       return lines.join('\n');
@@ -3949,7 +3985,7 @@ function renderItem(r,lines){
       fixPanelContent = applyBoth + attrDiff + contentDiff + contextPanel;
 
     } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'formatted-code' ||
-               r.extra.type === 'group-points' ||
+               r.extra.type === 'group-points' || r.extra.type === 'group-type-consistency' ||
                r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
                r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous')) {
       // These have their own rich extra panels — build them the existing way then wrap
@@ -4145,6 +4181,22 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line(s)</th>'+
         '</tr>'+rows+'</table>';
       if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
+  } else if(r.extra&&r.extra.type==='group-type-consistency'){
+      const {group, items} = r.extra;
+      const rows = items.map(item =>
+        '<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text)">Q'+item.num+'</td>'+
+        '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-mid)">'+esc(item.label)+'</td>'+
+        '</tr>'
+      ).join('');
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Question Types</div>'+
+        '<table style="width:100%;border-collapse:collapse">'+
+          '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Question #</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Assessment Type</th>'+
+          '</tr>'+rows+
+        '</table>';
   }
   return extraPanel;
 }
