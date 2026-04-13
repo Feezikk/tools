@@ -83,13 +83,10 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .btn-ghost.copied{background:var(--pass-bg);color:var(--pass);border-color:var(--pass-border)}
 .btn-link{background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:var(--sans);margin-left:auto}
 .btn-link:hover{color:var(--error)}
-.btn-autofix{background:var(--wand-bg);color:var(--wand);border:1px solid var(--wand-border);font-size:13px;font-weight:600}
-.btn-autofix:hover{filter:brightness(.95)}
-.btn-autofix:active{transform:scale(.98)}
-.btn-autofix:disabled{opacity:.45;cursor:not-allowed;filter:none;transform:none}
-.cat-fix-all{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--wand-border);background:var(--wand-bg);color:var(--wand);font-family:var(--sans);flex-shrink:0;transition:all .12s;white-space:nowrap;margin-left:6px}
-.cat-fix-all:hover{filter:brightness(.93)}
-.cat-fix-all:disabled{opacity:.4;cursor:not-allowed}
+.btn-autofix{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:var(--wand);color:#fff;font-family:var(--sans);flex-shrink:0;transition:filter .12s;white-space:nowrap}
+.btn-autofix:hover{filter:brightness(1.1)}
+.btn-autofix:active{filter:brightness(.95)}
+.btn-autofix:disabled{opacity:.45;cursor:not-allowed;filter:none}
 .autofix-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1d26;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:toastIn .2s ease;pointer-events:none}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .btn-qmode{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text-mid);font-family:var(--sans);transition:all .12s;white-space:nowrap;margin-left:auto}
@@ -287,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v4.92</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.00</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -352,9 +349,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
     </div>
     <div class="action-bar">
       <button class="btn btn-primary" id="run-audit-btn">▶ Run Audit <span class="shortcut-hint">⌘↵</span></button>
-      <button class="btn btn-secondary" id="load-sample-btn">Load Sample</button>
       <button class="btn btn-ghost" id="copy-btn">⎘ Copy Text</button>
-      <button class="btn btn-autofix" id="autofix-all-btn" disabled title="Run Audit first, then click to apply all safe auto-fixes at once">✨ Auto-Fix All</button>
       <button class="btn-link" id="clear-all-btn">Clear</button>
     </div>
   </div>
@@ -378,6 +373,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       <button class="filter-btn active-all" id="filter-all" onclick="setFilter('all')">All</button>
       <button class="filter-btn" id="filter-err" onclick="setFilter('err')">Errors only</button>
       <button class="filter-btn" id="filter-warn" onclick="setFilter('warn')">Warnings only</button>
+      <button class="btn-autofix" id="autofix-all-btn" disabled title="Run Audit first, then click to apply all safe auto-fixes at once" style="margin-left:auto;margin-right:43px;background:#3b1575">✨ Auto-Fix All</button>
     </div>
     <div class="results-body" id="results-body">
       <div class="empty-state">
@@ -422,11 +418,9 @@ const DOM = (() => {
     cmEditor:       $('cm-editor'),
     uploadZone:     $('upload-zone'),
     filePill:       $('file-pill'),
-    fileNameLabel:  $('file-name-label'),
     fileInput:      $('file-input'),
     // Action bar
     runAuditBtn:    $('run-audit-btn'),
-    loadSampleBtn:  $('load-sample-btn'),
     copyBtn:        $('copy-btn'),
     clearAllBtn:    $('clear-all-btn'),
     autoFixAllBtn:  $('autofix-all-btn'),
@@ -1000,33 +994,6 @@ const AssessmentChecker = (() => {
   const fail = (rule, msg, ln, err, extra) =>
     ({ status:'fail', rule, message:msg, lineNum:ln||null, errorStr:err||null, extra:extra||null });
 
-  // Helper to pretty-print table HTML for review
-  function formatTableHTML(html) {
-    // Slice to just the <table>…</table> span so surrounding question text is excluded
-    const tStart = html.search(/<table\b/i);
-    const tEnd   = html.lastIndexOf('<\/table>');
-    if (tStart >= 0 && tEnd >= 0) html = html.substring(tStart, tEnd + '<\/table>'.length);
-    else if (tStart >= 0)         html = html.substring(tStart);
-
-    let formatted = '';
-    let pad = 0;
-    // Break the HTML string apart at every tag
-    let split = html.replace(/(<[^>]+>)/g, '\n$1\n').split('\n').map(s => s.trim()).filter(Boolean);
-    const blockTags = ['table', 'thead', 'tbody', 'tfoot', 'tr', 'caption'];
-    
-    for (let node of split) {
-      let isClosing = /^<\//.test(node);
-      let isOpening = /^<[^\/]/.test(node);
-      let tagMatch = node.match(/<\/?([a-zA-Z0-9]+)/);
-      let tagName = tagMatch ? tagMatch[1].toLowerCase() : '';
-      
-      if (isClosing && blockTags.includes(tagName)) pad = Math.max(0, pad - 1);
-      formatted += '\t'.repeat(pad) + node + '\n';
-      if (isOpening && blockTags.includes(tagName) && !node.endsWith('/>')) pad++;
-    }
-    // Compress <td> and <th> content back onto a single line for readability
-    return formatted.replace(/(<(?:td|th)\b[^>]*>)\n\s*([\s\S]*?)\n\s*(<\/(?:td|th)\s*>)/gi, '$1$2$3').trim();
-  }
 
   // Find the dash separating left from right in a matching answer, skipping dashes inside HTML tags.
   function findMatchingDash(text) {
@@ -1304,11 +1271,6 @@ const AssessmentChecker = (() => {
           const norm = styleVal.replace(/\s/g,'').toLowerCase();
           return norm.startsWith('list-style-type:') ? '<ol'+pre+post+'>' : match;
         });
-        // Remove allowed text-align styles from table elements (added by table-align-center fixer)
-        clean = clean.replace(/<(table|tr|td|th|caption)([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, tag, pre, styleVal, post) => {
-          const norm = styleVal.replace(/\s/g,'').toLowerCase();
-          return norm.startsWith('text-align:') ? '<'+tag+pre+post+'>' : match;
-        });
         // Remove allowed style="text-align: [any]" from any element
         clean = clean.replace(/<([a-zA-Z][a-zA-Z0-9]*)([^>]*)style\s*=\s*"([^"]*)"([^>]*)>/gi, (match, tag, pre, styleVal, post) => {
           const norm = styleVal.replace(/\s/g,'').toLowerCase();
@@ -1472,9 +1434,6 @@ const AssessmentChecker = (() => {
       const KNOWN_TAGS = 'span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre';
       // Orphaned opening: <tagname ... (no > before next < or end of line)
       const orphanOpenRe = new RegExp('<\\/?('+KNOWN_TAGS+')\\b[^<>]*$', 'gi');
-      // Orphaned closing: ... attr="val"> where the < is missing — identified by a >
-      // preceded only by tag-like content (word chars, =, ", ', /, spaces, .) since last <
-      const looksLikeTagTailRe = /^[^<]*(?:[\w"'\-.\/=\s])*>/;
 
       return lines.flatMap((line, i) => {
         // 1. Mask valid, already-wrapped symbols
@@ -2870,7 +2829,22 @@ window._checker_run = text => {
 
 // ─────────────────────────────────────────────────────────────────
 // AUTO-FIXERS
+// Each key matches a rule id. Fixers that operate on the whole raw
+// string without needing a line number are listed in GLOBAL_FIXERS
+// below — the bulk-fix engine uses that set to decide pass order.
 // ─────────────────────────────────────────────────────────────────
+
+// Fixers that rewrite the whole string with no result.lineNum dependency.
+// These run first (Pass 1) in the bulk-fix engine. All others are
+// contextual and run bottom-up in Pass 2 after a silent re-audit.
+const GLOBAL_FIXERS = new Set([
+  'self-closing-br','no-inline-styles','img-double-quotes','img-alt-quotes',
+  'no-deprecated-tags','question-spacing','points-before-group','span-followed-by-br',
+  'img-has-alt','span-self-closing','missing-lt-span','special-chars-auto',
+  'img-no-dimensions','table-border-cellpadding','table-align-center',
+  'font-tag-replace','ol-use-style-not-type',
+]);
+
 const autoFixers={
   'self-closing-br':    text=>text.replace(/<\/?\s*br\b[^><]*(?:>|(?=<|$))/gi,'<br />'),
   'no-inline-styles':   text=>text.replace(/\s*style\s*=\s*"[^"]*"/gi,'').replace(/\s*style\s*=\s*'[^']*'/gi,''),
@@ -3287,15 +3261,12 @@ function switchTab(name, btn) {
 // ─────────────────────────────────────────────────────────────────
 // FILE HANDLING
 // ─────────────────────────────────────────────────────────────────
-let uploadedText = '';
-
 function handleFile(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    uploadedText = ev.target.result;
-    ta.value = uploadedText;
+    ta.value = ev.target.result;
     // Switch to Paste Text tab so user can review/edit
     const pasteTab = document.querySelector('.tab[data-tab="paste"]');
     switchTab('paste', pasteTab);
@@ -3309,7 +3280,6 @@ function handleFile(e) {
 }
 
 function clearFile() {
-  uploadedText = '';
   DOM.uploadZone.style.display = 'flex';
   DOM.filePill.style.display = 'none';
   DOM.fileInput.value = '';
@@ -3359,261 +3329,6 @@ function clearAll() {
   DOM.cdnAutoBadge.classList.remove('visible');
   AppState.imgCourseFolder = '';
   AppState.imgBasePath = '';
-}
-function loadSample(){
-  ta.value = [
-    // ── Q1 — PASSES all checks ──────────────────────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_value_scale.jpg" alt="A value scale showing gradual transition from white to black in seven steps." style="vertical-align:middle;" />Which element of art is shown in the image?',
-    'Line',
-    'Shape',
-    'Texture',
-    'x-Value',
-    'points:1',
-    'group:1',
-    '',
-    // ── Q2 — No blank line before Q3 (question-spacing) ─────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Which principle of design involves repeating elements?',
-    'Movement',
-    'Proportion',
-    'x-Repetition',
-    'Variety',
-    'points:1',
-    'group:2',
-    // ── Q3 — No blank line after Q2; group out of sequence; points/group swapped ──
-    'mc:radio:<span data-standard-florida="VA.68.S.2.3" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />When using hatching, which area has the fewest lines?',
-    'x-Highlight',
-    'Middle Value',
-    'Core Shadow',
-    'Cast Shadow',
-    'group:1',
-    'points:1',
-    '',
-    '',
-    // ── Q4 — Two blank lines (spacing); tf both true and false ───────────────
-    'tf:You can use a Sharpie to smudge values in a drawing.',
-    'false',
-    'true',
-    'points:2',
-    'group:3',
-    '',
-    // ── Q5 — tf no valid answer ──────────────────────────────────────────────
-    'tf:Hatching uses curved lines.',
-    'maybe',
-    'points:1',
-    'group:4',
-    '',
-    // ── Q6 — missing < before span; span content mismatch ───────────────────
-    'essay:span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.02R">(02.01 MC)</span><br /><br />Describe how value creates the illusion of dimension.',
-    'points:5',
-    'group:5',
-    '',
-    // ── Q7 — image alt has %; path uppercase; image inline without vertical-align ──
-    'mc:radio:<span data-standard-florida="VA.68.S.2.3" data-complexity="HC" data-associatedlessons="02.03R">(02.03 HC)</span><br /><br /><img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_03_Chart.PNG" alt="A bar graph showing 75% correct responses." />Which technique is used most effectively in the artwork?',
-    'Stippling',
-    'Hatching',
-    'x-Crosshatching',
-    'Blending',
-    'points:3',
-    'group:6',
-    '',
-    // ── Q8 — matching: missing dash on one pair; points not multiple of pairs ─
-    'matching:label:Match each shading technique with its description.',
-    'hatching-parallel lines drawn close together to create value',
-    'crosshatching-lines drawn in two directions to create darker value',
-    'stippling dots placed close together to create shadow',
-    'points:5',
-    'group:7',
-    '',
-    // ── Q9 — deprecated <b>; wrong <br> format; non-img inline style ─────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><b>Look at the image below.</b><br><br>Which value is darkest?',
-    'Highlight',
-    'x-Core Shadow',
-    'Midtone',
-    'Reflected Light',
-    'points:1',
-    'group:8',
-    '',
-    // ── Q10 — data-complexity blank; data-associatedlessons missing R/H ───────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="" data-associatedlessons="02.01">(02.01 LC)</span><br /><br />Which tool is best for blending graphite?',
-    'x-Tortillon',
-    'Eraser',
-    'Ruler',
-    'Compass',
-    'points:1',
-    'group:9',
-    '',
-    // ── Q11 — no metadata span at all ───────────────────────────────────────
-    'mc:radio:Which color has the highest value on the value scale?',
-    'Black',
-    'x-White',
-    'Gray',
-    'Brown',
-    'points:1',
-    'group:10',
-    '',
-    // ── Q12 — span opened but never closed ───────────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)<br /><br />Which of the following is an example of low value?',
-    'x-Dark gray',
-    'Light yellow',
-    'White',
-    'Cream',
-    'points:1',
-    'group:11',
-    '',
-    // ── Q13 — Tier 1 special chars: curly quotes, em dash, ellipsis ──────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />\u201cWhich artist said\u2014\u2018value is everything\u2019?\u201d',
-    'Leonardo da Vinci',
-    'x-Unknown\u2026',
-    'Michelangelo',
-    'Rembrandt',
-    'points:1',
-    'group:12',
-    '',
-    // ── Q14 — Tier 2 special chars: Greek, superscript, fraction ─────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.01R">(02.01 MC)</span><br /><br />If a canvas has an area of 2\u00b2 ft and uses \u00bd of its space for the subject, what element creates depth?',
-    'Color',
-    'x-Value',
-    'Line',
-    'Texture \u03b1',
-    'points:2',
-    'group:13',
-    '',
-    // ── Q15 — self-closing <span /> ──────────────────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R" />(02.01 LC)</span><br /><br />Which type of line creates a sense of calm?',
-    'Diagonal',
-    'x-Horizontal',
-    'Vertical',
-    'Zigzag',
-    'points:1',
-    'group:14',
-    '',
-    // ── Q16 — span lang: one empty, one invalid BCP-47 code ──────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />The Spanish word <span lang="">forma</span> means shape. The term <span lang="english">contorno</span> means outline. Which best describes contour drawing?',
-    'x-Drawing the outline of a subject',
-    'Shading with parallel lines',
-    'Blending with a tortillon',
-    'Using geometric shapes only',
-    'points:1',
-    'group:15',
-    '',
-    // ── Q17 — bare URLs in question text ─────────────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Visit the museum website at https://www.moma.org or go to moma.org for more information. Which art movement is featured this month?',
-    'Impressionism',
-    'x-Surrealism',
-    'Cubism',
-    'Dadaism',
-    'points:1',
-    'group:16',
-    '',
-    // ── Q18 — <ol type="A"> should use inline style instead ──────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Which list correctly shows the steps for contour drawing?<br /><br /><ol type="A"><li>Observe the subject carefully</li><li>Draw the outline slowly</li><li>Do not lift your pencil</li></ol>',
-    'x-Steps A through C above',
-    'None of the above',
-    'Only step A',
-    'Steps B and C only',
-    'points:1',
-    'group:17',
-    '',
-    // ── Q19 — <ol> with no style attribute at all ─────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />Rank these values from lightest to darkest:<br /><br /><ol><li>Highlight</li><li>Midtone</li><li>Core Shadow</li></ol>',
-    'x-Highlight, Midtone, Core Shadow',
-    'Core Shadow, Midtone, Highlight',
-    'Midtone, Highlight, Core Shadow',
-    'Core Shadow, Highlight, Midtone',
-    'points:1',
-    'group:18',
-    '',
-    // ── Q20 — align="absmiddle" on image ─────────────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_pencil.jpg" alt="A pencil held at an angle." align="absmiddle" />Which grip is shown?',
-    'Overhand grip',
-    'x-Underhand grip',
-    'Two-finger grip',
-    'Vertical grip',
-    'points:1',
-    'group:19',
-    '',
-    // ── Q21 — <mark> complete tags + partial /mark> remnant ──────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br /><mark class="highlight">Value</mark> refers to lightness or darkness. /mark>Which term describes the lightest area?',
-    'Core Shadow',
-    'Midtone',
-    'x-Highlight',
-    'Reflected Light',
-    'points:1',
-    'group:20',
-    '',
-    // ── Q22 — matching with only 2 pairs (minimum 3 required) ────────────────
-    'matching:label:Match the term to its definition.',
-    'hue-the pure color itself',
-    'value-the lightness or darkness of a color',
-    'points:2',
-    'group:21',
-    '',
-    // ── Q23 — Unicode replacement character \uFFFD ────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />The term \uFFFDchiaroscuro\uFFFD refers to the contrast between light and dark. Which artist mastered this technique?',
-    'Monet',
-    'x-Caravaggio',
-    'Warhol',
-    'Pollock',
-    'points:1',
-    'group:22',
-    '',
-    // ── Q24 — <code> tag permitted, should PASS ───────────────────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />A student writes <code>filter: grayscale(100%);</code> in their CSS. What effect does this produce?',
-    'Increases contrast',
-    'Adds a blur',
-    'x-Removes all color',
-    'Inverts colors',
-    'points:1',
-    'group:23',
-    '',
-    // ── Q25 — Well-formed table, should PASS all table checks ────────────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.01R">(02.01 MC)</span><br /><br />Use the table below to answer the question.<br /><br /><table border="1" cellpadding="5"><caption>Value Scale Reference</caption><thead><tr><th scope="col">Level</th><th scope="col">Description</th><th scope="col">Example</th></tr></thead><tbody><tr><td>1</td><td>Lightest</td><td>Highlight</td></tr><tr><td>5</td><td>Middle</td><td>Midtone</td></tr><tr><td>9</td><td>Darkest</td><td>Core Shadow</td></tr></tbody></table><br /><br />Which level represents the midtone?',
-    'Level 1',
-    'Level 3',
-    'x-Level 5',
-    'Level 9',
-    'points:2',
-    'group:24',
-    '',
-    // ── Q26 — Table with errors: no border/cellpadding; align=center on td; ───
-    //          missing th scope; extra cell in row 2 (structure malformed) ──────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="MC" data-associatedlessons="02.01R">(02.01 MC)</span><br /><br /><table><thead><tr><th>Technique</th><th>Description</th></tr></thead><tbody><tr><td align="center">Hatching</td><td>Parallel lines</td></tr><tr><td>Crosshatching</td><td>Crossed lines</td><td>Extra cell</td></tr></tbody></table><br /><br />Which technique uses lines in two directions?',
-    'Stippling',
-    'x-Crosshatching',
-    'Blending',
-    'Hatching',
-    'points:2',
-    'group:25',
-    '',
-    // ── Q27 — matching: right-side text exceeds 42 characters ─────────────────
-    'matching:label:Match each shading technique to its full description.',
-    'hatching-parallel lines drawn close together in one direction to create value and tone',
-    'crosshatching-lines drawn in two or more crossing directions to build up darker value areas',
-    'stippling-individual dots placed very close together gradually creating darker shadow regions',
-    'blending-smooth continuous gradation of tone from light to dark with no visible line edges',
-    'points:4',
-    'group:26',
-    '',
-    // ── Q28 — matching: first pair has image on right, next two have image on left ──
-    // Bug scenario: first pair "value scale-<img/>" must be detected as an answer (not
-    // absorbed into the stem), AND all three pairs must be checked for HTML-on-right.
-    'matching:label:Match each term to its image.',
-    'value scale-<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_value_scale.jpg" alt="A value scale." />',
-    '<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_hatching.jpg" alt="Hatching lines." />-hatching',
-    '<img src="//cdn.flvs.net/assessment_images/educator_art_v14/02_01_stippling.jpg" alt="Stippling dots." />-stippling',
-    'points:3',
-    'group:27',
-    '',
-    // ── Q29 — Underscore format errors: wrong count and missing spaces ──────────
-    'mc:radio:<span data-standard-florida="VA.68.C.3.1" data-complexity="LC" data-associatedlessons="02.01R">(02.01 LC)</span><br /><br />This____has 4 underscores and no spaces. This has________ has 8 underscores but no space before. And this is _________ too long.',
-    'x-Correct',
-    'Wrong',
-    'points:1',
-    'group:28'
-  ].join('\n');
-  const pasteTab = document.querySelector('.tab[data-tab="paste"]');
-  switchTab('paste', pasteTab);
-  requestAnimationFrame(() => { cm.refresh(); cm.focus(); });
 }
 function runAudit(){
   const raw=ta.value.trim();
@@ -3895,7 +3610,6 @@ function renderReport(report,lines){
   DOM.qmodeBtn.style.display = '';
   if (AppState.qMode) applyQMode();
   DOM.dashboardBtn.disabled = false;
-  DOM.autoFixAllBtn.disabled = false;
   DOM.statusBar.classList.add('visible');
   DOM.statusText.innerHTML=
     '<strong>'+report.total+'</strong> rules &nbsp;·&nbsp; '+
@@ -3904,6 +3618,7 @@ function renderReport(report,lines){
     '<strong style="color:var(--pass)">'+report.totalPasses+'</strong> passed';
   if(report.totalErrors===0&&report.totalWarnings===0){
     DOM.resultsBody.innerHTML='<div class="all-pass-banner"><div class="check">✅</div><h2>All checks passed!</h2><p>'+report.questionCount+' questions parsed. No formatting issues found.</p></div>';
+    syncAutoFixAllBtn();
     return;
   }
   const errLines=[],warnLines=[];
@@ -4050,6 +3765,7 @@ function renderReport(report,lines){
   DOM.filterBar.classList.add('visible');
   ['filterAll','filterErr','filterWarn'].forEach(k => DOM[k].className = 'filter-btn');
   DOM.filterAll.classList.add('active-all');
+  syncAutoFixAllBtn();
 }
 
 function makeDiffLine(actual, expected) {
@@ -4459,22 +4175,14 @@ function copyDiff(uid, event) {
 // ─────────────────────────────────────────────────────────────────
 // BULK AUTO-FIX ENGINE  (Two-Pass approach per spec)
 //
-// Pass 1 — Global/stateless fixers: whole-string .replace() with no
-//           dependency on line numbers. Chained sequentially, safe.
+// Pass 1 — Global/stateless fixers (see GLOBAL_FIXERS in AUTO-FIXERS
+//           section): whole-string .replace() with no line-number
+//           dependency. Chained sequentially, safe.
 // Silent re-audit — re-parse so line numbers are accurate before Pass 2.
 // Pass 2 — Contextual/line-based fixers: applied bottom-up (highest
 //           line number first) so earlier fixes can't shift later ones.
 // Final commit — single cm.operation() → one Ctrl-Z undoes everything.
 // ─────────────────────────────────────────────────────────────────
-
-// Fixers that rewrite the whole string with no result.lineNum dependency.
-const GLOBAL_FIXERS = new Set([
-  'self-closing-br','no-inline-styles','img-double-quotes','img-alt-quotes',
-  'no-deprecated-tags','question-spacing','points-before-group','span-followed-by-br',
-  'img-has-alt','span-self-closing','missing-lt-span','special-chars-auto',
-  'img-no-dimensions','table-border-cellpadding','table-align-center',
-  'font-tag-replace','ol-use-style-not-type',
-]);
 
 function showToast(msg) {
   const old = document.querySelector('.autofix-toast');
@@ -4600,11 +4308,20 @@ function runBulkFix(fixableResults) {
   setTimeout(() => runAudit(), 60);
 }
 
+// Enable the Auto-Fix All button only when at least one unfixed, auto-fixable
+// result exists in the registry. Called after every audit and after every fix.
+function syncAutoFixAllBtn() {
+  const hasAny = collectFixableResults(null).length > 0;
+  DOM.autoFixAllBtn.disabled = !hasAny;
+  DOM.autoFixAllBtn.title = hasAny
+    ? 'Apply all safe auto-fixes at once'
+    : 'No remaining auto-fixes — all fixable issues have been resolved';
+}
+
 function applyAllFixes(event) {
   if (event) event.stopPropagation();
   runBulkFix(collectFixableResults(null));
 }
-
 function applyGroupFixes(catId, event) {
   if (event) event.stopPropagation();
   runBulkFix(collectFixableResults(catId));
@@ -4661,6 +4378,8 @@ function applyFix(uid,event){
     reapplyHighlights();
     cm.scrollTo(scrollInfo.left, scrollInfo.top);
     cm.setCursor(cursor);
+    // Sync button state — may have just fixed the last auto-fixable item
+    syncAutoFixAllBtn();
     // Show the fix panel so the applied banner is visible
     itemEl.classList.add('details-open');
     const banner = itemEl.querySelector('.fix-applied-banner');
@@ -4791,7 +4510,6 @@ DOM.imgBasePath.addEventListener('input', function() {
 
 // Action bar
 DOM.runAuditBtn.addEventListener('click', () => runAudit());
-DOM.loadSampleBtn.addEventListener('click', () => loadSample());
 DOM.copyBtn.addEventListener('click', () => copyText(DOM.copyBtn));
 DOM.clearAllBtn.addEventListener('click', () => clearAll());
 DOM.autoFixAllBtn.addEventListener('click', e => applyAllFixes(e));
@@ -4816,8 +4534,6 @@ DOM.collapseAllBtn.addEventListener('click', () => closeAllResults());
 DOM.dashboardBtn.addEventListener('click', () => openDashboard());
 DOM.dashOverlay.addEventListener('click', () => closeDashboard());
 DOM.dashCloseBtn.addEventListener('click', () => closeDashboard());
-
-
 
 // ─────────────────────────────────────────────────────────────────
 // DASHBOARD
@@ -4940,8 +4656,6 @@ function closeDashboard() {
   DOM.dashOverlay.classList.remove('open');
   DOM.dashModal.classList.remove('open');
 }
-
-
 </script>
 </body>
 </html>
