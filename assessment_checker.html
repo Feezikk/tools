@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.04</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.05</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -843,13 +843,14 @@ const RULES_DATA = {
       fix:{description:'Remove style="vertical-align:middle;" from images that are on their own line (surrounded by <br /> on both sides). The style is only needed when an image appears inline alongside text content.',
            snippet:'<!-- Standalone image — no vertical-align needed -->\n<br /><img src="..." alt="..." /><br />\n\n<!-- Inline image — vertical-align required -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
 
-    { id:'img-ambiguous-valign', category:'images', severity:'warning',
+   { id:'img-ambiguous-valign', category:'images', severity:'warning',
       description:'Image has <br /> on one side only — intent is ambiguous, verify whether style="vertical-align:middle;" is correct',
       type:'img-inline-valign-check', subtype:'ambiguous',
       message:'Line {line} has an image with <br /> on one side only — confirm whether it is inline (needs vertical-align:middle;) or standalone (needs <br /> on both sides, no vertical-align).',
       rationale:'A <br /> on one side but not the other suggests the image placement may be unintentional. If the image should be standalone, add a <br /> on the missing side and remove vertical-align:middle;. If it is inline with text, remove the <br /> and keep the style.',
-      fix:{description:'Decide whether the image is inline or standalone, then fix accordingly.\n\nIf standalone: ensure <br /> appears on both sides and remove style="vertical-align:middle;".\nIf inline: remove the stray <br /> and keep (or add) style="vertical-align:middle;".',
-           snippet:'<!-- Standalone (br on both sides, no valign) -->\n<br /><img src="..." alt="..." /><br />\n\n<!-- Inline (no br, valign present) -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
+      fix:{description:'Determine how the image is being used. See details for table instructions.',
+           htmlDescription:'Determine how the image is being used:<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Image Use</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Inline Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears within a sentence)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Remove any extra <code>&lt;br /&gt;</code> tags around the image<br>&bull; Make sure the image includes: <code>style="vertical-align:middle;"</code></td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Standalone Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears on its own line)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Add a <code>&lt;br /&gt;</code> before and after the image<br>&bull; Remove <code>style="vertical-align:middle;"</code></td></tr></table>',
+           snippet:'\n<br /><img src="..." alt="..." /><br />\n\n\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
 
     { id:'img-absmiddle', category:'images', severity:'error',
       description:'align="absmiddle" on images is deprecated — replace with style="vertical-align:middle;"',
@@ -2418,21 +2419,30 @@ const AssessmentChecker = (() => {
             }
 
           } else if (rule.subtype === 'ambiguous' && isAmbiguous) {
-            const side = hasBrBefore ? 'before' : 'after';
-            // If <br /> is before the image but not after, check whether the image is
-            // the last item in the question stem — if so, a trailing <br /> is not required.
-            if (hasBrBefore && !hasBrAfter) {
-              const stemQuestion = qs.find(q => q.stemLines.includes(i + 1));
-              const isLastStemLine = stemQuestion &&
-                stemQuestion.stemLines[stemQuestion.stemLines.length - 1] === i + 1;
-              const nothingAfterImg = after.replace(/<\/?\s*br\b[^>]*>/gi, '').trim() === '';
-              if (isLastStemLine && nothingAfterImg) continue;
-            }
-            results.push(fail(rule,
-              rule.message.replace('{line}', i+1) + ' (<br /> found ' + side + ' the image only)',
-              i+1, null,
-              { type: 'br-ambiguous', rawLine: line, img, side }));
-          }
+  const side = hasBrBefore ? 'before' : 'after';
+  
+  // If <br /> is before the image but not after, check whether the image is
+  // the last item in the question stem — if so, a trailing <br /> is not required.
+  if (hasBrBefore && !hasBrAfter) {
+    const stemQuestion = qs.find(q => q.stemLines.includes(i + 1));
+    
+    if (stemQuestion) {
+      const isAbsolutelyLast = stemQuestion.stemLines[stemQuestion.stemLines.length - 1] === i + 1;
+      const isFirstLine = stemQuestion.startLine === i + 1;
+      const nothingAfterImg = after.replace(/<\/?\s*br\b[^>]*>/gi, '').trim() === '';
+      
+      // Checking `isFirstLine` accounts for the parser absorbing the first answer choice
+      if ((isAbsolutelyLast || isFirstLine) && nothingAfterImg) {
+        continue;
+      }
+    }
+  }
+  
+  results.push(fail(rule,
+    rule.message.replace('{line}', i+1) + ' (<br /> found ' + side + ' the image only)',
+    i+1, null,
+    { type: 'br-ambiguous', rawLine: line, img, side }));
+}
         }
         return results;
       });
@@ -4016,7 +4026,7 @@ function renderItem(r,lines){
       }
     }
 
-    const descHtml = '<div class="fix-description">'+esc(r.rule.fix.description)+'</div>';
+    const descHtml = '<div class="fix-description">' + (r.rule.fix.htmlDescription || esc(r.rule.fix.description)) + '</div>';
     fixPanelContent = '<div class="fix-panel" id="fp-'+uid+'"><div class="fix-applied-banner" style="display:none">✦ Fix applied — review and re-audit when done</div>' + descHtml + fixPanelContent + '</div>';
   }
 
