@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.05</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.07</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -684,8 +684,8 @@ const RULES_DATA = {
       description:'Image paths must be lowercase and without spaces',
       type:'img-path-check',
       message:'Line {line} image path "{found}" has spaces or capitals.',
-      fix:{description:'Rename file and update path to lowercase and without spaces.',
-           snippet:'//cdn.flvs.net/assessment_images/course/my_image.jpg'} },
+      fix:{description:'Ensure file name and path are in lowercase and without spaces.',
+           snippet:''} },
 
     { id:'img-path-base', category:'images', severity:'error',
       description:'Image src must use the required CDN base path',
@@ -775,7 +775,7 @@ const RULES_DATA = {
       description:'Matching question points should be a multiple of the number of pairs',
       type:'matching-points-check',
       message:'Question {num} has {pairs} pairs but points:{points} is not a multiple of {pairs}.',
-      rationale:'Matching questions are typically scored one point per correct pair. If total points is not a multiple of the pair count, partial credit cannot be distributed evenly.',
+      rationale:'Matching questions are scored one point per correct pair. If total points is not a multiple of the pair count, fraction of points occurs.',
       fix:{description:'Set points to a multiple of the pair count.',
            snippet:'3 pairs -> points:3 or points:6\n4 pairs -> points:4 or points:8'} },
 
@@ -849,7 +849,7 @@ const RULES_DATA = {
       message:'Line {line} has an image with <br /> on one side only — confirm whether it is inline (needs vertical-align:middle;) or standalone (needs <br /> on both sides, no vertical-align).',
       rationale:'A <br /> on one side but not the other suggests the image placement may be unintentional. If the image should be standalone, add a <br /> on the missing side and remove vertical-align:middle;. If it is inline with text, remove the <br /> and keep the style.',
       fix:{description:'Determine how the image is being used. See details for table instructions.',
-           htmlDescription:'Determine how the image is being used:<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Image Use</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Inline Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears within a sentence)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Remove any extra <code>&lt;br /&gt;</code> tags around the image<br>&bull; Make sure the image includes: <code>style="vertical-align:middle;"</code></td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Standalone Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears on its own line)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Add a <code>&lt;br /&gt;</code> before and after the image<br>&bull; Remove <code>style="vertical-align:middle;"</code></td></tr></table>',
+           htmlDescription:'Determine how the image is being used:<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Image Use</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Inline Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears within a sentence)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Remove any extra <code>&lt;br /&gt;</code> tags around the image<br>&bull; Make sure the image includes: <code>style="vertical-align:middle;"</code></td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Standalone Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears on its own line)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Ensure there are <code>&lt;br /&gt;</code> tags before and after the image<br>&bull; Remove <code>style="vertical-align:middle;"</code></td></tr></table>',
            snippet:'\n<br /><img src="..." alt="..." /><br />\n\n\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
 
     { id:'img-absmiddle', category:'images', severity:'error',
