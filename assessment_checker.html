@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.07</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.15</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -790,8 +790,8 @@ const RULES_DATA = {
       description:'Matching: text after the dash must be 42 characters or fewer',
       type:'matching-right-side-length-check',
       message:'Question {num} line {line}: right-side text is {count} characters (max 42). Rewrite to shorten, or swap the left and right sides.',
-      fix:{description:'The LMS truncates matching answer text longer than 42 characters. Either rewrite the right-side text to fit, or swap the two sides so the longer text becomes the left (term) side.\n\nSwapping example:\n  Before: short term-this is a long definition that exceeds the limit\n  After:  this is a long definition that exceeds the limit-short term',
-           snippet:'<!-- Option 1: Rewrite shorter -->\nhatching-parallel lines close together\n\n<!-- Option 2: Swap sides -->\nthis is a long definition that exceeds the limit-short term'} },
+      fix:{description:'Matching answer text (right-side) longer than 42 characters.',
+           htmlDescription:'Matching answer text (right-side) longer than 42 characters.<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Options</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Option 1: Rewrite</strong></td><td style="border:1px solid var(--border); padding:6px 8px;">Rewrite the right-side text to fit within the 42 character max length</td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Option 2: Swap sides</strong></td><td style="border:1px solid var(--border); padding:6px 8px;">Rearrange by placing the longer text on the left-side</td></tr></table>'} },
 
     { id:'matching-html-on-right', category:'question-structure', severity:'error',
       description:'Matching: HTML tags and images must appear on the left side of the dash, not the right',
@@ -844,12 +844,12 @@ const RULES_DATA = {
            snippet:'<!-- Standalone image — no vertical-align needed -->\n<br /><img src="..." alt="..." /><br />\n\n<!-- Inline image — vertical-align required -->\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
 
    { id:'img-ambiguous-valign', category:'images', severity:'warning',
-      description:'Image has <br /> on one side only — intent is ambiguous, verify whether style="vertical-align:middle;" is correct',
+      description:'Image has <br /> on one side only — intent is ambiguous',
       type:'img-inline-valign-check', subtype:'ambiguous',
-      message:'Line {line} has an image with <br /> on one side only — confirm whether it is inline (needs vertical-align:middle;) or standalone (needs <br /> on both sides, no vertical-align).',
+      message:'Line {line} has an image with <br /> on one side only — determine whether image is inline or standalone.',
       rationale:'A <br /> on one side but not the other suggests the image placement may be unintentional. If the image should be standalone, add a <br /> on the missing side and remove vertical-align:middle;. If it is inline with text, remove the <br /> and keep the style.',
       fix:{description:'Determine how the image is being used. See details for table instructions.',
-           htmlDescription:'Determine how the image is being used:<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Image Use</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Inline Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears within a sentence)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Remove any extra <code>&lt;br /&gt;</code> tags around the image<br>&bull; Make sure the image includes: <code>style="vertical-align:middle;"</code></td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Standalone Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears on its own line)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Ensure there are <code>&lt;br /&gt;</code> tags before and after the image<br>&bull; Remove <code>style="vertical-align:middle;"</code></td></tr></table>',
+           htmlDescription:'Determine how the image is being used:<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Image Use</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Inline Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears within a sentence)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Remove any extra <code>&lt;br /&gt;</code> tags around the image<br>&bull; Ensure image includes: <code>style="vertical-align:middle;"</code></td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Standalone Image</strong><br><span style="color:var(--text-dim); font-size:10px;">(image appears on its own line)</span></td><td style="border:1px solid var(--border); padding:6px 8px;">&bull; Ensure there are <code>&lt;br /&gt;</code> tags before and after the image<br>&bull; Remove <code>style="vertical-align:middle;" (if present)</code></td></tr></table>',
            snippet:'\n<br /><img src="..." alt="..." /><br />\n\n\nsome text <img src="..." alt="..." style="vertical-align:middle;" /> more text'} },
 
     { id:'img-absmiddle', category:'images', severity:'error',
@@ -1025,7 +1025,7 @@ const AssessmentChecker = (() => {
       for (let i = 0; i < qs.length - 1; i++) {
         const curr = qs[i], next = qs[i + 1];
         // End of current question: use groupLine if set, else pointsLine, else last stem line
-        const endLine = curr.groupLine || curr.pointsLine || curr.startLine;
+        const endLine = Math.max(curr.groupLine || 0, curr.pointsLine || 0) || curr.startLine;
         const startNext = next.startLine;
         // Collect the gap lines between questions (exclusive on both ends)
         const gapLines = [];
@@ -1463,7 +1463,12 @@ const AssessmentChecker = (() => {
         //    These leave a bare < that would otherwise be flagged as a math symbol.
         checkLine = checkLine.replace(orphanOpenRe, match => ' '.repeat(match.length));
 
-        // 4. Scan whatever is left for naked <, >, &lt;, or &gt;
+        // 4. Mask encoded HTML tags — &lt;tagname ...&gt; and &lt;/tagname&gt;
+        //    These are real tags written as entities (e.g. &lt;font face="..."&gt;) and
+        //    should not be flagged as naked symbols.
+        checkLine = checkLine.replace(/&lt;\/?\s*(?:span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre)\b[^&]*&gt;/gi, match => ' '.repeat(match.length));
+
+        // 5. Scan whatever is left for naked <, >, &lt;, or &gt;
         const results = [];
         const re = /(<|>|&lt;|&gt;)/gi;
         let m;
@@ -1815,7 +1820,8 @@ const AssessmentChecker = (() => {
 
     'span-unclosed-check'(rule, qs) {
       return qs.filter(q => q.stem.includes('<span') && !/<\/span\s*>/i.test(q.stem)).map(q => {
-        const sm = q.stem.match(/<span([^>]*)>([^<]*)/i);
+        // Match the span tag and optionally the (...) block immediately following it, stopping exactly at the ')'
+        const sm = q.stem.match(/<span([^>]*)>(?:\s*\([^)]+\))?/i);
         if (sm) {
             const actual = sm[0].trim(); // Trim actual to perfectly align with expected
             const expected = actual + '</span>';
@@ -2925,6 +2931,17 @@ const autoFixers={
     return out.join('\n');
   },
   'points-before-group':text=>text.replace(/(group:\d+)\n(points:\d+)/g,'$2\n$1'),
+	'span-unclosed': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'span-followed-by-br':text=>text.replace(/(<\/span>)(?:\s*<\/?\s*br\b[^><]*(?:>|(?=<|$)))*/gi,'$1 <br /><br />'),
   'span-associatedlessons-format': (text, result) => {
     if (!result.extra || !result.lineNum) return text;
