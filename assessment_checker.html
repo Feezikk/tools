@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.15</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.17</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1158,13 +1158,13 @@ const AssessmentChecker = (() => {
       const byG = {};
       for (const q of qs) {
         if (q.group===null) continue;
-        (byG[q.group]=byG[q.group]||[]).push({num:q.num,code:q.code});
+        (byG[q.group]=byG[q.group]||[]).push({num:q.num,code:q.code,line:q.startLine});
       }
       return Object.entries(byG).filter(([,c])=>new Set(c.map(i=>i.code)).size>1)
         .map(([g,c]) => {
           const types = [...new Set(c.map(i=>i.code))];
           return fail(rule, rule.message.replace('{group}',g).replace('{types}',types.map(t=>TYPE_LABELS[t]||t).join(', ')),
-            null, null, {type:'group-type-consistency', group:g, items:c.map(i=>({num:i.num,label:TYPE_LABELS[i.code]||i.code}))});
+            c[0].line||null, null, {type:'group-type-consistency', group:g, items:c.map(i=>({num:i.num,label:TYPE_LABELS[i.code]||i.code,line:i.line}))});
         });
     },
 
@@ -4210,18 +4210,23 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
       if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
   } else if(r.extra&&r.extra.type==='group-type-consistency'){
       const {group, items} = r.extra;
-      const rows = items.map(item =>
-        '<tr style="border-bottom:1px solid var(--border)">'+
-        '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text)">Q'+item.num+'</td>'+
-        '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-mid)">'+esc(item.label)+'</td>'+
-        '</tr>'
-      ).join('');
+      const types = [...new Set(items.map(i=>i.label))];
+      const rows = items.map(item => {
+        const isOdd = types.indexOf(item.label) !== 0;
+        const jump = item.line ? '<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>' : '';
+        return '<tr style="'+(isOdd?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)">'+
+          '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text)">Q'+item.num+'</td>'+
+          '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);'+(isOdd?'color:var(--error);font-weight:700':'color:var(--text-mid)')+'">'+esc(item.label)+'</td>'+
+          '<td style="padding:5px 10px;text-align:right">'+jump+'</td>'+
+          '</tr>';
+      }).join('');
       extraPanel =
         '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Question Types</div>'+
         '<table style="width:100%;border-collapse:collapse">'+
           '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
             '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Question #</th>'+
             '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Assessment Type</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th>'+
           '</tr>'+rows+
         '</table>';
   }
