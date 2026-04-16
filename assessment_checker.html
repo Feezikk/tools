@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.17</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.21</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -535,6 +535,13 @@ const RULES_DATA = {
       fix:{description:'All questions in the same group must share the same points value.',
            snippet:'points:3\ngroup:1\n\npoints:3  <- must match\ngroup:1'} },
 
+    { id:'same-group-same-meta', category:'groups-points', severity:'error',
+      description:'All questions in a group must have identical span metadata',
+      type:'group-meta-consistency',
+      message:'Group {group} has inconsistent span metadata across questions.',
+      fix:{description:'Every question in the same group must have exactly the same <span> tag, including data-complexity, data-associatedlessons, data-standard-*, and the visible (xx.xx LC|MC|HC) text inside the span.',
+           snippet:'mc:radio:<span data-standard-florida="MA.5.NSO.1.1" data-complexity="LC" data-associatedlessons="01.01R">(01.01 LC)</span><br /><br />Question text...'} },
+
     { id:'mc-radio-one-correct', category:'question-structure', severity:'error',
       description:'mc:radio questions must have exactly one correct answer (x-)',
       type:'mc-correct-count',
@@ -586,7 +593,7 @@ const RULES_DATA = {
            snippet:'<strong>bold</strong>  <em>italic</em>  <del>struck</del>'} },
 
     { id:'mark-tag', category:'html-tags', severity:'error',
-      description:'<mark> tags and remnants must be removed — not supported by the assessment player',
+      description:'<mark> tags and remnants must be removed — not supported in assessments',
       type:'mark-tag-check',
       message:'Line {line} contains {found}.',
       fix:{description:'Remove all <mark> opening tags, </mark> closing tags, and any partial remnants. Complete tags can be auto-removed with Apply Fix — partial remnants must be reviewed and removed manually.',
@@ -859,13 +866,21 @@ const RULES_DATA = {
       fix:{description:'Remove align="absmiddle" and replace with the correct inline style.',
            snippet:'<img src="..." alt="..." style="vertical-align:middle;" />'} },
 
-    { id:'accessible-symbols', category:'accessibility', severity:'warning',
-      description:'Raw degree symbol (°) and math minus signs must use HTML entities',
-      type:'accessible-symbols-check',
+    { id:'accessible-symbols-degree', category:'accessibility', severity:'warning',
+      description:'Raw degree symbol (°) must use HTML entity',
+      type:'accessible-symbols-check', subtype:'degree',
       message:'Line {line} contains "{found}" — {fix}.',
-      rationale:'Screen readers and some rendering engines do not reliably handle the raw degree symbol (°) or inline math minus signs. Use &deg; for degrees and &minus; for negative numbers to ensure consistent display and accessibility.',
-      fix:{description:'Replace the raw ° symbol with &deg; (or spell out "degrees"). Replace math minus signs with &minus;.',
-           snippet:'90&deg;  or  90 degrees  (not 90°)\n&minus;5  (not -5 as negative number)'} },
+      rationale:'Screen readers and some rendering engines do not reliably handle the raw degree symbol (°). Use &deg; or spell out "degrees" to ensure consistent display and accessibility.',
+      fix:{description:'Replace the raw ° symbol with &deg; (or spell out "degrees").',
+           snippet:'90&deg;  or  90 degrees  (not 90°)'} },
+
+    { id:'accessible-symbols-minus', category:'accessibility', severity:'warning',
+      description:'Math minus signs should use HTML entities',
+      type:'accessible-symbols-check', subtype:'minus',
+      message:'Line {line} contains "{found}" — {fix}.',
+      rationale:'Screen readers and some rendering engines do not reliably handle inline math minus signs. Use &minus; for subtraction and negative numbers to ensure consistent display and accessibility.',
+      fix:{description:'Replace math minus signs with &minus;.',
+           snippet:'&minus;5  (not -5 as negative number)\nx &minus; y (not x - y)'} },
 
     { id:'special-chars-auto', category:'accessibility', severity:'error',
       description:'Word-paste characters must be replaced with their HTML equivalents',
@@ -1184,6 +1199,34 @@ const AssessmentChecker = (() => {
         const off = items.filter(i=>String(i.points)!==expected);
         results.push(fail(rule, rule.message.replace('{group}',g).replace('{values}',uniq.join(', ')),
           off[0]?.line||null, uniq.join(' / '), {type:'group-points',group:g,expected,items}));
+      }
+      return results;
+    },
+
+    'group-meta-consistency'(rule, qs) {
+      const byG = {};
+      for (const q of qs) {
+        if (q.group === null) continue;
+        // Extract the full <span...>...</span> tag from the stem
+        const spanMatch = q.stem.match(/<span([^>]*)>([\s\S]*?)<\/span>/i);
+        const fullSpan = spanMatch ? spanMatch[0] : null;
+        (byG[q.group] = byG[q.group] || []).push({
+          num: q.num,
+          line: q.startLine,
+          span: fullSpan
+        });
+      }
+      const results = [];
+      for (const [g, items] of Object.entries(byG)) {
+        // Only check groups where every question has a span (skip if any are missing — span-missing handles that)
+        if (items.some(i => !i.span)) continue;
+        const uniqSpans = [...new Set(items.map(i => i.span))];
+        if (uniqSpans.length < 2) continue;
+        results.push(fail(rule,
+          rule.message.replace('{group}', g),
+          items[0].line || null, null,
+          { type: 'group-meta-consistency', group: g, items }
+        ));
       }
       return results;
     },
@@ -2034,25 +2077,49 @@ const AssessmentChecker = (() => {
     },
 
     'accessible-symbols-check'(rule, qs, raw, lines) {
-      return lines.flatMap((line,i)=>{
-        const clean=line.replace(/<img\b[^>]*>/gi,'').replace(/<[^>]+>/g,'');
-        const results=[];
-        const degRe=/\u00b0/g; let m;
-        while((m=degRe.exec(clean))!==null)
-          results.push(fail(rule,
-            rule.message.replace('{line}',i+1).replace('{found}','°').replace('{fix}','replace with &deg; or spell out "degrees"'),
-            i+1,'°'));
-        // Math minus: match space(s) followed by minus and digit, but not inside a tag
-        // and not on lines that are answer choices (starting with x- or being plain answer text)
-        const isAnswerLine = /^\s*x?-/.test(line.trim());
-        if (!isAnswerLine) {
-          const minusRe=/(?<=\s)-(?=\d)/g;
-          while((m=minusRe.exec(clean))!==null){
-            const before=clean.slice(Math.max(0,m.index-5),m.index+1);
-            if(!/&\w*$/.test(before))
-              results.push(fail(rule,
-                rule.message.replace('{line}',i+1).replace('{found}','-'+clean[m.index+1]).replace('{fix}','replace math minus with &minus;'),
-                i+1,'-'+clean[m.index+1]));
+      return lines.flatMap((line, i) => {
+        const clean = line.replace(/<img\b[^>]*>/gi, '').replace(/<[^>]+>/g, '');
+        const results = [];
+
+        if (rule.subtype === 'degree') {
+          const degRe = /\u00b0/g; let m;
+          while ((m = degRe.exec(clean)) !== null) {
+            results.push(fail(rule,
+              rule.message.replace('{line}', i + 1).replace('{found}', '°').replace('{fix}', 'replace with &deg; or spell out "degrees"'),
+              i + 1, '°'));
+          }
+        } else if (rule.subtype === 'minus') {
+          // Math minus: look for dashes/en dashes used as subtraction or negative numbers
+          const isAnswerLine = /^\s*x?-/.test(line.trim());
+          if (!isAnswerLine) {
+            // Mask out text inside <code> or <pre> tags so we NEVER flag programming syntax
+            let safeText = clean;
+            const codeBlocks = line.match(/<(code|pre)\b[^>]*>[\s\S]*?<\/\1>/gi);
+            if (codeBlocks) {
+              codeBlocks.forEach(block => {
+                const strippedBlock = block.replace(/<img\b[^>]*>/gi, '').replace(/<[^>]+>/g, '');
+                safeText = safeText.replace(strippedBlock, ' '.repeat(strippedBlock.length));
+              });
+            }
+
+            const minusRe = /(?<=\s)(-|–)(?=\d|\s+[a-zA-Z0-9])/g;
+
+            let m;
+            while ((m = minusRe.exec(safeText)) !== null) {
+              const charFound = m[1];
+              const nextChar = safeText[m.index + 1] || '';
+              const displayFound = charFound + (nextChar.trim() ? nextChar : ' ');
+
+              // Grab the specific string block (e.g. " - " or " -5") for precise highlighting
+              const exactMatchStr = safeText.substring(m.index - 1, m.index + 2);
+
+              const before = safeText.slice(Math.max(0, m.index - 5), m.index + 1);
+              if (!/&\w*$/.test(before)) {
+                results.push(fail(rule,
+                  rule.message.replace('{line}', i + 1).replace('{found}', displayFound.trim()).replace('{fix}', 'if used as math minus, replace with &minus;'),
+                  i + 1, exactMatchStr)); // Passing exact match string prevents global replace bugs
+              }
+            }
           }
         }
         return results;
@@ -2387,8 +2454,21 @@ const AssessmentChecker = (() => {
           ...q.answers.map(a => a.lineNum)
         ])
       );
+
+      // Exception: MC answer choices that consist ONLY of an image (and an optional x- prefix)
+      // do not require <br /> tags around them and are exempt from these alignment checks.
+      const mcImageAnswerLines = new Set(
+        qs.filter(q => q.code === 'mc:radio:').flatMap(q => 
+          q.answers.filter(a => {
+            const textWithoutImg = a.text.replace(/^x-/, '').replace(/<img\b[^>]*>/gi, '').trim();
+            return textWithoutImg === ''; // True if the line is purely an image
+          }).map(a => a.lineNum)
+        )
+      );
+
       return lines.flatMap((line, i) => {
         if (matchingLines.has(i + 1)) return [];
+        if (mcImageAnswerLines.has(i + 1)) return [];
         const imgs = line.match(/<img\b[^>]*>/gi) || [];
         if (!imgs.length) return [];
         const results = [];
@@ -4013,6 +4093,7 @@ function renderItem(r,lines){
 
     } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'formatted-code' ||
                r.extra.type === 'group-points' || r.extra.type === 'group-type-consistency' ||
+               r.extra.type === 'group-meta-consistency' ||
                r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
                r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous')) {
       // These have their own rich extra panels — build them the existing way then wrap
@@ -4134,13 +4215,12 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '<div style="padding:6px 14px 4px;font-size:11px;color:var(--text-mid)">'+sideLabel+'</div>'+
         '<div style="padding:4px 12px 10px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);white-space:pre-wrap;word-break:break-all;margin:0">'+annotated+'</pre></div>';
   } else if(r.extra&&r.extra.type==='group-points'){
-      const{group,expected,items}=r.extra;
+      const{group,items}=r.extra;
       const rows=items.map(item=>{
-        const off=String(item.points)!==String(expected);
         const jump=item.line?'<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>':'';
-        return '<tr style="'+(off?'background:var(--error-bg)':'background:var(--pass-bg)')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);'+(off?'color:var(--error);font-weight:700':'color:var(--pass);font-weight:700')+'">points:'+item.points+'<span style="font-size:10px;background:'+(off?'var(--error)':'var(--pass)')+';color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">'+(off?'✕ wrong':'✓')+'</span></td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
+        return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono)">points:'+item.points+'</td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
-      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Point Values</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Most common value: <strong>points:'+expected+'</strong> — update highlighted rows to match.</div>';
+      extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Point Values</div><table style="width:100%;border-collapse:collapse"><tr style="background:var(--surface2);border-bottom:1px solid var(--border2)"><th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Question #</th><th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Points</th><th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th></tr>'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">All questions in the same group must have the same point value. Compare the rows above and update any that do not match.</div>';
   } else if(r.extra&&r.extra.type==='group-numbering'){
       const {violations, seq} = r.extra;
       const badGroups = new Set(violations.map(v => v.found));
@@ -4229,6 +4309,32 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
             '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th>'+
           '</tr>'+rows+
         '</table>';
+  } else if(r.extra&&r.extra.type==='group-meta-consistency'){
+      const {group, items} = r.extra;
+      const rows = items.map(item => {
+        const jump = item.line
+          ? '<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>'
+          : '';
+        const spanDisplay = item.span
+          ? '<code style="font-family:var(--mono);font-size:10px;word-break:break-all;white-space:pre-wrap;color:var(--text)">'+esc(item.span)+'</code>'
+          : '<span style="color:var(--text-dim);font-style:italic;font-size:10px">no span found</span>';
+        return '<tr style="border-bottom:1px solid var(--border);vertical-align:top">'+
+          '<td style="padding:6px 10px;font-size:11px;font-family:var(--mono);color:var(--text);white-space:nowrap">Q'+item.num+'</td>'+
+          '<td style="padding:6px 10px;font-size:11px">'+spanDisplay+'</td>'+
+          '<td style="padding:6px 10px;text-align:right;white-space:nowrap">'+jump+'</td>'+
+          '</tr>';
+      }).join('');
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--error);text-transform:uppercase;letter-spacing:.5px;background:var(--error-bg)">Group '+group+' — Span Metadata Mismatch</div>'+
+        '<div style="padding:6px 12px 6px;font-size:11px;color:var(--text-mid);border-left:1px solid var(--border);border-right:1px solid var(--border)">Review the Meta Data below:</div>'+
+        '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border)">'+
+          '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);white-space:nowrap">Question #</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Full Span Data</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim);white-space:nowrap">Line #</th>'+
+          '</tr>'+rows+
+        '</table>'+
+        '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">All questions in the same group must have an identical &lt;span&gt; tag. Compare the rows above and update any that do not match.</div>';
   }
   return extraPanel;
 }
