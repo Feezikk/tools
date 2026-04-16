@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.21</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.27</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -881,6 +881,13 @@ const RULES_DATA = {
       rationale:'Screen readers and some rendering engines do not reliably handle inline math minus signs. Use &minus; for subtraction and negative numbers to ensure consistent display and accessibility.',
       fix:{description:'Replace math minus signs with &minus;.',
            snippet:'&minus;5  (not -5 as negative number)\nx &minus; y (not x - y)'} },
+
+    { id:'en-dash-context', category:'accessibility', severity:'warning',
+      description:'En dash detected — could be a minus sign or a special character',
+      type:'en-dash-context-check',
+      message:'Question {num} contains an en dash (–) that needs context review.',
+      fix:{description:'Review the en dash in context and replace with the appropriate HTML entity.',
+           snippet:'&minus;  — Minus sign (math/negative numbers)\n&ndash;  — En dash (ranges, e.g. 2–4)'} },
 
     { id:'special-chars-auto', category:'accessibility', severity:'error',
       description:'Word-paste characters must be replaced with their HTML equivalents',
@@ -1598,7 +1605,7 @@ const AssessmentChecker = (() => {
 
     'img-alt-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        const imgs=line.match(/<img\s[^>]*>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         return imgs.filter(t=>{
           // Accept alt="..." or alt='...' with non-empty value — quote style is a separate rule
           return !/alt\s*=\s*"[^"]+"/i.test(t) && !/alt\s*=\s*'[^']+'/i.test(t);
@@ -1609,7 +1616,7 @@ const AssessmentChecker = (() => {
     'img-quote-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
         if (!/<img/i.test(line)) return [];
-        const imgs = line.match(/<img[^>]+>/gi) || [];
+        const imgs = line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi) || [];
         return imgs.flatMap(img => {
           const m = img.match(/(src|alt)\s*=\s*'([^']+)'/i);
           if (m) {
@@ -1625,7 +1632,7 @@ const AssessmentChecker = (() => {
     'img-extension-check'(rule, qs, raw, lines) {
       const results=[];
       lines.forEach((line,i)=>{
-        const imgs=line.match(/<img\b[^>]*>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         imgs.forEach(img=>{
           const re=/src\s*=\s*"([^"]+)"/gi; let m;
           while((m=re.exec(img))!==null){
@@ -1642,7 +1649,7 @@ const AssessmentChecker = (() => {
 
     'img-alt-quotes-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        const imgs=line.match(/<img[^>]+>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         return imgs.flatMap(img=>{
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
           if (a && a[1].includes('"')) {
@@ -1657,7 +1664,7 @@ const AssessmentChecker = (() => {
 
     'img-alt-html-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        const imgs=line.match(/<img[^>]+>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         return imgs.flatMap(img=>{
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
           if(!a) return [];
@@ -1674,11 +1681,14 @@ const AssessmentChecker = (() => {
         '&amp;':'ampersand',
         '&lt;':'less than',
         '&gt;':'greater than',
-        '&deg;':'degree'
+        '&deg;':'degree',
+        '&ndash;':'dash or minus',
+        '&mdash;':'dash'
       };
       const MATH_MINUS=/(?<=\s)-(?=\d|\s)/;
       return lines.flatMap((line, i) => {
-        const imgs=line.match(/<img[^>]+>/gi)||[];
+        // Updated regex gracefully handles > symbols trapped inside alt text quotes
+        const imgs = line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi) || [];
         return imgs.flatMap(img=>{
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
           if(!a) return [];
@@ -1708,9 +1718,9 @@ const AssessmentChecker = (() => {
 
     'img-alt-unknown-symbol-check'(rule, qs, raw, lines) {
       const KNOWN=new Set(['>','<','/','*','%','&','@','-','=','°','+']);
-      const KENT=/&(?:amp|lt|gt|deg|nbsp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g;
+      const KENT=/&(?:amp|lt|gt|deg|nbsp|quot|apos|ndash|mdash|#\d+|#x[0-9a-fA-F]+);/g;
       return lines.flatMap((line, i) => {
-        const imgs=line.match(/<img[^>]+>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         return imgs.flatMap(img=>{
           // Use robust extraction consistent with other alt handlers
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
@@ -1725,7 +1735,7 @@ const AssessmentChecker = (() => {
 
     'img-dimensions-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        const imgs=line.match(/<img[^>]+>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         return imgs.flatMap(img => [
           /\bwidth\s*=/i.test(img) ? fail(rule,rule.message.replace('{line}',i+1).replace('{found}','width'),i+1,'width') : null,
           /\bheight\s*=/i.test(img) ? fail(rule,rule.message.replace('{line}',i+1).replace('{found}','height'),i+1,'height') : null
@@ -1761,7 +1771,7 @@ const AssessmentChecker = (() => {
     'img-path-check'(rule, qs, raw, lines) {
       const results=[];
       lines.forEach((line,i)=>{
-        const imgs=line.match(/<img\b[^>]*>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         imgs.forEach(img=>{
           const re=/src\s*=\s*"([^"]+)"/gi; let m;
           while((m=re.exec(img))!==null)
@@ -1778,7 +1788,7 @@ const AssessmentChecker = (() => {
       const norm=s=>s.replace(/^https?:\/\//,'').replace(/^\/\//,'');
       const results=[];
       lines.forEach((line,i)=>{
-        const imgs=line.match(/<img\b[^>]*>/gi)||[];
+        const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
         imgs.forEach(img=>{
           const re=/src\s*=\s*"([^"]+)"/gi; let m;
           while((m=re.exec(img))!==null){
@@ -2078,7 +2088,7 @@ const AssessmentChecker = (() => {
 
     'accessible-symbols-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
-        const clean = line.replace(/<img\b[^>]*>/gi, '').replace(/<[^>]+>/g, '');
+        const clean = line.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi, '').replace(/<[^>]+>/g, '');
         const results = [];
 
         if (rule.subtype === 'degree') {
@@ -2097,7 +2107,7 @@ const AssessmentChecker = (() => {
             const codeBlocks = line.match(/<(code|pre)\b[^>]*>[\s\S]*?<\/\1>/gi);
             if (codeBlocks) {
               codeBlocks.forEach(block => {
-                const strippedBlock = block.replace(/<img\b[^>]*>/gi, '').replace(/<[^>]+>/g, '');
+                const strippedBlock = block.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi, '').replace(/<[^>]+>/g, '');
                 safeText = safeText.replace(strippedBlock, ' '.repeat(strippedBlock.length));
               });
             }
@@ -2126,6 +2136,28 @@ const AssessmentChecker = (() => {
       });
     },
 
+    'en-dash-context-check'(rule, qs, raw, lines) {
+      return qs.flatMap((q, qi) => {
+        const start = q.startLine - 1;
+        const end   = qi + 1 < qs.length ? qs[qi+1].startLine - 1 : lines.length;
+        const block = lines.slice(start, end)
+          .filter(l => !/^(points:|group:)/.test(l.trim()))
+          .join('\n');
+        const textOnly = block.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,'').replace(/<[^>]+>/g,'');
+        if (!textOnly.includes('\u2013')) return [];
+        const lineNums = [];
+        lines.slice(start, end).forEach((l, idx) => {
+          const clean = l.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,'').replace(/<[^>]+>/g,'');
+          if (clean.includes('\u2013')) lineNums.push(start + idx + 1);
+        });
+        const firstLine = lineNums[0] || q.startLine;
+        return [fail(rule,
+          rule.message.replace('{num}', q.num),
+          firstLine, null,
+          { type:'en-dash-context', qNum:q.num, lineNums })];
+      });
+    },
+
     'special-chars-check'(rule, qs, raw, lines) {
       const AUTO = [
         { char:'\u201c', name:'Left double curly quote \u201c',  fix:'&ldquo;' },
@@ -2133,7 +2165,7 @@ const AssessmentChecker = (() => {
         { char:'\u2018', name:'Left single curly quote \u2018',  fix:'&lsquo;' },
         { char:'\u2019', name:'Right single curly quote \u2019', fix:'&rsquo;' },
         { char:'\u2014', name:'Em dash \u2014',                  fix:'&mdash;' },
-        { char:'\u2013', name:'En dash \u2013',                  fix:'&ndash;' },
+       // { char:'\u2013', name:'En dash \u2013',                  fix:'&ndash;', minusOverlap:true },
         { char:'\u2026', name:'Ellipsis character \u2026',       fix:'... (three dots)' },
         { char:'\u00d7', name:'Multiplication sign \u00d7',      fix:'&times;' },
         { char:'\u00f7', name:'Division sign \u00f7',            fix:'&divide;' },
@@ -2178,7 +2210,7 @@ const AssessmentChecker = (() => {
           .filter(l => !/^(points:|group:)/.test(l.trim()))
           .join('\n');
         // Strip img tags (incl. alt text) then all other tags — only scan visible text
-        const textOnly = block.replace(/<img\b[^>]*>/gi,'').replace(/<[^>]+>/g,'');
+        const textOnly = block.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,'').replace(/<[^>]+>/g,'');
 
         const found = [];
         for (const entry of CHARS) {
@@ -2186,7 +2218,7 @@ const AssessmentChecker = (() => {
           // Collect every line number within this question block where the char appears
           const lineNums = [];
           lines.slice(start, end).forEach((l, idx) => {
-            const clean = l.replace(/<img\b[^>]*>/gi,'').replace(/<[^>]+>/g,'');
+            const clean = l.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,'').replace(/<[^>]+>/g,'');
             if (clean.includes(entry.char)) lineNums.push(start + idx + 1);
           });
           found.push({ ...entry, lineNums });
@@ -2328,7 +2360,7 @@ const AssessmentChecker = (() => {
 
     'matching-img-align-check'(rule, qs) {
       const checkImgs = (text, lineNum, qNum) => {
-        const imgs = text.match(/<img\b[^>]*>/gi) || [];
+        const imgs = text.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi) || [];
         return imgs.flatMap(img => {
           const alignMatch = img.match(/\balign\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
           if (!alignMatch) return [];
@@ -2417,7 +2449,7 @@ const AssessmentChecker = (() => {
       return lines.flatMap((line, i) => {
         // Strip all HTML tags — we only want to find URLs in visible text
         // But first, remove img src values so image URLs are not flagged
-        const noImgs = line.replace(/<img\b[^>]*>/gi, '');
+        const noImgs = line.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi, '');
         // Remove content inside HTML tags (attribute values etc.)
         const textOnly = noImgs.replace(/<[^>]+>/g, '\x00'); // replace tags with null byte placeholder
         // Collect text ranges that are inside <span>...</span> in textOnly
@@ -2460,7 +2492,7 @@ const AssessmentChecker = (() => {
       const mcImageAnswerLines = new Set(
         qs.filter(q => q.code === 'mc:radio:').flatMap(q => 
           q.answers.filter(a => {
-            const textWithoutImg = a.text.replace(/^x-/, '').replace(/<img\b[^>]*>/gi, '').trim();
+            const textWithoutImg = a.text.replace(/^x-/, '').replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi, '').trim();
             return textWithoutImg === ''; // True if the line is purely an image
           }).map(a => a.lineNum)
         )
@@ -2469,7 +2501,7 @@ const AssessmentChecker = (() => {
       return lines.flatMap((line, i) => {
         if (matchingLines.has(i + 1)) return [];
         if (mcImageAnswerLines.has(i + 1)) return [];
-        const imgs = line.match(/<img\b[^>]*>/gi) || [];
+        const imgs = line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi) || [];
         if (!imgs.length) return [];
         const results = [];
         for (const img of imgs) {
@@ -2544,7 +2576,7 @@ const AssessmentChecker = (() => {
       );
       return lines.flatMap((line, i) => {
         if (matchingLines.has(i + 1)) return [];
-        const imgs = line.match(/<img\b[^>]*>/gi) || [];
+        const imgs = line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi) || [];
         const results = [];
         for (const img of imgs) {
           if (!/\balign\s*=\s*["']?absmiddle["']?/i.test(img)) continue;
@@ -3038,7 +3070,7 @@ const autoFixers={
     }
     return lines.join('\n');
   },
-  'img-has-alt':        text=>text.replace(/<img([^>]*?)(\/?>)/gi,(match,attrs,close)=>{
+  'img-has-alt':        text=>text.replace(/<img\b((?:"[^"]*"|'[^']*'|[^>])*?)(\/?>)/gi,(match,attrs,close)=>{
     if(/alt\s*=\s*"[^"]+"/.test(attrs)) return match;
     if(/alt\s*=\s*""/.test(attrs)) return '<img'+attrs.replace(/alt\s*=\s*""/,'alt="[Describe image here]"')+close;
     if(/alt/.test(attrs)) return match;
@@ -4273,12 +4305,12 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '<td style="padding:5px 10px;font-size:16px;text-align:center;width:32px">'+c.char+'</td>'+
           '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-mid)">U+'+c.char.codePointAt(0).toString(16).toUpperCase().padStart(4,'0')+'</td>'+
           '<td style="padding:5px 10px;font-size:12px">'+esc(c.name)+'</td>'+
-          '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--pass);font-weight:600">'+esc(c.fix)+'</td>'+
+          '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--pass);font-weight:600">'+(c.minusOverlap?'<em style="font-style:italic;font-family:var(--sans);color:var(--text-mid);font-size:11px">see below</em>':esc(c.fix))+'</td>'+
           '<td style="padding:5px 10px;text-align:right">'+lineList+'</td>'+
-          '</tr>';
+          '</tr>'+(c.minusOverlap?'<tr><td colspan="5" style="padding:6px 10px 10px;background:var(--warn-bg);border-top:1px solid var(--warn-border)"><div style="font-size:11px;font-weight:600;color:var(--warn);margin-bottom:6px;">En dash detected — possible minus sign or a special character. Review context.</div><table style="border-collapse:collapse;font-size:11px;font-family:var(--mono);"><tr><td style="padding:2px 14px 2px 0;font-weight:700;color:var(--text);">&amp;minus;</td><td style="color:var(--text-mid);">Minus Sign</td></tr><tr><td style="padding:2px 14px 2px 0;font-weight:700;color:var(--text);">&amp;ndash;</td><td style="color:var(--text-mid);">En dash</td></tr></table></td></tr>':'');
       }).join('');
       extraPanel = previewPanel +
-        '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:'+hdrColor+';background:'+hdrBg+';text-transform:uppercase;letter-spacing:.5px">'+(isAuto?'✕ Must Fix':'⚠ Review Required')+' — Special Characters Found</div>'+
+        '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 12px 4px;font-size:11px;font-weight:700;color:'+hdrColor+';background:'+hdrBg+';text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;">'+(isAuto?'✕ Must Fix':'⚠ Review Required')+' — Special Characters Found'+(isAuto?'<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" title="Apply fix in editor" style="margin-left:auto;text-transform:none;letter-spacing:0;flex-shrink:0;">✓ Apply Fix</button>':'')+'</div>'+
         '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 var(--r) var(--r);margin-bottom:10px;">'+
         '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
           '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Char</th>'+
@@ -4288,6 +4320,24 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line(s)</th>'+
         '</tr>'+rows+'</table>';
       if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
+  } else if(r.extra&&r.extra.type==='en-dash-context'){
+      const lineLinks = r.extra.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-bg);text-transform:uppercase;letter-spacing:.5px">⚠ En Dash — Context Review Required</div>'+
+        '<div style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:10px 12px 12px;margin-bottom:10px;">'+
+          '<div style="font-size:12px;color:var(--text);margin-bottom:10px;">En dash detected — possible minus sign or a special character. Review context.</div>'+
+          '<table style="border-collapse:collapse;font-size:12px;width:auto;">'+
+            '<tr style="border-bottom:1px solid var(--border)">'+
+              '<td style="padding:5px 14px 5px 0;font-family:var(--mono);font-weight:700;color:var(--text);">&amp;minus;</td>'+
+              '<td style="padding:5px 0;color:var(--text-mid);">Minus Sign &nbsp;<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);">(subtraction, negative numbers)</span></td>'+
+            '</tr>'+
+            '<tr>'+
+              '<td style="padding:5px 14px 5px 0;font-family:var(--mono);font-weight:700;color:var(--text);">&amp;ndash;</td>'+
+              '<td style="padding:5px 0;color:var(--text-mid);">En dash &nbsp;<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);">(ranges, e.g. 2–4)</span></td>'+
+            '</tr>'+
+          '</table>'+
+          '<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">Appears on: '+lineLinks+'</div>'+
+        '</div>';
   } else if(r.extra&&r.extra.type==='group-type-consistency'){
       const {group, items} = r.extra;
       const types = [...new Set(items.map(i=>i.label))];
