@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.27</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.32</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2137,19 +2137,20 @@ const AssessmentChecker = (() => {
     },
 
     'en-dash-context-check'(rule, qs, raw, lines) {
+      const minusRe = /(?<=\s)(-|–)(?=\d|\s+[a-zA-Z0-9])/g;
       return qs.flatMap((q, qi) => {
         const start = q.startLine - 1;
         const end   = qi + 1 < qs.length ? qs[qi+1].startLine - 1 : lines.length;
-        const block = lines.slice(start, end)
-          .filter(l => !/^(points:|group:)/.test(l.trim()))
-          .join('\n');
-        const textOnly = block.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,'').replace(/<[^>]+>/g,'');
-        if (!textOnly.includes('\u2013')) return [];
         const lineNums = [];
         lines.slice(start, end).forEach((l, idx) => {
-          const clean = l.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi,'').replace(/<[^>]+>/g,'');
-          if (clean.includes('\u2013')) lineNums.push(start + idx + 1);
+          const isAnswerLine = /^\s*x?-/.test(l.trim());
+          if (isAnswerLine) return;
+          const clean = l.replace(/<img\b[^>]*>/gi,'').replace(/<[^>]+>/g,'');
+          if (!clean.includes('\u2013')) return;
+          minusRe.lastIndex = 0;
+          if (minusRe.test(clean)) lineNums.push(start + idx + 1);
         });
+        if (!lineNums.length) return [];
         const firstLine = lineNums[0] || q.startLine;
         return [fail(rule,
           rule.message.replace('{num}', q.num),
@@ -2165,7 +2166,7 @@ const AssessmentChecker = (() => {
         { char:'\u2018', name:'Left single curly quote \u2018',  fix:'&lsquo;' },
         { char:'\u2019', name:'Right single curly quote \u2019', fix:'&rsquo;' },
         { char:'\u2014', name:'Em dash \u2014',                  fix:'&mdash;' },
-       // { char:'\u2013', name:'En dash \u2013',                  fix:'&ndash;', minusOverlap:true },
+        { char:'\u2013', name:'En dash \u2013',                  fix:'&ndash;' },
         { char:'\u2026', name:'Ellipsis character \u2026',       fix:'... (three dots)' },
         { char:'\u00d7', name:'Multiplication sign \u00d7',      fix:'&times;' },
         { char:'\u00f7', name:'Division sign \u00f7',            fix:'&divide;' },
@@ -2952,9 +2953,27 @@ const AssessmentChecker = (() => {
         else allResults.push(...out);
       }catch(e){console.error('Rule error:',rule.id,e);}
     }
+    // Cross-suppression: for any question where en-dash-context fired,
+    // remove the en dash entry from the special-chars-auto chars array.
+    // If that leaves the chars array empty, drop the whole result.
+    const enDashContextQNums = new Set(
+      allResults
+        .filter(r => r.status==='fail' && r.extra && r.extra.type==='en-dash-context')
+        .map(r => r.extra.qNum)
+    );
+    const filteredResults = allResults.map(r => {
+      if (r.status==='fail' && r.extra && r.extra.type==='special-chars' && r.extra.tier==='auto'
+          && enDashContextQNums.has(r.extra.qNum)) {
+        const trimmed = r.extra.chars.filter(c => c.char !== '\u2013');
+        if (!trimmed.length) return null;
+        return { ...r, extra: { ...r.extra, chars: trimmed } };
+      }
+      return r;
+    }).filter(Boolean);
+
     const grouped={};
     for(const cat of Object.keys(categories)) grouped[cat]={label:categories[cat],passes:[],failures:[]};
-    for(const r of allResults){
+    for(const r of filteredResults){
       if(!grouped[r.rule.category]) continue;
       (r.status==='pass'?grouped[r.rule.category].passes:grouped[r.rule.category].failures).push(r);
     }
@@ -3100,15 +3119,24 @@ const autoFixers={
     }
     return text;
   },
-  'special-chars-auto': text=>text
-    .replace(/\u201c/g,'&ldquo;').replace(/\u201d/g,'&rdquo;')
-    .replace(/\u2018/g,'&lsquo;').replace(/\u2019/g,'&rsquo;')
-    .replace(/\u2014/g,'&mdash;')
-    .replace(/\u2013/g,'&ndash;')
-    .replace(/\u2026/g,'...')
-    .replace(/\u00d7/g,'&times;')
-    .replace(/\u00f7/g,'&divide;')
-    .replace(/\u00a0/g,' '),
+  'special-chars-auto': (text, result) => {
+    // Only replace the en dash (U+2013) if it is actually present in this result's
+    // chars list. When the en dash was flagged as a possible minus sign it is removed
+    // from the special-chars result and handled by the separate en-dash-context panel —
+    // in that case the Apply Fix here must NOT touch it.
+    const charsToFix = (result && result.extra && result.extra.chars) ? result.extra.chars : null;
+    const fixEndash  = !charsToFix || charsToFix.some(c => c.char === '\u2013');
+    let out = text
+      .replace(/\u201c/g,'&ldquo;').replace(/\u201d/g,'&rdquo;')
+      .replace(/\u2018/g,'&lsquo;').replace(/\u2019/g,'&rsquo;')
+      .replace(/\u2014/g,'&mdash;');
+    if (fixEndash) out = out.replace(/\u2013/g,'&ndash;');
+    return out
+      .replace(/\u2026/g,'...')
+      .replace(/\u00d7/g,'&times;')
+      .replace(/\u00f7/g,'&divide;')
+      .replace(/\u00a0/g,' ');
+  },
   'img-no-dimensions':  text=>text.replace(/<img([^>]*)>/gi,(_,a)=>'<img'+a.replace(/\s*\bwidth\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'').replace(/\s*\bheight\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi,'')+'>'),
   'mark-tag': (text, result) => {
     if (result && result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
@@ -4324,6 +4352,15 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
       const lineLinks = r.extra.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
       extraPanel =
         '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-bg);text-transform:uppercase;letter-spacing:.5px">⚠ En Dash — Context Review Required</div>'+
+        (()=>{
+          let snippetHtml='';
+          r.extra.lineNums.forEach(ln=>{
+            let safeText=esc(lines[ln-1]||'');
+            safeText=safeText.replace(/\u2013/g,'<mark style="background:#fef3c7;color:#92400e;padding:0 2px;border-radius:2px;font-weight:bold;">\u2013</mark>');
+            snippetHtml+='<div style="color:var(--text-dim);font-size:9px;margin-bottom:2px;user-select:none;text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
+          });
+          return '<div class="snippet-hdr" style="background:var(--warn-bg);color:var(--warn);border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;margin-bottom:0;border-radius:0 0 var(--r) var(--r);">'+snippetHtml+'</pre>';
+        })()+
         '<div style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:10px 12px 12px;margin-bottom:10px;">'+
           '<div style="font-size:12px;color:var(--text);margin-bottom:10px;">En dash detected — possible minus sign or a special character. Review context.</div>'+
           '<table style="border-collapse:collapse;font-size:12px;width:auto;">'+
@@ -4442,7 +4479,11 @@ function showToast(msg) {
 // If catId is given, restrict to items inside that category section element.
 function collectFixableResults(catId) {
   const results = [];
-  const seenGlobal = new Set(); // global fixers only need one result object each
+  // Most global fixers are stateless so we only need one result object each.
+  // special-chars-auto is result-aware (it skips the en dash when it was
+  // suppressed as a possible minus), so we collect ALL its results so the
+  // per-result pass in runBulkFix can apply the correct suppression per question.
+  const seenGlobal = new Set();
   for (const [uid, r] of Object.entries(resultRegistry)) {
     if (r.status === 'pass') continue;
     if (typeof autoFixers[r.rule.id] !== 'function') continue;
@@ -4452,7 +4493,7 @@ function collectFixableResults(catId) {
       const sec = document.getElementById(catId);
       if (!sec || !sec.contains(el)) continue;
     }
-    if (GLOBAL_FIXERS.has(r.rule.id)) {
+    if (GLOBAL_FIXERS.has(r.rule.id) && r.rule.id !== 'special-chars-auto') {
       if (seenGlobal.has(r.rule.id)) continue;
       seenGlobal.add(r.rule.id);
     }
@@ -4468,11 +4509,17 @@ function runBulkFix(fixableResults) {
   let text = rawBefore;
 
   // ── Pass 1: global stateless fixers ──────────────────────────────
+  // Most global fixers are truly stateless and only need to run once.
+  // special-chars-auto is an exception: it is result-aware (it skips replacing
+  // the en dash when that question's en dash was suppressed as a possible minus).
+  // So we run it once per result instead of deduplicating it to a single call.
   const pass1Ids = new Set();
   for (const { r } of fixableResults) {
     if (!GLOBAL_FIXERS.has(r.rule.id)) continue;
-    if (pass1Ids.has(r.rule.id)) continue;
-    pass1Ids.add(r.rule.id);
+    if (r.rule.id !== 'special-chars-auto') {
+      if (pass1Ids.has(r.rule.id)) continue;
+      pass1Ids.add(r.rule.id);
+    }
     const after = autoFixers[r.rule.id](text, r);
     if (after !== undefined) text = after;
   }
@@ -4518,7 +4565,8 @@ function runBulkFix(fixableResults) {
     if (after !== undefined && after !== text) text = after;
   }
 
-  const totalFixed = pass1Ids.size + pass2List.length;
+  const specialCharsAutoCount = fixableResults.filter(({ r }) => r.rule.id === 'special-chars-auto').length;
+  const totalFixed = pass1Ids.size + specialCharsAutoCount + pass2List.length;
 
   if (text === rawBefore) {
     showToast('✨ Nothing changed — fixes may already be applied.');
@@ -4596,16 +4644,20 @@ function applyFix(uid,event){
     // Save scroll position — cm.setValue() resets it to the top
     const scrollInfo = cm.getScrollInfo();
     const cursor = cm.getCursor();
-    const before=ta.value,after=fixer(before,result);
-    if(after!==before) ta.value=after;
+    const before=cm.getValue(),after=fixer(before,result);
+    if(after===before){
+      itemEl.classList.add('details-open');
+      return;
+    }
+    cm.operation(()=>{ cm.setValue(after); });
     Object.entries(resultRegistry).forEach(([itemUid,itemResult])=>{
       if(itemResult.rule.id!==rule.id) return;
       const el=document.getElementById(itemUid);
       if(!el||el.classList.contains('fixed')) return;
       if(itemUid !== uid) {
-        const siblingAfter = fixer(ta.value, itemResult);
-        if(siblingAfter === ta.value) return;
-        ta.value = siblingAfter;
+        const siblingAfter = fixer(cm.getValue(), itemResult);
+        if(siblingAfter === cm.getValue()) return;
+        cm.operation(()=>{ cm.setValue(siblingAfter); });
       }
       el.classList.remove('err','warn');el.classList.add('fixed');
       const ic=el.querySelector('.sev-icon');if(ic) ic.textContent='✦';
