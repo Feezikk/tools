@@ -2099,7 +2099,9 @@ const AssessmentChecker = (() => {
               i + 1, '°'));
           }
         } else if (rule.subtype === 'minus') {
-          // Math minus: look for dashes/en dashes used as subtraction or negative numbers
+          // Math minus: look for plain dashes used as subtraction or negative numbers.
+          // En dashes (–) in this context are handled exclusively by en-dash-context-check
+          // to avoid a duplicate result panel — skip them here.
           const isAnswerLine = /^\s*x?-/.test(line.trim());
           if (!isAnswerLine) {
             // Mask out text inside <code> or <pre> tags so we NEVER flag programming syntax
@@ -2112,22 +2114,17 @@ const AssessmentChecker = (() => {
               });
             }
 
-            const minusRe = /(?<=\s)(-|–)(?=\d|\s+[a-zA-Z0-9])/g;
+            // Only match plain hyphens/dashes (-), not en dashes (–)
+            const minusRe = /(?<=\s)(-)(?=\d|\s+[a-zA-Z0-9])/g;
 
             let m;
             while ((m = minusRe.exec(safeText)) !== null) {
-              const charFound = m[1];
-              const nextChar = safeText[m.index + 1] || '';
-              const displayFound = charFound + (nextChar.trim() ? nextChar : ' ');
-
-              // Grab the specific string block (e.g. " - " or " -5") for precise highlighting
-              const exactMatchStr = safeText.substring(m.index - 1, m.index + 2);
-
               const before = safeText.slice(Math.max(0, m.index - 5), m.index + 1);
               if (!/&\w*$/.test(before)) {
                 results.push(fail(rule,
-                  rule.message.replace('{line}', i + 1).replace('{found}', displayFound.trim()).replace('{fix}', 'if used as math minus, replace with &minus;'),
-                  i + 1, exactMatchStr)); // Passing exact match string prevents global replace bugs
+                  rule.message.replace('{line}', i + 1).replace('{found}', '-').replace('{fix}', 'if used as math minus, replace with &minus;'),
+                  i + 1, null,
+                  { type: 'minus-context', lineNums: [i + 1] }));
               }
             }
           }
@@ -4156,7 +4153,7 @@ function renderItem(r,lines){
                r.extra.type === 'group-meta-consistency' ||
                r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
                r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous' ||
-               r.extra.type === 'en-dash-context')) {
+               r.extra.type === 'en-dash-context' || r.extra.type === 'minus-context')) {
       // These have their own rich extra panels — build them the existing way then wrap
       fixPanelContent = buildExtraPanel(r, lines, uid, hasAuto) + contextPanel;
 
@@ -4375,6 +4372,33 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
             '<tr>'+
               '<td style="padding:5px 14px 5px 0;font-family:var(--mono);font-weight:700;color:var(--text);">&amp;ndash;</td>'+
               '<td style="padding:5px 0;color:var(--text-mid);">En dash &nbsp;<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);">(ranges, e.g. 2–4)</span></td>'+
+            '</tr>'+
+          '</table>'+
+          '<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">Appears on: '+lineLinks+'</div>'+
+        '</div>';
+  } else if(r.extra&&r.extra.type==='minus-context'){
+      const lineLinks = r.extra.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-bg);text-transform:uppercase;letter-spacing:.5px">⚠ Dash — Context Review Required</div>'+
+        (()=>{
+          let snippetHtml='';
+          r.extra.lineNums.forEach(ln=>{
+            let safeText=esc(lines[ln-1]||'');
+            safeText=safeText.replace(/(?<=\s)(-)(?=\d|\s)/g,'<mark style="background:#fef3c7;color:#92400e;padding:0 2px;border-radius:2px;font-weight:bold;">-</mark>');
+            snippetHtml+='<div style="color:var(--text-dim);font-size:9px;margin-bottom:2px;user-select:none;text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
+          });
+          return '<div class="snippet-hdr" style="background:var(--warn-bg);color:var(--warn);border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;margin-bottom:0;border-radius:0 0 var(--r) var(--r);">'+snippetHtml+'</pre>';
+        })()+
+        '<div style="border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:10px 12px 12px;margin-bottom:10px;">'+
+          '<div style="font-size:12px;color:var(--text);margin-bottom:10px;">Dash detected — possible math minus sign. Review context.</div>'+
+          '<table style="border-collapse:collapse;font-size:12px;width:auto;">'+
+            '<tr style="border-bottom:1px solid var(--border)">'+
+              '<td style="padding:5px 14px 5px 0;font-family:var(--mono);font-weight:700;color:var(--text);">&amp;minus;</td>'+
+              '<td style="padding:5px 0;color:var(--text-mid);">Minus Sign &nbsp;<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);">(subtraction, negative numbers)</span></td>'+
+            '</tr>'+
+            '<tr>'+
+              '<td style="padding:5px 14px 5px 0;font-family:var(--mono);font-weight:700;color:var(--text);">-</td>'+
+              '<td style="padding:5px 0;color:var(--text-mid);">Hyphen &nbsp;<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);">(leave as-is if used as a hyphen)</span></td>'+
             '</tr>'+
           '</table>'+
           '<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">Appears on: '+lineLinks+'</div>'+
