@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.32</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.33</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -4155,7 +4155,8 @@ function renderItem(r,lines){
                r.extra.type === 'group-points' || r.extra.type === 'group-type-consistency' ||
                r.extra.type === 'group-meta-consistency' ||
                r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
-               r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous')) {
+               r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous' ||
+               r.extra.type === 'en-dash-context')) {
       // These have their own rich extra panels — build them the existing way then wrap
       fixPanelContent = buildExtraPanel(r, lines, uid, hasAuto) + contextPanel;
 
@@ -4318,12 +4319,15 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
       affectedLines.forEach(ln => {
         let text = lines[ln-1] || '';
         let safeText = esc(text);
-        r.extra.chars.forEach(c => {
-          if (c.lineNums.includes(ln)) {
-            const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
-            safeText = safeText.replace(charRegex, '<mark style="background:#fee2e2;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:bold;">'+esc(c.char)+'</mark>');
-          }
-        });
+       r.extra.chars.forEach(c => {
+		  if (c.lineNums.includes(ln)) {
+			const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+			const markStyle = c.minusOverlap
+			  ? 'background:#fef3c7;color:#92400e;padding:0 2px;border-radius:2px;font-weight:bold;'
+			  : 'background:#fee2e2;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:bold;';
+			safeText = safeText.replace(charRegex, '<mark style="'+markStyle+'">'+esc(c.char)+'</mark>');
+		  }
+		});
         snippetHtml += '<div style="color:var(--text-dim);font-size:9px;margin-bottom:2px;user-select:none;text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
       });
       const previewPanel = '<div><div class="snippet-hdr" style="background:'+hdrBg+';color:'+hdrColor+';border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;margin-bottom:0;border-radius:0;">'+snippetHtml+'</pre></div>';
