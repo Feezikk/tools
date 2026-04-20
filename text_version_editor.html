@@ -247,6 +247,7 @@
         .btn-group button:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; margin-right: 0; }
         .btn-group button:hover { background: var(--bg-hover); z-index: 2; border-color: var(--border-strong); color: var(--text-main); }
         .toggle-active { background: var(--color-teal) !important; color: white !important; border-color: var(--color-teal-hover) !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+        .spell-active { background: var(--border-strong) !important; color: var(--text-main) !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); }
 
         .btn-macro { color: var(--text-main) !important; }
         .btn-macro-danger { color: var(--color-danger) !important; }
@@ -354,8 +355,8 @@
         <symbol id="icon-li" viewBox="0 0 24 24"><path d="M4 11h2v2H4v-2zm-2 0h2v2H2v-2zm12-4h8v2h-8V7zm0 6h8v2h-8v-2zm0 6h8v2h-8v-2zM8 7h4v2H8V7zm0 6h4v2H8v-2zm0 6h4v2H8v-2z" opacity="0.6"/><path d="M7 11h2v2H7z"/></symbol>
         <symbol id="icon-table" viewBox="0 0 24 24"><path d="M20 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 2v3H5V5h15zm-5 14h-5v-9h5v9zM5 10h3v9H5v-9zm15 9h-3v-9h3v9z"/></symbol>
         <symbol id="icon-table-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
-        <symbol id="icon-fold" viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></symbol>
-        <symbol id="icon-unfold" viewBox="0 0 24 24"><path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"/></symbol>
+       <symbol id="icon-fold" viewBox="0 0 24 24"><path d="M 13 4 L 15 4 L 15 7.59 L 19.59 3 L 21 4.41 L 16.41 9 L 20 9 L 20 11 L 13 11 Z M 11 20 L 9 20 L 9 16.41 L 4.41 21 L 3 19.59 L 7.59 15 L 4 15 L 4 13 L 11 13 Z"/></symbol>
+        <symbol id="icon-unfold" viewBox="0 0 24 24"><path d="M 14 3 L 21 3 L 21 10 L 19 10 L 19 6.41 L 14.41 11 L 13 9.59 L 17.59 5 L 14 5 Z M 10 21 L 3 21 L 3 14 L 5 14 L 5 17.59 L 9.59 13 L 11 14.41 L 6.41 19 L 10 19 Z"/></symbol>
         <symbol id="icon-br" viewBox="0 0 24 24"><path d="M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7z"/></symbol>
         <symbol id="icon-dash-em" viewBox="0 0 24 24"><path d="M4 11h16v2H4z"/></symbol>
         <symbol id="icon-dash-en" viewBox="0 0 24 24"><path d="M6 11h12v2H6z"/></symbol>
@@ -364,8 +365,9 @@
         <symbol id="icon-span" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></symbol>
         <symbol id="icon-conv" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></symbol>
         <symbol id="icon-rev" viewBox="0 0 24 24"><path d="M18.5 12c0-3.59-2.91-6.5-6.5-6.5h-10l4-4-1.41-1.41L.17 4.5 4.59 8.91 6 7.5l-4-4 10 0c2.48 0 4.5 2.02 4.5 4.5s-2.02 4.5-4.5 4.5h-10v2h10c3.59 0 6.5-2.91 6.5-6.5z"/></symbol>
-        <symbol id="icon-quote" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></symbol>
+       <symbol id="icon-quote" viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></symbol>
        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+        <symbol id="icon-spellcheck" viewBox="0 0 24 24"><path d="M12.45 16h2.09L9.43 3H7.57L2.46 16h2.09l1.12-3h5.64l1.14 3zm-6.02-5L8.5 5.48 10.57 11H6.43zm15.16.59l-8.09 8.09L9.83 16l-1.41 1.41 5.09 5.09L23 13z"/></symbol>
         <symbol id="icon-align-left" viewBox="0 0 24 24"><path d="M15 15H3v2h12v-2zm0-8H3v2h12V7zM3 13h18v-2H3v2zm0 8h18v-2H3v2zM3 3v2h18V3H3z"/></symbol>
         <symbol id="icon-align-center" viewBox="0 0 24 24"><path d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/></symbol>
         <symbol id="icon-align-right" viewBox="0 0 24 24"><path d="M3 21h18v-2H3v2zm6-4h12v-2H9v2zm-6-4h18v-2H3v2zm6-4h12V7H9v2zM3 3v2h18V3H3z"/></symbol>
@@ -377,7 +379,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.40</h1>
+            <h1>Text Version Editor v2.50</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -390,7 +392,7 @@
             
             <button class="icon-btn" data-action="toggleDarkMode"><span id="darkModeIcon">🌙</span> <span id="darkModeText">Dark</span></button>
             <button class="icon-btn action-btn-header btn-clear-all" data-action="clearAll" title="Clear all text (Ctrl+Z to undo)">Clear</button>
-            <button class="icon-btn action-btn-header btn-reset" data-action="resetEditor" title="Discard file and return to start screen">Reset</button>
+            <button class="icon-btn action-btn-header btn-reset" data-action="resetEditor" title="Discard work and return to start screen">Reset</button>
         </div>
     </div>
 
@@ -421,7 +423,7 @@
             </div>
             <button class="btn-action" data-action="executeInsert" style="justify-content:center; margin-top:5px; background: var(--color-accent);">Insert into Document</button>
             <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 5px; background: var(--bg-hover); padding: 8px; border-radius: 6px;">
-                <strong>⚡ Power User Shortcuts:</strong><br>
+                <strong>⚡Keyboard Shortcuts:</strong><br>
                 <strong>Alt + S</strong> to quickly insert Screen Text.<br>
                 <strong>Alt + L</strong> to quickly insert Custom Label.<br>
                 <em>(These shortcuts use your P and B settings above)</em>
@@ -478,6 +480,7 @@
     <div class="toolbar hidden" id="toolbar">
         <div class="btn-group">
             <button data-action="undo" title="Undo (Ctrl+Z)" style="width:42px;"><svg class="icon"><use href="#icon-undo"></use></svg></button>
+			<button data-action="toggleSpellcheck" title="Toggle Spell Check"><svg class="icon"><use href="#icon-spellcheck"></use></svg></button>
         </div>
         
         <div class="toolbar-divider"></div>
@@ -519,7 +522,7 @@
         <div class="toolbar-divider"></div>
 
         <div class="btn-group">
-            <button data-action="insert" data-str="<br/>" title="Line Break (Shift+Enter)"><svg class="icon"><use href="#icon-br"></use></svg></button>
+            <button data-action="insert" data-str="<br/>" title="Line Break (Shift+Enter)" style="font-family: monospace; font-weight: bold; font-size: 12px; padding: 0 8px;">&lt;br/&gt;</button>
             <button data-action="insert" data-str="&amp;mdash;" title="Em Dash (Long)"><svg class="icon"><use href="#icon-dash-em"></use></svg></button>
             <button data-action="insert" data-str="&amp;ndash;" title="En Dash (Medium)"><svg class="icon"><use href="#icon-dash-en"></use></svg></button>
         </div>
@@ -660,13 +663,13 @@
     <div class="context-menu-item" data-action="ctx-p">Wrap in Paragraph</div>
 	<div class="context-menu-divider"></div>
 	<div class="context-menu-item" data-action="ctx-sentencecase">Sentence Case</div> 
-	<div class="context-menu-item" data-action="ctx-periodspacecap">Period Space Cap</div>
+	<div class="context-menu-item" data-action="ctx-periodspacecap">Period Space Capital</div>
 	<div class="context-menu-divider"></div>
     <div class="context-menu-item" data-action="ctx-bold"><strong>Bold</strong></div>
     <div class="context-menu-item" data-action="ctx-italic"><em>Italic</em></div>
 	<div class="context-menu-divider"></div>
     <div class="context-menu-item" data-action="ctx-copy">Copy</div>
-    <div class="context-menu-item" data-action="ctx-paste">Paste</div> <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="ctx-paste">Paste</div> 
 	<div class="context-menu-divider"></div>
     <div class="context-menu-item" style="color: var(--color-danger);" data-action="ctx-cleartags">Clear Tags</div>
 </div>
@@ -1168,18 +1171,18 @@ const App = (function() {
         convert(direction) { // direction: 'toEntities' or 'toChars'
             const lang = document.getElementById('langSelect').value; if (lang === 'none' || !CONFIG.LANGUAGES[lang]) return;
             State.save(); let text = DOM.input.value, count = 0;
-            CONFIG.LANGUAGES[lang].chars.forEach(item => {
-                const search1 = direction === 'toEntities' ? item.c : item.e, replace1 = direction === 'toEntities' ? item.e : item.c;
-                const search2 = direction === 'toEntities' ? item.uc : item.ue, replace2 = direction === 'toEntities' ? item.ue : item.uc;
-                
-               if (search1 && replace1) { 
-                    const r = new RegExp(search1.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); 
-                    text = text.replace(r, () => { count++; return replace1; }); 
-                }
-                if (search2 && replace2 && search2 !== search1) { 
-                    const r = new RegExp(search2.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'); 
-                    text = text.replace(r, () => { count++; return replace2; }); 
-                }
+            // Pre-compile all regexes before iterating to avoid repeated compilation
+            const pairs = CONFIG.LANGUAGES[lang].chars.map(item => ({
+                r1: item.c ? new RegExp(item.c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g') : null,
+                s1: direction === 'toEntities' ? item.c : item.e,
+                t1: direction === 'toEntities' ? item.e : item.c,
+                r2: (item.uc && item.uc !== item.c) ? new RegExp(item.uc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g') : null,
+                s2: direction === 'toEntities' ? item.uc : item.ue,
+                t2: direction === 'toEntities' ? item.ue : item.uc,
+            }));
+            pairs.forEach(({ r1, s1, t1, r2, s2, t2 }) => {
+                if (r1 && s1 && t1) text = text.replace(r1, () => { count++; return t1; });
+                if (r2 && s2 && t2 && s2 !== s1) text = text.replace(r2, () => { count++; return t2; });
             });
             if (count > 0) { DOM.input.value = text; Editor.updateHighlight(); DOM.showToast(`${direction === 'toEntities' ? 'Converted' : 'Reverted'} ${count} items`, 'success'); }
         }
@@ -1218,7 +1221,8 @@ const App = (function() {
         },
         highlightGrid(tr, tc) {
             document.getElementById('gridLabel').innerText = `${tc+1} x ${tr+1} Table`;
-            Array.from(document.getElementById('gridArea').getElementsByClassName('grid-cell')).forEach(cell => {
+            const cells = document.getElementById('gridArea').querySelectorAll('.grid-cell');
+            cells.forEach(cell => {
                 cell.classList.toggle('active', parseInt(cell.dataset.r) <= tr && parseInt(cell.dataset.c) <= tc);
             });
         },
@@ -1557,8 +1561,10 @@ const App = (function() {
             DOM.input.setRangeText(txt.replace(/<[^>]*>/g, ''), s, e, 'select'); Editor.updateHighlight();
         },
         compress() {
-            State.save(); const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value.substring(s,e);
-            if(txt) DOM.input.setRangeText(txt.replace(/\s+/g, ' ').trim(), s, e, 'select'); else DOM.input.value = DOM.input.value.replace(/\s+/g, ' ').trim();
+            const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value.substring(s,e);
+            State.save();
+            if(txt) DOM.input.setRangeText(txt.replace(/\s+/g, ' ').trim(), s, e, 'select'); 
+            else { DOM.input.value = DOM.input.value.replace(/\s+/g, ' ').trim(); State.save(); }
             Editor.updateHighlight();
         },
        customTag(label, useP, useB) {
@@ -1579,25 +1585,21 @@ const App = (function() {
             Editor.updateHighlight();
             DOM.input.focus(); // <--- This forces the blinking cursor to reappear!
         },
-        copy() {
-            const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
-            const ta = document.createElement("textarea"); 
-            ta.value = txt; 
-            ta.style.position = "fixed"; 
-            ta.style.left = "-9999px"; 
-            document.body.appendChild(ta); 
-            ta.focus(); 
-            ta.select(); 
-            
-            // Attach the secret handshake specifically to this temporary element
-            ta.addEventListener('copy', e => {
-                e.clipboardData.setData('text/plain', txt);
-                e.clipboardData.setData('application/x-tve-internal', 'true');
-                e.preventDefault();
-            });
-
-            try { document.execCommand('copy'); this.copyAnim(); } catch(e) {} 
-            document.body.removeChild(ta);
+        async copy() {
+            const txt = Editor.getUnfoldedText();
+            try {
+                await navigator.clipboard.writeText(txt);
+                this.copyAnim();
+            } catch(e) {
+                // Fallback for browsers that block clipboard API without user gesture
+                const ta = document.createElement("textarea");
+                ta.value = txt;
+                ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+                document.body.appendChild(ta);
+                ta.focus(); ta.select();
+                try { document.execCommand('copy'); this.copyAnim(); } catch(e2) { DOM.showToast("Copy failed. Please use Ctrl+A then Ctrl+C.", "error"); }
+                document.body.removeChild(ta);
+            }
         },
         copyAnim() { const b = document.getElementById('copyBtn'), o = b.innerHTML; b.innerHTML = '<svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-check"></use></svg> Copied!'; b.style.background="var(--color-success)"; setTimeout(()=>{b.innerHTML=o;b.style.background="";},2000); DOM.showToast("Copied!", "success"); },
         
@@ -1639,7 +1641,7 @@ const App = (function() {
         },
 
         async saveTxt() {
-            const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
+            const txt = Editor.getUnfoldedText();
             if(window.showSaveFilePicker) { try { const h = await window.showSaveFilePicker({suggestedName:State.fileName, types:[{accept:{'text/plain':['.txt']}}]}); const w = await h.createWritable(); await w.write(txt); await w.close(); DOM.showToast("Saved!", "success"); return; } catch(e){if(e.name!=='AbortError')console.error(e);return;} }
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'})); a.download = State.fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
@@ -1656,12 +1658,20 @@ const App = (function() {
 
         // Intercept right-click on the textarea
         DOM.input.addEventListener('contextmenu', e => {
+            // Bypass custom menu if holding Shift (allows native spellcheck suggestions!)
+            if (e.shiftKey) return; 
+            
             e.preventDefault(); // Stop default browser menu
             
-            // Position the menu at the cursor
-            ctxMenu.style.left = `${e.pageX}px`;
-            ctxMenu.style.top = `${e.pageY}px`;
+            // Position the menu, then clamp to viewport so it never clips off-screen
+            ctxMenu.style.left = '0px';
+            ctxMenu.style.top = '0px';
             ctxMenu.classList.add('active');
+            const menuW = ctxMenu.offsetWidth, menuH = ctxMenu.offsetHeight;
+            const x = Math.min(e.pageX, window.innerWidth - menuW - 8);
+            const y = Math.min(e.pageY, window.scrollY + window.innerHeight - menuH - 8);
+            ctxMenu.style.left = `${x}px`;
+            ctxMenu.style.top = `${y}px`;
         });
 
         // Hide the menu when clicking anywhere else
@@ -1686,9 +1696,10 @@ const App = (function() {
             else if (action === 'ctx-sentencecase') Tools.sentenceCase();
             else if (action === 'ctx-periodspacecap') Tools.periodSpaceCapital();
             else if (action === 'ctx-copy') {
-                DOM.input.focus(); // Re-focus the editor first so the browser knows what to copy
-                document.execCommand('copy');
-                DOM.showToast("Selection copied!", "success");
+                const start = DOM.input.selectionStart, end = DOM.input.selectionEnd;
+                const sel = DOM.input.value.substring(start, end);
+                if (!sel) return DOM.showToast("No text selected.", "error");
+                navigator.clipboard.writeText(sel).then(() => DOM.showToast("Selection copied!", "success")).catch(() => DOM.showToast("Copy failed.", "error"));
             }
             else if (action === 'ctx-paste') Tools.pasteAtCursor(); // ADD THIS LINE
             else if (action === 'ctx-cleartags') Tools.clearTags();
@@ -1740,6 +1751,27 @@ const App = (function() {
             const btn = e.target.closest('button'); if(!btn) return; const a = btn.dataset.action;
             if(a==='undo') State.undo(); else if(a==='wrap') Editor.wrap(btn.dataset.tag); else if(a==='list') Editor.insertList(btn.dataset.tag); else if(a==='toggleTablePicker') Table.togglePicker(); else if(a==='editTable') Table.editExisting(); else if(a==='foldTable') Editor.foldTableAtCursor(); else if(a==='unfoldTables') Editor.unfoldAllTables(); else if(a==='insert') Editor.insertStr(btn.dataset.str);
             else if(a==='combine') Tools.combine(); else if(a==='clearTags') Tools.clearTags(); else if(a==='compress') Tools.compress();
+          else if(a==='toggleSpellcheck') {
+                const isActive = DOM.input.getAttribute('spellcheck') === 'true';
+                const scrollPos = DOM.input.scrollTop;
+                const start = DOM.input.selectionStart;
+                const end = DOM.input.selectionEnd;
+
+                // Blur FIRST — browser won't re-evaluate spellcheck on a focused element
+                DOM.input.blur();
+
+                // Set the attribute while unfocused so the browser picks it up fresh on next focus
+                DOM.input.setAttribute('spellcheck', isActive ? 'false' : 'true');
+                btn.classList.toggle('spell-active', !isActive);
+                DOM.showToast(isActive ? "Spell check disabled" : "Spell check enabled", "info");
+
+                // Re-focus after a tick — browser now sees the new spellcheck value on focus
+                setTimeout(() => {
+                    DOM.input.focus();
+                    DOM.input.setSelectionRange(start, end);
+                    DOM.input.scrollTop = scrollPos;
+                }, 50);
+            }
             else if(a==='openInsertModal') { insertModal.style.display = insertModal.style.display === 'flex' ? 'none' : 'flex'; }
         });
 
