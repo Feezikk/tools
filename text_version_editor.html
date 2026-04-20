@@ -200,6 +200,34 @@
         .modal-close { position: absolute; top: -10px; right: -10px; background: var(--color-danger); border: 2px solid var(--bg-surface); color: white; font-size: 16px; cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); transition: all 0.2s; }
         .modal-close:hover { background: var(--color-danger-hover); transform: scale(1.1); }
 
+        /* --- CONTEXT MENU --- */
+        .context-menu {
+            position: absolute;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            box-shadow: var(--shadow-lg);
+            border-radius: 8px;
+            padding: 6px 0;
+            z-index: 10000;
+            display: none;
+            min-width: 180px;
+            animation: popUp 0.15s ease-out;
+        }
+        .context-menu.active { display: block; }
+        .context-menu-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: background 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .context-menu-item:hover { background: var(--bg-hover); color: var(--color-primary); }
+        .context-menu-divider { height: 1px; background: var(--border-main); margin: 4px 0; }
+
         /* --- TOOLBARS --- */
         .toolbar { padding: 12px 20px; background: var(--bg-surface-alt); border-bottom: 1px solid var(--border-main); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex-shrink: 0; position: relative; }
         .toolbar.hidden { display: none; }
@@ -349,7 +377,7 @@
 <div class="container">
     <div class="header">
         <div class="header-info">
-            <h1>Text Version Editor v2.30</h1>
+            <h1>Text Version Editor v2.40</h1>
             <p>Create and Edit Text Versions</p>
         </div>
         <div class="header-controls">
@@ -408,7 +436,7 @@
 
         <div class="upload-area" id="uploadArea">
             <svg class="upload-icon"><use href="#icon-upload"></use></svg>
-            <div class="upload-title">Drag & Drop SRT or TXT</div>
+            <div class="upload-title">Drag &amp; Drop SRT or TXT</div>
             <div class="upload-subtitle">or click to browse</div>
         </div>
 
@@ -538,7 +566,7 @@
 
     <div class="action-footer hidden" id="actionFooter">
         <div style="margin-right: auto;">
-            <button class="btn-action" data-action="toggleFindReplace" style="background: var(--bg-surface-alt); color: var(--text-main); border: 1px solid var(--border-strong);">🔍 Find & Replace</button>
+            <button class="btn-action" data-action="toggleFindReplace" style="background: var(--bg-surface-alt); color: var(--text-main); border: 1px solid var(--border-strong);">🔍 Find &amp; Replace</button>
         </div>
         <button class="btn-action copy-btn" id="copyBtn" data-action="copy"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-copy"></use></svg> Copy</button>
         <button class="btn-action save-btn" data-action="save"><svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-save"></use></svg> Save</button>
@@ -625,6 +653,22 @@
             </div>
         </div>
     </div>
+</div>
+
+<div id="customContextMenu" class="context-menu">
+	<div class="context-menu-item" data-action="ctx-combine">Combine Lines</div>
+    <div class="context-menu-item" data-action="ctx-p">Wrap in Paragraph</div>
+	<div class="context-menu-divider"></div>
+	<div class="context-menu-item" data-action="ctx-sentencecase">Sentence Case</div> 
+	<div class="context-menu-item" data-action="ctx-periodspacecap">Period Space Cap</div>
+	<div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="ctx-bold"><strong>Bold</strong></div>
+    <div class="context-menu-item" data-action="ctx-italic"><em>Italic</em></div>
+	<div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="ctx-copy">Copy</div>
+    <div class="context-menu-item" data-action="ctx-paste">Paste</div> <div class="context-menu-divider"></div>
+	<div class="context-menu-divider"></div>
+    <div class="context-menu-item" style="color: var(--color-danger);" data-action="ctx-cleartags">Clear Tags</div>
 </div>
 
 <script>
@@ -1427,6 +1471,86 @@ const App = (function() {
             const lines = t.substring(s,e).split('\n').map(l=>l.replace(/<\/?(p|h[1-6]|div|ul|ol|li|br|blockquote)[^>]*>/gi,"").trim()).filter(l=>l!=="");
             DOM.input.setRangeText(`\n<p>${lines.join(' ')}</p>\n`, s, e, 'select'); Editor.updateHighlight(); DOM.showToast("Combined!", 'success');
         },
+		sentenceCase() {
+            State.save(); 
+            const s = DOM.input.selectionStart, e = DOM.input.selectionEnd;
+            let sel = DOM.input.value.substring(s, e);
+            if (!sel) return DOM.showToast("Select text to apply Sentence Case.", "error");
+
+            // 1. Capitalize first letter (safely skipping HTML tags and HTML entities)
+            let capitalized = false;
+            let res = sel.replace(/<[^>]+>|&[a-zA-Z0-9#]+;|[a-zA-Z]/g, (match) => {
+                // If the match is a tag or entity, ignore it
+                if (match.startsWith('<') || match.startsWith('&')) return match;
+                // If it's the first actual letter, capitalize it
+                if (!capitalized) {
+                    capitalized = true;
+                    return match.toUpperCase();
+                }
+                return match; // Leave remaining letters alone
+            });
+            
+            // 2. Add period securely inside trailing HTML tags or spaces
+            // This groups any combination of closing tags (</p>) and spaces at the end
+            let endMatch = res.match(/((?:<[^>]+>|\s)*)$/);
+            let trailingStuff = endMatch ? endMatch[0] : "";
+            let coreText = res.substring(0, res.length - trailingStuff.length);
+            
+            // Apply the period to the core text, before the trailing tags get added back
+            if (coreText.length > 0 && !/[.?!;:]$/.test(coreText)) {
+                coreText += ".";
+            }
+            
+            res = coreText + trailingStuff;
+
+            DOM.input.setRangeText(res, s, e, 'select');
+            Editor.updateHighlight();
+        },
+		periodSpaceCapital() {
+            State.save(); 
+            const s = DOM.input.selectionStart, e = DOM.input.selectionEnd;
+            let sel = DOM.input.value.substring(s, e);
+            if (!sel) return DOM.showToast("Select text first.", "error");
+
+            // 1. Split the selection at the FIRST block of whitespace
+            const match = sel.match(/^([\s\S]*?)\s+([\s\S]*)$/);
+            
+            let p1 = "", p2 = sel;
+            if (match) {
+                p1 = match[1]; // Everything before the space
+                p2 = match[2]; // Everything after the space
+            }
+
+            // 2. Safely add a period to the end of Part 1 (tucking it inside trailing HTML tags like </p>)
+            let endMatch = p1.match(/((?:<[^>]+>)*)$/);
+            let trailingTags = endMatch ? endMatch[0] : "";
+            let coreText = p1.substring(0, p1.length - trailingTags.length);
+            
+            if (coreText.length > 0) {
+                coreText = coreText.replace(/[.?!;:]+$/, ""); // Prevent double punctuation like ".. A"
+                coreText += ".";
+            } else {
+                coreText = "."; // Fallback for ideal selection " a"
+            }
+            p1 = coreText + trailingTags;
+
+            // 3. Capitalize the first actual letter of Part 2 (ignoring tags/entities)
+            let capitalized = false;
+            p2 = p2.replace(/<[^>]+>|&[a-zA-Z0-9#]+;|[a-zA-Z]/g, (m) => {
+                if (m.startsWith('<') || m.startsWith('&')) return m;
+                if (!capitalized) {
+                    capitalized = true;
+                    return m.toUpperCase();
+                }
+                return m;
+            });
+
+            // 4. Recombine with exactly ONE space
+            const res = p1 + " " + p2;
+
+            DOM.input.setRangeText(res, s, e, 'select');
+            Editor.updateHighlight();
+        },
         clearTags() {
             State.save(); const s=DOM.input.selectionStart, e=DOM.input.selectionEnd, txt=DOM.input.value.substring(s,e);
             if(!txt) return DOM.showToast("Select text to clear tags.", 'error');
@@ -1476,6 +1600,44 @@ const App = (function() {
             document.body.removeChild(ta);
         },
         copyAnim() { const b = document.getElementById('copyBtn'), o = b.innerHTML; b.innerHTML = '<svg style="width:14px;height:14px;fill:currentColor;"><use href="#icon-check"></use></svg> Copied!'; b.style.background="var(--color-success)"; setTimeout(()=>{b.innerHTML=o;b.style.background="";},2000); DOM.showToast("Copied!", "success"); },
+        
+        async pasteAtCursor() {
+            DOM.input.focus();
+            try {
+                // Try modern async clipboard API to grab HTML or Plain Text
+                const items = await navigator.clipboard.read(); 
+                let pasted = false;
+                for (const i of items) {
+                    let html="", plain="";
+                    if (i.types.includes('text/plain')) plain = await (await i.getType('text/plain')).text();
+                    if (i.types.includes('text/html') && !document.getElementById('rawTextCheckbox').checked) html = await (await i.getType('text/html')).text();
+                    
+                    if (plain && /<(h[1-6]|p|ul|ol|li|table|div|span|blockquote|a|b|i|strong|em)\b/i.test(plain)) { 
+                        Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(plain)), true); 
+                        DOM.showToast('HTML code pasted!', 'success'); pasted=true; break; 
+                    }
+                    if (html) { 
+                        Editor.insertStr(Parser.sanitizeHTML(html.includes('urn:schemas-microsoft-com:office:word') || html.includes('mso-list') ? Parser.cleanWordHTML(html) : html), true); 
+                        DOM.showToast('Semantic HTML Preserved!', 'success'); pasted=true; break; 
+                    }
+                }
+                if (!pasted) { 
+                    let txt = await navigator.clipboard.readText(); 
+                    if(!txt) return DOM.showToast('Clipboard empty', 'error'); 
+                    Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(txt)), true); 
+                    DOM.showToast('Text pasted', 'success'); 
+                }
+            } catch (err) { 
+                // Fallback for browsers that block full clipboard read but allow simple text
+                try {
+                    let txt = await navigator.clipboard.readText(); 
+                    if(txt) Editor.insertStr(Parser.processTXT(Parser.cleanPlainPaste(txt)), true); 
+                } catch (e) {
+                    DOM.showToast('Browser blocked paste. Please use Ctrl+V.', 'error');
+                }
+            }
+        },
+
         async saveTxt() {
             const txt = Editor.getUnfoldedText ? Editor.getUnfoldedText() : DOM.input.value;
             if(window.showSaveFilePicker) { try { const h = await window.showSaveFilePicker({suggestedName:State.fileName, types:[{accept:{'text/plain':['.txt']}}]}); const w = await h.createWritable(); await w.write(txt); await w.close(); DOM.showToast("Saved!", "success"); return; } catch(e){if(e.name!=='AbortError')console.error(e);return;} }
@@ -1489,6 +1651,53 @@ const App = (function() {
         // Find Replace Modal
         const fr = { m: document.getElementById('findReplaceModal'), i: document.getElementById('findInput'), r: document.getElementById('replaceInput') };
         
+        // --- CONTEXT MENU EVENTS ---
+        const ctxMenu = document.getElementById('customContextMenu');
+
+        // Intercept right-click on the textarea
+        DOM.input.addEventListener('contextmenu', e => {
+            e.preventDefault(); // Stop default browser menu
+            
+            // Position the menu at the cursor
+            ctxMenu.style.left = `${e.pageX}px`;
+            ctxMenu.style.top = `${e.pageY}px`;
+            ctxMenu.classList.add('active');
+        });
+
+        // Hide the menu when clicking anywhere else
+        document.addEventListener('click', e => {
+            if (!ctxMenu.contains(e.target)) {
+                ctxMenu.classList.remove('active');
+            }
+        });
+
+        // Handle clicks on the context menu items
+        ctxMenu.addEventListener('click', e => {
+            const item = e.target.closest('.context-menu-item');
+            if (!item) return;
+            
+            const action = item.dataset.action;
+
+           // Route the action to your existing functions
+            if (action === 'ctx-p') Editor.wrap('p');
+            else if (action === 'ctx-bold') Editor.wrap('strong');
+            else if (action === 'ctx-italic') Editor.wrap('em');
+            else if (action === 'ctx-combine') Tools.combine();
+            else if (action === 'ctx-sentencecase') Tools.sentenceCase();
+            else if (action === 'ctx-periodspacecap') Tools.periodSpaceCapital();
+            else if (action === 'ctx-copy') {
+                DOM.input.focus(); // Re-focus the editor first so the browser knows what to copy
+                document.execCommand('copy');
+                DOM.showToast("Selection copied!", "success");
+            }
+            else if (action === 'ctx-paste') Tools.pasteAtCursor(); // ADD THIS LINE
+            else if (action === 'ctx-cleartags') Tools.clearTags();
+
+            // Hide menu after action
+            ctxMenu.classList.remove('active');
+            DOM.input.focus();
+        });
+
         document.querySelector('.header-controls').addEventListener('click', e => {
             const btn = e.target.closest('button'); if(!btn) return;
             const a = btn.dataset.action;
