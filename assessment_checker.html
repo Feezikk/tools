@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.34</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.37</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1748,9 +1748,10 @@ const AssessmentChecker = (() => {
       return lines.flatMap((line, i) => {
         const imgs=line.match(/<img[^>]*>/gi)||[];
         return imgs.flatMap(img=>{
+          const img2=img.replace(/(=\s*"[^"]*"|=\s*'[^']*')/g,'=""');
           const re=/\b([a-zA-Z][a-zA-Z0-9-]*)\s*=/g;
           let m, found=[];
-          while((m=re.exec(img))!==null){
+          while((m=re.exec(img2))!==null){
             const name=m[1].toLowerCase();
             if(!ALLOWED.includes(name)){
               // Ignore align="absmiddle" so the dedicated rule can handle it alone
