@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.37</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.39</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -973,6 +973,11 @@ const RULES_DATA = {
 // ─────────────────────────────────────────────────────────────────
 // CHECKER ENGINE
 // ─────────────────────────────────────────────────────────────────
+
+// Named constants — avoids magic numbers scattered through the codebase
+const MATCHING_RIGHT_SIDE_MAX_CHARS = 42; // matching:label: right-side visible character limit
+const AUDIT_RENDER_DELAY_MS = 50;         // setTimeout delay to allow spinner to paint before audit runs
+
 const AssessmentChecker = (() => {
   const Q_CODES = ['mc:radio:','essay:','fib:','matching:label:','tf:'];
 
@@ -1082,11 +1087,13 @@ const AssessmentChecker = (() => {
     },
 
     'group-sequence'(rule, qs) {
-      let max = 0;
+      let max = 0;      // running highest group seen (for violation detection)
+      let prev = 0;     // immediately previous group seen (for accurate error messages)
       const violations = [];
       for (const q of qs) {
         if (q.group === null) continue;
-        if (q.group < max) violations.push({ q, max });
+        if (q.group < max) violations.push({ q, max: prev });
+        prev = q.group;
         max = Math.max(max, q.group);
       }
       if (!violations.length) return [];
@@ -1261,7 +1268,9 @@ const AssessmentChecker = (() => {
         // Fire if neither a valid 'true' nor a valid 'false' answer is present
         // This also catches misspellings like 'tru', 'flase', 'True', etc.
         if (!a.includes('true') && !a.includes('false')) {
-          const found = q.answers.length ? ' (found: "' + q.answers.map(a=>a.text.trim()).join('", "') + '")' : '';
+          const escTxt = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+          const escAnswers = q.answers.map(ans => escTxt(ans.text.trim())).join('", "');
+          const found = q.answers.length ? ' (found: "' + escAnswers + '")' : '';
           return [fail(rule, rule.message.replace('{num}',q.num) + found, q.startLine)];
         }
         return [];
@@ -1284,24 +1293,35 @@ const AssessmentChecker = (() => {
 
         let checkLine = line
             .replace(/<\/?mark\b[^>]*>?/gi, '') 
-            .replace(/\/?mark\b[^>]*>/gi, '');  
+            .replace(/\/?mark\b[^>]*>/gi, '');
 
-        const o=(checkLine.match(/</g)||[]).length, c=(checkLine.match(/>/g)||[]).length;
+        // Strip quoted attribute values (double or single) before counting angle brackets.
+        // This prevents < and > that appear legitimately inside alt="a > b" or similar
+        // attribute values from being mistaken for structural tag punctuation.
+        const checkLineNoAttrs = checkLine
+            .replace(/"[^"]*"/g, '""')
+            .replace(/'[^']*'/g, "''");
+
+        const o=(checkLineNoAttrs.match(/</g)||[]).length, c=(checkLineNoAttrs.match(/>/g)||[]).length;
         if (o===c) return [];
         
         // If there's an unclosed <, check if it actually looks like a known HTML tag.
         // If it doesn't (e.g. "< variable"), we ignore it here and let lt-gt-entities catch it.
+        // Use checkLineNoAttrs so that < inside quoted attribute values (e.g. alt="x < y")
+        // doesn't produce a false chunk that matches a tag name.
         let hasMalformedKnownTag = false;
         let badMatch = null;
 
-        const chunks = checkLine.split('<');
+        const chunks = checkLineNoAttrs.split('<');
         for (let j = 1; j < chunks.length; j++) {
            const chunk = chunks[j];
            if (!chunk.includes('>')) {
               const matchTag = chunk.match(/^\/?\s*([a-zA-Z0-9]+)\b/);
               if (matchTag && knownHtmlTags.includes(matchTag[1].toLowerCase())) {
                   hasMalformedKnownTag = true;
-                  badMatch = '<' + chunk;
+                  // Report from the original checkLine for an accurate error snippet
+                  const origChunks = checkLine.split('<');
+                  badMatch = '<' + (origChunks[j] || chunk);
                   break;
               }
            }
@@ -1470,14 +1490,22 @@ const AssessmentChecker = (() => {
       // (or end of file) so answer lines with HTML tags are never missed regardless
       // of how the parser collected them.
       const PAIRED = ['strong','em','sup','sub','u','s','del'];
+      // Compile regexes once per tag (not per question) — PAIRED is static
+      const PAIRED_RES = PAIRED.map(tag => ({
+        tag,
+        open:  new RegExp('<'+tag+'(?:\\s[^>]*)?>','gi'),
+        close: new RegExp('</'+tag+'>','gi')
+      }));
       return qs.flatMap((q, qi) => {
         const start = q.startLine - 1; // 0-based
         const end   = qi + 1 < qs.length ? qs[qi+1].startLine - 1 : lines.length;
         const block = lines.slice(start, end).join('\n');
         const issues = [];
-        for (const tag of PAIRED) {
-          const opens  = (block.match(new RegExp('<'+tag+'(?:\\s[^>]*)?>','gi')) || []).length;
-          const closes = (block.match(new RegExp('</'+tag+'>','gi')) || []).length;
+        for (const { tag, open, close } of PAIRED_RES) {
+          // Reset lastIndex since the same RegExp objects are reused across questions
+          open.lastIndex = 0; close.lastIndex = 0;
+          const opens  = (block.match(open)  || []).length;
+          const closes = (block.match(close) || []).length;
           if (opens !== closes) {
             issues.push(opens > closes
               ? (opens - closes) + ' unclosed <'+tag+'>'
@@ -1503,8 +1531,15 @@ const AssessmentChecker = (() => {
       const orphanOpenRe = new RegExp('<\\/?('+KNOWN_TAGS+')\\b[^<>]*$', 'gi');
 
       return lines.flatMap((line, i) => {
+        // 0. Mask quoted attribute values so that < and > inside alt="..." or similar
+        //    are never treated as naked math/code symbols. This also prevents the
+        //    allowedTagsRe below from stopping early at a > inside an attribute value.
+        let checkLine = line
+            .replace(/"[^"]*"/g,  m => '"' + ' '.repeat(Math.max(0, m.length - 2)) + '"')
+            .replace(/'[^']*'/g, m => "'" + ' '.repeat(Math.max(0, m.length - 2)) + "'");
+
         // 1. Mask valid, already-wrapped symbols
-        let checkLine = line.replace(validSpannedRe, match => ' '.repeat(match.length));
+        checkLine = checkLine.replace(validSpannedRe, match => ' '.repeat(match.length));
 
         // 2. Mask complete known HTML tags
         checkLine = checkLine.replace(allowedTagsRe, match => ' '.repeat(match.length));
@@ -1668,7 +1703,11 @@ const AssessmentChecker = (() => {
         return imgs.flatMap(img=>{
           const a=img.match(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i);
           if(!a) return [];
-          const h=a[1].match(/<[^>]+>/);
+          // Only flag sequences that look like actual HTML tags: <tagname ...> or </tagname>
+          // A real tag name starts immediately after < (with optional /) with no spaces.
+          // This excludes math like "< 4 >" (space before digit) and "x < y and p > q"
+          // where < is followed by a space then a word, not a run-together tag name.
+          const h=a[1].match(/<\/?[a-zA-Z][^>]*>/);
           return h ? [fail(rule,rule.message.replace('{line}',i+1),i+1,h[0])] : [];
         });
       });
@@ -1695,23 +1734,29 @@ const AssessmentChecker = (() => {
           const txt=a[1];
           const fullAlt = a[0]; // The whole alt="..." string for context
 
+          const imgResults = [];
+
           for(const[ent,word] of Object.entries(ENTS)) {
             if(txt.includes(ent)) {
-              return [fail(rule, `Line ${i+1} alt text contains "${ent}". Expected: "${word}"`, i+1, ent, 
-                { type: 'contextual-diff', actual: ent, expected: word, truthAttr: fullAlt })];
+              imgResults.push(fail(rule, `Line ${i+1} alt text contains "${ent}". Expected: "${word}"`, i+1, ent, 
+                { type: 'contextual-diff', actual: ent, expected: word, truthAttr: fullAlt }));
             }
           }
-          for(const sym of Object.keys(SYMS)) {
-            if(txt.includes(sym)) {
-              return [fail(rule, `Line ${i+1} alt text contains symbol "${sym}". Expected: "${SYMS[sym]}"`, i+1, sym, 
-                { type: 'contextual-diff', actual: sym, expected: SYMS[sym], truthAttr: fullAlt })];
+          // Only check bare symbols if no entity issues were found (entities take priority
+          // as they are more specific — e.g. &gt; should not also fire the '>' sym check)
+          if (!imgResults.length) {
+            for(const sym of Object.keys(SYMS)) {
+              if(txt.includes(sym)) {
+                imgResults.push(fail(rule, `Line ${i+1} alt text contains symbol "${sym}". Expected: "${SYMS[sym]}"`, i+1, sym, 
+                  { type: 'contextual-diff', actual: sym, expected: SYMS[sym], truthAttr: fullAlt }));
+              }
+            }
+            if(!imgResults.length && MATH_MINUS.test(txt)) {
+              imgResults.push(fail(rule, `Line ${i+1} alt text contains "-" used as a math minus. Expected: "minus"`, i+1, '-', 
+                { type: 'contextual-diff', actual: '-', expected: 'minus', truthAttr: fullAlt }));
             }
           }
-          if(MATH_MINUS.test(txt)) {
-            return [fail(rule, `Line ${i+1} alt text contains "-" used as a math minus. Expected: "minus"`, i+1, '-', 
-              { type: 'contextual-diff', actual: '-', expected: 'minus', truthAttr: fullAlt })];
-          }
-          return [];
+          return imgResults;
         });
       });
     },
@@ -1815,9 +1860,16 @@ const AssessmentChecker = (() => {
               const afterBase=normed.slice(FIXED.length);
               if(!afterBase.startsWith(folder+'/')){
                 // Right base, wrong folder segment — replace just the folder part
-                const actualFolder = afterBase.split('/')[0];
                 const filename = afterBase.split('/').slice(1).join('/');
-                const fixedSrc = '//'+FIXED+folder+'/'+(filename||afterBase.split('/').slice(1).join('/'));
+                // Guard: if filename is empty the src only contained the folder (malformed path),
+                // so we can't build a valid corrected src — skip auto-fix for this case.
+                if (!filename) {
+                  results.push(fail(rule,
+                    rule.message.replace('{line}',i+1).replace('{found}',src).replace('{expected}','//'+FIXED+folder+'/'),
+                    i+1, src, null));
+                  continue;
+                }
+                const fixedSrc = '//'+FIXED+folder+'/'+filename;
                 const actualAttr = m[0];
                 const expectedAttr = 'src="'+fixedSrc+'"';
                 results.push(fail(rule,
@@ -1861,7 +1913,7 @@ const AssessmentChecker = (() => {
 
     'span-missing-check'(rule, qs) {
       return qs.filter(q => {
-        if (q.stem.includes('<span')) return false;
+        if (/<span\b/i.test(q.stem)) return false;
         // If it starts with "span", the < is missing. Let missing-lt-span-check handle it.
         if (/^:?span\b/i.test(q.stem.trim())) return false; 
         return true;
@@ -1909,6 +1961,8 @@ const AssessmentChecker = (() => {
 
     'span-attribute-check'(rule, qs) {
       const results=[];
+      // Compile once outside the loop — rule.attribute is static per rule invocation
+      const attrRe = new RegExp(rule.attribute+'\\s*=\\s*"([^"]*)"','i');
       for(const q of qs){
         if(!q.stem.includes('<span') || !/\/span>/i.test(q.stem)) continue;
         const sm=q.stem.match(/<span([^>]*)>/i); if(!sm) continue;
@@ -1917,7 +1971,7 @@ const AssessmentChecker = (() => {
           results.push(fail(rule,rule.message.replace('{num}',q.num).replace('{found}','missing'),q.startLine));
           continue;
         }
-        const vm=attrs.match(new RegExp(rule.attribute+'\\s*=\\s*"([^"]*)"','i'));
+        const vm=attrs.match(attrRe);
         const val=vm?vm[1].trim():'';
         
         if(!val){
@@ -2317,7 +2371,7 @@ const AssessmentChecker = (() => {
     },
 
     'matching-right-side-length-check'(rule, qs) {
-      const MAX = 42;
+      const MAX = MATCHING_RIGHT_SIDE_MAX_CHARS;
       return qs.filter(q => q.code === 'matching:label:').flatMap(q =>
         q.answers.flatMap(a => {
           const text = a.text.trim();
@@ -3017,7 +3071,30 @@ const GLOBAL_FIXERS = new Set([
 
 const autoFixers={
   'self-closing-br':    text=>text.replace(/<\/?\s*br\b[^><]*(?:>|(?=<|$))/gi,'<br />'),
-  'no-inline-styles':   text=>text.replace(/\s*style\s*=\s*"[^"]*"/gi,'').replace(/\s*style\s*=\s*'[^']*'/gi,''),
+  'no-inline-styles': text => {
+    // Strip disallowed inline style attributes while preserving the same exceptions
+    // that the inline-style-check rule allows:
+    //   • style="vertical-align:middle;" on <img> tags
+    //   • style="list-style-type:..." on <ol> tags
+    //   • style="text-align:..." on any element
+    //   • style="font-family:..." on <span> tags (produced by font-tag-replace)
+    // Process tag-by-tag so we only strip styles inside actual HTML tags.
+    return text.replace(/(<[a-zA-Z][a-zA-Z0-9]*\b[^>]*?>)/g, (tag) => {
+      const styleMatch = tag.match(/\s*style\s*=\s*"([^"]*)"/i);
+      if (!styleMatch) return tag;
+      const styleVal = styleMatch[1];
+      const norm = styleVal.replace(/\s/g, '').toLowerCase();
+      const tagName = (tag.match(/^<([a-zA-Z][a-zA-Z0-9]*)/) || [])[1] || '';
+      const tn = tagName.toLowerCase();
+      // Keep allowed styles
+      if (tn === 'img'  && norm === 'vertical-align:middle;') return tag;
+      if (tn === 'ol'   && norm.startsWith('list-style-type:')) return tag;
+      if (tn === 'span' && norm.startsWith('font-family:'))    return tag;
+      if (norm.startsWith('text-align:')) return tag;
+      // Strip disallowed style attribute
+      return tag.replace(/\s*style\s*=\s*"[^"]*"/i, '');
+    });
+  },
   'img-double-quotes':  text=>text.replace(/<img([^>]*)>/gi,(_,a)=>'<img'+a.replace(/src\s*=\s*'([^']*)'/gi,'src="$1"').replace(/alt\s*=\s*'([^']*)'/gi,'alt="$1"')+'>'),
   'img-alt-quotes':     text=>text.replace(/(<img[^>]+>)/gi,t=>t.replace(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i,(_,inner)=>'alt="'+inner.replace(/"/g,"'")+'"')),
   'no-deprecated-tags': text=>text
@@ -3060,7 +3137,7 @@ const autoFixers={
     return out.join('\n');
   },
   'points-before-group':text=>text.replace(/(group:\d+)\n(points:\d+)/g,'$2\n$1'),
-	'span-unclosed': (text, result) => {
+  'span-unclosed': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
       const idx = result.lineNum - 1;
@@ -3571,25 +3648,39 @@ function runAudit(){
   setTimeout(()=>{
     try{const lines=raw.split('\n');renderReport(AssessmentChecker.run(raw),lines);}
     catch(err){DOM.resultsBody.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: '+esc(err.message)+'</p></div>';}
-  },50);
+  }, AUDIT_RENDER_DELAY_MS);
 }
 async function copyText(btn) {
   const text = ta.value;
   if (!text.trim()) { alert('Nothing to copy.'); return; }
+  let success = false;
   try {
     await navigator.clipboard.writeText(text);
+    success = true;
   } catch {
-    const tmp = Object.assign(document.createElement('textarea'), {
-      value: text, style: 'position:fixed;top:-9999px;opacity:0'
-    });
-    document.body.appendChild(tmp);
-    tmp.select();
-    document.execCommand('copy');
-    document.body.removeChild(tmp);
+    // Fallback for non-HTTPS contexts (e.g. file://) where the Clipboard API
+    // is unavailable. document.execCommand('copy') is deprecated but remains
+    // the only option in these environments.
+    try {
+      const tmp = Object.assign(document.createElement('textarea'), {
+        value: text, style: 'position:fixed;top:-9999px;opacity:0'
+      });
+      document.body.appendChild(tmp);
+      tmp.select();
+      success = document.execCommand('copy');
+      document.body.removeChild(tmp);
+    } catch {
+      success = false;
+    }
   }
-  btn.textContent = '✓ Copied!';
-  btn.classList.add('copied');
-  setTimeout(() => { btn.textContent = '⎘ Copy Text'; btn.classList.remove('copied'); }, 2000);
+  if (success) {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '⎘ Copy Text'; btn.classList.remove('copied'); }, 2000);
+  } else {
+    btn.textContent = '✗ Copy failed';
+    setTimeout(() => { btn.textContent = '⎘ Copy Text'; }, 2000);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -4183,6 +4274,10 @@ function renderItem(r,lines){
       }
     }
 
+    // SECURITY: htmlDescription must only ever be set in the static RULES_DATA constant —
+    // never from user-supplied content. It is injected as raw HTML intentionally to allow
+    // rich fix guidance (tables, code spans). If you add new rules, use fix.description
+    // (plain text, will be escaped) unless rich HTML is genuinely needed.
     const descHtml = '<div class="fix-description">' + (r.rule.fix.htmlDescription || esc(r.rule.fix.description)) + '</div>';
     fixPanelContent = '<div class="fix-panel" id="fp-'+uid+'"><div class="fix-applied-banner" style="display:none">✦ Fix applied — review and re-audit when done</div>' + descHtml + fixPanelContent + '</div>';
   }
