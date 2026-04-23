@@ -813,7 +813,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.25</span>
+                        Course Explorer Tool <span class="version-pill">v7.26</span>
                     </div>
                 </div>
             </div>
@@ -1537,6 +1537,7 @@ let isGlobalDarkImageBg               = false;
 
 let activeGlossaryLetters    = new Set();
 let showOnlyDuplicates       = false;
+let showOnlyUnused           = false;
 
 let activeStandardGroups     = new Set();
 
@@ -3445,6 +3446,7 @@ async function runIndexingAndShowUI(wasRefreshed) {
             );
         } catch (e) {}
 
+        // 1. Add terms that were found in the content
         for (const [id, locSet] of Object.entries(foundGlossaryIds)) {
             const data = rawGlossaryMap[id.toString()];
             courseGlossary.push({
@@ -3454,6 +3456,19 @@ async function runIndexingAndShowUI(wasRefreshed) {
                 locations:  Array.from(locSet).sort()
             });
         }
+
+        // 2. Add unused terms (in JSON, not in content, and not hidden)
+        for (const [id, data] of Object.entries(rawGlossaryMap)) {
+            if (!foundGlossaryIds[id] && data.hide !== true && data.hide !== "true") {
+                courseGlossary.push({
+                    id,
+                    title:      data.term || data.title || `Glossary Term ${id}`,
+                    definition: data.definition || "<em>No definition provided.</em>",
+                    locations:  [] // Empty array means it's orphaned/unused
+                });
+            }
+        }
+
         courseGlossary.sort((a, b) => a.title.localeCompare(b.title));
 
         const mediaSort = (a, b) =>
@@ -5621,8 +5636,9 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                                     ${typesSection}
                                 </div>
                             </div>
-                            ${clearFiltersHtml}
+                           ${clearFiltersHtml}
                             ${darkBgToggleHtml}
+                            ${isGlossary ? `<div id="glossary-special-filters" style="display:flex; gap:6px; flex-wrap:wrap; margin-left:8px;"></div>` : ''}
                         </div>
                         
                         <div class="media-global-actions">
@@ -5636,7 +5652,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                         </div>
                     </div>
                 </div>
-                ${isGlossary ? `
+               ${isGlossary ? `
                     <div class="glossary-search-wrapper">
                         <input type="text" id="glossary-search" class="glossary-search" placeholder="Search glossary terms…" autocomplete="off" oninput="filterGlossaryList(this.value); toggleGlossaryClearBtn(this.value)">
                         <button id="glossary-search-clear" class="glossary-search-clear" onclick="clearGlossarySearch()" title="Clear search">&times;</button>
@@ -6319,6 +6335,7 @@ window.toggleGlossaryLetter = function toggleGlossaryLetter(letter) {
     if (letter === 'All') {
         activeGlossaryLetters.clear();
         showOnlyDuplicates = false;
+        showOnlyUnused     = false;
         renderGlossaryList(document.getElementById('glossary-search')?.value || '');
     } else {
         if (activeGlossaryLetters.has(letter)) activeGlossaryLetters.delete(letter);
@@ -6329,6 +6346,13 @@ window.toggleGlossaryLetter = function toggleGlossaryLetter(letter) {
 
 window.toggleDuplicateFilter = function toggleDuplicateFilter() {
     showOnlyDuplicates = !showOnlyDuplicates;
+    if (showOnlyDuplicates) showOnlyUnused = false; // Mutually exclusive
+    renderGlossaryList(document.getElementById('glossary-search')?.value || '');
+};
+
+window.toggleUnusedFilter = function toggleUnusedFilter() {
+    showOnlyUnused = !showOnlyUnused;
+    if (showOnlyUnused) showOnlyDuplicates = false; // Mutually exclusive
     renderGlossaryList(document.getElementById('glossary-search')?.value || '');
 };
 
@@ -6372,9 +6396,13 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
     if (query.trim()) activeGlossaryLetters.clear();
 
     const filteredGlossary = courseGlossary.filter(g => {
-        if (activeMediaModules.size > 0 &&
-            !g.locations.some(loc => activeMediaModules.has(loc.split('.')[0]))) return false;
+        if (showOnlyUnused && g.locations.length > 0) return false;
         if (showOnlyDuplicates && g.locations.length <= 1) return false;
+        
+        // If module filters are active, bypass them ONLY IF we are specifically looking for unused terms
+        if (activeMediaModules.size > 0 && !showOnlyUnused &&
+            !g.locations.some(loc => activeMediaModules.has(loc.split('.')[0]))) return false;
+            
         if (query) {
             const q = query.toLowerCase();
             return g.title.toLowerCase().includes(q) ||
@@ -6388,16 +6416,29 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
          g.locations.some(loc => activeMediaModules.has(loc.split('.')[0]))) &&
         g.locations.length > 1
     );
+    const hasUnused = courseGlossary.some(g => g.locations.length === 0);
 
     let azHtml =
         `<button id="btn-az-All"
-                 class="az-btn ${activeGlossaryLetters.size === 0 && !showOnlyDuplicates ? 'active' : ''}"
-                 onclick="toggleGlossaryLetter('All')">All</button>`;
+                 class="az-btn ${activeGlossaryLetters.size === 0 && !showOnlyDuplicates && !showOnlyUnused ? 'active' : ''}"
+                 onclick="toggleGlossaryLetter('All')">All</button>
+         <div class="divider" style="margin:0 4px; height:auto;"></div>`;
+                 
+    let specialFiltersHtml = '';
+    
     if (hasDuplicates || showOnlyDuplicates) {
-        azHtml += `<button class="az-btn duplicate-btn ${showOnlyDuplicates ? 'active' : ''}"
-                           onclick="toggleDuplicateFilter()">Duplicates</button>`;
+        specialFiltersHtml += `<button class="az-btn duplicate-btn ${showOnlyDuplicates ? 'active' : ''}"
+                                       onclick="toggleDuplicateFilter()">Duplicates</button>`;
     }
-    azHtml += `<div class="divider" style="margin:0 4px; height:auto;"></div>`;
+
+    if (hasUnused || showOnlyUnused) {
+        specialFiltersHtml += `<button class="az-btn ${showOnlyUnused ? 'active' : ''}"
+                                       style="${showOnlyUnused ? 'background:#6c757d; color:#fff; border-color:#6c757d;' : 'color:#6c757d; border-color:#6c757d;'}"
+                                       onclick="toggleUnusedFilter()">Unused</button>`;
+    }
+    
+    const specialContainer = document.getElementById('glossary-special-filters');
+    if (specialContainer) specialContainer.innerHTML = specialFiltersHtml;
 
     if (!filteredGlossary.length) {
         container.innerHTML =
@@ -6454,9 +6495,10 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
             itemDiv.innerHTML = `
                 <div class="glossary-term">${escapeHtml(g.title)}</div>
                 <div class="glossary-locs">
-                    ${g.locations.map(loc =>
-                        `<span class="glossary-loc-badge" title="Location">${loc}</span>`
-                    ).join('')}
+                    ${g.locations.length > 0 
+                        ? g.locations.map(loc => `<span class="glossary-loc-badge" title="Location">${loc}</span>`).join('')
+                        : `<span class="glossary-loc-badge" style="background:#ffe3e6; color:#842029;">Unused</span>`
+                    }
                 </div>`;
             
             gridDiv.appendChild(itemDiv);
