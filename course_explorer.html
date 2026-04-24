@@ -813,7 +813,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.33</span>
+                        Course Explorer Tool <span class="version-pill">v7.35</span>
                     </div>
                 </div>
             </div>
@@ -7636,10 +7636,6 @@ function renderLessonBlock(lesson, modNum) {
     const hasAnyStandards = lesson.pages?.some(p => p._parsedStandards?.length > 0);
     let healthBadges = `<div class="flex-center gap-10" style="margin-left:auto;">`;
 
-    if (courseStandardGroups.size > 1 && hasAnyStandards) {
-        healthBadges += `<button class="nav-btn btn-base" style="padding:2px 8px; font-size:0.75rem; margin-right:4px;" onclick="toggleFolderDetails(event, this)">Collapse States</button>`;
-    }
-
     if (!lesson._reqContent && !lesson._reqStd) {
         healthBadges += `<span class="status-badge neutral" style="margin-left:0;">NOT REQUIRED</span>`;
     } else {
@@ -7687,15 +7683,25 @@ function renderLessonBlock(lesson, modNum) {
     }
 
     if (checkIdenticalStandards(lesson.pages)) {
-        const stdBox      = document.createElement('div');
-        stdBox.className  = 'standards-box status-good';
-        const firstStds   = lesson.pages?.[0]?._parsedStandards;
-        let stdHTML       = '';
+            const stdBox      = document.createElement('div');
+            stdBox.className  = 'standards-box status-good';
+            const firstStds   = lesson.pages?.[0]?._parsedStandards;
+            let stdHTML       = '';
 
-        if (firstStds?.length > 0) {
-            const tableHtml = renderStandardsTableHTML(firstStds);
-            stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div>` + (tableHtml || `<div style="color:#666; font-style:italic;">No standards match the current state filter.</div>`);
-        } else if (!lesson._reqStd) {
+            if (firstStds?.length > 0) {
+                const tableHtml = renderStandardsTableHTML(firstStds);
+                const expandBtnHtml = (courseStandardGroups.size > 1) 
+                    ? `<button class="nav-btn btn-base" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleFolderDetails(event, this)">Collapse States</button>` 
+                    : '';
+                    
+                stdHTML = `
+                    <div class="flex-between" style="align-items:center; margin-bottom:6px;">
+                        <div class="std-title" style="margin-bottom:0;">Standards applied to all pages of this lesson</div>
+                        ${expandBtnHtml}
+                    </div>
+                    ${tableHtml || `<div style="color:#666; font-style:italic;">No standards match the current state filter.</div>`}
+                `;
+            } else if (!lesson._reqStd) {
             stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#666; font-style:italic;">Standards not required for this lesson.</div>`;
         } else {
             stdHTML = `<div class="std-title">Standards applied to all pages of this lesson</div><div style="color:#dc3545; font-weight:bold;">No standards found on any page.</div>`;
@@ -7726,9 +7732,14 @@ function renderPageBlock(page, parentID, reqStd) {
 
     if (hasStandards) {
         const tableHtml = renderStandardsTableHTML(rawStandards);
+        const expandBtnHtml = (courseStandardGroups.size > 1) 
+            ? `<button class="nav-btn btn-base" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleFolderDetails(event, this)">Collapse States</button>` 
+            : '';
+            
         div.innerHTML = `
             <div class="page-header flex-wrap gap-10" style="justify-content:space-between;">
                  <div class="flex-center gap-10"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>
+                 ${expandBtnHtml}
              </div>` + (tableHtml || `<div style="color:#666; font-style:italic; margin-bottom:10px; font-size:0.85rem;">No standards match the current state filter.</div>`);
     } else {
         div.innerHTML = `<div class="page-header flex-center gap-10" style="justify-content:flex-start;"><span class="id-number">${fullPgID}</span> ${page.title} ${stdBadge}</div>`;
