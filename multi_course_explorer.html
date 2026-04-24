@@ -268,7 +268,7 @@
                 <div>
                     <h1 id="main-title" style="display:flex; align-items:center; gap:10px;">
                         Multi-Course Explorer
-                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v5.05</span>
+                        <span style="font-size: 0.8rem; background: var(--tag-bg); color: var(--primary); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); font-weight: 700; vertical-align: middle;">v5.07</span>
                     </h1>
                     <div class="header-subtitle" style="font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase;">Content &amp; Standards Tool</div>
                 </div>
@@ -915,7 +915,7 @@ elements.modifyBtn.addEventListener('click', () => showCourseSelectionModal());
 // --- FILE SELECTION AND COURSE SCANNING ---
 elements.input.addEventListener('change', (e) => handleBatchScan(e.target.files));
 
-function handleBatchScan(files) {
+async function handleBatchScan(files) {
     if (files.length === 0) return;
 
     elements.setupArea.style.display = 'none';
@@ -981,14 +981,44 @@ function handleBatchScan(files) {
         }
     }
 
-    courseVersionsTracker.forEach((data, courseName) => {
+    // Helper to asynchronously fetch title from settings.json
+    async function getTitleFromSettings(fileMap) {
+        let settingsFile = fileMap.get('data/settings.json') || fileMap.get('global/data/settings.json');
+        if (settingsFile) {
+            try {
+                const text = await readFileAsText(settingsFile);
+                const json = JSON.parse(text);
+                function findTitle(obj) {
+                    if (!obj || typeof obj !== 'object') return null;
+                    if (obj.course_title && typeof obj.course_title === 'string' && obj.course_title.trim() !== '') return obj.course_title.trim();
+                    for (const key in obj) { const found = findTitle(obj[key]); if (found) return found; }
+                    return null;
+                }
+                return findTitle(json);
+            } catch (e) {}
+        }
+        return null;
+    }
+
+    // Process valid versions and extract real titles
+    for (const [courseName, data] of courseVersionsTracker.entries()) {
         if (data.bestNumeric && (data.bestNumeric.fileMap.has('sitemap.json') || data.bestNumeric.fileMap.has('global/sitemap.json'))) {
-            availableCoursesFromScan.set(`${courseName} (${data.bestNumeric.display})`, data.bestNumeric.fileMap);
+            let title = await getTitleFromSettings(data.bestNumeric.fileMap);
+            let displayTitle = title ? `${title} (${data.bestNumeric.display})` : `${courseName} (${data.bestNumeric.display})`;
+            availableCoursesFromScan.set(`${courseName} (${data.bestNumeric.display})`, {
+                fileMap: data.bestNumeric.fileMap,
+                displayTitle: displayTitle
+            });
         }
         if (data.cbImport && (data.cbImport.fileMap.has('sitemap.json') || data.cbImport.fileMap.has('global/sitemap.json'))) {
-            availableCoursesFromScan.set(`${courseName} (${data.cbImport.display})`, data.cbImport.fileMap);
+            let title = await getTitleFromSettings(data.cbImport.fileMap);
+            let displayTitle = title ? `${title} (${data.cbImport.display})` : `${courseName} (${data.cbImport.display})`;
+            availableCoursesFromScan.set(`${courseName} (${data.cbImport.display})`, {
+                fileMap: data.cbImport.fileMap,
+                displayTitle: displayTitle
+            });
         }
-    });
+    }
 
     if (availableCoursesFromScan.size === 0) {
         elements.status.innerHTML = `<span style="color:#dc3545">${SVGS.x} Error: No valid course folders found.</span>`;
@@ -1014,12 +1044,13 @@ function showCourseSelectionModal() {
         <div style="column-count: 2; column-gap: 20px;">
     `;
     const sortedCourses = Array.from(availableCoursesFromScan.keys()).sort();
-    sortedCourses.forEach(courseName => {
-        const isChecked = (selectedCourseNames.size === 0 || selectedCourseNames.has(courseName)) ? 'checked' : '';
+    sortedCourses.forEach(courseKey => {
+        const courseData = availableCoursesFromScan.get(courseKey);
+        const isChecked = (selectedCourseNames.size === 0 || selectedCourseNames.has(courseKey)) ? 'checked' : '';
         html += `
             <label class="course-list-item" style="cursor: pointer;">
-                <input type="checkbox" class="course-checkbox" value="${courseName}" style="width: 18px; height: 18px; margin-right: 12px; accent-color: var(--primary);" ${isChecked}>
-                <strong>${courseName}</strong>
+                <input type="checkbox" class="course-checkbox" value="${courseKey}" style="width: 18px; height: 18px; margin-right: 12px; accent-color: var(--primary);" ${isChecked}>
+                <span style="color: var(--primary); font-size: 0.95rem;">${escapeHtml(courseData.displayTitle)}</span>
             </label>
         `;
     });
@@ -1062,32 +1093,12 @@ async function runMultiCourseIndexing() {
     
     try {
         for (const courseName of selectedCourseNames) {
-            const fileMap = availableCoursesFromScan.get(courseName);
+            const courseObj = availableCoursesFromScan.get(courseName);
+            const fileMap = courseObj.fileMap;
+            
             let sitemapFile = fileMap.get('sitemap.json') || fileMap.get('global/sitemap.json');
+            let courseFullName = courseObj.displayTitle; 
             
-            let settingsFile = fileMap.get('data/settings.json') || fileMap.get('global/data/settings.json');
-            let courseFullName = courseName; 
-            
-            if (settingsFile) {
-                try {
-                    const settingsText = await readFileAsText(settingsFile);
-                    const settingsJson = JSON.parse(settingsText);
-                    function findCourseTitle(obj) {
-                        if (!obj || typeof obj !== 'object') return null;
-                        if (obj.course_title && typeof obj.course_title === 'string' && obj.course_title.trim() !== '') return obj.course_title.trim();
-                        for (const key in obj) { const found = findCourseTitle(obj[key]); if (found) return found; }
-                        return null;
-                    }
-                   const foundTitle = findCourseTitle(settingsJson);
-                    if (foundTitle) {
-                        // Extract the version tag from the folder name (e.g., "(v2)" or "(cbimport)")
-                        const versionMatch = courseName.match(/\s\((v\d+|cbimport)\)$/i);
-                        const versionTag = versionMatch ? versionMatch[0] : '';
-                        courseFullName = foundTitle + versionTag;
-                    }
-                } catch(e) { console.warn("Could not parse settings.json for " + courseName); }
-            }
-
             if (sitemapFile) {
                 const sitemapText = await readFileAsText(sitemapFile);
                 const sitemap = JSON.parse(sitemapText);
