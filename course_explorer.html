@@ -813,7 +813,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.29</span>
+                        Course Explorer Tool <span class="version-pill">v7.33</span>
                     </div>
                 </div>
             </div>
@@ -892,7 +892,7 @@
                     <button id="search-clear-btn" class="main-search-clear" style="display:none;" title="Clear search">&times;</button>
                 </div>
                 <button id="advanced-search-toggle" title="Advanced Search Options" onclick="toggleAdvancedSearch()">
-                    <svg class="svg-icon" viewBox="0 0 24 24" style="width:1.2em; height:1.2em;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="width:1.2em; height:1.2em;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </button>
             </div>
 
@@ -939,11 +939,11 @@
                     </label>
                     <label class="pill-label">
                         <input type="checkbox" id="whole-word-toggle">
-                        <span><i id="svg-icon-wholeword"></i> Exact Match</span>
+                        <span>Exact Match</span>
                     </label>
                     <label class="pill-label">
                         <input type="checkbox" id="case-sensitive-toggle">
-                        <span><i id="svg-icon-case"></i> Match Case</span>
+                        <span>Match Case</span>
                     </label>
                 </div>
 
@@ -1522,7 +1522,7 @@ let colorIndexTracker        = 0;
 let currentDisplayedMedia             = [];
 let currentMediaRenderCount           = 0;
 let currentMediaLayout                = localStorage.getItem('courseSearch_mediaLayout') || 'grid';
-let currentMediaTab                   = 'videos';
+let currentMediaTab                   = 'images';
 let activeMediaModules                = new Set();
 let activeMediaFilterTypes            = new Set();
 let activeMediaFilterMissingId        = false;
@@ -2970,7 +2970,7 @@ window.openReadabilityStatsModal = function(encStats) {
             </div>`;
 
    let reasons = [];
-    if (parseFloat(stats.avgWps) > 20) reasons.push("<li><strong>High Words per Sentence:</strong> Long sentences increase cognitive load. <em>(Target: &lt; 20)</em></li>");
+    if (parseFloat(stats.avgWps) > stats.maxWords) reasons.push(`<li><strong>High Words per Sentence:</strong> Long sentences increase cognitive load. <em>(Target: &lt; ${stats.maxWords})</em></li>`);
     if (parseFloat(stats.avgSpw) > 1.5) reasons.push("<li><strong>Complex Vocabulary:</strong> High syllable count per word indicates jargon or advanced vocabulary. <em>(Target: &lt; 1.5)</em></li>");
     if (stats.longSentences.length > 0) reasons.push(`<li><strong>Overloaded Sentences:</strong> ${stats.longSentences.length} sentence(s) exceeded the maximum recommended length of <strong>${stats.maxWords} words</strong>.</li>`);
 
@@ -3008,7 +3008,7 @@ window.openReadabilityStatsModal = function(encStats) {
             <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:8px; padding:15px; text-align:center;">
                 <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-light); font-weight:700;">Avg Words/Sent</div>
                 <div style="font-size:1.5rem; color:var(--primary); font-weight:bold;">${stats.avgWps}</div>
-                <div style="font-size:0.75rem; color:var(--text-light);">Target: &lt; 20 words</div>
+                <div style="font-size:0.75rem; color:var(--text-light);">Target: &lt; ${stats.maxWords} words</div>
             </div>
             <div style="background:#f8f9fa; border:1px solid var(--border); border-radius:8px; padding:15px; text-align:center;">
                 <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-light); font-weight:700;">Avg Syl/Word</div>
@@ -6298,11 +6298,12 @@ ${escapeHtml(mediaObj.rawJson)}</pre>`;
             <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
                 ${escapeHtml(mediaObj.title)}
             </h3>
-            <div style="font-size:0.85rem; color:var(--text-light);">
+            <div style="font-size:0.85rem; color:var(--text-light); display:flex; align-items:center; gap:6px;">
                 Located at:
-                ${mediaObj.locations.map(l =>
-                    `<span class="id-number" style="margin-right:4px;"># ${l}</span>`
-                ).join('')}
+                ${mediaObj.locations && mediaObj.locations.length > 0 
+                    ? mediaObj.locations.map(l => `<span class="id-number"># ${l}</span>`).join('')
+                    : `<span class="id-number" style="color:#842029; ">Present In Glossary: Tooltip Not Applied</span>`
+                }
             </div>`;
         modalBody.innerHTML =
             `<div style="font-size:1.05rem; line-height:1.6; color:var(--text);">
@@ -6460,7 +6461,7 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
     if (hasUnused || showOnlyUnused) {
         specialFiltersHtml += `<button class="az-btn ${showOnlyUnused ? 'active' : ''}"
                                        style="${showOnlyUnused ? 'background:#6c757d; color:#fff; border-color:#6c757d;' : 'color:#6c757d; border-color:#6c757d;'}"
-                                       onclick="toggleUnusedFilter()">Unused</button>`;
+                                       onclick="toggleUnusedFilter()">Glossary Only</button>`;
     }
     
     const specialContainer = document.getElementById('glossary-special-filters');
@@ -6523,7 +6524,7 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
                 <div class="glossary-locs">
                     ${g.locations.length > 0 
                         ? g.locations.map(loc => `<span class="glossary-loc-badge" title="Location">${loc}</span>`).join('')
-                        : `<span class="glossary-loc-badge" style="background:#ffe3e6; color:#842029;">Unused</span>`
+                        : `<span class="glossary-loc-badge" style="background:#ffe3e6; color:#842029;">Glossary Only</span>`
                     }
                 </div>`;
             
@@ -7317,7 +7318,7 @@ function showConfigScreen() {
                    autocomplete="off">
         </div>
         <p style="color:var(--text-light); margin-bottom:15px;">
-            Determine if objectives or standards are required for each lesson.
+            Uncheck any lessons that do not require objectives and/or standards.
         </p>`;
 
     if (!courseTree.modules) return;
