@@ -185,6 +185,9 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .result-item.hidden-by-filter{display:none}
 .category-section.all-hidden{display:none}
 mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radius:3px;font-weight:600}
+.table-token { cursor: pointer; transition: all 0.1s; }
+.table-token:hover { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-light) !important; color: var(--accent) !important; border-radius: 2px; }
+.cm-token-highlight { background: rgba(27, 77, 255, 0.25) !important; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--accent); }
 .line-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);flex-shrink:0;cursor:pointer;white-space:nowrap}
 .line-badge:hover{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
 /* Apply Fix / View Guide buttons — now inline in the row */
@@ -284,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.46</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.49</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2822,7 +2825,7 @@ const AssessmentChecker = (() => {
               msg(t, summaryMsg),
               issues[0].lineNum,
               h.substring(issues[0].hIndex, issues[0].hIndex + issues[0].matchLen),
-              { type: 'table-issues', issues, rawHtml: h }
+              { type: 'table-issues', issues, rawHtml: h, tableStartLine: sl }
             ));
           }
         }
@@ -2966,7 +2969,7 @@ const AssessmentChecker = (() => {
               results.push(fail(rule,
                 msg(t, 'tbody row '+(ri+1)+' has '+effective+' effective column(s) but header has '+colCount+' — check for missing or extra cells'),
                 actualLineNum, 'check for missing or extra cells',
-                { type: 'formatted-code', rawHtml: h, colCount, mismatchRanges: [{ start: trAbsStart, end: trAbsEnd, rowIdx: ri, effective }] }));
+                { type: 'formatted-code', rawHtml: h, colCount, mismatchRanges: [{ start: trAbsStart, end: trAbsEnd, rowIdx: ri, effective }], tableStartLine: sl }));
             }
             ri++;
           }
@@ -3711,7 +3714,7 @@ async function copyText(btn) {
 // Pretty-print table HTML with error highlights injected as <mark> spans.
 // html: raw table HTML string; issues: array of { hIndex, matchLen } from table-issues extra.
 // mismatchRanges: optional array of { start, end } char ranges for mismatched <tr> rows.
-function formatTableHTMLWithHighlights(html, issues, mismatchRanges) {
+function formatTableHTMLWithHighlights(html, issues, mismatchRanges, uid) {
   // ── Step 1: trim html to just the <table>…</table> span ──
   // The extractor stores full source lines which may include question text before
   // the opening <table> tag. We slice to table-only so the pretty-print is clean.
@@ -3831,8 +3834,9 @@ function formatTableHTMLWithHighlights(html, issues, mismatchRanges) {
     const hasMismatch = !hasError && mismatchSet.some(r =>
       r.start < line.origEnd && r.end > line.origStart
     );
-    const escapedText = esc(line.text);
-    if (!hasError && !hasMismatch) return escapedText;
+    
+    // If we aren't building an interactive table (no uid) and there are no errors, short-circuit
+    if (!uid && !hasError && !hasMismatch) return esc(line.text);
 
     // Find the specific token(s) on this line that overlap an error range and
     // highlight just them (rather than the whole line) for precision.
@@ -3848,19 +3852,70 @@ function formatTableHTMLWithHighlights(html, issues, mismatchRanges) {
       const tokEnd   = tokStart + lt[0].length;
       const isErr      = errorRanges.some(r => r.start < tokEnd && r.end > tokStart);
       const isMismatch = !isErr && mismatchSet.some(r => r.start < tokEnd && r.end > tokStart);
-      if (isErr) {
-        result += '<mark style="background:#fecaca;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:600">' +
-          esc(lt[0]) + '</mark>';
-      } else if (isMismatch) {
-        result += '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:2px;font-weight:600">' +
-          esc(lt[0]) + '</mark>';
+      const content = esc(lt[0]);
+      const baseStyle = isErr ? 'background:#fecaca;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:600;' : 
+                        isMismatch ? 'background:#fef08a;color:#854d0e;padding:0 2px;border-radius:2px;font-weight:600;' : '';
+      
+      if (uid) {
+        result += '<span class="table-token" style="' + baseStyle + '" onclick="highlightCMToken(\'' + uid + '\', ' + tokStart + ', ' + tokEnd + '); event.stopPropagation()">' + content + '</span>';
       } else {
-        result += esc(lt[0]);
+        if (isErr || isMismatch) {
+          result += '<mark style="' + baseStyle + '">' + content + '</mark>';
+        } else {
+          result += content;
+        }
       }
     }
     return result;
   }).join('\n');
 }
+
+window.highlightCMToken = function(uid, tokStart, tokEnd) {
+  const r = resultRegistry[uid];
+  if (!r || !r.extra || !r.extra.rawHtml || !r.extra.tableStartLine) return;
+  
+  const html = r.extra.rawHtml;
+  const startLine = r.extra.tableStartLine - 1; // 0-based for CodeMirror
+
+  // Calculate precise Line and Character offset for the start of the token
+  const beforeStart = html.substring(0, tokStart);
+  const lineOffsetStart = (beforeStart.match(/\n/g) || []).length;
+  const lineStart = startLine + lineOffsetStart;
+  const lastNlStart = beforeStart.lastIndexOf('\n');
+  const chStart = tokStart - (lastNlStart === -1 ? 0 : lastNlStart + 1);
+
+  // Calculate precise Line and Character offset for the end of the token
+  const beforeEnd = html.substring(0, tokEnd);
+  const lineOffsetEnd = (beforeEnd.match(/\n/g) || []).length;
+  const lineEnd = startLine + lineOffsetEnd;
+  const lastNlEnd = beforeEnd.lastIndexOf('\n');
+  const chEnd = tokEnd - (lastNlEnd === -1 ? 0 : lastNlEnd + 1);
+
+  const currentTokenId = uid + '-' + tokStart + '-' + tokEnd;
+
+    // If a highlight already exists, clear it
+    if (window._cmHighlightMark) {
+      window._cmHighlightMark.clear();
+      window._cmHighlightMark = null;
+
+      // If the user clicked the exact same token, we just toggle it off and stop here
+      if (window._lastHighlightedTokenId === currentTokenId) {
+        window._lastHighlightedTokenId = null;
+        return;
+      }
+    }
+
+    // Scroll to position
+    cm.scrollIntoView({line: lineStart, ch: chStart}, 100);
+    
+    // Store the new token ID and highlight the token in the editor
+    window._lastHighlightedTokenId = currentTokenId;
+    window._cmHighlightMark = cm.markText(
+      {line: lineStart, ch: chStart}, 
+      {line: lineEnd, ch: chEnd}, 
+      {className: 'cm-token-highlight'}
+    );
+  };
 const CHEVRON='<svg class="caret-svg" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';
 const resultRegistry={};
 
@@ -4350,7 +4405,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '</table>'+
         '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Fix each issue above in order — malformed tags can cause cascading errors below.</div>'+
         '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table (For Reference)</div>'+
-        '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues)+'</pre></div>';
+        '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues, null, uid)+'</pre></div>';
   } else if(r.extra&&r.extra.type==='formatted-code'){
       const rawHtml = r.extra.rawHtml || r.extra.code || '';
       const mismatchRanges = r.extra.mismatchRanges || [];
@@ -4371,7 +4426,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '<div style="border-top:1px solid var(--border);padding:7px 12px;font-size:11px;font-weight:700;color:'+headerColor+';text-transform:uppercase;letter-spacing:.5px;background:'+headerBg+'">'+headerLabel+'</div>'+
         legend+
         '<div style="padding:0 12px 10px 12px;border-top:1px solid var(--border)"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:0 0 var(--r) var(--r);border:none;margin:0;">'+
-          formatTableHTMLWithHighlights(rawHtml, [], mismatchRanges)+
+          formatTableHTMLWithHighlights(rawHtml, [], mismatchRanges, uid)+
         '</pre></div>';
   } else if(r.extra&&r.extra.type==='br-ambiguous'){
       const {rawLine, img, side} = r.extra;
