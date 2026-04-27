@@ -4224,7 +4224,7 @@ function renderReport(report,lines){
     const catId = 'grp-' + gk;
     // Collect uids stamped by renderItem — only items that have an auto-fixer
     const fixableUids = sorted
-      .filter(r => r._uid && typeof autoFixers[r.rule.id] === 'function')
+      .filter(r => r._uid && typeof autoFixers[r.rule.id] === 'function' && !r.rule.manualFixOnly)
       .map(r => r._uid);
     const catFixBtn = fixableUids.length
       ? '<button class="cat-fix-all" onclick="applyGroupFixes(\''+catId+'\',event)" title="Apply all safe auto-fixes in this group">✨ Auto Fix ('+ fixableUids.length +')</button>'
