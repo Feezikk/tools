@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.49</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.51</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2693,14 +2693,31 @@ const AssessmentChecker = (() => {
     },
 
     'table-check'(rule, qs, raw, lines) {
+      // ── Build a set of strict boundaries to prevent unclosed tables from bleeding ──
+      const boundaries = new Set();
+      for (const q of qs) {
+        boundaries.add(q.startLine);
+        if (q.pointsLine) boundaries.add(q.pointsLine);
+        if (q.groupLine) boundaries.add(q.groupLine);
+      }
+
       // ── Extract all table blocks (multi-line) with their starting line numbers ──
       const tables = [];
       let depth = 0, startLine = -1, buf = [];
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+        const lineNum = i + 1;
+
+        // Force-close an open table buffer if we hit a known question boundary
+        // (but don't force-close if this is the exact line the table started on)
+        if (depth > 0 && boundaries.has(lineNum) && lineNum > startLine) {
+          tables.push({ startLine, html: buf.join('\n'), unclosedTable: true });
+          buf = []; depth = 0;
+        }
+
         const opens  = (line.match(/<table\b/gi)  || []).length;
         const closes = (line.match(/<\/table>/gi) || []).length;
-        if (opens > 0 && depth === 0) { startLine = i + 1; buf = []; }
+        if (opens > 0 && depth === 0) { startLine = lineNum; buf = []; }
         if (depth > 0 || opens > 0) buf.push(line);
         depth += opens - closes;
         if (depth <= 0 && buf.length > 0) {
@@ -2708,8 +2725,8 @@ const AssessmentChecker = (() => {
           buf = []; depth = 0;
         }
       }
-      // If depth > 0 after the loop, a <table> was never closed — flush the buffer
-      // and mark it so tag-pairs can report the missing </table> directly.
+      
+      // If depth > 0 after the loop, a <table> was never closed
       if (depth > 0 && buf.length > 0) {
         tables.push({ startLine, html: buf.join('\n'), unclosedTable: true });
       }
@@ -2728,18 +2745,6 @@ const AssessmentChecker = (() => {
           const issues = []; // { tag, type, lineNum, label, hIndex, matchLen }
 
           const lineAt = idx => sl + (h.substring(0, idx).match(/\n/g) || []).length;
-
-          // ── Pre-seed: unclosed <table> detected by the extractor ──
-          if (t.unclosedTable) {
-            const tableOpenIdx = h.indexOf('<table');
-            issues.push({
-              tag: 'table', type: 'unclosed',
-              lineNum: sl,
-              label: '<table> opened but never closed — add </table>',
-              hIndex: tableOpenIdx >= 0 ? tableOpenIdx : 0,
-              matchLen: tableOpenIdx >= 0 ? h.match(/<table\b[^>]*>/i)[0].length : 7
-            });
-          }
 
           // ── Pass 1: malformed tags missing their '>' (e.g. </tr<tr> or <tr<tr>) ──
           // Covers both closing (</tag) and opening (<tag) variants.
