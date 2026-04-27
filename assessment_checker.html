@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.43</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.44</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -308,6 +308,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
         <tr>
           <th>Type</th>
           <th>Group</th>
+          <th>R/H</th>
           <th>Count</th>
           <th>Points</th>
           <th>Complexity</th>
@@ -4974,7 +4975,7 @@ function buildDashboardData(questions) {
   };
   for (const q of questions) {
     if (q.group === null) continue;
-    if (!byGroup[q.group]) byGroup[q.group] = { count: 0, types: new Set(), points: new Set(), complexities: new Set(), lessons: new Set(), standards: new Set(), hasImages: false };
+    if (!byGroup[q.group]) byGroup[q.group] = { count: 0, types: new Set(), points: new Set(), complexities: new Set(), lessons: new Set(), standards: new Set(), suffixes: new Set(), hasImages: false };
     const g = byGroup[q.group];
     g.count++;
     if (q.code) g.types.add(TYPE_LABELS[q.code] || q.code);
@@ -4993,7 +4994,14 @@ function buildDashboardData(questions) {
       if (cm2 && cm2[1].trim()) g.complexities.add(cm2[1].trim().toUpperCase());
       const lm = attrs.match(/data-associatedlessons\s*=\s*"([^"]*)"/i);
       if (lm && lm[1].trim()) {
-        lm[1].split('|').forEach(l => { const t=l.trim(); if(t) g.lessons.add(t); });
+        lm[1].split('|').forEach(l => { 
+          const t = l.trim(); 
+          if(t) {
+            g.lessons.add(t); 
+            const suffixMatch = t.match(/[RH]$/i);
+            if (suffixMatch) g.suffixes.add(suffixMatch[0].toUpperCase());
+          }
+        });
       }
       const stdRe = /data-standard-[a-z0-9_-]+\s*=\s*"([^"]*)"/gi;
       let sm;
@@ -5010,6 +5018,7 @@ function buildDashboardData(questions) {
     complexities: [...data.complexities],
     lessons: [...data.lessons],
     standards: [...data.standards],
+    suffixes: [...data.suffixes],
     hasImages: data.hasImages
   })).sort((a,b) => a.group - b.group);
 }
@@ -5060,9 +5069,21 @@ function openDashboard() {
       const imgHtml = row.hasImages
         ? '<span style="font-size:15px;color:var(--pass)" title="This group contains images">✓</span>'
         : '<span style="color:var(--text-dim);font-size:13px" title="No images in this group">—</span>';
+        
+      let suffixHtml;
+      if (!row.suffixes || !row.suffixes.length) {
+        suffixHtml = '<span style="color:var(--text-dim);font-style:italic;font-size:11px">—</span>';
+      } else {
+        suffixHtml = row.suffixes.map(s => {
+          const colorClass = s === 'R' ? 'dash-type-mc' : (s === 'H' ? 'dash-type-essay' : 'dash-type-other');
+          return '<span class="dash-type-chip ' + colorClass + '">' + s + '</span>';
+        }).join(' ');
+      }
+
       return '<tr' + (idx % 2 === 1 ? ' class="dash-row-alt"' : '') + '>' +
         '<td>' + typeHtml + '</td>' +
         '<td><span class="dash-group-num">' + row.group + '</span></td>' +
+        '<td>' + suffixHtml + '</td>' +
         '<td>' + countHtml + '</td>' +
         '<td><div class="dash-points">' + ptHtml + '</div></td>' +
         '<td>' + cxHtml + '</td>' +
