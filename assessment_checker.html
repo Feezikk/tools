@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.45</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.46</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1000,14 +1000,20 @@ const AssessmentChecker = (() => {
       else if (/^group:\d+$/.test(t)) { cur.group = parseInt(t.split(':')[1]); cur.groupLine = ln; }
       else if (cur.points === null && cur.group === null) {
         if (!t) continue; // skip blank lines
-        // Stem continuation: only if no answers yet, not an x- correct marker,
-        // not starting with an HTML tag (answer choices can have inline markup),
-        // and the stem hasn't already branched into multi-line.
+        // Determine if the stem is currently "empty" of actual question text.
+        // We strip the metadata span and any trailing <br> tags to see if anything is left.
+        const stemTextOnly = cur.stem.trim()
+          .replace(/^:?(?:<span|span)\b[^>]*>[\s\S]*?<\/span>/i, '')
+          .replace(/(?:<\/?\s*br\b[^>]*>\s*)+$/i, '')
+          .trim();
+        const stemNeedsText = stemTextOnly === '';
+
+        // Stem continuation: only if the stem lacks actual question text
         const looksLikeAnswer = t.startsWith('x-') || t.startsWith('<')
           || cur.code === 'matching:label:'
           || (cur.code === 'tf:' && (t.toLowerCase() === 'true' || t.toLowerCase() === 'false'));
-        if (cur.answers.length === 0 && !looksLikeAnswer
-            && cur.stemLines.length > 0 && cur.stem && !cur.stem.includes('\n')) {
+          
+        if (cur.answers.length === 0 && !looksLikeAnswer && stemNeedsText) {
           cur.stem += '\n' + t;
           cur.stemLines.push(ln);
         } else {
@@ -3409,11 +3415,15 @@ const ta = {
 let qModeWidgets = []; // line widget handles for group dividers
 
 function buildQLineMap(questions) {
-  // Build lineNum → { qNum, group, isStart } from parsed questions
+  // Build lineNum → { qNum, cNum, group, isStart } from parsed questions
   const map = {};
-  const Q_CODES = ['mc:radio:','essay:','fib:','matching:label:','tf:'];
   questions.forEach(q => {
     map[q.startLine] = { qNum: q.num, group: q.group, isStart: true };
+    if (q.answers && q.answers.length) {
+      q.answers.forEach((ans, idx) => {
+        map[ans.lineNum] = { cNum: idx + 1, isStart: false };
+      });
+    }
   });
   AppState.qLineMap = map;
 }
@@ -3433,17 +3443,21 @@ function applyQMode() {
     return;
   }
 
-  // Set formatter: show Qn on question start lines, blank elsewhere
+  // Set formatter: show Qn on question start lines, Cn on choices, blank elsewhere
   cm.setOption('lineNumberFormatter', n => {
     const entry = map[n];
-    return entry ? 'Q' + entry.qNum : ' ';
+    if (entry) {
+      if (entry.qNum) return 'Q' + entry.qNum;
+      if (entry.cNum) return 'C' + entry.cNum;
+    }
+    return ' ';
   });
 
   // Insert group divider line widgets — one above each question that starts a new group
   let lastGroup = null;
   const lineCount = cm.lineCount();
   // Collect all question start lines sorted
-  const qStarts = Object.keys(map).map(Number).sort((a,b)=>a-b);
+  const qStarts = Object.keys(map).map(Number).filter(ln => map[ln].isStart).sort((a,b)=>a-b);
   qStarts.forEach(ln => {
     const entry = map[ln];
     if (entry.group !== null && entry.group !== lastGroup) {
@@ -4170,10 +4184,12 @@ function renderItem(r,lines){
   }
   function getQLabel(lineNum) {
     if (!lineNum || !AppState.qMode) return lineNum ? 'L'+lineNum : null;
-    // Direct hit
-    if (AppState.qLineMap[lineNum]) return 'Q'+AppState.qLineMap[lineNum].qNum;
+    // Direct hit on a question start
+    const entry = AppState.qLineMap[lineNum];
+    if (entry && entry.isStart) return 'Q'+entry.qNum;
+    
     // Find the question whose start line is <= this line (nearest question above)
-    const starts = Object.keys(AppState.qLineMap).map(Number).sort((a,b)=>a-b);
+    const starts = Object.keys(AppState.qLineMap).map(Number).filter(n => AppState.qLineMap[n].isStart).sort((a,b)=>a-b);
     let best = null;
     for (const s of starts) { if (s <= lineNum) best = s; else break; }
     return best ? 'Q'+AppState.qLineMap[best].qNum : 'L'+lineNum;
