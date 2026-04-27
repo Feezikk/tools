@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.55</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.64</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -798,18 +798,19 @@ const RULES_DATA = {
            snippet:'term1-definition one\nterm2-definition two\nterm3-definition three'} },
 
     { id:'matching-right-side-length', category:'question-structure', severity:'error',
+      manualFixOnly: true,
       description:'Matching: text after the dash must be 42 characters or fewer',
       type:'matching-right-side-length-check',
-      message:'Question {num} line {line}: right-side text is {count} characters (max 42). Rewrite to shorten, or swap the left and right sides.',
+      message:'Question {num} has {count} matching answer(s) with right-side text longer than 42 characters. Rewrite to shorten, or swap the left and right sides.',
       fix:{description:'Matching answer text (right-side) longer than 42 characters.',
-           htmlDescription:'Matching answer text (right-side) longer than 42 characters.<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Options</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Option 1: Rewrite</strong></td><td style="border:1px solid var(--border); padding:6px 8px;">Rewrite the right-side text to fit within the 42 character max length</td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px;"><strong>Option 2: Swap sides</strong></td><td style="border:1px solid var(--border); padding:6px 8px;">Rearrange by placing the longer text on the left-side</td></tr></table>'} },
+           htmlDescription:'Matching answer text (right-side) longer than 42 characters.<br><br><table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;"><tr><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Options</th><th style="border:1px solid var(--border); padding:6px 8px; background:var(--surface2); text-align:left;">Fix</th></tr><tr><td style="border:1px solid var(--border); padding:6px 8px; vertical-align:middle;"><strong>Option 1: Rewrite</strong></td><td style="border:1px solid var(--border); padding:6px 8px; vertical-align:middle;">Rewrite the right-side text to fit within the 42 character max length</td></tr><tr><td style="border:1px solid var(--border); padding:6px 8px; vertical-align:middle; white-space:nowrap;"><strong>Option 2:</strong>{{SWAP_BTN}}</td><td style="border:1px solid var(--border); padding:6px 8px; vertical-align:middle;">Rearrange by placing the longer text on the left-side</td></tr></table>'} },
 
-    { id:'matching-html-on-right', category:'question-structure', severity:'error',
+   { id:'matching-html-on-right', category:'question-structure', severity:'error',
       description:'Matching: HTML tags and images must appear on the left side of the dash, not the right',
       type:'matching-html-on-right-check',
-      message:'Question {num} line {line}: HTML or image tag found on the right side of the dash. Move it to the left side by swapping the two halves.',
-      fix:{description:'The LMS cannot render HTML or images on the right side of a matching pair. Swap the left and right sides so the HTML/image is on the left.\n\nSwapping example:\n  Before: plain text-<img src="..." alt="..." />\n  After:  <img src="..." alt="..." />-plain text',
-           snippet:'<!-- Wrong: HTML on right -->\nplain label-<img src="..." alt="..." />\n\n<!-- Correct: HTML on left -->\n<img src="..." alt="..." />-plain label'} },
+      message:'Question {num} has {count} matching answer(s) with HTML or image tags on the right side. Swap the left and right sides so the HTML is on the left.',
+      fix:{description:'The LMS cannot render HTML or images on the right side of a matching pair. Swap the left and right sides so the HTML/image is on the left.',
+           snippet:''} },
 
     { id:'matching-img-align', category:'images', severity:'error',
       description:'Images in matching answers must not use the align attribute — use style="vertical-align:middle;" or no alignment at all',
@@ -2386,43 +2387,55 @@ const AssessmentChecker = (() => {
 
     'matching-right-side-length-check'(rule, qs) {
       const MAX = MATCHING_RIGHT_SIDE_MAX_CHARS;
-      return qs.filter(q => q.code === 'matching:label:').flatMap(q =>
-        q.answers.flatMap(a => {
+      const results = [];
+      for (const q of qs) {
+        if (q.code !== 'matching:label:') continue;
+        const violations = [];
+        for (const a of q.answers) {
           const text = a.text.trim();
           const dashIdx = findMatchingDash(text);
-          if (dashIdx === -1) return []; // malformed — caught by matching-format
+          if (dashIdx === -1) continue;
           const rightRaw = text.slice(dashIdx + 1);
-          // Strip HTML tags to measure visible character count
           const rightText = rightRaw.replace(/<[^>]+>/g, '');
-          const len = rightText.length;
-          return len > MAX
-            ? [fail(rule,
-                rule.message.replace('{num}', q.num).replace('{line}', a.lineNum).replace('{count}', len),
-                a.lineNum, rightText.slice(0, 20))]
-            : [];
-        })
-      );
+          if (rightText.length > MAX) {
+            violations.push({ lineNum: a.lineNum, length: rightText.length, text: rightText });
+          }
+        }
+        if (violations.length > 0) {
+          results.push(fail(rule,
+            rule.message.replace('{num}', q.num).replace('{count}', violations.length),
+            q.startLine, null,
+            { type: 'matching-length', violations }
+          ));
+        }
+      }
+      return results;
     },
 
-    'matching-html-on-right-check'(rule, qs) {
-      return qs.filter(q => q.code === 'matching:label:').flatMap(q =>
-        q.answers.flatMap(a => {
+   'matching-html-on-right-check'(rule, qs) {
+      const results = [];
+      for (const q of qs) {
+        if (q.code !== 'matching:label:') continue;
+        const violations = [];
+        for (const a of q.answers) {
           const text = a.text.trim();
           const dashIdx = findMatchingDash(text);
-          if (dashIdx === -1) return [];
-          const leftRaw  = text.slice(0, dashIdx);
+          if (dashIdx === -1) continue;
           const rightRaw = text.slice(dashIdx + 1);
-          // Flag if the right side contains any HTML tag or image tag
-          if (!/<[a-zA-Z!][^>]*>/.test(rightRaw)) return [];
-          // Build contextual-diff: swap the two sides
-          const swapped = rightRaw + '-' + leftRaw;
-          return [fail(rule,
-            rule.message.replace('{num}', q.num).replace('{line}', a.lineNum),
-            a.lineNum, (rightRaw.match(/<[^>]+>/) || [''])[0],
-            { type: 'contextual-diff', actual: text, expected: swapped }
-          )];
-        })
-      );
+          
+          if (/<[a-zA-Z!][^>]*>/.test(rightRaw)) {
+            violations.push({ lineNum: a.lineNum, text: text });
+          }
+        }
+        if (violations.length > 0) {
+          results.push(fail(rule,
+            rule.message.replace('{num}', q.num).replace('{count}', violations.length),
+            q.startLine, null,
+            { type: 'matching-html-right', violations }
+          ));
+        }
+      }
+      return results;
     },
 
     'matching-img-align-check'(rule, qs) {
@@ -3353,16 +3366,59 @@ const autoFixers={
       }
       return '<ol' + (attrsNoType ? ' '+attrsNoType : '') + ' style="list-style-type: '+styleVal+';">';
     }),
-  'matching-html-on-right': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+ 'matching-right-side-length': (text, result) => {
+    if (!result.extra || !result.extra.violations) return text;
+    const lines = text.split('\n');
+    result.extra.violations.forEach(v => {
+      const idx = v.lineNum - 1;
+      if (lines[idx] !== undefined) {
+        const lineText = lines[idx];
+        let inTag = false, dashIdx = -1;
+        // Re-implement dash finder directly to isolate left and right sides
+        for (let i = 0; i < lineText.length; i++) {
+          if (lineText[i] === '<') { inTag = true; continue; }
+          if (lineText[i] === '>') { inTag = false; continue; }
+          if (!inTag && lineText[i] === '-') { dashIdx = i; break; }
+        }
+        if (dashIdx !== -1) {
+          const leftRaw = lineText.slice(0, dashIdx);
+          const rightRaw = lineText.slice(dashIdx + 1);
+          let prefix = '';
+          let left = leftRaw;
+          // Safely preserve leading whitespace or an unexpected x- prefix if present
+          const m = leftRaw.match(/^(\s*(?:x-)?)(.*)/);
+          if (m) { prefix = m[1]; left = m[2]; }
+          lines[idx] = prefix + rightRaw + '-' + left;
+        }
       }
-      return lines.join('\n');
-    }
-    return text;
+    });
+    return lines.join('\n');
+  },
+  'matching-html-on-right': (text, result) => {
+    if (!result.extra || !result.extra.violations) return text;
+    const lines = text.split('\n');
+    result.extra.violations.forEach(v => {
+      const idx = v.lineNum - 1;
+      if (lines[idx] !== undefined) {
+        const lineText = lines[idx];
+        let inTag = false, dashIdx = -1;
+        for (let i = 0; i < lineText.length; i++) {
+          if (lineText[i] === '<') { inTag = true; continue; }
+          if (lineText[i] === '>') { inTag = false; continue; }
+          if (!inTag && lineText[i] === '-') { dashIdx = i; break; }
+        }
+        if (dashIdx !== -1) {
+          const leftRaw = lineText.slice(0, dashIdx);
+          const rightRaw = lineText.slice(dashIdx + 1);
+          let prefix = '';
+          let left = leftRaw;
+          const m = leftRaw.match(/^(\s*(?:x-)?)(.*)/);
+          if (m) { prefix = m[1]; left = m[2]; }
+          lines[idx] = prefix + rightRaw + '-' + left;
+        }
+      }
+    });
+    return lines.join('\n');
   },
   'matching-img-align': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
@@ -4383,12 +4439,13 @@ function renderItem(r,lines){
       const applyBoth = '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" style="margin-bottom:8px;display:inline-flex;">✓ Apply Both Fixes</button>';
       fixPanelContent = applyBoth + attrDiff + contentDiff + contextPanel;
 
-    } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'formatted-code' ||
-               r.extra.type === 'group-points' || r.extra.type === 'group-type-consistency' ||
-               r.extra.type === 'group-meta-consistency' ||
-               r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
-               r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous' ||
-               r.extra.type === 'en-dash-context' || r.extra.type === 'minus-context')) {
+   } else if (r.extra && (r.extra.type === 'table-issues' || r.extra.type === 'formatted-code' ||
+                   r.extra.type === 'group-points' || r.extra.type === 'group-type-consistency' ||
+                   r.extra.type === 'group-meta-consistency' ||
+                   r.extra.type === 'group-numbering' || r.extra.type === 'group-sequence' ||
+                   r.extra.type === 'special-chars' || r.extra.type === 'br-ambiguous' ||
+                   r.extra.type === 'en-dash-context' || r.extra.type === 'minus-context' || 
+                   r.extra.type === 'matching-length' || r.extra.type === 'matching-html-right')) {
       // These have their own rich extra panels — build them the existing way then wrap
       fixPanelContent = buildExtraPanel(r, lines, uid, hasAuto) + contextPanel;
 
@@ -4421,7 +4478,12 @@ function renderItem(r,lines){
     // never from user-supplied content. It is injected as raw HTML intentionally to allow
     // rich fix guidance (tables, code spans). If you add new rules, use fix.description
     // (plain text, will be escaped) unless rich HTML is genuinely needed.
-    const descHtml = '<div class="fix-description">' + (r.rule.fix.htmlDescription || esc(r.rule.fix.description)) + '</div>';
+    let descRaw = r.rule.fix.htmlDescription || esc(r.rule.fix.description);
+    if (descRaw.includes('{{SWAP_BTN}}')) {
+      const btnHtml = '<button class="diff-action-btn diff-apply-btn" onclick="applyFix(\''+uid+'\',event)" style="margin:0 0 0 6px;padding:2px 8px;font-size:10px;display:inline-flex;vertical-align:middle;">✓ Auto-Swap</button>';
+      descRaw = descRaw.replace('{{SWAP_BTN}}', btnHtml);
+    }
+    const descHtml = '<div class="fix-description">' + descRaw + '</div>';
     fixPanelContent = '<div class="fix-panel" id="fp-'+uid+'"><div class="fix-applied-banner" style="display:none">✦ Fix applied — review and re-audit when done</div>' + descHtml + fixPanelContent + '</div>';
   }
 
@@ -4689,6 +4751,44 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '</tr>'+rows+
         '</table>'+
         '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">All questions in the same group must have an identical &lt;span&gt; tag. Compare the rows above and update any that do not match.</div>';
+  } else if (r.extra && r.extra.type === 'matching-length') {
+      const { violations } = r.extra;
+      const rows = violations.map(v => {
+        const jump = '<span class="line-badge" onclick="jumpToLine('+v.lineNum+');event.stopPropagation()">L'+v.lineNum+'</span>';
+        return '<tr style="border-bottom:1px solid var(--border);vertical-align:top">'+
+          '<td style="padding:6px 10px;font-size:11px;font-family:var(--mono);">'+jump+'</td>'+
+          '<td style="padding:6px 10px;font-size:11px;font-family:var(--mono);color:var(--error);font-weight:700">'+v.length+'</td>'+
+          '<td style="padding:6px 10px;font-size:11px;color:var(--text-mid);word-break:break-word;">'+esc(v.text)+'</td>'+
+        '</tr>';
+      }).join('');
+      extraPanel =
+        '<table style="width:100%;border-collapse:collapse;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:8px;">'+
+          '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);width:60px">Line #</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);width:60px">Length</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Current Text</th>'+
+          '</tr>'+rows+
+        '</table>';
+  } else if (r.extra && r.extra.type === 'matching-html-right') {
+      const { violations } = r.extra;
+      const rows = violations.map(v => {
+        const jump = '<span class="line-badge" onclick="jumpToLine('+v.lineNum+');event.stopPropagation()">L'+v.lineNum+'</span>';
+        return '<tr style="border-bottom:1px solid var(--border);vertical-align:top">'+
+          '<td style="padding:6px 10px;font-size:11px;font-family:var(--mono);">'+jump+'</td>'+
+          '<td style="padding:6px 10px;font-size:11px;color:var(--text-mid);word-break:break-word;">'+esc(v.text)+'</td>'+
+        '</tr>';
+      }).join('');
+      
+      const applyBtn = hasAuto ? '<button class="diff-action-btn diff-apply-btn" id="dab-'+uid+'" onclick="applyFix(\''+uid+'\',event)" title="Apply fix in editor" style="margin-left:auto;text-transform:none;letter-spacing:0;flex-shrink:0;">✓ Apply Fix</button>' : '';
+      
+      extraPanel =
+        '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:6px 12px 4px;font-size:11px;font-weight:700;color:var(--error);background:var(--error-bg);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;">HTML on Right Side' + applyBtn + '</div>'+
+        '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 var(--r) var(--r);margin-bottom:8px;">'+
+          '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);width:60px">Line #</th>'+
+            '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Current Text</th>'+
+          '</tr>'+rows+
+        '</table>';
   }
   return extraPanel;
 }
@@ -4754,6 +4854,7 @@ function collectFixableResults(catId) {
   for (const [uid, r] of Object.entries(resultRegistry)) {
     if (r.status === 'pass') continue;
     if (typeof autoFixers[r.rule.id] !== 'function') continue;
+    if (r.rule.manualFixOnly) continue; // Exclude from bulk autofix arrays
     const el = document.getElementById(uid);
     if (!el || el.classList.contains('fixed')) continue;
     if (catId) {
