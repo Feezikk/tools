@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.41</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.42</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -4071,15 +4071,16 @@ function renderReport(report,lines){
 
 function makeDiffLine(actual, expected) {
   // Produces the two-line dark diff: ~~old~~ / + new with character-level highlights
-  const a = esc(actual), e = esc(expected);
   let pLen = 0;
-  while (pLen < a.length && pLen < e.length && a[pLen] === e[pLen]) pLen++;
+  while (pLen < actual.length && pLen < expected.length && actual[pLen] === expected[pLen]) pLen++;
   let sLen = 0;
-  while (sLen < a.length - pLen && sLen < e.length - pLen && a[a.length-1-sLen] === e[e.length-1-sLen]) sLen++;
-  const aPre = a.substring(0, pLen), aSuf = a.substring(a.length - sLen);
-  const eDel = a.substring(pLen, a.length - sLen);
-  const eIns = e.substring(pLen, e.length - sLen);
-  const ePost = e.substring(e.length - sLen);
+  while (sLen < actual.length - pLen && sLen < expected.length - pLen && actual[actual.length-1-sLen] === expected[expected.length-1-sLen]) sLen++;
+  
+  const aPre = esc(actual.substring(0, pLen));
+  const aSuf = esc(actual.substring(actual.length - sLen));
+  const eDel = esc(actual.substring(pLen, actual.length - sLen));
+  const eIns = esc(expected.substring(pLen, expected.length - sLen));
+  
   const delLine =
     (aPre ? '<span style="opacity:.45">'+aPre+'</span>' : '') +
     (eDel ? '<del style="background:rgba(239,68,68,.35);color:#fca5a5;text-decoration:line-through;border-radius:2px;padding:0 2px;">'+eDel+'</del>' : '') +
@@ -4087,7 +4088,7 @@ function makeDiffLine(actual, expected) {
   const insLine =
     (aPre ? '<span style="opacity:.45">'+aPre+'</span>' : '') +
     (eIns ? '<ins style="background:rgba(34,197,94,.3);color:#4ade80;font-weight:700;text-decoration:none;border-radius:2px;padding:0 2px;">'+eIns+'</ins>' : '') +
-    (ePost ? '<span style="opacity:.45">'+ePost+'</span>' : '');
+    (aSuf ? '<span style="opacity:.45">'+aSuf+'</span>' : '');
   return { delLine, insLine };
 }
 
