@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.42</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.43</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -614,7 +614,7 @@ const RULES_DATA = {
            snippet:'<strong>text</strong>  <em>text</em>  <sup>2</sup>  <sub>2</sub>'} },
 
     { id:'lt-gt-entities', category:'html-tags', severity:'error',
-      description:'Math/code symbols (<, >) and entities (&lt;, &gt;) must be wrapped in <span>',
+      description:'Math/code symbols (<, >) and entities (&lt;, &gt;, &le;, &ge;) must be wrapped in <span>',
       type:'lt-gt-entities-check',
       message:'Line {line} contains unspanned "{found}" — wrap in <span> to prevent LMS parsing errors.',
       fix:{description:'Wrap naked < and > symbols (or their html entities) in <span> tags so the LMS does not misinterpret them as broken HTML.',
@@ -1521,7 +1521,7 @@ const AssessmentChecker = (() => {
 
    'lt-gt-entities-check'(rule, qs, raw, lines) {
       const allowedTagsRe = /<\/?\s*(span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre)\b[^>]*>/gi;
-      const validSpannedRe = /<span[^>]*>\s*(<|>|&lt;|&gt;)\s*<\/span>/gi;
+      const validSpannedRe = /<span[^>]*>\s*(<|>|&lt;|&gt;|&le;|&ge;)\s*<\/span>/gi;
       // Fragments that look like broken/incomplete HTML tags — a bare < or > that is
       // actually part of a malformed tag should be suppressed here; malformed-tags
       // or table-tag-pairs will catch it instead.
@@ -1553,9 +1553,9 @@ const AssessmentChecker = (() => {
         //    should not be flagged as naked symbols.
         checkLine = checkLine.replace(/&lt;\/?\s*(?:span|img|br|strong|em|u|s|del|sup|sub|table|thead|tbody|tr|th|td|caption|ol|ul|li|p|div|mark|font|b|i|a|h[1-6]|hr|blockquote|code|pre)\b[^&]*&gt;/gi, match => ' '.repeat(match.length));
 
-        // 5. Scan whatever is left for naked <, >, &lt;, or &gt;
+        // 5. Scan whatever is left for naked <, >, &lt;, &gt;, &le;, or &ge;
         const results = [];
-        const re = /(<|>|&lt;|&gt;)/gi;
+        const re = /(<|>|&lt;|&gt;|&le;|&ge;)/gi;
         let m;
         while ((m = re.exec(checkLine)) !== null) {
           const idx = m.index;
@@ -1609,12 +1609,10 @@ const AssessmentChecker = (() => {
 
           const actualFull = line;
           // Encode the raw symbol as an HTML entity inside the span for full LMS compatibility
-          let encodedSym;
-          if (sym === '<' || sym === '&lt;') {
-            encodedSym = '&lt;';
-          } else {
-            encodedSym = '&gt;';
-          }
+          let encodedSym = sym;
+          if (sym === '<') encodedSym = '&lt;';
+          if (sym === '>') encodedSym = '&gt;';
+          
           const replacement = '<span>' + encodedSym + '</span>';
           const expectedFull = line.substring(0, m.index) + replacement + line.substring(m.index + sym.length);
 
