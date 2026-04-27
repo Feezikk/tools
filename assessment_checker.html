@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.51</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.55</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1746,8 +1746,10 @@ const AssessmentChecker = (() => {
 
           for(const[ent,word] of Object.entries(ENTS)) {
             if(txt.includes(ent)) {
+              const newTxt = txt.split(ent).join(' ' + word + ' ').replace(/ {2,}/g, ' ').trim();
+              const expectedAlt = fullAlt.replace(txt, newTxt);
               imgResults.push(fail(rule, `Line ${i+1} alt text contains "${ent}". Expected: "${word}"`, i+1, ent, 
-                { type: 'contextual-diff', actual: ent, expected: word, truthAttr: fullAlt }));
+                { type: 'contextual-diff', actual: fullAlt, expected: expectedAlt, truthAttr: fullAlt, targetToken: ent, replaceWith: word }));
             }
           }
           // Only check bare symbols if no entity issues were found (entities take priority
@@ -1755,13 +1757,17 @@ const AssessmentChecker = (() => {
           if (!imgResults.length) {
             for(const sym of Object.keys(SYMS)) {
               if(txt.includes(sym)) {
+                const newTxt = txt.split(sym).join(' ' + SYMS[sym] + ' ').replace(/ {2,}/g, ' ').trim();
+                const expectedAlt = fullAlt.replace(txt, newTxt);
                 imgResults.push(fail(rule, `Line ${i+1} alt text contains symbol "${sym}". Expected: "${SYMS[sym]}"`, i+1, sym, 
-                  { type: 'contextual-diff', actual: sym, expected: SYMS[sym], truthAttr: fullAlt }));
+                  { type: 'contextual-diff', actual: fullAlt, expected: expectedAlt, truthAttr: fullAlt, targetToken: sym, replaceWith: SYMS[sym] }));
               }
             }
             if(!imgResults.length && MATH_MINUS.test(txt)) {
+              const newTxt = txt.replace(/(?<=\s)-(?=\d|\s)/g, ' minus ').replace(/ {2,}/g, ' ').trim();
+              const expectedAlt = fullAlt.replace(txt, newTxt);
               imgResults.push(fail(rule, `Line ${i+1} alt text contains "-" used as a math minus. Expected: "minus"`, i+1, '-', 
-                { type: 'contextual-diff', actual: '-', expected: 'minus', truthAttr: fullAlt }));
+                { type: 'contextual-diff', actual: fullAlt, expected: expectedAlt, truthAttr: fullAlt, targetToken: /(?<=\s)-(?=\d|\s)/g, replaceWith: 'minus' }));
             }
           }
           return imgResults;
@@ -3119,6 +3125,36 @@ const autoFixers={
   },
   'img-double-quotes':  text=>text.replace(/<img([^>]*)>/gi,(_,a)=>'<img'+a.replace(/src\s*=\s*'([^']*)'/gi,'src="$1"').replace(/alt\s*=\s*'([^']*)'/gi,'alt="$1"')+'>'),
   'img-alt-quotes':     text=>text.replace(/(<img[^>]+>)/gi,t=>t.replace(/alt\s*=\s*"([^]*?)"(?=\s*\/?>|\s+[a-z]+(?:=|\s|>))/i,(_,inner)=>'alt="'+inner.replace(/"/g,"'")+'"')),
+  'img-alt-symbol-words': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx] !== undefined) {
+        if (lines[idx].includes(result.extra.actual)) {
+          // If the exact original string is still intact, replace it directly
+          lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+        } else if (result.extra.targetToken) {
+          // Fallback if the line was modified by a sibling fix:
+          // Find the alt attribute and strictly target the symbol inside it
+          lines[idx] = lines[idx].replace(/(alt\s*=\s*)(?:"([^"]*)"|'([^']*)')/i, (match, prefix, dq, sq) => {
+            const quote = dq !== undefined ? '"' : "'";
+            let inner = dq !== undefined ? dq : sq;
+            
+            if (result.extra.targetToken instanceof RegExp) {
+              inner = inner.replace(result.extra.targetToken, ' ' + result.extra.replaceWith + ' ');
+            } else {
+              inner = inner.split(result.extra.targetToken).join(' ' + result.extra.replaceWith + ' ');
+            }
+            
+            inner = inner.replace(/ {2,}/g, ' ').trim();
+            return prefix + quote + inner + quote;
+          });
+        }
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'no-deprecated-tags': text=>text
     .replace(/<b>([\s\S]*?)<\/b>/gi,'<strong>$1</strong>')
     .replace(/<i>([\s\S]*?)<\/i>/gi,'<em>$1</em>')
@@ -3549,6 +3585,13 @@ function jumpToLine(n) {
 }
 
 function toggleItem(uid, lineNum) {
+  // Clear any active table token highlights when interacting with the results panel
+  if (window._cmHighlightMark) {
+    window._cmHighlightMark.clear();
+    window._cmHighlightMark = null;
+  }
+  window._lastHighlightedTokenId = null;
+
   const el = document.getElementById(uid);
   if (!el) return;
   const wasExpanded = el.classList.contains('details-open');
@@ -3609,6 +3652,14 @@ function clearAll() {
   ta.value = '';
   clearFile();
   clearLineMarks();
+  
+  // Clear any active table token highlights
+  if (window._cmHighlightMark) {
+    window._cmHighlightMark.clear();
+    window._cmHighlightMark = null;
+  }
+  window._lastHighlightedTokenId = null;
+  
   fixedLines.clear();
   Object.keys(resultRegistry).forEach(k => delete resultRegistry[k]);
   AppState.lineMap = {};
@@ -3641,6 +3692,13 @@ function clearAll() {
 function runAudit(){
   const raw=ta.value.trim();
   if(!raw){alert('Please paste content or upload a file first.');return;}
+
+  // Clear any active table token highlights
+  if (window._cmHighlightMark) {
+    window._cmHighlightMark.clear();
+    window._cmHighlightMark = null;
+  }
+  window._lastHighlightedTokenId = null;
 
   // ── Auto-detect course image folder from img src paths (only when field is blank) ──
   if (!DOM.imgBasePath.value.trim()) {
