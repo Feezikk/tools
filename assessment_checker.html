@@ -284,7 +284,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.39</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.40</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2505,19 +2505,28 @@ const AssessmentChecker = (() => {
         const noImgs = line.replace(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi, '');
         // Remove content inside HTML tags (attribute values etc.)
         const textOnly = noImgs.replace(/<[^>]+>/g, '\x00'); // replace tags with null byte placeholder
+
+        // Strip the x- correct-answer prefix before URL scanning so it is not included
+        // in (or erroneously triggers) a URL match. The prefix is only ever at the very
+        // start of an answer line (possibly after leading whitespace).
+        const textOnlyStripped = textOnly.replace(/^(\s*)x-/, '$1\x00\x00');
+
         // Collect text ranges that are inside <span>...</span> in textOnly
         // by masking span content directly in textOnly (avoids index-mapping errors)
         const maskedForSpans = noImgs.replace(/<span\b[^>]*>[\s\S]*?<\/span>/gi, m => '\x00'.repeat(m.replace(/<[^>]+>/g, '\x00').length))
-                                     .replace(/<[^>]+>/g, '\x00');
+                                     .replace(/<[^>]+>/g, '\x00')
+                                     .replace(/^(\s*)x-/, '$1\x00\x00');
         const results = [];
         let um;
         URL_RE.lastIndex = 0;
-        while ((um = URL_RE.exec(textOnly)) !== null) {
+        while ((um = URL_RE.exec(textOnlyStripped)) !== null) {
           const url = um[1];
-          // Skip if inside a span (position is masked in maskedForSpans)
+          // Skip if inside a span or masked x- prefix area
           if (maskedForSpans[um.index] === '\x00') continue;
-          // Skip filenames with common non-TLD extensions (e.g. style.txt, script.js)
+          // Skip filenames / bare extensions with common non-TLD extensions
           if (FILE_EXT_RE.test(url)) continue;
+          // Re-derive the actual URL text from the original line for the fix
+          // (offset is the same because we only replaced 2 chars with 2 null bytes)
           results.push(fail(rule,
             rule.message.replace('{line}', i+1).replace('{found}', url.length > 50 ? url.slice(0,50)+'…' : url),
             i+1, url, {type:'contextual-diff', actual:url, expected:'<span>'+url+'</span>'}));
