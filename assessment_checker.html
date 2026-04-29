@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.64</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.66</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2538,9 +2538,9 @@ const AssessmentChecker = (() => {
         // start of an answer line (possibly after leading whitespace).
         const textOnlyStripped = textOnly.replace(/^(\s*)x-/, '$1\x00\x00');
 
-        // Collect text ranges that are inside <span>...</span> in textOnly
-        // by masking span content directly in textOnly (avoids index-mapping errors)
-        const maskedForSpans = noImgs.replace(/<span\b[^>]*>[\s\S]*?<\/span>/gi, m => '\x00'.repeat(m.replace(/<[^>]+>/g, '\x00').length))
+        // Collect text ranges that are inside <span>, <code>, or <pre> tags in textOnly
+        // by masking their content directly in textOnly (avoids index-mapping errors)
+        const maskedForSpans = noImgs.replace(/<(span|code|pre)\b[^>]*>[\s\S]*?<\/\1>/gi, m => '\x00'.repeat(m.replace(/<[^>]+>/g, '\x00').length))
                                      .replace(/<[^>]+>/g, '\x00')
                                      .replace(/^(\s*)x-/, '$1\x00\x00');
         const results = [];
@@ -2548,10 +2548,23 @@ const AssessmentChecker = (() => {
         URL_RE.lastIndex = 0;
         while ((um = URL_RE.exec(textOnlyStripped)) !== null) {
           const url = um[1];
-          // Skip if inside a span or masked x- prefix area
+          // Skip if inside a span, code, or pre tag (or masked x- prefix area)
           if (maskedForSpans[um.index] === '\x00') continue;
           // Skip filenames / bare extensions with common non-TLD extensions
           if (FILE_EXT_RE.test(url)) continue;
+          // Skip if the matched "URL" is immediately followed by (, [, or = (likely a code snippet)
+          const nextChar = textOnlyStripped[um.index + url.length];
+          if (nextChar === '(' || nextChar === '[' || nextChar === '=') continue;
+          
+          // If it is a bare domain (no http:// or www.), restrict it to common TLDs
+          if (!/^(?:https?:\/\/|www\.)/i.test(url)) {
+            const domainPart = url.split('/')[0];
+            const tldMatch = domainPart.match(/\.([a-zA-Z]+)$/);
+            const tld = tldMatch ? tldMatch[1].toLowerCase() : '';
+            const commonTlds = ['com', 'org', 'net', 'edu', 'gov', 'io', 'co', 'us', 'uk', 'ca', 'me', 'info', 'biz', 'tv', 'app', 'dev', 'mil', 'int'];
+            if (!commonTlds.includes(tld)) continue;
+          }
+
           // Re-derive the actual URL text from the original line for the fix
           // (offset is the same because we only replaced 2 chars with 2 null bytes)
           results.push(fail(rule,
