@@ -46,14 +46,22 @@
             padding: 6px 15px; 
             font-size: 14px; 
             display: grid; 
-            grid-template-columns: 180px 1fr 100px; 
+            grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 100px; 
             gap: 20px;
             align-items: center;
             border-radius: 4px;
         }
         .page-item:hover { background: #f4f7fa; }
-        .file-name { font-family: 'Courier New', monospace; font-weight: 600; color: #d63384; }
-        .page-title { color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-name { 
+            font-family: 'Courier New', monospace; 
+            font-weight: 600; 
+            color: #d63384; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .page-title { color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
         .ref-code { font-family: monospace; font-weight: bold; text-align: right; background: #eef; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
         
         /* Search & Drop Zone */
@@ -248,8 +256,8 @@
                         const pItem = document.createElement('div');
                         pItem.className = 'page-item';
                         pItem.innerHTML = `
-                            <span class="file-name">${fileName}</span>
-                            <span class="page-title">${p.title}</span>
+                            <span class="file-name" title="${fileName}">${fileName}</span>
+                            <span class="page-title" title="${p.title}">${p.title}</span>
                             <span class="ref-code">${refCode}</span>
                         `;
                         lItem.appendChild(pItem);
