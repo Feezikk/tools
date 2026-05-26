@@ -1000,8 +1000,8 @@ const AssessmentChecker = (() => {
         continue;
       }
       if (!cur) continue;
-      if (/^points:\d+$/.test(t)) { cur.points = parseInt(t.split(':')[1]); cur.pointsLine = ln; }
-      else if (/^group:\d+$/.test(t)) { cur.group = parseInt(t.split(':')[1]); cur.groupLine = ln; }
+      if (/^points:\s?\d+$/.test(t)) { cur.points = parseInt(t.split(':')[1]); cur.pointsLine = ln; }
+      else if (/^group:\s?\d+$/.test(t)) { cur.group = parseInt(t.split(':')[1]); cur.groupLine = ln; }
       else if (cur.points === null && cur.group === null) {
         if (!t) continue; // skip blank lines
         // Determine if the stem is currently "empty" of actual question text.
@@ -3195,7 +3195,7 @@ const autoFixers={
     // A question boundary is identified by the last metadata line (group:N, points:N) or the
     // question code line itself, followed by the next question code line.
     const Q_CODE = /^(mc:radio:|essay:|fib:|tf:|matching:label:)/;
-    const META   = /^(points:\d+|group:\d+)$/;
+    const META   = /^(points:\s?\d+|group:\s?\d+)$/;
     const lines  = text.split('\n');
     const out    = [];
     let i = 0;
@@ -3220,7 +3220,7 @@ const autoFixers={
     }
     return out.join('\n');
   },
-  'points-before-group':text=>text.replace(/(group:\d+)\n(points:\d+)/g,'$2\n$1'),
+  'points-before-group':text=>text.replace(/(group:\s?\d+)\n(points:\s?\d+)/g,'$2\n$1'),
   'span-unclosed': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
