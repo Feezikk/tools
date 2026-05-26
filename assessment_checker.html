@@ -3802,8 +3802,36 @@ function runAudit(){
   Object.keys(resultRegistry).forEach(k=>delete resultRegistry[k]);
   AppState.lineMap = {};
   fixedLines.clear();clearLineMarks();
+
+  // ── Smart/curly quote detection & replacement ──────────────────
+  const SMART_QUOTE_RE = /[\u2018\u2019\u201C\u201D\u2032\u2033]/g;
+  let smartQuotesFound = false;
+  if (SMART_QUOTE_RE.test(raw)) {
+    smartQuotesFound = true;
+    const cleaned = raw
+      .replace(/[\u2018\u2019\u2032]/g, "'")   // left/right single, prime → '
+      .replace(/[\u201C\u201D\u2033]/g, '"');   // left/right double, double-prime → "
+    ta.value = cleaned;
+  }
+
   setTimeout(()=>{
-    try{const lines=raw.split('\n');renderReport(AssessmentChecker.run(raw),lines);}
+    try{
+      const currentVal = ta.value.trim();
+      const lines = currentVal.split('\n');
+      renderReport(AssessmentChecker.run(currentVal), lines);
+      if (smartQuotesFound) {
+        const notice = '<div class="smart-quote-notice" style="' +
+          'display:flex;align-items:flex-start;gap:10px;' +
+          'background:var(--warn-bg,#fff8e1);border-left:4px solid var(--warn,#f5a623);' +
+          'border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:0.92em;color:var(--text,#222);">' +
+          '<span style="font-size:1.2em;line-height:1.3">⚠️</span>' +
+          '<div><strong>Smart/curly quotes detected and replaced.</strong><br>' +
+          'Curly or typographic quote characters (\u2018\u2019\u201C\u201D) were found in your content and have been ' +
+          'automatically replaced with straight quotes (\' ") in the editor. ' +
+          'Please review and re-copy the corrected text.</div></div>';
+        DOM.resultsBody.insertAdjacentHTML('afterbegin', notice);
+      }
+    }
     catch(err){DOM.resultsBody.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: '+esc(err.message)+'</p></div>';}
   }, AUDIT_RENDER_DELAY_MS);
 }
