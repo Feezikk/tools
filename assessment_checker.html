@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.70</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.66</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2105,8 +2105,8 @@ const AssessmentChecker = (() => {
         const inner=content.match(/^\(([^)]+)\)$/);
         if(!inner){
             results.push(fail(rule,
-                `Question ${q.num} span content "${content}" does not match its attributes. Expected "${expectedText}" based on the attributes.`,
-                q.startLine, content, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim() }
+                `Question ${q.num} span content "${content}" does not match its attributes. Verify the correct lesson and/or complexity and update manually.`,
+                q.startLine, content, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim(), noAutoFix: true }
             ));
             continue;
         }
@@ -2132,8 +2132,8 @@ const AssessmentChecker = (() => {
                 ));
             } else {
                 results.push(fail(rule,
-                    `Question ${q.num} span content "${content}" does not match its attributes. Expected "${expectedText}" based on the attributes.`,
-                    q.startLine, errStr, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim() }
+                    `Question ${q.num} span content "${content}" does not match its attributes. Verify the correct lesson and/or complexity and update manually.`,
+                    q.startLine, errStr, { type: 'contextual-diff', expected: expectedText, actual: content, truthAttr: attrs.trim(), noAutoFix: true }
                 ));
             }
         }
@@ -3256,6 +3256,7 @@ const autoFixers={
   }),
   'span-self-closing':  text=>text.replace(/(<span\b[^>]*)\s*\/>/gi, '$1>'),
   'span-content-match': (text, result) => {
+    if (result.extra && result.extra.noAutoFix) return text;
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
       const idx = result.lineNum - 1;
@@ -4265,7 +4266,7 @@ function renderReport(report,lines){
     const catId = 'grp-' + gk;
     // Collect uids stamped by renderItem — only items that have an auto-fixer
     const fixableUids = sorted
-      .filter(r => r._uid && typeof autoFixers[r.rule.id] === 'function' && !r.rule.manualFixOnly)
+      .filter(r => r._uid && typeof autoFixers[r.rule.id] === 'function' && !r.rule.manualFixOnly && !(r.extra && r.extra.noAutoFix))
       .map(r => r._uid);
     const catFixBtn = fixableUids.length
       ? '<button class="cat-fix-all" onclick="applyGroupFixes(\''+catId+'\',event)" title="Apply all safe auto-fixes in this group">✨ Auto Fix ('+ fixableUids.length +')</button>'
@@ -4412,7 +4413,7 @@ function renderItem(r,lines){
   const badgeLabel = getQLabel(r.lineNum);
   const lineBadge = badgeLabel ? '<span class="line-badge" onclick="jumpToLine('+r.lineNum+');event.stopPropagation()">'+badgeLabel+'</span>' : '';
   const hasFixer=!isPassing&&!!r.rule.fix;
-  const hasAuto=hasFixer&&typeof autoFixers[r.rule.id]==='function';
+  const hasAuto=hasFixer&&typeof autoFixers[r.rule.id]==='function'&&!(r.extra&&r.extra.noAutoFix);
 
   // "Show Details / Code Fix" toggle — Apply Fix is only inside the fix panel, not the row
   const showDetailsBtn = hasFixer
