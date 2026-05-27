@@ -287,7 +287,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.66</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.74</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -2085,8 +2085,9 @@ const AssessmentChecker = (() => {
     'span-content-match-check'(rule, qs) {
       const results=[];
       for(const q of qs){
-        if(!q.stem.includes('<span') || !/\/span>/i.test(q.stem)) continue;
-        const sm=q.stem.match(/<span([^>]*)>([\s\S]*?)<\/span>/i); if(!sm) continue;
+        if(!q.stem.includes('<span')) continue;
+        // Match attributes and handle optional self-closing (/>), then capture text up to </span>, <br, newline, or end of string
+        const sm=q.stem.match(/<span([^>]*?)\/?>([\s\S]*?)(?:<\/span>|<br|\n|$)/i); if(!sm) continue;
         const attrs=sm[1],content=sm[2].trim();
         const cm2=attrs.match(/data-complexity\s*=\s*"([^"]*)"/i);
         const lm=attrs.match(/data-associatedlessons\s*=\s*"([^"]*)"/i);
@@ -4520,7 +4521,7 @@ function renderItem(r,lines){
         fixPanelContent =
           '<div class="diff-block">' +
           '<div class="diff-block-hdr"><span class="diff-label">Current Line' + lineLabel + '</span></div>' +
-          '<div class="diff-block-body" style="overflow-x:auto"><div style="font-family:var(--mono);font-size:12px;line-height:1.7;color:#e2e8f0;white-space:nowrap">' + displayLine + '</div></div>' +
+          '<div class="diff-block-body"><div style="font-family:var(--mono);font-size:12px;line-height:1.7;color:#e2e8f0;white-space:pre-wrap;word-break:break-all;">' + displayLine + '</div></div>' +
           '</div>' + contextPanel;
       } else {
         fixPanelContent = renderDiffBlock(uid, r.extra.actual, r.extra.expected, r.lineNum, hasAuto) + contextPanel;
