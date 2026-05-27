@@ -4473,7 +4473,58 @@ function renderItem(r,lines){
       fixPanelContent = afterBlock + contextPanel;
 
     } else if (r.extra && r.extra.type === 'contextual-diff') {
-      fixPanelContent = renderDiffBlock(uid, r.extra.actual, r.extra.expected, r.lineNum, hasAuto) + contextPanel;
+      if (r.extra.noAutoFix) {
+        // Show the actual source line with only the two mismatched values highlighted:
+        //   • span content text  (r.extra.actual  — what's written inside the span)
+        //   • the complexity token inside the attributes (derived from r.extra.truthAttr)
+        // No "Apply Fix" — the correct values must be verified manually.
+        const rawLine = userLine || '';
+
+        // The two values to highlight
+        const spanContent  = r.extra.actual || '';   // e.g. "(03.02 MC)"
+        // Extract complexity value from truthAttr (the raw attribute string)
+        const truthAttr = r.extra.truthAttr || '';
+        const cmMatch = truthAttr.match(/data-complexity\s*=\s*"([^"]*)"/i);
+        const cmValue = cmMatch ? cmMatch[1].trim() : '';
+
+        // Escape the full line, then mark just the two substrings
+        let displayLine = esc(rawLine);
+
+        // Helper: highlight a literal escaped substring (escape it first so it matches in the esc'd string)
+        function markInLine(haystack, needle, bg, fg, title) {
+          if (!needle) return haystack;
+          const escapedNeedle = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          // Only mark the first occurrence to avoid over-marking
+          return haystack.replace(
+            new RegExp(escapedNeedle),
+            '<mark style="background:' + bg + ';color:' + fg + ';border-radius:3px;padding:0 2px;font-weight:700;" title="' + title + '">' + esc(needle) + '</mark>'
+          );
+        }
+
+        // 1. Highlight span content text — amber (e.g. "(03.02 MC)")
+        if (spanContent) {
+          displayLine = markInLine(displayLine, spanContent, '#fef3c7', '#92400e', 'Span content text');
+        }
+        // 2. Highlight complexity attribute value — blue (e.g. "MC")
+        if (cmValue) {
+          // Match only the value inside data-complexity="..."
+          displayLine = displayLine.replace(
+            /(data-complexity\s*=\s*&quot;)([\s\S]*?)(&quot;)/,
+            function(_, pre, val, post) {
+              return pre + '<mark style="background:#dbeafe;color:#1e40af;border-radius:3px;padding:0 2px;font-weight:700;" title="data-complexity value">' + val + '</mark>' + post;
+            }
+          );
+        }
+
+        const lineLabel = r.lineNum ? ' <span style="opacity:.5;font-weight:400">(Line ' + r.lineNum + ')</span>' : '';
+        fixPanelContent =
+          '<div class="diff-block">' +
+          '<div class="diff-block-hdr"><span class="diff-label">Current Line' + lineLabel + '</span></div>' +
+          '<div class="diff-block-body" style="overflow-x:auto"><div style="font-family:var(--mono);font-size:12px;line-height:1.7;color:#e2e8f0;white-space:nowrap">' + displayLine + '</div></div>' +
+          '</div>' + contextPanel;
+      } else {
+        fixPanelContent = renderDiffBlock(uid, r.extra.actual, r.extra.expected, r.lineNum, hasAuto) + contextPanel;
+      }
 
     } else if (r.extra && r.extra.type === 'dual-pad-fix') {
       const attrDiff    = renderDiffBlock(uid+'a', r.extra.attrActual,    r.extra.attrExpected,    r.lineNum, false, '① data-associatedlessons');
