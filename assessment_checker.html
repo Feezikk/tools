@@ -289,7 +289,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.79</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.81</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -494,6 +494,13 @@ const RULES_DATA = {
       message:'Question code has extra spaces: "{found}". Use mc:radio: not mc : radio :',
       fix:{description:'Remove all spaces around colons in the question type code.',
            snippet:'mc:radio:  essay:  fib:  tf:  matching:label:'} },
+	  
+	{ id:'intra-question-blank-lines', category:'question-structure', severity:'error',
+      description:'Blank lines are not allowed within a question block',
+      type:'intra-question-blank-check',
+      message:'Question {num} contains a blank line. Remove all blank lines within the question.',
+      fix:{description:'Remove the empty line inside the question.',
+           snippet:'mc:radio:...\nCorrect\nx-Wrong\npoints:1\ngroup:1'} },
 
     { id:'question-spacing', category:'question-structure', severity:'error',
       description:'Questions must be separated by exactly one blank line',
@@ -1074,6 +1081,38 @@ const AssessmentChecker = (() => {
           .filter(x => /\s/.test(x))
           .map(x => fail(rule, rule.message.replace('{found}', x.trim()), i+1, x.trim()));
       });
+    },
+	  
+	'intra-question-blank-check'(rule, qs, raw, lines) {
+      const results = [];
+      for (const q of qs) {
+        // Find the absolute last line of this question block
+        let lastLine = q.startLine;
+        if (q.groupLine) lastLine = Math.max(lastLine, q.groupLine);
+        if (q.pointsLine) lastLine = Math.max(lastLine, q.pointsLine);
+        if (q.answers && q.answers.length) lastLine = Math.max(lastLine, q.answers[q.answers.length - 1].lineNum);
+        if (q.stemLines && q.stemLines.length) lastLine = Math.max(lastLine, q.stemLines[q.stemLines.length - 1]);
+
+        // Scan between the first line and the last line of the question
+        for (let idx = q.startLine; idx < lastLine - 1; idx++) {
+          if (lines[idx].trim() === '') {
+            const actualLineNum = idx + 1;
+            const prev = lines[idx - 1] !== undefined ? lines[idx - 1] : '';
+            const next = lines[idx + 1] !== undefined ? lines[idx + 1] : '';
+            
+            // Build a 3-line contextual diff (previous line, the blank line, next line)
+            const actual = prev + '\n' + lines[idx] + '\n' + next;
+            const expected = prev + '\n' + next;
+            
+            results.push(fail(rule, 
+              rule.message.replace('{num}', q.num), 
+              actualLineNum, 'blank line', 
+              { type: 'contextual-diff', actual, expected }
+            ));
+          }
+        }
+      }
+      return results;
     },
 
     'question-spacing'(rule, qs, raw, lines) {
@@ -3268,6 +3307,13 @@ const autoFixers={
     .replace(/<italic>([\s\S]*?)<\/italic>/gi,'<em>$1</em>')
     .replace(/<\/b>/gi,'</strong>').replace(/<\/i>/gi,'</em>')
     .replace(/<\/u>/gi,'</span>').replace(/<\/s>/gi,'</del>'),
+	'intra-question-blank-lines': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff') {
+      // Safely collapse the specific blank line using the contextual text block
+      return text.replace(result.extra.actual, result.extra.expected);
+    }
+    return text;
+  },
   'question-spacing': (text) => {
     // Normalise the blank-line gap between every pair of consecutive questions to exactly one.
     // A question boundary is identified by the last metadata line (group:N, points:N) or the
@@ -3893,14 +3939,27 @@ function runAudit(){
   AppState.lineMap = {};
   fixedLines.clear();clearLineMarks();
 
-  // ── Smart/curly quote detection & replacement ──────────────────
+// ── Pre-audit text sanitization (Quotes & Artifacts) ──────────────
+  let cleaned = raw;
+  
   const SMART_QUOTE_RE = /[\u2018\u2019\u201C\u201D\u2032\u2033]/g;
   let smartQuotesFound = false;
-  if (SMART_QUOTE_RE.test(raw)) {
+  if (SMART_QUOTE_RE.test(cleaned)) {
     smartQuotesFound = true;
-    const cleaned = raw
+    cleaned = cleaned
       .replace(/[\u2018\u2019\u2032]/g, "'")   // left/right single, prime → '
       .replace(/[\u201C\u201D\u2033]/g, '"');   // left/right double, double-prime → "
+  }
+
+  // Target `#^` and `###[1-3 digits]#^`
+  const ARTIFACT_RE = /(?:###\d{1,3})?#\^/g;
+  let artifactsFound = false;
+  if (ARTIFACT_RE.test(cleaned)) {
+    artifactsFound = true;
+    cleaned = cleaned.replace(ARTIFACT_RE, '');
+  }
+
+  if (smartQuotesFound || artifactsFound) {
     ta.value = cleaned;
   }
 
@@ -3909,6 +3968,7 @@ function runAudit(){
       const currentVal = ta.value.trim();
       const lines = currentVal.split('\n');
       renderReport(AssessmentChecker.run(currentVal), lines);
+      
       if (smartQuotesFound) {
         const notice = '<div class="smart-quote-notice" style="' +
           'display:flex;align-items:flex-start;gap:10px;' +
@@ -3920,6 +3980,18 @@ function runAudit(){
           'automatically replaced with straight quotes (\' ") in the editor. ' +
           'Please review and re-copy the corrected text.</div></div>';
         DOM.resultsBody.insertAdjacentHTML('afterbegin', notice);
+      }
+      if (artifactsFound) {
+        const noticeArtifact = '<div class="artifact-notice" style="' +
+          'display:flex;align-items:flex-start;gap:10px;' +
+          'background:var(--warn-bg,#fff8e1);border-left:4px solid var(--warn,#f5a623);' +
+          'border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:0.92em;color:var(--text,#222);">' +
+          '<span style="font-size:1.2em;line-height:1.3">⚠️</span>' +
+          '<div><strong>Stray artifact characters removed.</strong><br>' +
+          'Artifact formatting characters like <code>#^</code> and <code>###[number]#^</code> were found in your content and have been ' +
+          'automatically removed. ' +
+          'Please review and re-copy the corrected text.</div></div>';
+        DOM.resultsBody.insertAdjacentHTML('afterbegin', noticeArtifact);
       }
     }
     catch(err){DOM.resultsBody.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: '+esc(err.message)+'</p></div>';}
