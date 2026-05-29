@@ -291,7 +291,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.87</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.89</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -389,7 +389,10 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       <button class="filter-btn active-all" id="filter-all" onclick="setFilter('all')">All</button>
       <button class="filter-btn" id="filter-err" onclick="setFilter('err')">Errors only</button>
       <button class="filter-btn" id="filter-warn" onclick="setFilter('warn')">Warnings only</button>
-      <button class="btn-autofix" id="autofix-all-btn" disabled title="Run Audit first, then click to apply all safe auto-fixes at once" style="margin-left:auto;margin-right:43px;background:#3b1575">✨ Auto-Fix All</button>
+      <div style="margin-left:auto; margin-right:43px; display:flex; gap:8px;">
+        <button class="btn-autofix" id="fix-accents-btn" title="Convert all accented characters to HTML entities" style="display:none; background:#0284c7">Replace All Accents</button>
+        <button class="btn-autofix" id="autofix-all-btn" disabled title="Run Audit first, then click to apply all safe auto-fixes at once" style="background:#3b1575; margin:0;">✨ Auto-Fix All</button>
+      </div>
     </div>
     <div class="results-body" id="results-body">
       <div class="empty-state">
@@ -441,6 +444,7 @@ const DOM = (() => {
     runAuditBtn:    $('run-audit-btn'),
     copyBtn:        $('copy-btn'),
     clearAllBtn:    $('clear-all-btn'),
+    fixAccentsBtn:  $('fix-accents-btn'),
     autoFixAllBtn:  $('autofix-all-btn'),
     // Right panel
     resultsBody:    $('results-body'),
@@ -929,12 +933,6 @@ const RULES_DATA = {
       fix:{description:'Replace each flagged character with its correct HTML equivalent. Use the Apply Fix button to fix all automatically.',
            snippet:'\u201c\u201d \u2018\u2019  \u2192  &ldquo;&rdquo; &lsquo;&rsquo;\n\u2014  \u2192  &mdash;\n\u2013  \u2192  &ndash;\n\u00a9  \u2192  &copy;\n\u00ae \u2122 \u2120  \u2192  <sup>&reg;</sup> <sup>&trade;</sup> <sup>&#8480;</sup>\n\u00d7  \u2192  &times;\n\u00f7  \u2192  &divide;\n\u00a0  \u2192  (remove or use a regular space)'} },
 	  
-	{ id:'accented-chars-replace', category:'accessibility', severity:'error',
-      description:'Accented characters (Spanish/French) should be replaced with HTML entities',
-      type:'accented-chars-check',
-      message:'Line {line} contains accented character(s) ({found}) — convert to HTML entities.',
-      fix:{description:'Replace the accented characters with their HTML equivalents using the Apply Fix button.',
-           snippet:'á \u2192 &aacute;\nñ \u2192 &ntilde;\né \u2192 &eacute;\n¿ \u2192 &iquest;'} },
 
     { id:'special-chars-review', category:'accessibility', severity:'warning',
       description:'Unusual characters found — review and replace with HTML entities or plain text',
@@ -2352,42 +2350,6 @@ const AssessmentChecker = (() => {
       });
     },
 	  
-	  'accented-chars-check'(rule, qs, raw, lines) {
-      const ACCENT_MAP = {
-        'á':'&aacute;', 'é':'&eacute;', 'í':'&iacute;', 'ó':'&oacute;', 'ú':'&uacute;',
-        'Á':'&Aacute;', 'É':'&Eacute;', 'Í':'&Iacute;', 'Ó':'&Oacute;', 'Ú':'&Uacute;',
-        'ñ':'&ntilde;', 'Ñ':'&Ntilde;', 'ü':'&uuml;', 'Ü':'&Uuml;', '¿':'&iquest;', '¡':'&iexcl;',
-        'à':'&agrave;', 'â':'&acirc;', 'æ':'&aelig;', 'ç':'&ccedil;', 'è':'&egrave;',
-        'ê':'&ecirc;', 'ë':'&euml;', 'î':'&icirc;', 'ï':'&iuml;', 'ô':'&ocirc;',
-        'œ':'&oelig;', 'ù':'&ugrave;', 'û':'&ucirc;', 'ÿ':'&yuml;',
-        'À':'&Agrave;', 'Â':'&Acirc;', 'Æ':'&AElig;', 'Ç':'&Ccedil;', 'È':'&Egrave;',
-        'Ê':'&Ecirc;', 'Ë':'&Euml;', 'Î':'&Icirc;', 'Ï':'&Iuml;', 'Ô':'&Ocirc;',
-        'Œ':'&OElig;', 'Ù':'&Ugrave;', 'Û':'&Ucirc;', 'Ÿ':'&Yuml;'
-      };
-      // Matches any of the characters defined in the map above
-      const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/g;
-      
-      return lines.flatMap((line, i) => {
-        if (!ACCENT_RE.test(line)) return [];
-        
-        let match;
-        ACCENT_RE.lastIndex = 0;
-        const foundSet = new Set();
-        while ((match = ACCENT_RE.exec(line)) !== null) {
-          foundSet.add(match[0]);
-        }
-        
-        // Generate the exact fixed string for the contextual diff
-        const expected = line.replace(ACCENT_RE, char => ACCENT_MAP[char]);
-        
-        return [fail(rule, 
-          rule.message.replace('{line}', i+1).replace('{found}', Array.from(foundSet).join(', ')), 
-          i+1, null, 
-          { type: 'contextual-diff', actual: line, expected: expected }
-        )];
-      });
-    },
-
     'special-chars-check'(rule, qs, raw, lines) {
       const AUTO = [
         { char:'\u201c', name:'Left double curly quote \u201c',  fix:'&ldquo;' },
@@ -3464,17 +3426,7 @@ const autoFixers={
     }
     return text;
   },
-  'accented-chars-replace': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
+ 
   'special-chars-auto': (text, result) => {
     // Only replace the en dash (U+2013) if it is actually present in this result's
     // chars list. When the en dash was flagged as a possible minus sign it is removed
@@ -3952,6 +3904,7 @@ function clearAll() {
   DOM.autoFixAllBtn.disabled = true;
   DOM.filterBar.classList.remove('visible');
   AppState.activeFilter = 'all';
+  DOM.fixAccentsBtn.style.display = 'none';
   // Reset folder field and auto-detected state
   DOM.imgBasePath.value = '';
   DOM.imgBasePath.classList.remove('auto-detected');
@@ -4412,9 +4365,18 @@ function renderReport(report,lines){
     '<strong style="color:var(--error)">'+report.totalErrors+'</strong> errors &nbsp;·&nbsp; '+
     '<strong style="color:var(--warn)">'+report.totalWarnings+'</strong> warnings &nbsp;·&nbsp; '+
     '<strong style="color:var(--pass)">'+report.totalPasses+'</strong> passed';
+
+  // Check for accents before the early return so the button isn't skipped
+  syncFixAccentsBtn();
+  const hasAccents = DOM.fixAccentsBtn.style.display !== 'none';
+
   if(report.totalErrors===0&&report.totalWarnings===0){
     DOM.resultsBody.innerHTML='<div class="all-pass-banner"><div class="check">✅</div><h2>All checks passed!</h2><p>'+report.questionCount+' questions parsed. No formatting issues found.</p></div>';
     syncAutoFixAllBtn();
+    // If there are no errors but accents exist, force the bar to show
+    if (hasAccents) {
+      DOM.filterBar.classList.add('visible');
+    }
     return;
   }
   const errLines=[],warnLines=[];
@@ -5333,6 +5295,11 @@ function syncAutoFixAllBtn() {
     : 'No remaining auto-fixes — all fixable issues have been resolved';
 }
 
+function syncFixAccentsBtn() {
+  const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/;
+  DOM.fixAccentsBtn.style.display = ACCENT_RE.test(ta.value) ? 'inline-flex' : 'none';
+}
+
 function applyAllFixes(event) {
   if (event) event.stopPropagation();
   runBulkFix(collectFixableResults(null));
@@ -5537,6 +5504,29 @@ DOM.runAuditBtn.addEventListener('click', () => runAudit());
 DOM.copyBtn.addEventListener('click', () => copyText(DOM.copyBtn));
 DOM.clearAllBtn.addEventListener('click', () => clearAll());
 DOM.autoFixAllBtn.addEventListener('click', e => applyAllFixes(e));
+
+DOM.fixAccentsBtn.addEventListener('click', () => {
+  const ACCENT_MAP = {
+    'á':'&aacute;', 'é':'&eacute;', 'í':'&iacute;', 'ó':'&oacute;', 'ú':'&uacute;',
+    'Á':'&Aacute;', 'É':'&Eacute;', 'Í':'&Iacute;', 'Ó':'&Oacute;', 'Ú':'&Uacute;',
+    'ñ':'&ntilde;', 'Ñ':'&Ntilde;', 'ü':'&uuml;', 'Ü':'&Uuml;', '¿':'&iquest;', '¡':'&iexcl;',
+    'à':'&agrave;', 'â':'&acirc;', 'æ':'&aelig;', 'ç':'&ccedil;', 'è':'&egrave;',
+    'ê':'&ecirc;', 'ë':'&euml;', 'î':'&icirc;', 'ï':'&iuml;', 'ô':'&ocirc;',
+    'œ':'&oelig;', 'ù':'&ugrave;', 'û':'&ucirc;', 'ÿ':'&yuml;',
+    'À':'&Agrave;', 'Â':'&Acirc;', 'Æ':'&AElig;', 'Ç':'&Ccedil;', 'È':'&Egrave;',
+    'Ê':'&Ecirc;', 'Ë':'&Euml;', 'Î':'&Icirc;', 'Ï':'&Iuml;', 'Ô':'&Ocirc;',
+    'Œ':'&OElig;', 'Ù':'&Ugrave;', 'Û':'&Ucirc;', 'Ÿ':'&Yuml;'
+  };
+  const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/g;
+  
+  const text = ta.value;
+  if (!ACCENT_RE.test(text)) return;
+  
+  const fixedText = text.replace(ACCENT_RE, char => ACCENT_MAP[char]);
+  cm.operation(() => { cm.setValue(fixedText); });
+  showToast('✨ Accented characters converted to HTML entities.');
+  setTimeout(() => runAudit(), 60);
+});
 
 // Tab switching
 document.querySelectorAll('.tab[data-tab]').forEach(btn => {
