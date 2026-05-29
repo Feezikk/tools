@@ -264,6 +264,8 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 .dash-table tr:hover td{background:var(--surface2)}
 .dash-table tr.dash-row-alt td{background:#fafbfc}
 .dash-table tr.dash-row-alt:hover td{background:var(--surface2)}
+.dash-table tr.dash-row-warn td{background:#fef08a !important;}
+.dash-table tr.dash-row-warn:hover td{background:#fde047 !important;}
 .dash-group-num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)}
 .dash-points{font-family:var(--mono);font-size:12px}
 .dash-points .dash-pt-chip{display:inline-block;background:var(--accent-light);color:var(--accent);border:1px solid #c3d0ff;border-radius:4px;padding:1px 7px;font-weight:700;margin:1px 2px}
@@ -289,7 +291,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.83</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.84</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -5544,11 +5546,30 @@ function openDashboard() {
     (meta.questions||0) + ' questions · ' + (meta.groups||0) + ' groups · ' + totalPoints + ' total points';
   const tbody = DOM.dashTbody;
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
   } else {
+    // Calculate majority count for questions per group
+    const countFreq = {};
+    let maxFreq = 0;
+    let majorityCount = null;
+    data.forEach(row => {
+      countFreq[row.count] = (countFreq[row.count] || 0) + 1;
+    });
+    for (const [countStr, freq] of Object.entries(countFreq)) {
+      if (freq > maxFreq) {
+        maxFreq = freq;
+        majorityCount = parseInt(countStr);
+      }
+    }
+
     tbody.innerHTML = data.map((row, idx) => {
+      const isMixed = row.types.length > 1 || row.points.length > 1 || row.complexities.length > 1 || (row.suffixes && row.suffixes.length > 1);
+      const isCountMismatch = Object.keys(countFreq).length > 1 && row.count !== majorityCount;
+      const isWarning = isMixed || isCountMismatch;
+
       // Count
-      const countHtml = '<span class="dash-count">' + row.count + '</span>';
+      const countBadgeStyle = isCountMismatch ? ' style="background:var(--error);color:#fff;border-color:var(--error)" title="Differs from majority"' : '';
+      const countHtml = '<span class="dash-count"' + countBadgeStyle + '>' + row.count + '</span>';
       // Type
       const TYPE_COLORS = { 'MC':'dash-type-mc', 'Essay':'dash-type-essay', 'FIB':'dash-type-fib', 'T/F':'dash-type-tf', 'Matching':'dash-type-matching' };
       const typeHtml = row.types.length
@@ -5593,7 +5614,12 @@ function openDashboard() {
         }).join(' ');
       }
 
-      return '<tr' + (idx % 2 === 1 ? ' class="dash-row-alt"' : '') + '>' +
+      let rowClasses = [];
+      if (isWarning) rowClasses.push('dash-row-warn');
+      else if (idx % 2 === 1) rowClasses.push('dash-row-alt');
+      const classAttr = rowClasses.length ? ' class="' + rowClasses.join(' ') + '"' : '';
+
+      return '<tr' + classAttr + '>' +
         '<td>' + typeHtml + '</td>' +
         '<td><span class="dash-group-num">' + row.group + '</span></td>' +
         '<td>' + suffixHtml + '</td>' +
