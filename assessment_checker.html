@@ -289,7 +289,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.81</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.83</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -4282,9 +4282,25 @@ function renderReport(report,lines){
 
   let parts = [];
 
-  // Questions + Groups total only (no per-group breakdown)
+  // Build and cache dashboard data + qMode line map first so we can use it
+  AppState.dashData = buildDashboardData(report.questions);
+  AppState.dashMeta = { questions: report.questionCount, groups: groupNums.length };
+  buildQLineMap(report.questions);
+
+  // Calculate total points
+  let totalPoints = 0;
+  AppState.dashData.forEach(row => {
+    if (row.points && row.points.length > 0) {
+      totalPoints += row.points[0] || 0;
+    }
+  });
+
+  // Questions + Groups + Total Points
   parts.push(stat('Questions', report.questionCount));
-  if (groupNums.length) parts.push(stat('Groups', groupNums.length));
+  if (groupNums.length) {
+    parts.push(stat('Groups', groupNums.length));
+    parts.push(stat('Total Points', totalPoints));
+  }
 
   // Per-type counts
   if (typeCounts.length) {
@@ -4293,11 +4309,6 @@ function renderReport(report,lines){
   }
 
   DOM.qStrip.innerHTML = parts.join('');
-
-  // Build and cache dashboard data + qMode line map
-  AppState.dashData = buildDashboardData(report.questions);
-  AppState.dashMeta = { questions: report.questionCount, groups: groupNums.length };
-  buildQLineMap(report.questions);
   DOM.qmodeBtn.style.display = '';
   if (AppState.qMode) applyQMode();
   DOM.dashboardBtn.disabled = false;
@@ -5520,9 +5531,17 @@ function buildDashboardData(questions) {
 function openDashboard() {
   const data = AppState.dashData;
   if (!data) return;
+  
+  let totalPoints = 0;
+  data.forEach(row => {
+    if (row.points && row.points.length > 0) {
+      totalPoints += row.points[0] || 0;
+    }
+  });
+  
   const meta = AppState.dashMeta || {};
   DOM.dashMeta.textContent =
-    (meta.questions||0) + ' questions · ' + (meta.groups||0) + ' groups';
+    (meta.questions||0) + ' questions · ' + (meta.groups||0) + ' groups · ' + totalPoints + ' total points';
   const tbody = DOM.dashTbody;
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
