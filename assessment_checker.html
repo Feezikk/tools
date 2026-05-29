@@ -291,7 +291,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.84</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.87</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -928,6 +928,13 @@ const RULES_DATA = {
       message:'Question {num} contains characters that will cause display or accessibility issues.',
       fix:{description:'Replace each flagged character with its correct HTML equivalent. Use the Apply Fix button to fix all automatically.',
            snippet:'\u201c\u201d \u2018\u2019  \u2192  &ldquo;&rdquo; &lsquo;&rsquo;\n\u2014  \u2192  &mdash;\n\u2013  \u2192  &ndash;\n\u2026  \u2192  ...\n\u00d7  \u2192  &times;\n\u00f7  \u2192  &divide;\n\u00a0  \u2192  (remove or use a regular space)'} },
+	  
+	{ id:'accented-chars-replace', category:'accessibility', severity:'error',
+      description:'Accented characters (Spanish/French) should be replaced with HTML entities',
+      type:'accented-chars-check',
+      message:'Line {line} contains accented character(s) ({found}) — convert to HTML entities.',
+      fix:{description:'Replace the accented characters with their HTML equivalents using the Apply Fix button.',
+           snippet:'á \u2192 &aacute;\nñ \u2192 &ntilde;\né \u2192 &eacute;\n¿ \u2192 &iquest;'} },
 
     { id:'special-chars-review', category:'accessibility', severity:'warning',
       description:'Unusual characters found — review and replace with HTML entities or plain text',
@@ -2344,6 +2351,42 @@ const AssessmentChecker = (() => {
           { type:'en-dash-context', qNum:q.num, lineNums })];
       });
     },
+	  
+	  'accented-chars-check'(rule, qs, raw, lines) {
+      const ACCENT_MAP = {
+        'á':'&aacute;', 'é':'&eacute;', 'í':'&iacute;', 'ó':'&oacute;', 'ú':'&uacute;',
+        'Á':'&Aacute;', 'É':'&Eacute;', 'Í':'&Iacute;', 'Ó':'&Oacute;', 'Ú':'&Uacute;',
+        'ñ':'&ntilde;', 'Ñ':'&Ntilde;', 'ü':'&uuml;', 'Ü':'&Uuml;', '¿':'&iquest;', '¡':'&iexcl;',
+        'à':'&agrave;', 'â':'&acirc;', 'æ':'&aelig;', 'ç':'&ccedil;', 'è':'&egrave;',
+        'ê':'&ecirc;', 'ë':'&euml;', 'î':'&icirc;', 'ï':'&iuml;', 'ô':'&ocirc;',
+        'œ':'&oelig;', 'ù':'&ugrave;', 'û':'&ucirc;', 'ÿ':'&yuml;',
+        'À':'&Agrave;', 'Â':'&Acirc;', 'Æ':'&AElig;', 'Ç':'&Ccedil;', 'È':'&Egrave;',
+        'Ê':'&Ecirc;', 'Ë':'&Euml;', 'Î':'&Icirc;', 'Ï':'&Iuml;', 'Ô':'&Ocirc;',
+        'Œ':'&OElig;', 'Ù':'&Ugrave;', 'Û':'&Ucirc;', 'Ÿ':'&Yuml;'
+      };
+      // Matches any of the characters defined in the map above
+      const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/g;
+      
+      return lines.flatMap((line, i) => {
+        if (!ACCENT_RE.test(line)) return [];
+        
+        let match;
+        ACCENT_RE.lastIndex = 0;
+        const foundSet = new Set();
+        while ((match = ACCENT_RE.exec(line)) !== null) {
+          foundSet.add(match[0]);
+        }
+        
+        // Generate the exact fixed string for the contextual diff
+        const expected = line.replace(ACCENT_RE, char => ACCENT_MAP[char]);
+        
+        return [fail(rule, 
+          rule.message.replace('{line}', i+1).replace('{found}', Array.from(foundSet).join(', ')), 
+          i+1, null, 
+          { type: 'contextual-diff', actual: line, expected: expected }
+        )];
+      });
+    },
 
     'special-chars-check'(rule, qs, raw, lines) {
       const AUTO = [
@@ -2382,6 +2425,7 @@ const AssessmentChecker = (() => {
         { char:'\u00a9', name:'Copyright \u00a9',        fix:'&copy; or "(c)"' },
         { char:'\u00ae', name:'Registered trademark \u00ae', fix:'&reg; or "(R)"' },
         { char:'\u2122', name:'Trademark \u2122',        fix:'&trade; or "(TM)"' },
+        { char:'\u2120', name:'Service mark \u2120',     fix:'&#8480; or "(SM)"' },
         { char:'\u20ac', name:'Euro \u20ac',             fix:'&euro;' },
         { char:'\u00a3', name:'Pound \u00a3',            fix:'&pound;' },
         { char:'\u00a5', name:'Yen \u00a5',              fix:'&yen;' },
@@ -3416,6 +3460,17 @@ const autoFixers={
     }
     return text;
   },
+  'accented-chars-replace': (text, result) => {
+    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
+      const lines = text.split('\n');
+      const idx = result.lineNum - 1;
+      if (lines[idx]) {
+        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+      }
+      return lines.join('\n');
+    }
+    return text;
+  },
   'special-chars-auto': (text, result) => {
     // Only replace the en dash (U+2013) if it is actually present in this result's
     // chars list. When the en dash was flagged as a possible minus sign it is removed
@@ -4279,7 +4334,7 @@ function renderReport(report,lines){
     .map(([label, code]) => ({ label, count: report.questions.filter(q=>q.code===code).length }))
     .filter(t => t.count > 0);
 
-  const stat = (label, val) => `<div class="q-stat">${label}: <strong>${val}</strong></div>`;
+ const stat = (label, val) => `<div class="q-stat">${label}: <strong>${val}</strong></div>`;
   const pipe = `<div class="q-pipe"></div>`;
 
   let parts = [];
@@ -4289,15 +4344,44 @@ function renderReport(report,lines){
   AppState.dashMeta = { questions: report.questionCount, groups: groupNums.length };
   buildQLineMap(report.questions);
 
-  // Calculate total points
+  // Calculate total points & dashboard warnings
   let totalPoints = 0;
+  const countFreq = {};
+  let maxFreq = 0;
+  let majorityCount = null;
+  
   AppState.dashData.forEach(row => {
     if (row.points && row.points.length > 0) {
       totalPoints += row.points[0] || 0;
     }
+    countFreq[row.count] = (countFreq[row.count] || 0) + 1;
+  });
+  
+  for (const [countStr, freq] of Object.entries(countFreq)) {
+    if (freq > maxFreq) {
+      maxFreq = freq;
+      majorityCount = parseInt(countStr);
+    }
+  }
+
+  let dashIssuesCount = 0;
+  AppState.dashData.forEach(row => {
+    const isMixed = row.types.length > 1 || row.points.length > 1 || row.complexities.length > 1 || (row.suffixes && row.suffixes.length > 1);
+    const isCountMismatch = Object.keys(countFreq).length > 1 && row.count !== majorityCount;
+    if (isMixed || isCountMismatch) dashIssuesCount++;
   });
 
-  // Questions + Groups + Total Points
+  // 1. Dashboard Issues Badge (First Item)
+  if (AppState.dashData.length > 0) {
+    if (dashIssuesCount > 0) {
+      parts.push(`<div class="q-stat" style="background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);padding:3px 8px;border-radius:4px;font-weight:700;cursor:pointer;transition:filter .15s" onclick="openDashboard()" onmouseover="this.style.filter='brightness(0.95)'" onmouseout="this.style.filter='none'" title="Click to view dashboard">⚠ ${dashIssuesCount} Dashboard Issue${dashIssuesCount !== 1 ? 's' : ''}</div>`);
+    } else {
+      parts.push(`<div class="q-stat" style="background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-border);padding:3px 8px;border-radius:4px;font-weight:700;cursor:pointer;transition:filter .15s" onclick="openDashboard()" onmouseover="this.style.filter='brightness(0.95)'" onmouseout="this.style.filter='none'" title="Click to view dashboard">✓ 0 Dashboard Issues</div>`);
+    }
+    parts.push(pipe);
+  }
+
+  // 2. Questions + Groups + Total Points
   parts.push(stat('Questions', report.questionCount));
   if (groupNums.length) {
     parts.push(stat('Groups', groupNums.length));
