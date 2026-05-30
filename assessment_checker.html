@@ -59,7 +59,7 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .CodeMirror-gutters{background:var(--surface2);border-right:1px solid var(--border);min-width:44px}
 .CodeMirror-linenumber{padding:0 8px 0 4px;min-width:28px;color:var(--text-dim);font-size:12px;line-height:1.7}
 .CodeMirror-cursor{border-left:2px solid var(--accent)}
-.CodeMirror-selected{background:var(--accent-light)!important}
+.CodeMirror-selected{background:#fef08a!important}
 .cm-error-line{background:#fde8e8!important}
 .cm-warn-line{background:#fff3cd!important}
 .cm-fixed-line{background:#dcfce7!important}
@@ -188,8 +188,8 @@ header{height:52px;background:var(--text);color:#fff;display:flex;align-items:ce
 .category-section.all-hidden{display:none}
 mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radius:3px;font-weight:600}
 .table-token { cursor: pointer; transition: all 0.1s; }
-.table-token:hover { box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-light) !important; color: var(--accent) !important; border-radius: 2px; }
-.cm-token-highlight { background: rgba(27, 77, 255, 0.25) !important; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--accent); }
+.table-token:hover { box-shadow: inset 0 0 0 1px #eab308; background: #fef08a !important; color: #854d0e !important; border-radius: 2px; }
+.cm-token-highlight { background: rgba(253, 224, 71, 0.5) !important; border-radius: 2px; box-shadow: inset 0 0 0 1px #eab308; }
 .line-badge{font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--text-mid);border:1px solid var(--border);flex-shrink:0;cursor:pointer;white-space:nowrap}
 .line-badge:hover{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
 /* Apply Fix / View Guide buttons — now inline in the row */
@@ -286,12 +286,31 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 .dash-type-tf{background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4}
 .dash-type-matching{background:#fefce8;color:#a16207;border:1px solid #fef08a}
 .dash-type-other{background:var(--surface2);color:var(--text-mid);border:1px solid var(--border2)}
+
+/* ── Find and Replace Panel ── */
+.fr-panel { display:none; position:fixed; top:60px; right:24px; width:340px; background:var(--surface); border:1px solid var(--border2); border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,.15); z-index:900; flex-direction:column; overflow:hidden; }
+.fr-panel.visible { display:flex; animation: slideDown 0.15s; }
+.fr-header { background:var(--surface2); padding:10px 14px; border-bottom:1px solid var(--border); font-size:12px; font-weight:700; color:var(--text); cursor:move; display:flex; justify-content:space-between; align-items:center; user-select:none; }
+.fr-close { cursor:pointer; background:none; border:none; color:var(--text-mid); font-size:16px; line-height:1; transition: color .15s; }
+.fr-close:hover { color:var(--error); }
+.fr-body { padding:14px; display:flex; flex-direction:column; gap:10px; }
+.fr-row { display:flex; gap:8px; align-items:center; }
+.fr-input { flex:1; padding:7px 10px; border:1px solid var(--border); border-radius:4px; font-family:var(--sans); font-size:12px; color:var(--text); outline:none; transition:border-color .15s; }
+.fr-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-light); }
+.fr-opts { display:flex; gap:12px; font-size:11px; color:var(--text-mid); align-items:center; }
+.fr-opt-label { display:flex; align-items:center; gap:5px; cursor:pointer; user-select:none; }
+.fr-actions { display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+.fr-nav { display:flex; gap:4px; align-items:center; font-size:11px; color:var(--text-dim); }
+.fr-btn { padding:5px 12px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--text-mid); transition:all .12s; }
+.fr-btn:hover { background:var(--surface2); color:var(--text); border-color:var(--border2); }
+.fr-btn-primary { background:var(--accent); color:#fff; border:none; }
+.fr-btn-primary:hover { filter:brightness(1.1); color:#fff; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.89</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.91</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -306,6 +325,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       <option value="M">Mixed</option>
     </select>
   </label>
+  <button class="btn btn-dashboard" id="fr-toggle-btn" title="Find and Replace in text" style="margin-left: 10px;">🔍 Find</button>
   <button class="btn btn-dashboard" id="dashboard-btn" disabled title="Run an audit first">⊞ Dashboard</button>
 </header>
 
@@ -334,6 +354,41 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       </thead>
       <tbody id="dash-tbody"></tbody>
     </table>
+  </div>
+</div>
+	
+<div id="fr-panel" class="fr-panel">
+  <div class="fr-header" id="fr-header">
+    <span>🔍 Find and Replace</span>
+    <button class="fr-close" id="fr-close" title="Close">&times;</button>
+  </div>
+  <div class="fr-body">
+    <div class="fr-row">
+      <input type="text" id="fr-find-input" class="fr-input" placeholder="Find...">
+    </div>
+    <div class="fr-row">
+      <input type="text" id="fr-replace-input" class="fr-input" placeholder="Replace with...">
+    </div>
+    <div class="fr-opts">
+      <label class="fr-opt-label"><input type="checkbox" id="fr-opt-case"> Match Case</label>
+      <label class="fr-opt-label"><input type="checkbox" id="fr-opt-word"> Whole Word</label>
+    </div>
+    <div class="fr-opts" style="padding-top:8px; border-top:1px solid var(--border); margin-top:2px;">
+      <span style="font-weight:600;">Format Wrap:</span>
+      <label class="fr-opt-label"><input type="checkbox" id="fr-opt-bold"> <strong>Bold</strong></label>
+      <label class="fr-opt-label"><input type="checkbox" id="fr-opt-italic"> <em>Italic</em></label>
+    </div>
+    <div class="fr-actions">
+      <div class="fr-nav">
+        <button class="fr-btn" id="fr-prev-btn" style="padding:5px 8px;" title="Previous">▲</button>
+        <button class="fr-btn" id="fr-next-btn" style="padding:5px 8px;" title="Next">▼</button>
+        <span id="fr-nav-text" style="margin-left:4px;">No results</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="fr-btn" id="fr-replace-btn">Replace</button>
+        <button class="fr-btn fr-btn-primary" id="fr-replace-all-btn">All</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -471,6 +526,22 @@ const DOM = (() => {
     filterErr:      $('filter-err'),
     filterWarn:     $('filter-warn'),
     qmodeBtn:       $('qmode-btn'),
+    // Find & Replace
+    frToggleBtn:    $('fr-toggle-btn'),
+    frPanel:        $('fr-panel'),
+    frHeader:       $('fr-header'),
+    frClose:        $('fr-close'),
+    frFindInput:    $('fr-find-input'),
+    frReplaceInput: $('fr-replace-input'),
+    frOptCase:      $('fr-opt-case'),
+    frOptWord:      $('fr-opt-word'),
+    frOptBold:      $('fr-opt-bold'),
+    frOptItalic:    $('fr-opt-italic'),
+    frNavText:      $('fr-nav-text'),
+    frPrevBtn:      $('fr-prev-btn'),
+    frNextBtn:      $('fr-next-btn'),
+    frReplaceBtn:   $('fr-replace-btn'),
+    frReplaceAllBtn:$('fr-replace-all-btn'),
   };
 })();
 
@@ -5548,6 +5619,145 @@ DOM.collapseAllBtn.addEventListener('click', () => closeAllResults());
 DOM.dashboardBtn.addEventListener('click', () => openDashboard());
 DOM.dashOverlay.addEventListener('click', () => closeDashboard());
 DOM.dashCloseBtn.addEventListener('click', () => closeDashboard());
+
+// ─────────────────────────────────────────────────────────────────
+// FIND AND REPLACE
+// ─────────────────────────────────────────────────────────────────
+
+const FRState = { matches: [], activeIdx: -1 };
+
+function getSearchRegex() {
+  const query = DOM.frFindInput.value;
+  if (!query) return null;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const boundary = DOM.frOptWord.checked ? '\\b' : '';
+  const flags = DOM.frOptCase.checked ? 'g' : 'gi';
+  try { return new RegExp(boundary + escaped + boundary, flags); } catch(e) { return null; }
+}
+
+function getReplacementText() {
+  let rep = DOM.frReplaceInput.value;
+  if (DOM.frOptBold.checked && DOM.frOptItalic.checked) rep = `<strong><em>${rep}</em></strong>`;
+  else if (DOM.frOptBold.checked) rep = `<strong>${rep}</strong>`;
+  else if (DOM.frOptItalic.checked) rep = `<em>${rep}</em>`;
+  return rep;
+}
+
+function findMatches() {
+  const re = getSearchRegex();
+  FRState.matches = [];
+  if (!re) {
+    DOM.frNavText.textContent = 'No results';
+    return;
+  }
+  const text = cm.getValue();
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    FRState.matches.push({ index: m.index, length: m[0].length });
+    if (!re.global) break;
+  }
+  if (FRState.matches.length === 0) {
+    DOM.frNavText.textContent = 'No results';
+    FRState.activeIdx = -1;
+  } else {
+    if (FRState.activeIdx >= FRState.matches.length) FRState.activeIdx = 0;
+    if (FRState.activeIdx < 0) FRState.activeIdx = 0;
+    DOM.frNavText.textContent = `${FRState.activeIdx + 1} of ${FRState.matches.length}`;
+  }
+}
+
+function goToMatch(idx) {
+  if (!FRState.matches.length) return;
+  FRState.activeIdx = (idx + FRState.matches.length) % FRState.matches.length;
+  const match = FRState.matches[FRState.activeIdx];
+  const from = cm.posFromIndex(match.index);
+  const to = cm.posFromIndex(match.index + match.length);
+  cm.setSelection(from, to);
+  cm.scrollIntoView({ line: from.line, ch: from.ch }, 100);
+  DOM.frNavText.textContent = `${FRState.activeIdx + 1} of ${FRState.matches.length}`;
+}
+
+DOM.frToggleBtn.addEventListener('click', () => {
+  DOM.frPanel.classList.toggle('visible');
+  if (DOM.frPanel.classList.contains('visible')) {
+    DOM.frFindInput.focus();
+    findMatches();
+    if (FRState.matches.length) goToMatch(0);
+  }
+});
+
+DOM.frClose.addEventListener('click', () => DOM.frPanel.classList.remove('visible'));
+
+[DOM.frFindInput, DOM.frOptCase, DOM.frOptWord].forEach(el => {
+  el.addEventListener('input', () => { findMatches(); if (FRState.matches.length) goToMatch(0); });
+});
+
+DOM.frFindInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    goToMatch(FRState.activeIdx + (e.shiftKey ? -1 : 1));
+  }
+});
+
+DOM.frNextBtn.addEventListener('click', () => goToMatch(FRState.activeIdx + 1));
+DOM.frPrevBtn.addEventListener('click', () => goToMatch(FRState.activeIdx - 1));
+
+DOM.frReplaceBtn.addEventListener('click', () => {
+  if (!FRState.matches.length) return;
+  const sel = cm.getSelection();
+  const re = getSearchRegex();
+  // Ensure the current selection perfectly matches our active search pattern
+  if (re && new RegExp('^' + re.source + '$', re.flags.replace('g','')).test(sel)) {
+    cm.replaceSelection(getReplacementText());
+    findMatches();
+    if (FRState.matches.length) goToMatch(FRState.activeIdx);
+  } else {
+    goToMatch(FRState.activeIdx);
+  }
+});
+
+DOM.frReplaceAllBtn.addEventListener('click', () => {
+  const re = getSearchRegex();
+  if (!re) return;
+  const matches = [...cm.getValue().matchAll(re)];
+  if (!matches.length) return;
+  
+  const rep = getReplacementText();
+  // Apply changes backward so shifting indices don't corrupt the replacement locations
+  cm.operation(() => {
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const m = matches[i];
+      const from = cm.posFromIndex(m.index);
+      const to = cm.posFromIndex(m.index + m[0].length);
+      cm.replaceRange(rep, from, to);
+    }
+  });
+  findMatches();
+  showToast(`✨ Replaced ${matches.length} occurrences.`);
+});
+
+// Make panel draggable
+let isDraggingFR = false, dragStartX, dragStartY, panelStartX, panelStartY;
+DOM.frHeader.addEventListener('pointerdown', (e) => {
+  if (e.target === DOM.frClose) return;
+  isDraggingFR = true;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  const rect = DOM.frPanel.getBoundingClientRect();
+  panelStartX = rect.left;
+  panelStartY = rect.top;
+  DOM.frHeader.setPointerCapture(e.pointerId);
+});
+DOM.frHeader.addEventListener('pointermove', (e) => {
+  if (!isDraggingFR) return;
+  DOM.frPanel.style.left = `${panelStartX + (e.clientX - dragStartX)}px`;
+  DOM.frPanel.style.top = `${panelStartY + (e.clientY - dragStartY)}px`;
+  DOM.frPanel.style.right = 'auto'; // Break the CSS right binding on first drag
+});
+DOM.frHeader.addEventListener('pointerup', (e) => {
+  isDraggingFR = false;
+  DOM.frHeader.releasePointerCapture(e.pointerId);
+});
 
 // ─────────────────────────────────────────────────────────────────
 // DASHBOARD
