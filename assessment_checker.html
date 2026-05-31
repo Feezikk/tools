@@ -310,7 +310,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.91</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v5.96</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -571,8 +571,8 @@ const RULES_DATA = {
       message:'Question code has extra spaces: "{found}". Use mc:radio: not mc : radio :',
       fix:{description:'Remove all spaces around colons in the question type code.',
            snippet:'mc:radio:  essay:  fib:  tf:  matching:label:'} },
-	  
-	{ id:'intra-question-blank-lines', category:'question-structure', severity:'error',
+    
+  { id:'intra-question-blank-lines', category:'question-structure', severity:'error',
       description:'Blank lines are not allowed within a question block',
       type:'intra-question-blank-check',
       message:'Question {num} contains a blank line. Remove all blank lines within the question.',
@@ -800,14 +800,14 @@ const RULES_DATA = {
       message:'Line {line} image src "{found}" — expected path starting with {expected}.',
       fix:{description:'Update the src to use the correct CDN base path and course folder. Use Apply Fix to replace the folder segment automatically when a course folder is set.',
            snippet:'<img src="//cdn.flvs.net/assessment_images/my_course_v1/image.jpg" alt="..." />'} },
-	  
-	{ id:'span-attr-quotes', category:'span-metadata', severity:'error',
+    
+  { id:'span-attr-quotes', category:'span-metadata', severity:'error',
       description:'Metadata attributes must use matching double quotes',
       type:'span-attr-quotes-check',
       message:'Question {num} metadata attribute "{found}" has missing or mismatched quotes.',
       fix:{description:'Ensure all metadata attribute values are wrapped in matching double quotes.',
            snippet:'data-complexity="LC"\ndata-associatedlessons="01.01R"'} },
-	  
+    
     { id:'missing-lt-span', category:'span-metadata', severity:'error',
       description:'Question code must be followed by <span — missing opening angle bracket',
       type:'missing-lt-span-check',
@@ -1003,7 +1003,7 @@ const RULES_DATA = {
       message:'Question {num} contains characters that will cause display or accessibility issues.',
       fix:{description:'Replace each flagged character with its correct HTML equivalent. Use the Apply Fix button to fix all automatically.',
            snippet:'\u201c\u201d \u2018\u2019  \u2192  &ldquo;&rdquo; &lsquo;&rsquo;\n\u2014  \u2192  &mdash;\n\u2013  \u2192  &ndash;\n\u00a9  \u2192  &copy;\n\u00ae \u2122 \u2120  \u2192  <sup>&reg;</sup> <sup>&trade;</sup> <sup>&#8480;</sup>\n\u00d7  \u2192  &times;\n\u00f7  \u2192  &divide;\n\u00a0  \u2192  (remove or use a regular space)'} },
-	  
+    
 
     { id:'special-chars-review', category:'accessibility', severity:'warning',
       description:'Unusual characters found — review and replace with HTML entities or plain text',
@@ -1160,8 +1160,8 @@ const AssessmentChecker = (() => {
           .map(x => fail(rule, rule.message.replace('{found}', x.trim()), i+1, x.trim()));
       });
     },
-	  
-	'intra-question-blank-check'(rule, qs, raw, lines) {
+    
+  'intra-question-blank-check'(rule, qs, raw, lines) {
       const results = [];
       for (const q of qs) {
         // Find the absolute last line of this question block
@@ -2087,8 +2087,8 @@ const AssessmentChecker = (() => {
         return fail(rule, rule.message.replace('{num}', q.num), q.startLine);
       });
     },
-	  
-	'span-attr-quotes-check'(rule, qs) {
+    
+  'span-attr-quotes-check'(rule, qs) {
       const results=[];
       for(const q of qs){
         if(!q.stem.includes('<span')) continue;
@@ -2420,7 +2420,7 @@ const AssessmentChecker = (() => {
           { type:'en-dash-context', qNum:q.num, lineNums })];
       });
     },
-	  
+    
     'special-chars-check'(rule, qs, raw, lines) {
       const AUTO = [
         { char:'\u201c', name:'Left double curly quote \u201c',  fix:'&ldquo;' },
@@ -3390,7 +3390,7 @@ const autoFixers={
     .replace(/<italic>([\s\S]*?)<\/italic>/gi,'<em>$1</em>')
     .replace(/<\/b>/gi,'</strong>').replace(/<\/i>/gi,'</em>')
     .replace(/<\/u>/gi,'</span>').replace(/<\/s>/gi,'</del>'),
-	'intra-question-blank-lines': (text, result) => {
+  'intra-question-blank-lines': (text, result) => {
     if (result.extra && result.extra.type === 'contextual-diff') {
       // Safely collapse the specific blank line using the contextual text block
       return text.replace(result.extra.actual, result.extra.expected);
@@ -3428,29 +3428,49 @@ const autoFixers={
     return out.join('\n');
   },
   'points-before-group':text=>text.replace(/(group:\s?\d+)\n(points:\s?\d+)/g,'$2\n$1'),
-  'span-unclosed': (text, result) => {
+  // ── Shared helpers ────────────────────────────────────────────────
+  // Most line-based fixers follow the same pattern: split on '\n', replace
+  // result.extra.actual → result.extra.expected on the flagged line, rejoin.
+  // _lineReplace() centralises that logic; fixers delegate to it.
+  _lineReplace(text, result) {
     if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
       const lines = text.split('\n');
       const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
+      if (lines[idx]) lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
       return lines.join('\n');
     }
     return text;
   },
+
+  // Both matching swap fixers (right-side-length and html-on-right) use the same
+  // algorithm: find the first non-tag dash and swap left ↔ right sides.
+  _matchingSwap(text, result) {
+    if (!result.extra || !result.extra.violations) return text;
+    const lines = text.split('\n');
+    result.extra.violations.forEach(v => {
+      const idx = v.lineNum - 1;
+      if (lines[idx] === undefined) return;
+      const lineText = lines[idx];
+      let inTag = false, dashIdx = -1;
+      for (let i = 0; i < lineText.length; i++) {
+        if (lineText[i] === '<') { inTag = true; continue; }
+        if (lineText[i] === '>') { inTag = false; continue; }
+        if (!inTag && lineText[i] === '-') { dashIdx = i; break; }
+      }
+      if (dashIdx === -1) return;
+      const leftRaw = lineText.slice(0, dashIdx);
+      const rightRaw = lineText.slice(dashIdx + 1);
+      const m = leftRaw.match(/^(\s*(?:x-)?)(.*)/);
+      const [prefix, left] = m ? [m[1], m[2]] : ['', leftRaw];
+      lines[idx] = prefix + rightRaw + '-' + left;
+    });
+    return lines.join('\n');
+  },
+  // ─────────────────────────────────────────────────────────────────
+
+  'span-unclosed'(text, result)           { return this._lineReplace(text, result); },
   'span-followed-by-br':text=>text.replace(/(<\/span>)(?:\s*<\/?\s*br\b[^><]*(?:>|(?=<|$)))*/gi,'$1 <br /><br />'),
-	'span-attr-quotes': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
+  'span-attr-quotes'(text, result)        { return this._lineReplace(text, result); },
   'span-associatedlessons-format': (text, result) => {
     if (!result.extra || !result.lineNum) return text;
     const lines = text.split('\n');
@@ -3475,28 +3495,10 @@ const autoFixers={
   'span-self-closing':  text=>text.replace(/(<span\b[^>]*)\s*\/>/gi, '$1>'),
   'span-content-match': (text, result) => {
     if (result.extra && result.extra.noAutoFix) return text;
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
+    return autoFixers._lineReplace(text, result);
   },
   'missing-lt-span':    text=>text.replace(/(mc:radio:|essay:|tf:|fib:|matching:label:):?span\b/gi,(_,code)=>code+'<span'),
-  'lt-gt-entities': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
+  'lt-gt-entities'(text, result)          { return this._lineReplace(text, result); },
  
   'special-chars-auto': (text, result) => {
     // Only replace the en dash (U+2013) if it is actually present in this result's
@@ -3574,17 +3576,7 @@ const autoFixers={
       }
       return pre + ' style="text-align: center;"' + post;
     }),
-	'table-th-scope': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
+
   'font-tag-replace':   text=>text.replace(/<font\s+face\s*=\s*"([^"]*)"[^>]*>([\s\S]*?)<\/font>/gi,(_,face,inner)=>{
     const f=face.trim();
     const family=/courier\s*new/i.test(f)?"'Courier New', Courier, monospace":"'"+f+"'";
@@ -3603,130 +3595,18 @@ const autoFixers={
       }
       return '<ol' + (attrsNoType ? ' '+attrsNoType : '') + ' style="list-style-type: '+styleVal+';">';
     }),
- 'matching-right-side-length': (text, result) => {
-    if (!result.extra || !result.extra.violations) return text;
-    const lines = text.split('\n');
-    result.extra.violations.forEach(v => {
-      const idx = v.lineNum - 1;
-      if (lines[idx] !== undefined) {
-        const lineText = lines[idx];
-        let inTag = false, dashIdx = -1;
-        // Re-implement dash finder directly to isolate left and right sides
-        for (let i = 0; i < lineText.length; i++) {
-          if (lineText[i] === '<') { inTag = true; continue; }
-          if (lineText[i] === '>') { inTag = false; continue; }
-          if (!inTag && lineText[i] === '-') { dashIdx = i; break; }
-        }
-        if (dashIdx !== -1) {
-          const leftRaw = lineText.slice(0, dashIdx);
-          const rightRaw = lineText.slice(dashIdx + 1);
-          let prefix = '';
-          let left = leftRaw;
-          // Safely preserve leading whitespace or an unexpected x- prefix if present
-          const m = leftRaw.match(/^(\s*(?:x-)?)(.*)/);
-          if (m) { prefix = m[1]; left = m[2]; }
-          lines[idx] = prefix + rightRaw + '-' + left;
-        }
-      }
-    });
-    return lines.join('\n');
-  },
-  'matching-html-on-right': (text, result) => {
-    if (!result.extra || !result.extra.violations) return text;
-    const lines = text.split('\n');
-    result.extra.violations.forEach(v => {
-      const idx = v.lineNum - 1;
-      if (lines[idx] !== undefined) {
-        const lineText = lines[idx];
-        let inTag = false, dashIdx = -1;
-        for (let i = 0; i < lineText.length; i++) {
-          if (lineText[i] === '<') { inTag = true; continue; }
-          if (lineText[i] === '>') { inTag = false; continue; }
-          if (!inTag && lineText[i] === '-') { dashIdx = i; break; }
-        }
-        if (dashIdx !== -1) {
-          const leftRaw = lineText.slice(0, dashIdx);
-          const rightRaw = lineText.slice(dashIdx + 1);
-          let prefix = '';
-          let left = leftRaw;
-          const m = leftRaw.match(/^(\s*(?:x-)?)(.*)/);
-          if (m) { prefix = m[1]; left = m[2]; }
-          lines[idx] = prefix + rightRaw + '-' + left;
-        }
-      }
-    });
-    return lines.join('\n');
-  },
-  'matching-img-align': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
-  'img-absmiddle': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
+  // Both matching swap fixers use the same left↔right dash-swap algorithm
+  'matching-right-side-length'(text, result) { return this._matchingSwap(text, result); },
+  'matching-html-on-right'(text, result)     { return this._matchingSwap(text, result); },
 
-  'img-standalone-has-valign': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
+  'matching-img-align'(text, result)         { return this._lineReplace(text, result); },
+  'img-absmiddle'(text, result)              { return this._lineReplace(text, result); },
+  'img-standalone-has-valign'(text, result)  { return this._lineReplace(text, result); },
   // img-ambiguous-valign: no auto-fix — intent must be determined manually
 
-  'img-path-base': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
-  'underscore-format': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        // Targeted replacement using the exact snippet from the contextual diff
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  },
-  'bare-url-in-text': (text, result) => {
-    if (result.extra && result.extra.type === 'contextual-diff' && result.lineNum) {
-      const lines = text.split('\n');
-      const idx = result.lineNum - 1;
-      if (lines[idx]) {
-        lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
-      }
-      return lines.join('\n');
-    }
-    return text;
-  }
+  'img-path-base'(text, result)    { return this._lineReplace(text, result); },
+  'underscore-format'(text, result){ return this._lineReplace(text, result); },
+  'bare-url-in-text'(text, result) { return this._lineReplace(text, result); }
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -3766,7 +3646,6 @@ function buildQLineMap(questions) {
 }
 
 function applyQMode() {
-  const questions = AppState.dashData ? null : null; // will use qLineMap built after audit
   const map = AppState.qLineMap;
 
   // Remove existing group divider widgets
@@ -4070,7 +3949,7 @@ function runAudit(){
           'Please review and re-copy the corrected text.</div></div>';
         DOM.resultsBody.insertAdjacentHTML('afterbegin', notice);
       }
-      if (artifactsFound) {
+     if (artifactsFound) {
         const noticeArtifact = '<div class="artifact-notice" style="' +
           'display:flex;align-items:flex-start;gap:10px;' +
           'background:var(--warn-bg,#fff8e1);border-left:4px solid var(--warn,#f5a623);' +
@@ -4081,6 +3960,19 @@ function runAudit(){
           'automatically removed. ' +
           'Please review and re-copy the corrected text.</div></div>';
         DOM.resultsBody.insertAdjacentHTML('afterbegin', noticeArtifact);
+      }
+
+      const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/;
+      if (ACCENT_RE.test(currentVal)) {
+        const noticeAccents = '<div class="accent-notice" style="' +
+          'display:flex;align-items:flex-start;gap:10px;' +
+          'background:var(--warn-bg,#fff8e1);border-left:4px solid var(--warn,#f5a623);' +
+          'border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:0.92em;color:var(--text,#222);">' +
+          '<span style="font-size:1.2em;line-height:1.3">⚠️</span>' +
+          '<div><strong>Accented characters detected.</strong><br>' +
+          'Accented letters were found in your content. ' +
+          'You can use the <strong>Replace All Accents</strong> button to replace them with their HTML equivalents.</div></div>';
+        DOM.resultsBody.insertAdjacentHTML('afterbegin', noticeAccents);
       }
     }
     catch(err){DOM.resultsBody.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error: '+esc(err.message)+'</p></div>';}
@@ -4342,8 +4234,8 @@ function highlight(text,errorStr){
 
 function renderReport(report,lines){
   DOM.summaryChips.style.display='flex';
-  DOM.chipError.textContent=report.totalErrors+' Error'+(report.totalErrors!==1?'s':'');
-  DOM.chipWarn.textContent=report.totalWarnings+' Warning'+(report.totalWarnings!==1?'s':'');
+  DOM.chipError.textContent=pluralise(report.totalErrors,'Error');
+  DOM.chipWarn.textContent=pluralise(report.totalWarnings,'Warning');
   DOM.chipPass.textContent='✓ '+report.totalPasses+' Passed';
   DOM.qStrip.classList.add('visible');
 
@@ -4398,9 +4290,13 @@ function renderReport(report,lines){
 
   let dashIssuesCount = 0;
   AppState.dashData.forEach(row => {
-    const isMixed = row.types.length > 1 || row.points.length > 1 || row.complexities.length > 1 || (row.suffixes && row.suffixes.length > 1);
+    if (row.types.length > 1) dashIssuesCount++;
+    if (row.points.length > 1) dashIssuesCount++;
+    if (row.complexities.length > 1) dashIssuesCount++;
+    if (row.suffixes && row.suffixes.length > 1) dashIssuesCount++;
+    
     const isCountMismatch = Object.keys(countFreq).length > 1 && row.count !== majorityCount;
-    if (isMixed || isCountMismatch) dashIssuesCount++;
+    if (isCountMismatch) dashIssuesCount++;
   });
 
   // 1. Dashboard Issues Badge (First Item)
@@ -4533,8 +4429,8 @@ function renderReport(report,lines){
     const warnCount = fails.filter(f => f.rule.severity === 'warning').length;
     const hCls = errCount ? 'has-errors' : 'has-warnings';
     const badges =
-      (errCount ? '<span class="cat-count cat-count-error">'+errCount+' Error'+(errCount!==1?'s':'')+'</span>' : '') +
-      (warnCount ? '<span class="cat-count cat-count-warn">'+warnCount+' Warning'+(warnCount!==1?'s':'')+'</span>' : '');
+      (errCount ? '<span class="cat-count cat-count-error">'+pluralise(errCount,'Error')+'</span>' : '') +
+      (warnCount ? '<span class="cat-count cat-count-warn">'+pluralise(warnCount,'Warning')+'</span>' : '');
 
     let label, qLabel = '';
     if (gk === 'general') {
@@ -4890,16 +4786,29 @@ function renderItem(r,lines){
     '</div>'+
     (fixPanelContent||'')+'</div>';
 }
+// ─────────────────────────────────────────────────────────────────
+// RENDER HELPERS
+// ─────────────────────────────────────────────────────────────────
+// Returns a clickable "L{n}" badge that jumps the editor to that line,
+// or an empty string when n is falsy (used inside result detail panels).
+function mkLineBadge(n) {
+  return n
+    ? '<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>'
+    : '';
+}
+
+// Pluralises a noun: pluralise(3,'Error') → '3 Errors', pluralise(1,'Error') → '1 Error'
+function pluralise(n, word) { return n + ' ' + word + (n !== 1 ? 's' : ''); }
+
 function buildExtraPanel(r, lines, uid, hasAuto) {
   let extraPanel = '';
-  if(r.extra&&r.extra.type==='table-issues'){
+  const type = r.extra && r.extra.type;
+  if(type==='table-issues'){
       const {issues, rawHtml} = r.extra;
       const TYPE_ICON = { malformed:'⚠', unclosed:'', extra:'', order:'' };
       const TYPE_COLOR = { malformed:'var(--error)', unclosed:'var(--error)', extra:'var(--error)', order:'var(--warn)' };
       const rows = issues.map(issue => {
-        const jump = issue.lineNum
-          ? '<span class="line-badge" onclick="jumpToLine('+issue.lineNum+');event.stopPropagation()">L'+issue.lineNum+'</span>'
-          : '';
+        const jump = mkLineBadge(issue.lineNum);
         const ic = TYPE_ICON[issue.type] || '';
         const color = TYPE_COLOR[issue.type] || 'var(--error)';
         const tagBadge = '<code style="font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;color:var(--text-mid);margin-right:6px">&lt;'+esc(issue.tag)+'&gt;</code>';
@@ -4911,7 +4820,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '</tr>';
       }).join('');
       extraPanel =
-        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--error);text-transform:uppercase;letter-spacing:.5px;background:var(--error-bg)"> '+issues.length+' Issue'+(issues.length!==1?'s':'')+' Found</div>'+
+        '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--error);text-transform:uppercase;letter-spacing:.5px;background:var(--error-bg)"> '+pluralise(issues.length,'Issue')+' Found</div>'+
         '<table style="width:100%;border-collapse:collapse;border-left:1px solid var(--border);border-right:1px solid var(--border)">'+
           '<tr style="background:var(--surface2);border-bottom:1px solid var(--border2)">'+
             '<th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim);width:22px"></th>'+
@@ -4923,7 +4832,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Fix each issue above in order — malformed tags can cause cascading errors below.</div>'+
         '<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Formatted Table (For Reference)</div>'+
         '<div style="padding:0 12px 10px 12px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:var(--r);border-top:1px solid var(--border);margin:0">'+formatTableHTMLWithHighlights(rawHtml, issues, null, uid)+'</pre></div>';
-  } else if(r.extra&&r.extra.type==='formatted-code'){
+  } else if(type==='formatted-code'){
       const rawHtml = r.extra.rawHtml || r.extra.code || '';
       const mismatchRanges = r.extra.mismatchRanges || [];
       const colCount = r.extra.colCount || null;
@@ -4945,7 +4854,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '<div style="padding:0 12px 10px 12px;border-top:1px solid var(--border)"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);tab-size:4;border-radius:0 0 var(--r) var(--r);border:none;margin:0;">'+
           formatTableHTMLWithHighlights(rawHtml, [], mismatchRanges, uid)+
         '</pre></div>';
-  } else if(r.extra&&r.extra.type==='br-ambiguous'){
+  } else if(type==='br-ambiguous'){
       const {rawLine, img, side} = r.extra;
       const BRhighlight = (tag) => '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:3px;font-weight:700">'+esc(tag)+'</mark>';
       const IMGdim = (tag) => '<span style="opacity:.4;font-style:italic">'+esc(tag)+'</span>';
@@ -4965,14 +4874,14 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         '<div style="border-top:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.5px;background:var(--warn-bg)">⚠ Ambiguous Image Placement</div>'+
         '<div style="padding:6px 14px 4px;font-size:11px;color:var(--text-mid)">'+sideLabel+'</div>'+
         '<div style="padding:4px 12px 10px"><pre class="fix-snippet" style="background:var(--surface);color:var(--text);white-space:pre-wrap;word-break:break-all;margin:0">'+annotated+'</pre></div>';
-  } else if(r.extra&&r.extra.type==='group-points'){
+  } else if(type==='group-points'){
       const{group,items}=r.extra;
       const rows=items.map(item=>{
-        const jump=item.line?'<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>':'';
+        const jump = mkLineBadge(item.line);
         return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono)">points:'+item.points+'</td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group '+group+' — Point Values</div><table style="width:100%;border-collapse:collapse"><tr style="background:var(--surface2);border-bottom:1px solid var(--border2)"><th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Question #</th><th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Points</th><th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th></tr>'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">All questions in the same group must have the same point value. Compare the rows above and update any that do not match.</div>';
-  } else if(r.extra&&r.extra.type==='group-numbering'){
+  } else if(type==='group-numbering'){
       const {violations, seq} = r.extra;
       const badGroups = new Set(violations.map(v => v.found));
       const groupsSeen = new Map();
@@ -4988,19 +4897,19 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
       const rows = displayItems.map(di => {
         if (di.type === 'missing') return '<tr style="background:var(--error-bg);border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">—</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600;color:var(--error)">group:'+di.group+'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">missing</span></td><td style="padding:5px 10px;text-align:right"></td></tr>';
         const isBad = badGroups.has(di.group);
-        const jump = di.item.line ? '<span class="line-badge" onclick="jumpToLine('+di.item.line+');event.stopPropagation()">L'+di.item.line+'</span>' : '';
+        const jump = mkLineBadge(di.item.line);
         return '<tr style="'+(isBad?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text-dim)">Q'+di.item.num+'…</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600">group:'+di.group+(isBad?'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">⚠ wrong</span>':'')+'</td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group Numbering — All Groups</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Groups must form an unbroken sequence starting at 1.</div>';
-  } else if(r.extra&&r.extra.type==='group-sequence'){
+  } else if(type==='group-sequence'){
       let prev=null;
       const rows=r.extra.sequence.map(item=>{
         const isBreak=prev!==null&&item.group<prev; prev=item.group;
-        const jump=item.line?'<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>':'';
+        const jump = mkLineBadge(item.line);
         return '<tr style="'+(isBreak?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)"><td style="padding:5px 10px;font-size:11px;font-family:var(--mono)">Q'+item.num+'</td><td style="padding:5px 10px;font-size:12px;font-family:var(--mono);font-weight:600">group:'+item.group+(isBreak?'<span style="font-size:10px;background:var(--error);color:#fff;border-radius:3px;padding:1px 5px;margin-left:6px">↑ out of order</span>':'')+'</td><td style="padding:5px 10px;text-align:right">'+jump+'</td></tr>';
       }).join('');
       extraPanel='<div style="border-top:1px solid var(--border);padding:8px 12px 4px;font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Group Sequence — All Questions</div><table style="width:100%;border-collapse:collapse">'+rows+'</table><div style="padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">Highlighted rows are out of order. Questions in the same group must appear together.</div>';
-  } else if(r.extra&&r.extra.type==='special-chars'){
+  } else if(type==='special-chars'){
       const isAuto=r.extra.tier==='auto';
       const hdrColor=isAuto?'var(--error)':'var(--warn)';
       const hdrBg=isAuto?'var(--error-bg)':'var(--warn-bg)';
@@ -5010,14 +4919,14 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
         let text = lines[ln-1] || '';
         let safeText = esc(text);
        r.extra.chars.forEach(c => {
-		  if (c.lineNums.includes(ln)) {
-			const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
-			const markStyle = c.minusOverlap
-			  ? 'background:#fef3c7;color:#92400e;padding:0 2px;border-radius:2px;font-weight:bold;'
-			  : 'background:#fee2e2;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:bold;';
-			safeText = safeText.replace(charRegex, '<mark style="'+markStyle+'">'+esc(c.char)+'</mark>');
-		  }
-		});
+      if (c.lineNums.includes(ln)) {
+      const charRegex = new RegExp(esc(c.char).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+      const markStyle = c.minusOverlap
+        ? 'background:#fef3c7;color:#92400e;padding:0 2px;border-radius:2px;font-weight:bold;'
+        : 'background:#fee2e2;color:#991b1b;padding:0 2px;border-radius:2px;font-weight:bold;';
+      safeText = safeText.replace(charRegex, '<mark style="'+markStyle+'">'+esc(c.char)+'</mark>');
+      }
+    });
         snippetHtml += '<div style="color:var(--text-dim);font-size:9px;margin-bottom:2px;user-select:none;text-transform:uppercase;">Line '+ln+'</div><div style="margin-bottom:8px;">'+safeText+'</div>';
       });
       const previewPanel = '<div><div class="snippet-hdr" style="background:'+hdrBg+';color:'+hdrColor+';border-bottom:1px solid var(--border);">Affected Text</div><pre class="fix-snippet" style="background:var(--surface);color:var(--text);border-bottom:none;margin-bottom:0;border-radius:0;">'+snippetHtml+'</pre></div>';
@@ -5042,7 +4951,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line(s)</th>'+
         '</tr>'+rows+'</table>';
       if(!isAuto) extraPanel+='<div style="padding:0 12px 8px;font-size:11px;color:var(--text-mid)">Review each character and confirm the replacement is appropriate for the context before editing.</div>';
-  } else if(r.extra&&r.extra.type==='en-dash-context'){
+  } else if(type==='en-dash-context'){
       const lineLinks = r.extra.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
       extraPanel =
         '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-bg);text-transform:uppercase;letter-spacing:.5px">⚠ En Dash — Context Review Required</div>'+
@@ -5069,7 +4978,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '</table>'+
           '<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">Appears on: '+lineLinks+'</div>'+
         '</div>';
-  } else if(r.extra&&r.extra.type==='minus-context'){
+  } else if(type==='minus-context'){
       const lineLinks = r.extra.lineNums.map(n=>'<span class="line-badge" onclick="jumpToLine('+n+');event.stopPropagation()">L'+n+'</span>').join(' ');
       extraPanel =
         '<div style="border-top:1px solid var(--border);border-left:1px solid var(--border);border-right:1px solid var(--border);padding:8px 12px 6px;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-bg);text-transform:uppercase;letter-spacing:.5px">⚠ Dash — Context Review Required</div>'+
@@ -5096,12 +5005,12 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '</table>'+
           '<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">Appears on: '+lineLinks+'</div>'+
         '</div>';
-  } else if(r.extra&&r.extra.type==='group-type-consistency'){
+  } else if(type==='group-type-consistency'){
       const {group, items} = r.extra;
       const types = [...new Set(items.map(i=>i.label))];
       const rows = items.map(item => {
         const isOdd = types.indexOf(item.label) !== 0;
-        const jump = item.line ? '<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>' : '';
+        const jump = mkLineBadge(item.line);
         return '<tr style="'+(isOdd?'background:var(--error-bg)':'')+';border-bottom:1px solid var(--border)">'+
           '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text)">Q'+item.num+'</td>'+
           '<td style="padding:5px 10px;font-size:11px;font-family:var(--mono);'+(isOdd?'color:var(--error);font-weight:700':'color:var(--text-mid)')+'">'+esc(item.label)+'</td>'+
@@ -5117,15 +5026,44 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
             '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:right;color:var(--text-dim)">Line</th>'+
           '</tr>'+rows+
         '</table>';
-  } else if(r.extra&&r.extra.type==='group-meta-consistency'){
+  } else if(type==='group-meta-consistency'){
       const {group, items} = r.extra;
+      
+      // Compare all spans to find out which specific attributes differ
+      const allSpans = items.map(i => i.span).filter(Boolean);
+      const extract = (span) => {
+         const cx = (span.match(/data-complexity\s*=\s*"([^"]*)"/i) || [])[1];
+         const al = (span.match(/data-associatedlessons\s*=\s*"([^"]*)"/i) || [])[1];
+         const st = (span.match(/(data-standard-[a-z0-9_-]+\s*=\s*"[^"]*")/i) || [])[1]; 
+         const ct = (span.match(/>([^<]*)</) || [])[1];
+         return { cx, al, st, ct };
+      };
+      const parsed = allSpans.map(extract);
+      const unique = (key) => new Set(parsed.map(p => p[key])).size > 1;
+      
+      const diffCx = unique('cx');
+      const diffAl = unique('al');
+      const diffSt = unique('st');
+      const diffCt = unique('ct');
+      const markStyle = 'background:#fef08a;color:#854d0e;padding:0 2px;border-radius:2px;font-weight:600';
+
       const rows = items.map(item => {
-        const jump = item.line
-          ? '<span class="line-badge" onclick="jumpToLine('+item.line+');event.stopPropagation()">L'+item.line+'</span>'
-          : '';
+        const jump = mkLineBadge(item.line);
+        
+        let highlightedSpan = '';
+        if (item.span) {
+          highlightedSpan = esc(item.span);
+          // Apply highlights only to the mismatched values
+          if (diffCx) highlightedSpan = highlightedSpan.replace(/(data-complexity\s*=\s*&quot;)(.*?)(&quot;)/i, `$1<mark style="${markStyle}">$2</mark>$3`);
+          if (diffAl) highlightedSpan = highlightedSpan.replace(/(data-associatedlessons\s*=\s*&quot;)(.*?)(&quot;)/i, `$1<mark style="${markStyle}">$2</mark>$3`);
+          if (diffSt) highlightedSpan = highlightedSpan.replace(/(data-standard-[a-z0-9_-]+\s*=\s*&quot;)(.*?)(&quot;)/i, `$1<mark style="${markStyle}">$2</mark>$3`);
+          if (diffCt) highlightedSpan = highlightedSpan.replace(/(&gt;)(.*?)(&lt;\/span)/i, `$1<mark style="${markStyle}">$2</mark>$3`);
+        }
+
         const spanDisplay = item.span
-          ? '<code style="font-family:var(--mono);font-size:10px;word-break:break-all;white-space:pre-wrap;color:var(--text)">'+esc(item.span)+'</code>'
+          ? '<code style="font-family:var(--mono);font-size:10px;word-break:break-all;white-space:pre-wrap;color:var(--text)">'+highlightedSpan+'</code>'
           : '<span style="color:var(--text-dim);font-style:italic;font-size:10px">no span found</span>';
+          
         return '<tr style="border-bottom:1px solid var(--border);vertical-align:top">'+
           '<td style="padding:6px 10px;font-size:11px;font-family:var(--mono);color:var(--text);white-space:nowrap">Q'+item.num+'</td>'+
           '<td style="padding:6px 10px;font-size:11px">'+spanDisplay+'</td>'+
@@ -5143,7 +5081,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
           '</tr>'+rows+
         '</table>'+
         '<div style="border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px 8px;font-size:11px;color:var(--text-mid)">All questions in the same group must have an identical &lt;span&gt; tag. Compare the rows above and update any that do not match.</div>';
-  } else if (r.extra && r.extra.type === 'matching-length') {
+  } else if(type==='matching-length'){
       const { violations } = r.extra;
       const rows = violations.map(v => {
         const jump = '<span class="line-badge" onclick="jumpToLine('+v.lineNum+');event.stopPropagation()">L'+v.lineNum+'</span>';
@@ -5161,7 +5099,7 @@ function buildExtraPanel(r, lines, uid, hasAuto) {
             '<th style="padding:5px 10px;font-size:10px;font-weight:700;text-align:left;color:var(--text-dim)">Current Text</th>'+
           '</tr>'+rows+
         '</table>';
-  } else if (r.extra && r.extra.type === 'matching-html-right') {
+  } else if(type==='matching-html-right'){
       const { violations } = r.extra;
       const rows = violations.map(v => {
         const jump = '<span class="line-badge" onclick="jumpToLine('+v.lineNum+');event.stopPropagation()">L'+v.lineNum+'</span>';
@@ -5835,7 +5773,7 @@ function openDashboard() {
   
   const meta = AppState.dashMeta || {};
   DOM.dashMeta.textContent =
-    (meta.questions||0) + ' questions · ' + (meta.groups||0) + ' groups · ' + totalPoints + ' total points';
+    (meta.questions||0)+' questions · '+(meta.groups||0)+' groups · ' + totalPoints + ' total points';
   const tbody = DOM.dashTbody;
   if (!data.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="dash-empty">No group data found. Make sure questions have group: lines.</td></tr>';
@@ -5859,13 +5797,15 @@ function openDashboard() {
       const isCountMismatch = Object.keys(countFreq).length > 1 && row.count !== majorityCount;
       const isWarning = isMixed || isCountMismatch;
 
+     const warnIcon = (title) => '<span style="color:var(--warn);font-size:12px;margin-left:4px;vertical-align:middle;cursor:help;" title="' + title + '">⚠</span>';
+      
       // Count
       const countBadgeStyle = isCountMismatch ? ' style="background:var(--error);color:#fff;border-color:var(--error)" title="Differs from majority"' : '';
-      const countHtml = '<span class="dash-count"' + countBadgeStyle + '>' + row.count + '</span>';
+      const countHtml = '<span class="dash-count"' + countBadgeStyle + '>' + row.count + '</span>' + (isCountMismatch ? warnIcon('Count differs from majority') : '');
       // Type
       const TYPE_COLORS = { 'MC':'dash-type-mc', 'Essay':'dash-type-essay', 'FIB':'dash-type-fib', 'T/F':'dash-type-tf', 'Matching':'dash-type-matching' };
       const typeHtml = row.types.length
-        ? row.types.map(t => '<span class="dash-type-chip ' + (TYPE_COLORS[t]||'dash-type-other') + '">' + esc(t) + '</span>').join(' ')
+        ? row.types.map(t => '<span class="dash-type-chip ' + (TYPE_COLORS[t]||'dash-type-other') + '">' + esc(t) + '</span>').join(' ') + (row.types.length > 1 ? warnIcon('Mixed types') : '')
         : '<span style="color:var(--text-dim);font-style:italic;font-size:11px">—</span>';
       // Points
       let ptHtml;
@@ -5874,8 +5814,7 @@ function openDashboard() {
       } else if (row.points.length === 1) {
         ptHtml = '<span class="dash-pt-chip">' + row.points[0] + '</span>';
       } else {
-        ptHtml = row.points.map(p => '<span class="dash-pt-chip">' + p + '</span>').join(' ') +
-          '<span class="dash-pt-multi">⚠ mixed</span>';
+        ptHtml = row.points.map(p => '<span class="dash-pt-chip">' + p + '</span>').join(' ') + warnIcon('Mixed point values');
       }
       // Complexity
       let cxHtml;
@@ -5884,7 +5823,7 @@ function openDashboard() {
       } else if (row.complexities.length === 1) {
         cxHtml = '<span class="dash-complexity ' + row.complexities[0] + '">' + row.complexities[0] + '</span>';
       } else {
-        cxHtml = row.complexities.map(c => '<span class="dash-complexity ' + c + '">' + c + '</span>').join(' ');
+        cxHtml = row.complexities.map(c => '<span class="dash-complexity ' + c + '">' + c + '</span>').join(' ') + warnIcon('Mixed complexities');
       }
       const lessonHtml = row.lessons.length
         ? '<span class="dash-lesson">' + row.lessons.map(l => esc(l)).join('<br>') + '</span>'
@@ -5903,9 +5842,9 @@ function openDashboard() {
         suffixHtml = row.suffixes.map(s => {
           const colorClass = s === 'R' ? 'dash-type-mc' : (s === 'H' ? 'dash-type-essay' : 'dash-type-other');
           return '<span class="dash-type-chip ' + colorClass + '">' + s + '</span>';
-        }).join(' ');
+        }).join(' ') + (row.suffixes.length > 1 ? warnIcon('Mixed Regular/Honors') : '');
       }
-
+		
       let rowClasses = [];
       if (isWarning) rowClasses.push('dash-row-warn');
       else if (idx % 2 === 1) rowClasses.push('dash-row-alt');
