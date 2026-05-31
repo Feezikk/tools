@@ -445,7 +445,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       <button class="filter-btn" id="filter-err" onclick="setFilter('err')">Errors only</button>
       <button class="filter-btn" id="filter-warn" onclick="setFilter('warn')">Warnings only</button>
       <div style="margin-left:auto; margin-right:43px; display:flex; gap:8px;">
-        <button class="btn-autofix" id="fix-accents-btn" title="Convert all accented characters to HTML entities" style="display:none; background:#0284c7">Replace All Accents</button>
+       
         <button class="btn-autofix" id="autofix-all-btn" disabled title="Run Audit first, then click to apply all safe auto-fixes at once" style="background:#3b1575; margin:0;">✨ Auto-Fix All</button>
       </div>
     </div>
@@ -499,7 +499,7 @@ const DOM = (() => {
     runAuditBtn:    $('run-audit-btn'),
     copyBtn:        $('copy-btn'),
     clearAllBtn:    $('clear-all-btn'),
-    fixAccentsBtn:  $('fix-accents-btn'),
+   
     autoFixAllBtn:  $('autofix-all-btn'),
     // Right panel
     resultsBody:    $('results-body'),
@@ -3854,7 +3854,7 @@ function clearAll() {
   DOM.autoFixAllBtn.disabled = true;
   DOM.filterBar.classList.remove('visible');
   AppState.activeFilter = 'all';
-  DOM.fixAccentsBtn.style.display = 'none';
+  
   // Reset folder field and auto-detected state
   DOM.imgBasePath.value = '';
   DOM.imgBasePath.classList.remove('auto-detected');
@@ -3965,13 +3965,14 @@ function runAudit(){
       const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/;
       if (ACCENT_RE.test(currentVal)) {
         const noticeAccents = '<div class="accent-notice" style="' +
-          'display:flex;align-items:flex-start;gap:10px;' +
+          'display:flex;align-items:center;gap:14px;' +
           'background:var(--warn-bg,#fff8e1);border-left:4px solid var(--warn,#f5a623);' +
           'border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:0.92em;color:var(--text,#222);">' +
           '<span style="font-size:1.2em;line-height:1.3">⚠️</span>' +
-          '<div><strong>Accented characters detected.</strong><br>' +
+          '<div style="flex:1;"><strong>Accented characters detected.</strong><br>' +
           'Accented letters were found in your content. ' +
-          'You can use the <strong>Replace All Accents</strong> button to replace them with their HTML equivalents.</div></div>';
+          'Click the button to replace them with their HTML equivalents.</div>' +
+          '<button class="btn-autofix" onclick="applyAccentFix()" style="background:#0284c7; flex-shrink:0; padding:6px 12px; font-size:12px;">Replace All Accents</button></div>';
         DOM.resultsBody.insertAdjacentHTML('afterbegin', noticeAccents);
       }
     }
@@ -4333,17 +4334,9 @@ function renderReport(report,lines){
     '<strong style="color:var(--warn)">'+report.totalWarnings+'</strong> warnings &nbsp;·&nbsp; '+
     '<strong style="color:var(--pass)">'+report.totalPasses+'</strong> passed';
 
-  // Check for accents before the early return so the button isn't skipped
-  syncFixAccentsBtn();
-  const hasAccents = DOM.fixAccentsBtn.style.display !== 'none';
-
   if(report.totalErrors===0&&report.totalWarnings===0){
     DOM.resultsBody.innerHTML='<div class="all-pass-banner"><div class="check">✅</div><h2>All checks passed!</h2><p>'+report.questionCount+' questions parsed. No formatting issues found.</p></div>';
     syncAutoFixAllBtn();
-    // If there are no errors but accents exist, force the bar to show
-    if (hasAccents) {
-      DOM.filterBar.classList.add('visible');
-    }
     return;
   }
   const errLines=[],warnLines=[];
@@ -5304,11 +5297,6 @@ function syncAutoFixAllBtn() {
     : 'No remaining auto-fixes — all fixable issues have been resolved';
 }
 
-function syncFixAccentsBtn() {
-  const ACCENT_RE = /[áéíóúÁÉÍÓÚñÑüÜ¿¡àâæçèêëîïôœùûÿÀÂÆÇÈÊËÎÏÔŒÙÛŸ]/;
-  DOM.fixAccentsBtn.style.display = ACCENT_RE.test(ta.value) ? 'inline-flex' : 'none';
-}
-
 function applyAllFixes(event) {
   if (event) event.stopPropagation();
   runBulkFix(collectFixableResults(null));
@@ -5514,7 +5502,7 @@ DOM.copyBtn.addEventListener('click', () => copyText(DOM.copyBtn));
 DOM.clearAllBtn.addEventListener('click', () => clearAll());
 DOM.autoFixAllBtn.addEventListener('click', e => applyAllFixes(e));
 
-DOM.fixAccentsBtn.addEventListener('click', () => {
+window.applyAccentFix = function() {
   const ACCENT_MAP = {
     'á':'&aacute;', 'é':'&eacute;', 'í':'&iacute;', 'ó':'&oacute;', 'ú':'&uacute;',
     'Á':'&Aacute;', 'É':'&Eacute;', 'Í':'&Iacute;', 'Ó':'&Oacute;', 'Ú':'&Uacute;',
@@ -5535,7 +5523,7 @@ DOM.fixAccentsBtn.addEventListener('click', () => {
   cm.operation(() => { cm.setValue(fixedText); });
   showToast('✨ Accented characters converted to HTML entities.');
   setTimeout(() => runAudit(), 60);
-});
+};
 
 // Tab switching
 document.querySelectorAll('.tab[data-tab]').forEach(btn => {
