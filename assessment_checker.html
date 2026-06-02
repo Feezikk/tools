@@ -5193,17 +5193,57 @@ function collectFixableResults(catId) {
   return results;
 }
 
-function runBulkFix(fixableResults) {
+function runBulkFix(fixableResults, catId) {
   if (!fixableResults.length) { showToast('✨ Nothing new to auto-fix.'); return; }
 
   const rawBefore = ta.value;
   let text = rawBefore;
+
+  // If a specific category/group is targeted, find its line boundaries
+  let groupStart = 1;
+  let groupEnd = text.split('\n').length;
+  let isChunked = false;
+
+  if (catId && catId.startsWith('grp-')) {
+    const groupNum = parseInt(catId.replace('grp-', ''));
+    if (!isNaN(groupNum)) {
+      const parsed = window._checker_run ? window._checker_run(text) : null;
+      if (parsed && parsed.questions) {
+        let foundMin = Infinity, foundMax = -1;
+        for (let i = 0; i < parsed.questions.length; i++) {
+          const q = parsed.questions[i];
+          if (q.group === groupNum) {
+            if (q.startLine < foundMin) foundMin = q.startLine;
+            const nextQ = parsed.questions[i+1];
+            const qEnd = nextQ ? nextQ.startLine - 1 : text.split('\n').length;
+            if (qEnd > foundMax) foundMax = qEnd;
+          }
+        }
+        if (foundMin !== Infinity) {
+          groupStart = foundMin;
+          groupEnd = foundMax;
+          isChunked = true;
+        }
+      }
+    }
+  }
 
   // ── Pass 1: global stateless fixers ──────────────────────────────
   // Most global fixers are truly stateless and only need to run once.
   // special-chars-auto is an exception: it is result-aware (it skips replacing
   // the en dash when that question's en dash was suppressed as a possible minus).
   // So we run it once per result instead of deduplicating it to a single call.
+  
+  let prefix = '', chunk = text, suffix = '';
+  if (isChunked) {
+     const allLines = text.split('\n');
+     prefix = allLines.slice(0, groupStart - 1).join('\n');
+     chunk = allLines.slice(groupStart - 1, groupEnd).join('\n');
+     suffix = allLines.slice(groupEnd).join('\n');
+     if (prefix) prefix += '\n';
+     if (suffix) suffix = '\n' + suffix;
+  }
+
   const pass1Ids = new Set();
   for (const { r } of fixableResults) {
     if (!GLOBAL_FIXERS.has(r.rule.id)) continue;
@@ -5211,8 +5251,14 @@ function runBulkFix(fixableResults) {
       if (pass1Ids.has(r.rule.id)) continue;
       pass1Ids.add(r.rule.id);
     }
-    const after = autoFixers[r.rule.id](text, r);
-    if (after !== undefined) text = after;
+    const after = autoFixers[r.rule.id](chunk, r);
+    if (after !== undefined) chunk = after;
+  }
+  
+  if (isChunked) {
+     text = prefix + chunk + suffix;
+  } else {
+     text = chunk;
   }
 
   // ── Silent re-audit for fresh line numbers ────────────────────────
@@ -5299,11 +5345,11 @@ function syncAutoFixAllBtn() {
 
 function applyAllFixes(event) {
   if (event) event.stopPropagation();
-  runBulkFix(collectFixableResults(null));
+  runBulkFix(collectFixableResults(null), null);
 }
 function applyGroupFixes(catId, event) {
   if (event) event.stopPropagation();
-  runBulkFix(collectFixableResults(catId));
+  runBulkFix(collectFixableResults(catId), catId);
 }
 
 function reapplyHighlights() {
@@ -5331,16 +5377,55 @@ function applyFix(uid,event){
   const itemEl=document.getElementById(uid); if(!itemEl) return;
   if(itemEl.classList.contains('fixed')){itemEl.classList.toggle('details-open');return;}
   const fixer=autoFixers[rule.id];
-  if(typeof fixer==='function'){
-    // Save scroll position — cm.setValue() resets it to the top
-    const scrollInfo = cm.getScrollInfo();
-    const cursor = cm.getCursor();
-    const before=cm.getValue(),after=fixer(before,result);
-    if(after===before){
-      itemEl.classList.add('details-open');
-      return;
-    }
-   cm.operation(()=>{ cm.setValue(after); });
+      if(typeof fixer==='function'){
+        // Save scroll position — cm.setValue() resets it to the top
+        const scrollInfo = cm.getScrollInfo();
+        const cursor = cm.getCursor();
+        const before=cm.getValue();
+        let after = before;
+        
+        // Isolate the fix to the specific issue to prevent global replacements
+        if (result.extra && result.extra.type === 'contextual-diff' && result.extra.actual && result.extra.expected && !result.extra.removeToken) {
+           if (result.extra.actual.includes('\n')) {
+              after = before.replace(result.extra.actual, result.extra.expected);
+           } else if (result.lineNum) {
+              const lines = before.split('\n');
+              const idx = result.lineNum - 1;
+              if (lines[idx] !== undefined) lines[idx] = lines[idx].replace(result.extra.actual, result.extra.expected);
+              after = lines.join('\n');
+           } else {
+              after = before.replace(result.extra.actual, result.extra.expected);
+           }
+        } else if (result.extra && result.extra.type === 'spacing-insert-blank') {
+           after = before.replace(result.extra.lastCurrLine + '\n' + result.extra.firstNextLine, result.extra.lastCurrLine + '\n\n' + result.extra.firstNextLine);
+        } else if (result.extra && result.extra.type === 'spacing-remove-blanks') {
+           const gap = result.extra.gapLines.join('\n');
+           after = before.replace(result.extra.lastCurrLine + '\n' + gap + '\n' + result.extra.firstNextLine, result.extra.lastCurrLine + '\n\n' + result.extra.firstNextLine);
+        } else if (GLOBAL_FIXERS.has(rule.id)) {
+           const lines = before.split('\n');
+           if (rule.id === 'special-chars-auto' && result.extra && result.extra.chars) {
+              const affectedLines = [...new Set(result.extra.chars.flatMap(c => c.lineNums))];
+              affectedLines.forEach(ln => {
+                 const idx = ln - 1;
+                 if (lines[idx] !== undefined) lines[idx] = fixer(lines[idx], result);
+              });
+              after = lines.join('\n');
+           } else if (result.lineNum) {
+              const idx = result.lineNum - 1;
+              if (lines[idx] !== undefined) lines[idx] = fixer(lines[idx], result);
+              after = lines.join('\n');
+           } else {
+              after = fixer(before, result);
+           }
+        } else {
+           after = fixer(before, result);
+        }
+
+        if(after===before){
+          itemEl.classList.add('details-open');
+          return;
+        }
+        cm.operation(()=>{ cm.setValue(after); });
     
     // Update UI only for the clicked item
     itemEl.classList.remove('err', 'warn');
