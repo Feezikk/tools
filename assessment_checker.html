@@ -310,7 +310,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v6.01</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v6.03</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -400,7 +400,8 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
         <button class="tab active" data-tab="paste">Paste Text</button>
         <button class="tab" data-tab="upload">Upload File</button>
       </div>
-      <button class="btn-qmode" id="qmode-btn" title="Toggle Question Number view" style="display:none">Q# View</button>
+      <button class="btn-qmode" id="save-file-btn" title="Save text as a file" style="margin-left:auto; display:flex; align-items:center; gap:4px;">💾 Save</button>
+      <button class="btn-qmode" id="qmode-btn" title="Toggle Question Number view" style="display:none; margin-left:8px;">Q# View</button>
     </div>
     <div class="input-area">
       <div class="tab-content active" id="tab-paste">
@@ -526,6 +527,7 @@ const DOM = (() => {
     filterErr:      $('filter-err'),
     filterWarn:     $('filter-warn'),
     qmodeBtn:       $('qmode-btn'),
+    saveFileBtn:    $('save-file-btn'),
     // Find & Replace
     frToggleBtn:    $('fr-toggle-btn'),
     frPanel:        $('fr-panel'),
@@ -5681,6 +5683,90 @@ document.querySelectorAll('.tab[data-tab]').forEach(btn => {
 DOM.uploadZone.addEventListener('click', () => DOM.fileInput.click());
 DOM.fileInput.addEventListener('change', e => handleFile(e));
 DOM.clearFileBtn.addEventListener('click', () => clearFile());
+
+// Save File - Initialize database connection for cross-session folder memory
+window._lastSaveHandle = null;
+try {
+  const req = indexedDB.open('FileSaveDB', 1);
+  req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
+  req.onsuccess = e => {
+    const db = e.target.result;
+    if (db.objectStoreNames.contains('handles')) {
+      const tx = db.transaction('handles', 'readonly');
+      const getReq = tx.objectStore('handles').get('lastSaveHandle');
+      getReq.onsuccess = () => { window._lastSaveHandle = getReq.result; };
+    }
+  };
+} catch(e) {}
+
+DOM.saveFileBtn.addEventListener('click', async () => {
+  const text = cm.getValue();
+  if (!text.trim()) { 
+    alert('Nothing to save.'); 
+    return; 
+  }
+  
+  // Modern approach: Native "Save As" window (Chrome/Edge)
+  if ('showSaveFilePicker' in window) {
+    try {
+      const options = {
+        id: 'assessment-checker-save-dir',
+        suggestedName: 'assessment.txt',
+        types: [{
+          description: 'Text Files',
+          accept: {'text/plain': ['.txt', '.html', '.htm']},
+        }],
+      };
+      
+      // Explicitly force Chrome to open in the directory of the last saved file
+      if (window._lastSaveHandle) {
+        options.startIn = window._lastSaveHandle;
+      }
+
+      const handle = await window.showSaveFilePicker(options);
+      
+      // Keep the handle in memory for this session
+      window._lastSaveHandle = handle;
+      
+      // Save the handle to the browser's database for future sessions
+      try {
+        const req = indexedDB.open('FileSaveDB', 1);
+        req.onsuccess = e => {
+          const db = e.target.result;
+          const tx = db.transaction('handles', 'readwrite');
+          tx.objectStore('handles').put(handle, 'lastSaveHandle');
+        };
+      } catch(e) {}
+
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      return; // Success!
+    } catch (err) {
+      // Ignore AbortError (user clicked cancel)
+      if (err.name !== 'AbortError') console.error('Save failed:', err);
+      return;
+    }
+  }
+
+  // Fallback approach: standard download prompt (Firefox/Safari)
+  let filename = prompt('Enter a name for your file:', 'assessment.txt');
+  if (!filename) return; 
+  
+  if (!filename.toLowerCase().endsWith('.txt') && !filename.toLowerCase().endsWith('.html') && !filename.toLowerCase().endsWith('.htm')) {
+    filename += '.txt';
+  }
+  
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
 
 // Q-mode toggle
 DOM.qmodeBtn.addEventListener('click', () => toggleQMode());
