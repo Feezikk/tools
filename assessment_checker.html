@@ -310,7 +310,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v6.03</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v6.05</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -1220,7 +1220,7 @@ const AssessmentChecker = (() => {
             rule.message.replace('{found}', found).replace('{a}', curr.num).replace('{b}', next.num),
             endLine,
             null,
-            { type: 'spacing-insert-blank', lastCurrLine, firstNextLine }
+            { type: 'spacing-insert-blank', lastCurrLine, firstNextLine, gapLines: gapLines.map(g => g.text) }
           ));
         } else {
           // Too many blank lines — dedicated type for explicit before/after rendering
@@ -3319,7 +3319,7 @@ window._checker_run = text => {
 // contextual and run bottom-up in Pass 2 after a silent re-audit.
 const GLOBAL_FIXERS = new Set([
   'self-closing-br','no-inline-styles','img-double-quotes','img-alt-quotes',
-  'no-deprecated-tags','question-spacing','points-before-group','span-followed-by-br',
+  'no-deprecated-tags','points-before-group','span-followed-by-br',
   'img-has-alt','span-self-closing','missing-lt-span','special-chars-auto',
   'img-no-dimensions','table-border-cellpadding','table-align-center',
   'font-tag-replace','ol-use-style-not-type',
@@ -3399,35 +3399,18 @@ const autoFixers={
     }
     return text;
   },
-  'question-spacing': (text) => {
-    // Normalise the blank-line gap between every pair of consecutive questions to exactly one.
-    // A question boundary is identified by the last metadata line (group:N, points:N) or the
-    // question code line itself, followed by the next question code line.
-    const Q_CODE = /^(mc:radio:|essay:|fib:|tf:|matching:label:)/;
-    const META   = /^(points:\s?\d+|group:\s?\d+)$/;
-    const lines  = text.split('\n');
-    const out    = [];
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i];
-      out.push(line);
-      // After a metadata line (group:/points:) or a question-code line, look ahead to see
-      // if the next non-blank line is a question code — if so, ensure exactly one blank gap.
-      const isBoundary = META.test(line.trim()) || Q_CODE.test(line.trim());
-      if (isBoundary) {
-        // Skip any existing blank lines
-        let j = i + 1;
-        while (j < lines.length && lines[j].trim() === '') j++;
-        // If the next content line is a question code, normalise to exactly one blank
-        if (j < lines.length && Q_CODE.test(lines[j].trim())) {
-          out.push(''); // exactly one blank line
-          i = j;       // jump past all the old blanks (and the boundary line already pushed)
-          continue;
-        }
-      }
-      i++;
-    }
-    return out.join('\n');
+  'question-spacing': (text, result) => {
+    if (!result || !result.extra || !result.lineNum) return text;
+    const lines = text.split('\n');
+    const idx = result.lineNum - 1; // Index of lastCurrLine
+    
+    // Determine the size of the gap between this question and the next
+    const gapSize = result.extra.gapLines ? result.extra.gapLines.length : 0;
+    
+    // Remove the entire gap (including any junk) and insert exactly one blank line
+    lines.splice(idx + 1, gapSize, '');
+    
+    return lines.join('\n');
   },
   'points-before-group':text=>text.replace(/(group:\s?\d+)\n(points:\s?\d+)/g,'$2\n$1'),
   // ── Shared helpers ────────────────────────────────────────────────
@@ -5460,11 +5443,6 @@ function applyFix(uid,event){
            } else {
               after = before.replace(result.extra.actual, result.extra.expected);
            }
-        } else if (result.extra && result.extra.type === 'spacing-insert-blank') {
-           after = before.replace(result.extra.lastCurrLine + '\n' + result.extra.firstNextLine, result.extra.lastCurrLine + '\n\n' + result.extra.firstNextLine);
-        } else if (result.extra && result.extra.type === 'spacing-remove-blanks') {
-           const gap = result.extra.gapLines.join('\n');
-           after = before.replace(result.extra.lastCurrLine + '\n' + gap + '\n' + result.extra.firstNextLine, result.extra.lastCurrLine + '\n\n' + result.extra.firstNextLine);
         } else if (GLOBAL_FIXERS.has(rule.id)) {
            const lines = before.split('\n');
            if (rule.id === 'special-chars-auto' && result.extra && result.extra.chars) {
@@ -5835,6 +5813,13 @@ function goToMatch(idx) {
   cm.scrollIntoView({ line: from.line, ch: from.ch }, 100);
   DOM.frNavText.textContent = `${FRState.activeIdx + 1} of ${FRState.matches.length}`;
 }
+
+// Keep match locations perfectly synced if the text is edited while the panel is open
+cm.on('change', () => {
+  if (DOM.frPanel.classList.contains('visible')) {
+    findMatches();
+  }
+});
 
 DOM.frToggleBtn.addEventListener('click', () => {
   DOM.frPanel.classList.toggle('visible');
