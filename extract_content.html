@@ -434,10 +434,23 @@ async function runIndexing() {
     }
 
     courseTree.modules.forEach(mod => {
+        if (mod.visible === false) return; // Exclude hidden modules
+
         const title = String(mod.title || "").toLowerCase();
         const id = String(mod.mID || "").toLowerCase();
+        
         if (!IGNORE_TITLES.some(k => title.includes(k)) && !IGNORE_IDS.includes(id)) {
-            validModules.push(mod);
+            // Create a clean copy of the module, explicitly filtering out hidden lessons and pages
+            let cleanedMod = Object.assign({}, mod);
+            if (cleanedMod.lessons) {
+                cleanedMod.lessons = cleanedMod.lessons.filter(lesson => lesson.visible !== false);
+                cleanedMod.lessons.forEach(lesson => {
+                    if (lesson.pages) {
+                        lesson.pages = lesson.pages.filter(page => page.visible !== false);
+                    }
+                });
+            }
+            validModules.push(cleanedMod);
         }
     });
 
