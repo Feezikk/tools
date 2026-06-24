@@ -489,7 +489,7 @@ function stripHtml(html) {
         .replace(/<\/li>/gi, '');
 
     const doc = new DOMParser().parseFromString(formattedHtml, 'text/html');
-    const hiddenElements = doc.querySelectorAll('.d-none');
+    const hiddenElements = doc.querySelectorAll('.d-none, mark');
     hiddenElements.forEach(el => el.remove());
 
     const glossaryElements = doc.querySelectorAll('element[data-type="glossary"]');
