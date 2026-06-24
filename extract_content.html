@@ -6,6 +6,7 @@
     <title>Course Content Extractor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <style>
         :root {
             --primary:       #1C355E;
@@ -1176,8 +1177,13 @@ async function buildModuleDocumentContent(mod, options) {
 }
 
 function triggerDownload(content, filename) {
-    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body><pre style='font-family: sans-serif; white-space: pre-wrap; word-wrap: break-word;'>";
-    const blob = new Blob([header + content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</pre></body></html>"], { type: 'application/msword' });
+    // Convert the plain text to HTML paragraphs for the DOCX converter
+    const safeText = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const htmlBody = safeText.split('\r\n').map(line => `<p style="margin: 0 0 8px 0; font-family: sans-serif;">${line}</p>`).join('');
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
+    
+    // Generate a true .docx file using the library
+    const blob = htmlDocx.asBlob(fullHtml);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = filename;
@@ -1204,7 +1210,7 @@ async function exportFullCourse() {
     }
     
     const safeName = customCourseName ? customCourseName.replace(/[^a-z0-9]/gi, '_') : "Course_Content";
-    triggerDownload(fullContent, `${safeName}_Export.doc`);
+    triggerDownload(fullContent, `${safeName}_Export.docx`);
 }
 
 async function exportSeparateModules(selectedIds) {
@@ -1228,7 +1234,7 @@ async function exportSeparateModules(selectedIds) {
         const modNum = padNum(mod.num);
         const safeTitle = mod.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
         
-        triggerDownload(modContent, `${modNum}_${safeTitle}.doc`);
+        triggerDownload(modContent, `${modNum}_${safeTitle}.docx`);
         
         // Wait 400ms between generating files so the browser doesn't block the rapid downloads
         await new Promise(r => setTimeout(r, 400)); 
