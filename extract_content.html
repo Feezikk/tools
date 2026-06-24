@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --primary:       #1C355E;
@@ -155,7 +156,7 @@
                         <input type="checkbox" id="ex-int" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Interactives
                     </label>
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;" title="Alt Text, Text Version, Caption, Header">
-                        <input type="checkbox" id="ex-img-empty" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images without Metadata
+                        <input type="checkbox" id="ex-img-empty" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images w/o Text
                     </label>
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                         <input type="checkbox" id="ex-glossary" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Glossary Definitions
@@ -189,7 +190,7 @@
                         </label>
                         <label style="display:block; margin-bottom:15px; font-size:1.05rem; cursor:pointer;">
                             <input type="radio" name="exp-type" value="separate" onchange="document.getElementById('export-module-list').style.display='block'" style="accent-color:var(--primary);"> 
-                            <strong>Separate Documents</strong> (By Module)
+                            <strong>Separate Documents</strong> (By Module as a .zip file)
                         </label>
                         
                         <div id="export-module-list" style="display:none; margin-left:25px; border-left:3px solid var(--border); padding-left:15px;">
@@ -1236,7 +1237,11 @@ async function exportSeparateModules(selectedIds) {
         isHtml: false
     };
 
-    showToast(`Generating ${selectedIds.length} document(s)... Please allow multiple downloads if your browser prompts you.`, "success");
+    showToast(`Generating ${selectedIds.length} document(s) into a Zip folder... Please wait.`, "success");
+
+    const zip = new JSZip();
+    const safeCourseName = customCourseName ? customCourseName.replace(/[^a-zA-Z0-9_]/g, '_') : "Course_Export";
+    const folder = zip.folder(safeCourseName);
 
     for (const modIdx of selectedIds) {
         const mod = validModules[parseInt(modIdx, 10)];
@@ -1247,11 +1252,25 @@ async function exportSeparateModules(selectedIds) {
         const modNum = padNum(mod.num);
         const safeTitle = mod.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
         
-        triggerDownload(modContent, `${modNum}_${safeTitle}.docx`);
+        // Create the DOCX blob
+        const safeText = modContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const htmlBody = safeText.split('\r\n').map(line => `<p style="margin: 0 0 8px 0; font-family: sans-serif;">${line}</p>`).join('');
+        const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
+        const blob = htmlDocx.asBlob(fullHtml);
         
-        // Wait 400ms between generating files so the browser doesn't block the rapid downloads
-        await new Promise(r => setTimeout(r, 400)); 
+        // Add it to our Zip folder
+        folder.file(`${modNum}_${safeTitle}.docx`, blob);
     }
+
+    // Generate the Zip and trigger a single download
+    zip.generateAsync({ type: "blob" }).then(function(content) {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(content);
+        link.download = `${safeCourseName}_Modules.zip`;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
+    });
 }
 </script>
 <button id="jump-top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Jump to Top">
