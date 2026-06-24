@@ -1075,11 +1075,11 @@ function openExportModal() {
     const container = document.getElementById('export-checkbox-container');
     container.innerHTML = '';
     
-    validModules.forEach(mod => {
+    validModules.forEach((mod, idx) => {
         const modNum = padNum(mod.num);
         container.innerHTML += `
             <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:0.95rem;">
-                <input type="checkbox" class="mod-exp-cb" value="${mod.num}" style="accent-color:var(--primary); width:16px; height:16px;" onchange="updateSelectAllState()"> 
+                <input type="checkbox" class="mod-exp-cb" value="${idx}" style="accent-color:var(--primary); width:16px; height:16px;" onchange="updateSelectAllState()"> 
                 ${modNum} ${escapeHtml(mod.title)}
             </label>`;
     });
@@ -1238,8 +1238,8 @@ async function exportSeparateModules(selectedIds) {
 
     showToast(`Generating ${selectedIds.length} document(s)... Please allow multiple downloads if your browser prompts you.`, "success");
 
-    for (const modId of selectedIds) {
-        const mod = validModules.find(m => String(m.num) === String(modId));
+    for (const modIdx of selectedIds) {
+        const mod = validModules[parseInt(modIdx, 10)];
         if (!mod) continue;
 
         const modContent = await buildModuleDocumentContent(mod, options);
