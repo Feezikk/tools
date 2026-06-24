@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Content Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <style>
+        :root {
+            --primary:       #1C355E;
+            --primary-light: #2A4D8A;
+            --accent:        #F6BF41;
+            --bg:            #f4f7f9;
+            --card-bg:       #ffffff;
+            --text:          #2c3e50;
+            --text-light:    #546e7a;
+            --border:        #e0e6ed;
+            --code-font:     "Consolas", "Monaco", "Courier New", monospace;
+            --shadow:        0 4px 16px rgba(28, 53, 94, 0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ── Layout Wrapper ────────────────────────────────────────────────── */
+        #app-wrapper { display: flex; min-height: 100vh; width: 100%; }
+
+        /* ── Floating TOC Sidebar ──────────────────────────────────────────── */
+        #toc-sidebar {
+            width: 320px; flex-shrink: 0; background: var(--card-bg);
+            border-right: 1px solid var(--border); padding: 20px; box-sizing: border-box;
+            position: sticky; top: 0; height: 100vh; overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.03); display: none;
+        }
+        .toc-header { margin: 0 0 15px 0; color: var(--primary); font-size: 1.1rem; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .toc-module, .toc-lesson { margin-bottom: 4px; }
+        .toc-tree-content { margin-left: 12px; padding-left: 10px; border-left: 1px dashed #cbd5e0; margin-top: 4px; }
+        .toc-module summary, .toc-lesson summary { padding: 6px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--text); font-size: 0.9rem; transition: background 0.2s, color 0.2s; user-select: none; }
+        .toc-module > summary { color: var(--primary); font-size: 0.95rem; }
+        .toc-module summary:hover, .toc-lesson summary:hover { background: #f0f4f8; color: var(--primary); }
+        .toc-page { padding: 6px 8px; cursor: pointer; font-size: 0.85rem; color: var(--text-light); border-radius: 6px; transition: background 0.2s, color 0.2s; margin-bottom: 2px; }
+        .toc-page:hover { background: #f0f4f8; color: var(--primary-light); }
+
+        /* ── Main Content Area ─────────────────────────────────────────────── */
+        .main-wrapper { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1000px; width: 100%; }
+
+        /* ── Header & Setup ─────────────────────────────────────────────────── */
+        .header-card {
+            background: var(--card-bg); padding: 20px 30px; border-radius: 12px;
+            box-shadow: var(--shadow); margin-bottom: 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid var(--border);
+        }
+        .header-logo-group h1 { margin: 0; font-size: 1.6rem; color: var(--primary); }
+        .header-subtitle { font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+        .drop-zone { border: 2px dashed #cbd5e0; border-radius: 10px; padding: 40px; cursor: pointer; background: #fafafa; margin-top: 15px; text-align: center; transition: all 0.2s; }
+        .drop-zone:hover { border-color: var(--primary); background: #f0f4f8; transform: translateY(-2px); }
+        #folder-input { display: none; }
+        
+        /* ── Buttons & Spinners ────────────────────────────────────────────── */
+        .action-btn {
+            background: var(--primary-light); color: #fff; border: none;
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem;
+            transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .action-btn:hover { background: var(--primary); transform: translateY(-1px); }
+        .nav-btn { background: #f8f9fa; border: 1px solid var(--border); padding: 4px 10px; font-size: 0.75rem; color: var(--text); border-radius: 4px; cursor: pointer; }
+        .nav-btn:hover { background: #e2e6ea; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(28,53,94,0.1); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Modal ─────────────────────────────────────────────────────────── */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(28,53,94,0.6); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fff; width: 90%; max-width: 600px; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border); background: #f8f9fa; border-radius: 12px 12px 0 0; }
+        .modal-body { padding: 25px; max-height: 60vh; overflow-y: auto; }
+        .course-list-item { display: inline-flex; width: 100%; align-items: center; padding: 6px; cursor: pointer; }
+        .course-list-item:hover { background: #f8f9fa; }
+
+        /* ── Viewer Styles ─────────────────────────────────────────────────── */
+        .module-block { background: #fff; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; padding: 20px; box-shadow: var(--shadow); scroll-margin-top: 20px; }
+        .module-title { color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; font-size: 1.3rem; }
+        details.lesson-details { margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; scroll-margin-top: 20px; }
+        summary.lesson-summary { background: #f8f9fa; padding: 12px 15px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--primary); }
+        summary.lesson-summary:hover { background: #f0f4f8; }
+        details.lesson-details[open] summary { border-bottom: 1px solid var(--border); border-radius: 6px 6px 0 0; }
+        .lesson-content { padding: 15px; }
+        .page-block { margin-bottom: 25px; border-left: 4px solid var(--primary-light); padding-left: 15px; scroll-margin-top: 20px; }
+        .page-block:last-child { margin-bottom: 0; }
+        .page-title { margin: 0 0 10px 0; color: var(--text); font-size: 1.1rem; }
+        .page-text { font-family: sans-serif; white-space: pre-wrap; color: var(--text); font-size: 0.95rem; line-height: 1.6; }
+        
+        .media-tag { background: #e9ecef; padding: 10px 12px; border-radius: 6px; font-family: var(--code-font); font-size: 0.85rem; margin-top: 10px; margin-bottom: 10px; color: var(--text-light); border-left: 3px solid var(--accent); white-space: pre-wrap; }
+        
+        .toast { position: fixed; bottom: 90px; right: 30px; background: var(--primary); color: #fff; padding: 12px 24px; border-radius: 8px; box-shadow: 0 8px 24px rgba(28,53,94,0.25); z-index: 9999; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #dc3545; }
+
+        #jump-top-btn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 1000; background: var(--primary); color: #fff; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; justify-content: center; transition: background 0.3s, transform 0.2s; }
+        #jump-top-btn:hover { background: var(--primary-light); transform: translateY(-3px); }
+        #jump-top-btn svg { width: 24px; height: 24px; stroke-width: 2.5; }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <div id="toc-sidebar"></div>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="header-card">
+                <div class="header-logo-group">
+                    <div>
+                        <h1 id="main-title">Course Extractor</h1>
+                        <div class="header-subtitle">Standalone Content Viewer</div>
+                    </div>
+                </div>
+                <div id="header-actions" style="display:none; gap: 10px;">
+                    <button class="action-btn" onclick="openExportModal()">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> 
+                        Export to Word
+                    </button>
+                    <button class="action-btn" style="background:#fff; color:var(--primary); border:1px solid var(--border);" onclick="location.reload()">Start Over</button>
+                </div>
+            </div>
+
+            <div id="setup-area">
+                <p style="color:var(--text-light); text-align: center;">Select your <strong>.Courses</strong> root folder to begin extracting.</p>
+                <div class="drop-zone" onclick="document.getElementById('folder-input').click()">
+                    <svg style="width:48px;height:48px; color:var(--primary);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <div style="margin-top:10px; font-weight:bold; color:var(--primary);">Click to Browse Folder</div>
+                    <input type="file" id="folder-input" webkitdirectory directory multiple />
+                </div>
+                <div id="status-area" style="margin-top:20px; text-align:center; font-weight:600; display:none;"></div>
+            </div>
+
+            <div id="export-controls" style="display:none; width:100%; background:var(--card-bg); padding:15px 20px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px; box-shadow:var(--shadow); box-sizing:border-box;">
+                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Exclusions:</strong>
+                <div style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.9rem; color:var(--text);">
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="ex-docs" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Documents
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="ex-int" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Interactives
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;" title="Alt Text, Text Version, Caption, Header">
+                        <input type="checkbox" id="ex-img-empty" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images without Metadata
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="ex-glossary" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Glossary Definitions
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="ex-tooltips" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Tooltips
+                    </label>
+                </div>
+            </div>
+            
+            <div id="course-viewer" style="display:none; width:100%;"></div>
+
+           <div id="course-selection-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header"><h3 style="margin:0; color:var(--primary);">Select a Course to Load</h3></div>
+                    <div class="modal-body" id="course-list-container"></div>
+                    <div class="modal-header" style="background:#fff; border-top:1px solid var(--border); border-bottom:none; border-radius:0 0 12px 12px; justify-content:flex-end; gap:10px;">
+                        <button class="nav-btn" onclick="location.reload()" style="padding: 8px 16px;">Cancel</button>
+                        <button class="action-btn" onclick="confirmCourseSelection()">Load Course</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW EXPORT OPTIONS MODAL -->
+            <div id="export-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header"><h3 style="margin:0; color:var(--primary);">Export Options</h3></div>
+                    <div class="modal-body">
+                        <label style="display:block; margin-bottom:12px; font-size:1.05rem; cursor:pointer;">
+                            <input type="radio" name="exp-type" value="single" checked onchange="document.getElementById('export-module-list').style.display='none'" style="accent-color:var(--primary);"> 
+                            <strong>Single Document</strong> (Entire Course)
+                        </label>
+                        <label style="display:block; margin-bottom:15px; font-size:1.05rem; cursor:pointer;">
+                            <input type="radio" name="exp-type" value="separate" onchange="document.getElementById('export-module-list').style.display='block'" style="accent-color:var(--primary);"> 
+                            <strong>Separate Documents</strong> (By Module)
+                        </label>
+                        
+                        <div id="export-module-list" style="display:none; margin-left:25px; border-left:3px solid var(--border); padding-left:15px;">
+                            <label style="display:block; margin-bottom:10px; font-weight:600; cursor:pointer; color:var(--primary);">
+                                <input type="checkbox" id="export-select-all" style="accent-color:var(--primary);" onchange="toggleAllExportModules(this)"> <em>Select All</em>
+                            </label>
+                            <div id="export-checkbox-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+                    </div>
+                    <div class="modal-header" style="background:#fff; border-top:1px solid var(--border); border-bottom:none; border-radius:0 0 12px 12px; justify-content:flex-end; gap:10px;">
+                        <button class="nav-btn" onclick="document.getElementById('export-modal').classList.remove('active')" style="padding: 8px 16px;">Cancel</button>
+                        <button class="action-btn" onclick="executeExport()">Download</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+    </div>
+</div>
+
+<script>
+// =============================================================================
+// STANDALONE EXTRACTOR LOGIC
+// =============================================================================
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+let fileMap = new Map();
+let courseIndex = [];
+let courseGlossary = new Map();
+let courseTree = {};
+let validModules = [];
+let courseVideos = [];
+let courseAudio = [];
+let courseInteractives = [];
+let courseImages = [];
+let fileNameIndex = new Map();
+let folderIndex = new Map();
+let availableCoursesFromScan = new Map();
+let customCourseName = "";
+
+const IGNORE_TITLES = ["style guide", "styleguide"];
+const IGNORE_IDS = ["wf", "gs"];
+
+function padNum(num) { return (num == null) ? "00" : num.toString().padStart(2, '0'); }
+function escapeHtml(t) { return !t ? "" : t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+function generateSafeId(prefix, str) { return prefix + '-' + str.replace(/[^a-zA-Z0-9-]/g, '-'); }
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} show`;
+    toast.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ── INIT BATCH SCAN ────────────────────────────────────────────────────────
+document.getElementById('folder-input').addEventListener('change', async (e) => {
+    const files = e.target.files;
+    if (!files.length) return;
+    
+    document.getElementById('setup-area').querySelector('.drop-zone').style.display = 'none';
+    const status = document.getElementById('status-area');
+    status.style.display = 'block';
+    status.innerHTML = `<div class="spinner"></div> Scanning folder...`;
+
+    availableCoursesFromScan.clear();
+    const courseVersionsTracker = new Map();
+    const rootFallbackMap = new Map();
+    const versionFolderRegex = /(_v(\d+)|_?cbimport)$/i;
+
+    for (const file of files) {
+        const originalPath = file.webkitRelativePath || file.name;
+        const pathParts = originalPath.split('/');
+        let versionFolderIndex = -1, isCbImport = false, versionWeight = -1, displayVersion = "";
+
+        for (let j = 0; j < pathParts.length; j++) {
+            const m = pathParts[j].match(versionFolderRegex);
+            if (m) {
+                versionFolderIndex = j;
+                if (m[0].toLowerCase().includes('cbimport')) { isCbImport = true; displayVersion = "cbimport"; }
+                else { versionWeight = parseInt(m[2], 10); displayVersion = `v${versionWeight}`; }
+                break;
+            }
+        }
+
+        if (versionFolderIndex !== -1) {
+            const courseName = pathParts[versionFolderIndex].replace(versionFolderRegex, '');
+            if (!courseVersionsTracker.has(courseName)) courseVersionsTracker.set(courseName, { bestNumeric: null, cbImport: null });
+            
+            const tracker = courseVersionsTracker.get(courseName);
+            let activeTarget = null;
+
+            if (isCbImport) {
+                if (!tracker.cbImport) tracker.cbImport = { display: displayVersion, fileMap: new Map() };
+                activeTarget = tracker.cbImport;
+            } else {
+                if (!tracker.bestNumeric || versionWeight > tracker.bestNumeric.weight) {
+                    tracker.bestNumeric = { weight: versionWeight, display: displayVersion, fileMap: new Map() };
+                }
+                if (versionWeight === tracker.bestNumeric.weight) activeTarget = tracker.bestNumeric;
+                else continue;
+            }
+
+            const relPath = pathParts.slice(versionFolderIndex + 1).join('/');
+            if (relPath.includes('global/') || relPath.includes('content/') || relPath.includes('data/') || relPath === 'sitemap.json' || file.name === 'settings.json') {
+                activeTarget.fileMap.set(relPath, file);
+                if (!relPath.includes('interactives/')) activeTarget.fileMap.set(file.name, file);
+            }
+        } else {
+            if (file.name === 'settings.json') rootFallbackMap.set('settings.json', file);
+            if (originalPath.includes('/global/') || originalPath.includes('/content/') || originalPath.includes('/data/') || file.name === 'sitemap.json') {
+                let cleanPath = originalPath;
+                if (pathParts.length > 1) { const s = [...pathParts]; s.shift(); cleanPath = s.join('/'); }
+                rootFallbackMap.set(cleanPath, file);
+                if (!originalPath.includes('/interactives/')) rootFallbackMap.set(file.name, file);
+            }
+        }
+    }
+
+    const extractTitle = async (fMap, fallbackName) => {
+        const settingsFile = fMap.get('settings.json') || fMap.get('global/data/settings.json') || fMap.get('data/settings.json');
+        if (settingsFile) {
+            try {
+                const settingsJson = JSON.parse(await settingsFile.text());
+                function findCourseTitle(obj) {
+                    if (!obj || typeof obj !== 'object') return null;
+                    if (typeof obj.course_title === 'string' && obj.course_title.trim()) return obj.course_title.trim();
+                    for (const key in obj) {
+                        const found = findCourseTitle(obj[key]);
+                        if (found) return found;
+                    }
+                    return null;
+                }
+                const title = findCourseTitle(settingsJson);
+                if (title) return title;
+            } catch (e) {}
+        }
+        return fallbackName;
+    };
+
+    for (const [courseName, data] of courseVersionsTracker.entries()) {
+        if (data.bestNumeric?.fileMap.has('sitemap.json') || data.bestNumeric?.fileMap.has('global/sitemap.json')) {
+            const title = await extractTitle(data.bestNumeric.fileMap, courseName);
+            availableCoursesFromScan.set(`${title} (${data.bestNumeric.display})`, data.bestNumeric.fileMap);
+        }
+        if (data.cbImport?.fileMap.has('sitemap.json') || data.cbImport?.fileMap.has('global/sitemap.json')) {
+            const title = await extractTitle(data.cbImport.fileMap, courseName);
+            availableCoursesFromScan.set(`${title} (${data.cbImport.display})`, data.cbImport.fileMap);
+        }
+    }
+
+    if (availableCoursesFromScan.size === 0 && (rootFallbackMap.has('sitemap.json') || rootFallbackMap.has('global/sitemap.json'))) {
+        const title = await extractTitle(rootFallbackMap, "Selected Root Course");
+        availableCoursesFromScan.set(title, rootFallbackMap);
+    }
+
+    if (availableCoursesFromScan.size === 0) {
+        status.innerHTML = `<span style="color:#dc3545;">Error: No valid course structure or 'sitemap.json' found.</span>`;
+        return;
+    }
+
+    if (availableCoursesFromScan.size === 1) {
+        const selected = Array.from(availableCoursesFromScan.keys())[0];
+        fileMap = availableCoursesFromScan.get(selected);
+        customCourseName = selected.split(' (')[0];
+        runIndexing();
+    } else {
+        status.style.display = 'none';
+        const container = document.getElementById('course-list-container');
+        let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+        Array.from(availableCoursesFromScan.keys()).sort().forEach((name, idx) => {
+            html += `<label class="course-list-item"><input type="radio" name="c-radio" value="${escapeHtml(name)}" ${idx===0?'checked':''}> <span style="margin-left:8px;">${escapeHtml(name)}</span></label>`;
+        });
+        container.innerHTML = html + '</div>';
+        document.getElementById('course-selection-modal').classList.add('active');
+    }
+});
+
+function confirmCourseSelection() {
+    const selected = document.querySelector('input[name="c-radio"]:checked').value;
+    fileMap = availableCoursesFromScan.get(selected);
+    customCourseName = selected.split(' (')[0];
+    document.getElementById('course-selection-modal').classList.remove('active');
+    runIndexing();
+}
+
+// ── INDEXING ENGINE ────────────────────────────────────────────────────────
+async function runIndexing() {
+    document.getElementById('main-title').textContent = customCourseName;
+    document.title = customCourseName;
+    
+    const status = document.getElementById('status-area');
+    status.style.display = 'block';
+    status.innerHTML = `<div class="spinner"></div> Extracting content (This takes a moment)...`;
+
+    courseIndex = [];
+    courseVideos = []; courseAudio = []; courseInteractives = []; courseImages = [];
+    validModules = []; fileNameIndex.clear(); folderIndex.clear(); courseGlossary.clear();
+
+    const glossaryFile = fileMap.get('global/data/glossary.json') || fileMap.get('data/glossary.json') || fileMap.get('glossary.json');
+    if (glossaryFile) {
+        try {
+            const glossaryJson = JSON.parse(await glossaryFile.text());
+            const scanGlossary = (obj) => {
+                if (!obj) return;
+                if (Array.isArray(obj)) obj.forEach(scanGlossary);
+                else if (typeof obj === 'object') {
+                    const id = obj.id || obj.ID || obj.termId;
+                    const def = obj.definition || obj.description || obj.desc || obj.body || obj.meaning;
+                    if (id && def) courseGlossary.set(String(id), stripHtml(String(def)).trim());
+                    Object.values(obj).forEach(scanGlossary);
+                }
+            };
+            scanGlossary(glossaryJson);
+        } catch(e) { console.warn("Failed to parse glossary"); }
+    }
+
+    const sitemapFile = fileMap.get('sitemap.json') || fileMap.get('global/sitemap.json');
+    courseTree = JSON.parse(await sitemapFile.text());
+
+    for (const key of fileMap.keys()) {
+        const parts = key.split('/');
+        const name = parts[parts.length - 1];
+        if (!fileNameIndex.has(name)) fileNameIndex.set(name, []);
+        fileNameIndex.get(name).push(key);
+        if (parts.length > 1) {
+            const folder = parts[parts.length - 2];
+            if (!folderIndex.has(folder)) folderIndex.set(folder, []);
+            folderIndex.get(folder).push(key);
+        }
+    }
+
+    courseTree.modules.forEach(mod => {
+        const title = String(mod.title || "").toLowerCase();
+        const id = String(mod.mID || "").toLowerCase();
+        if (!IGNORE_TITLES.some(k => title.includes(k)) && !IGNORE_IDS.includes(id)) {
+            validModules.push(mod);
+        }
+    });
+
+    const tasks = [];
+    validModules.forEach(module => {
+        if (!module.lessons) return;
+        module.lessons.forEach(lesson => {
+            if (!lesson.pages) return;
+            lesson.pages.forEach(page => {
+                const locationId = `${padNum(module.num)}.${padNum(lesson.num)}.${padNum(Number(page.num) + 1)}`;
+                if (page.src && fileMap.has(page.src)) tasks.push(() => processPage(page.src, locationId, page));
+            });
+        });
+    });
+
+    for (let i = 0; i < tasks.length; i += 10) await Promise.all(tasks.slice(i, i + 10).map(fn => fn()));
+
+    document.getElementById('setup-area').style.display = 'none';
+    document.getElementById('header-actions').style.display = 'flex';
+    document.getElementById('export-controls').style.display = 'block';
+    renderCourseViewer();
+}
+
+function stripHtml(html) {
+    let safeHtml = html.replace(/([a-zA-Z0-9-]+)=(['"])(.*?)\2/g, (match, attr, quote, inner) => {
+        if (inner.includes('<') || inner.includes('>')) return ''; 
+        return match;
+    });
+
+    let formattedHtml = safeHtml
+        .replace(/&amp;nbsp;/gi, ' ')
+        .replace(/&nbsp;/gi, ' ') 
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6])>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '\n• ')
+        .replace(/<\/li>/gi, '');
+
+    const doc = new DOMParser().parseFromString(formattedHtml, 'text/html');
+    const hiddenElements = doc.querySelectorAll('.d-none');
+    hiddenElements.forEach(el => el.remove());
+
+    const glossaryElements = doc.querySelectorAll('element[data-type="glossary"]');
+    glossaryElements.forEach(el => {
+        let term = el.textContent.trim() || el.getAttribute('data-cbdisplay') || '';
+        let id = el.getAttribute('data-id') || '';
+        el.textContent = `[[[GLS|||${term}|||${id}]]]`;
+    });
+
+    const popoverElements = doc.querySelectorAll('element[data-type="popover"]');
+    popoverElements.forEach(el => {
+        let display = el.getAttribute('data-cbdisplay') || el.textContent.trim() || '';
+        let text = el.getAttribute('data-text') || '';
+        el.textContent = `[[[POP|||${display}|||${text}]]]`;
+    });
+
+    let text = doc.body.textContent || "";
+    return text.replace(/^[ \t]+/gm, '').replace(/[ \t]+$/gm, '').replace(/(?:\n){2,}/g, '\r\n').trim();
+}
+
+function extractContentRecursive(obj) {
+    const streams = { normal: { clean: [], raw: [] }, ml: { clean: [], raw: [] }, std: { clean: [], raw: [] }, note: { clean: [], raw: [] } };
+    
+    const ignoreKeys = new Set([
+        'id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 
+        'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 
+        'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 
+        'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 
+        'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 
+        'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 
+        'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes'
+    ]);
+    
+    const hasTags = /<[^>]+>/;
+
+    function traverse(o, ctx) {
+        if (!o) return;
+        if (Array.isArray(o)) { for (const item of o) traverse(item, ctx); return; }
+        if (typeof o === 'object') {
+            
+            if (typeof o.classes === 'string' && o.classes.includes('d-none')) return;
+            if (o.fieldValues && typeof o.fieldValues.classes === 'string' && o.fieldValues.classes.includes('d-none')) return;
+
+            if (o.contentType === 'image' && o.fieldValues) {
+                const fn = (o.fieldValues.src || "").split('/').pop() || "Unknown";
+                streams[ctx].clean.push(`[[[IMG|||${fn}]]]`);
+            }
+            if (o.contentType === 'media' && o.fieldValues) {
+                const kType = (o.fieldValues.kalturaType || "").toLowerCase();
+                const kId = o.fieldValues.kalturaEntryId || "Unknown";
+                if (kType.includes('video')) streams[ctx].clean.push(`[[[VID|||${kId}]]]`);
+                else if (kType.includes('audio')) streams[ctx].clean.push(`[[[AUD|||${kId}]]]`);
+            }
+
+            for (const key in o) {
+                const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                if (ignoreKeys.has(safeKey) || ['alttext', 'caption', 'captionheader', 'textversion', 'copyright'].includes(safeKey)) continue;
+
+                let nextCtx = ctx;
+                if (safeKey === 'ml' || safeKey === 'chathistory') nextCtx = 'ml';
+                else if (safeKey === 'standards' || safeKey === 'standard') nextCtx = 'std';
+                else if (safeKey === 'notes' || safeKey === 'note') nextCtx = 'note';
+
+                let val = o[key];
+                
+                if (safeKey === 'answer') {
+                    if (typeof val === 'string' || typeof val === 'number') val = String(val) + ' [Correct]';
+                    else if (Array.isArray(val)) val = val.map(v => (typeof v === 'string' || typeof v === 'number') ? String(v) + ' [Correct]' : v);
+                }
+
+                const processString = (str) => {
+                    if (str.trim().toLowerCase().endsWith('.json') && !str.trim().includes(' ')) return;
+                    let preCleaned = str.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
+                    const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
+                    const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
+                    
+                    if (!coreText) return;
+                    if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(coreText)) return;
+                    if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden|print|pagename|simplicity|onclick|mclass\d*|english|en|video)[\.\s]*$/i.test(coreText)) return;
+                    if (/^-?\d+(\.\d+)?(%|px|em|rem|vh|vw)$/i.test(coreText)) return;
+                    if (/col-(md|sm|xs|lg)-\d+/.test(coreText) || /"contentType"\s*:/.test(coreText) || /"fieldValues"\s*:/.test(coreText)) return;
+
+                    streams[nextCtx].raw.push(str);
+                    streams[nextCtx].clean.push(cleanedText);
+                };
+
+                if (typeof val === 'string' && val.trim() !== '') {
+                    processString(val);
+                } else if (Array.isArray(val)) {
+                    val.forEach(item => { if (typeof item === 'string' && item.trim() !== '') processString(item); else traverse(item, nextCtx); });
+                } else {
+                    traverse(val, nextCtx);
+                }
+            }
+        }
+    }
+    traverse(obj, 'normal');
+    function formatStream(arr) { return arr.map(s => s.trim()).filter(Boolean).join("\r\n"); }
+    
+    return {
+        normalClean: formatStream(streams.normal.clean), normalRaw: formatStream(streams.normal.raw),
+        mlClean: formatStream(streams.ml.clean), mlRaw: formatStream(streams.ml.raw),
+        stdClean: formatStream(streams.std.clean), noteClean: formatStream(streams.note.clean)
+    };
+}
+
+async function processPage(filename, locationId, pageRef) {
+    try {
+        const contentText = await fileMap.get(filename).text();
+        const json = JSON.parse(contentText);
+        const extracted = extractContentRecursive(json);
+
+        if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
+            courseIndex.push({ locationId, filename, ...extracted, isInteractive: false });
+        }
+
+        courseVideos.push(...findMedia(json, locationId, 'video'));
+        courseAudio.push(...findMedia(json, locationId, 'audio'));
+        courseImages.push(...extractImages(json, locationId));
+
+        let intCounter = 1;
+        for (const intPath of findInteractivesPaths(json)) {
+            let targetFiles = [];
+            const cleanPath = intPath.replace(/^\/+/, '');
+            const targetFileName = cleanPath.split('/').pop();
+
+            for (const key of (fileNameIndex.get(targetFileName) || [])) {
+                if (key === cleanPath || key.endsWith('/' + cleanPath)) targetFiles.push(key);
+            }
+            if (!targetFiles.length) {
+                const folderName = cleanPath.split('/').length > 1 ? cleanPath.split('/')[cleanPath.split('/').length - (cleanPath.toLowerCase().endsWith('.json') ? 2 : 1)] : cleanPath;
+                for (const key of (folderIndex.get(folderName) || [])) if (key.toLowerCase().endsWith('.json')) targetFiles.push(key);
+            }
+
+            for (const fileKey of [...new Set(targetFiles)]) {
+                try {
+                    const intLocationId = `${locationId}.INT-${intCounter++}`;
+                    const intText = await fileMap.get(fileKey).text();
+                    const intJson = JSON.parse(intText);
+
+                    courseVideos.push(...findMedia(intJson, intLocationId, 'video'));
+                    courseAudio.push(...findMedia(intJson, intLocationId, 'audio'));
+                    courseImages.push(...extractImages(intJson, intLocationId));
+
+                    const extractedInt = extractContentRecursive(intJson);
+                    if (extractedInt.normalClean || extractedInt.mlClean || extractedInt.noteClean || extractedInt.stdClean) {
+                        courseIndex.push({ locationId: intLocationId, filename: fileKey, ...extractedInt, isInteractive: true });
+                    }
+                    
+                    let metaTitle = "Untitled", p = 0;
+                    const scan = (o) => { if(o&&typeof o==='object'&&p<2){ if(o.interactiveTitle){metaTitle=stripHtml(o.interactiveTitle);p=2;}else if(o.title&&p<1){metaTitle=stripHtml(o.title);p=1;} Object.values(o).forEach(scan); }};
+                    scan(intJson);
+                    
+                    courseInteractives.push({ locationId: intLocationId, title: metaTitle, folder: fileKey.split('/').length>1?fileKey.split('/')[fileKey.split('/').length-2]:"Interactive", interactiveType: (intText.match(/"type"\s*:\s*"([^"]+)"/i)?.[1] || "unknown") });
+                } catch (e) {}
+            }
+        }
+    } catch (e) {}
+}
+
+function findMedia(obj, locationId, mediaType, found = []) {
+    if (!obj) return found;
+    if (Array.isArray(obj)) obj.forEach(item => findMedia(item, locationId, mediaType, found));
+    else if (typeof obj === 'object') {
+        const validTypes = mediaType === 'video' ? ['video', 'videoNoCC', 'videoplaylist'] : ['audio', 'audiobtn'];
+        if (obj.contentType === 'media' && obj.fieldValues && validTypes.includes(obj.fieldValues.kalturaType)) {
+            found.push({ locationId, entryId: obj.fieldValues.kalturaEntryId || "Unknown", kalturaType: obj.fieldValues.kalturaType, textVersion: obj.fieldValues.textVersion || "" });
+        }
+        for (const key in obj) findMedia(obj[key], locationId, mediaType, found);
+    }
+    return found;
+}
+
+function extractImages(obj, locationId, found = []) {
+    if (!obj) return found;
+    if (Array.isArray(obj)) obj.forEach(item => extractImages(item, locationId, found));
+    else if (typeof obj === 'object') {
+        if (obj.contentType === 'image' && obj.fieldValues) {
+            found.push({ locationId, fileName: obj.fieldValues.src?.split('/').pop() || "Unknown", altText: obj.fieldValues.altText || "", captionHeader: obj.fieldValues.captionHeader || "", caption: obj.fieldValues.caption || "", copyright: obj.fieldValues.copyright || "", textVersion: obj.fieldValues.textVersion || "" });
+        }
+        for (const key in obj) extractImages(obj[key], locationId, found);
+    }
+    return found;
+}
+
+function findInteractivesPaths(obj, found = []) {
+    if (!obj) return found;
+    if (Array.isArray(obj)) obj.forEach(item => findInteractivesPaths(item, found));
+    else if (typeof obj === 'object') {
+        if (obj.contentType === 'interactive' && obj.fieldValues?.value) found.push(obj.fieldValues.value);
+        for (const key in obj) findInteractivesPaths(obj[key], found);
+    }
+    return found;
+}
+
+// ── REFACTORED MEDIA BUILDERS & PROCESSORS ─────────────────────────────────
+
+function buildImageText(img, exImgEmpty) {
+    const hasAlt = img.altText && img.altText.trim() !== '';
+    const hasTv = img.textVersion && img.textVersion.trim() !== '';
+    const hasCap = img.caption && img.caption.trim() !== '';
+    const hasCapH = img.captionHeader && img.captionHeader.trim() !== '';
+    
+    if (exImgEmpty && !hasAlt && !hasTv && !hasCap && !hasCapH) return '';
+
+    let tag = `[Image: ${img.fileName}`;
+    if (hasCapH) tag += ` | Caption Header: ${img.captionHeader.trim()}`;
+    if (hasCap) tag += ` | Caption: ${img.caption.trim()}`;
+    if (hasAlt) tag += ` | Alt Text: ${img.altText.trim()}`;
+    if (img.copyright && img.copyright.trim() !== '') tag += ` | Copyright: ${img.copyright.trim()}`;
+    if (hasTv) tag += ` | Image Description:\r\n${stripHtml(img.textVersion).trim()}`;
+    tag += `]`;
+    return tag;
+}
+
+function buildVideoText(vid) {
+    let tag = `[Video: ${vid.entryId}`;
+    if (vid.textVersion) tag += ` | Transcript:\r\n${stripHtml(vid.textVersion).trim()}`;
+    tag += `]`;
+    return tag;
+}
+
+function buildAudioText(aud) {
+    let tag = `[Audio: ${aud.kalturaType === 'mp3' ? aud.mp3Path.split('/').pop() : aud.entryId}`;
+    if (aud.textVersion) tag += ` | Transcript:\r\n${stripHtml(aud.textVersion).trim()}`;
+    tag += `]`;
+    return tag;
+}
+
+function processPlaceholders(contentText, pageImages, pageVideos, pageAudio, processedTracker, options) {
+    const { exImgEmpty, exGlossary, exTooltips, isHtml } = options;
+    let content = isHtml ? escapeHtml(contentText) : contentText;
+
+    content = content.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
+        if (exGlossary) return term;
+        const definition = courseGlossary.get(id);
+        return definition ? `${term} [${definition}]` : `${term} [definition unavailable]`;
+    });
+
+    content = content.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, display, text) => {
+        if (exTooltips) return '';
+        const txt = `[tooltip: ${display} | ${text}]`;
+        return isHtml ? `</div><div class="media-tag">${escapeHtml(txt)}</div><div class="page-text">` : `\r\n${txt}\r\n`;
+    });
+
+    content = content.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+        const img = pageImages.find(i => i.fileName === fileName);
+        if (!img) return '';
+        processedTracker.add(img);
+        const txt = buildImageText(img, exImgEmpty);
+        if (!txt) return '';
+        return isHtml ? `</div><div class="media-tag">${escapeHtml(txt)}</div><div class="page-text">` : txt;
+    });
+
+    content = content.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => {
+        const vid = pageVideos.find(v => v.entryId === entryId);
+        if (!vid) return '';
+        processedTracker.add(vid);
+        const txt = buildVideoText(vid);
+        return isHtml ? `</div><div class="media-tag">${escapeHtml(txt)}</div><div class="page-text">` : txt;
+    });
+
+    content = content.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, entryId) => {
+        const aud = pageAudio.find(a => a.entryId === entryId);
+        if (!aud) return '';
+        processedTracker.add(aud);
+        const txt = buildAudioText(aud);
+        return isHtml ? `</div><div class="media-tag">${escapeHtml(txt)}</div><div class="page-text">` : txt;
+    });
+
+    return content;
+}
+
+function getStragglers(pageImages, pageVideos, pageAudio, processedTracker, exImgEmpty) {
+    let stragglers = [];
+    pageImages.filter(img => !processedTracker.has(img)).forEach(img => {
+        const txt = buildImageText(img, exImgEmpty);
+        if (txt) stragglers.push(txt);
+    });
+    pageVideos.filter(v => !processedTracker.has(v)).forEach(vid => {
+        stragglers.push(buildVideoText(vid));
+    });
+    pageAudio.filter(a => !processedTracker.has(a)).forEach(aud => {
+        stragglers.push(buildAudioText(aud));
+    });
+    return stragglers;
+}
+
+
+// ── RENDER UI ──────────────────────────────────────────────────────────────
+function renderCourseViewer() {
+    const container = document.getElementById('course-viewer');
+    const tocSidebar = document.getElementById('toc-sidebar');
+    container.innerHTML = '';
+    
+    tocSidebar.innerHTML = '<h3 class="toc-header">Table of Contents</h3>';
+    tocSidebar.style.display = 'block';
+    container.style.display = 'block';
+
+    const docRegex = /href=["']([^"']+\.(pdf|docx))["']/gi;
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked,
+        isHtml: true
+    };
+
+    validModules.forEach(mod => {
+        const modNum = padNum(mod.num);
+        const modId = generateSafeId('mod', modNum);
+        
+        const modDiv = document.createElement('div');
+        modDiv.className = 'module-block';
+        modDiv.id = modId;
+        modDiv.innerHTML = `<h2 class="module-title">${modNum} ${escapeHtml(mod.title)}</h2>`;
+
+        const tocModDetails = document.createElement('details');
+        tocModDetails.className = 'toc-module';
+        tocModDetails.innerHTML = `<summary onclick="document.getElementById('${modId}').scrollIntoView({behavior: 'smooth'})">${modNum} ${escapeHtml(mod.title)}</summary>`;
+        const tocModContent = document.createElement('div');
+        tocModContent.className = 'toc-tree-content';
+
+        if (mod.lessons) {
+            mod.lessons.forEach(lesson => {
+                const fullLesID = `${modNum}.${padNum(lesson.num)}`;
+                const lesId = generateSafeId('les', fullLesID);
+                
+                const lesDet = document.createElement('details');
+                lesDet.className = 'lesson-details';
+                lesDet.id = lesId;
+                if (options.exInt || options.exDocs || options.exImgEmpty) lesDet.open = true; 
+                lesDet.innerHTML = `<summary class="lesson-summary">${fullLesID} ${escapeHtml(lesson.title)}</summary>`;
+                
+                const lesContent = document.createElement('div');
+                lesContent.className = 'lesson-content';
+
+                const tocLesId = 'toc-' + lesId;
+                const tocLesDetails = document.createElement('details');
+                tocLesDetails.className = 'toc-lesson';
+                tocLesDetails.id = tocLesId;
+                if (options.exInt || options.exDocs || options.exImgEmpty) tocLesDetails.open = true; 
+                tocLesDetails.innerHTML = `<summary onclick="document.getElementById('${lesId}').scrollIntoView({behavior: 'smooth'})">${fullLesID} ${escapeHtml(lesson.title)}</summary>`;
+                const tocLesContent = document.createElement('div');
+                tocLesContent.className = 'toc-tree-content';
+
+                let isSyncing = false;
+                lesDet.addEventListener('toggle', () => {
+                    if (isSyncing) return;
+                    if (lesDet.open && !tocModDetails.open) tocModDetails.open = true;
+                    if (tocLesDetails.open !== lesDet.open) {
+                        isSyncing = true;
+                        tocLesDetails.open = lesDet.open;
+                        setTimeout(() => isSyncing = false, 10);
+                    }
+                });
+                
+                tocLesDetails.addEventListener('toggle', () => {
+                    if (isSyncing) return;
+                    if (lesDet.open !== tocLesDetails.open) {
+                        isSyncing = true;
+                        lesDet.open = tocLesDetails.open;
+                        setTimeout(() => isSyncing = false, 10);
+                    }
+                });
+
+                if (lesson.pages) {
+                    lesson.pages.forEach(page => {
+                        const fullPgID = `${fullLesID}.${padNum(Number(page.num) + 1)}`;
+                        const pgId = generateSafeId('pg', fullPgID);
+                        
+                        const pgDiv = document.createElement('div');
+                        pgDiv.className = 'page-block';
+                        pgDiv.id = pgId;
+                        pgDiv.innerHTML = `<h3 class="page-title">${fullPgID} ${escapeHtml(page.title)}</h3>`;
+
+                        const tocPageDiv = document.createElement('div');
+                        tocPageDiv.className = 'toc-page';
+                        tocPageDiv.innerHTML = `${fullPgID} ${escapeHtml(page.title)}`;
+                        tocPageDiv.onclick = () => {
+                            lesDet.open = true; 
+                            document.getElementById(pgId).scrollIntoView({behavior: 'smooth'});
+                        };
+                        tocLesContent.appendChild(tocPageDiv);
+
+                        const pageEntries = courseIndex.filter(idx => idx.locationId === fullPgID || idx.locationId.startsWith(fullPgID + '.INT-'));
+                        const pageImages = courseImages.filter(img => img.locationId === fullPgID || img.locationId.startsWith(fullPgID + '.INT-'));
+                        const pageVideos = courseVideos.filter(v => v.locationId === fullPgID || v.locationId.startsWith(fullPgID + '.INT-'));
+                        const pageAudio = courseAudio.filter(a => a.locationId === fullPgID || a.locationId.startsWith(fullPgID + '.INT-'));
+
+                        const processedTracker = new Set();
+
+                        pageEntries.forEach(pageData => {
+                            let contentText = "";
+                            if (pageData.normalClean) contentText += pageData.normalClean + "\r\n";
+                            if (pageData.mlClean) contentText += pageData.mlClean + "\r\n";
+                            if (pageData.noteClean) contentText += pageData.noteClean + "\r\n";
+                            if (pageData.stdClean) contentText += pageData.stdClean + "\r\n";
+                            contentText = contentText.trim();
+
+                            let htmlContent = processPlaceholders(contentText, pageImages, pageVideos, pageAudio, processedTracker, options);
+
+                            if (pageData.isInteractive) {
+                                if (options.exInt) return;
+                                const intMeta = courseInteractives.find(i => i.locationId === pageData.locationId);
+                                let tagText = `[Interactive: ${intMeta ? intMeta.title + ' | Folder: ' + intMeta.folder + ' | Type: ' + intMeta.interactiveType : pageData.filename.split('/').pop()}`;
+                                if (contentText) tagText += ` | Content:\r\n${contentText}`;
+                                tagText += ']';
+                                pgDiv.innerHTML += `<div class="media-tag">${escapeHtml(tagText)}</div>`;
+                            } else {
+                                if (htmlContent) pgDiv.innerHTML += `<div class="page-text">${htmlContent}</div>`;
+
+                                if (!options.exDocs) {
+                                    let match;
+                                    const foundDocs = new Set();
+                                    while ((match = docRegex.exec(pageData.normalRaw)) !== null) {
+                                        const docFilename = match[1].split('/').pop();
+                                        if (!foundDocs.has(docFilename)) {
+                                            foundDocs.add(docFilename);
+                                            pgDiv.innerHTML += `
+                                                <div class="media-tag">
+                                                    <strong>[Document: ${escapeHtml(docFilename)}</strong> 
+                                                    <button class="nav-btn" style="margin-left:10px;" onclick="loadDocContentUI(this, '${docFilename}')">Load Text</button>
+                                                    <span>]</span>
+                                                </div>`;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        const stragglers = getStragglers(pageImages, pageVideos, pageAudio, processedTracker, options.exImgEmpty);
+                        stragglers.forEach(txt => {
+                            pgDiv.innerHTML += `<div class="media-tag">${escapeHtml(txt)}</div>`;
+                        });
+
+                        lesContent.appendChild(pgDiv);
+                    });
+                }
+                
+                tocLesDetails.appendChild(tocLesContent);
+                tocModContent.appendChild(tocLesDetails);
+                lesDet.appendChild(lesContent);
+                modDiv.appendChild(lesDet);
+            });
+        }
+        
+        tocModDetails.appendChild(tocModContent);
+        tocSidebar.appendChild(tocModDetails);
+        container.appendChild(modDiv);
+    });
+}
+                
+async function loadDocContentUI(btn, filename) {
+    btn.innerHTML = "Extracting...";
+    btn.disabled = true;
+    const text = await extractDocumentText(filename);
+    const textSpan = document.createElement('span');
+    textSpan.innerHTML = ` | Content:\r\n<span style="font-family:sans-serif; color:var(--text); white-space:pre-wrap;">${escapeHtml(text)}</span>`;
+    btn.parentElement.insertBefore(textSpan, btn.nextSibling);
+    btn.remove();
+}
+
+async function extractDocumentText(filename) {
+    let targetFile = null;
+    const searchName = filename.split('/').pop().toLowerCase();
+    for (const [key, file] of fileMap.entries()) if (key.toLowerCase().endsWith(searchName)) { targetFile = file; break; }
+    if (!targetFile) return "\n[Error: Document not found in scanned folder]\n";
+
+    try {
+        const arrayBuffer = await targetFile.arrayBuffer();
+        if (searchName.endsWith('.pdf')) {
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) fullText += (await (await pdf.getPage(i)).getTextContent()).items.map(item => item.str).join(' ') + "\n";
+            return fullText.replace(/(?:\r?\n\s*)+/g, '\r\n').trim();
+        } else if (searchName.endsWith('.docx')) {
+            return (await mammoth.extractRawText({ arrayBuffer })).value.replace(/(?:\r?\n\s*)+/g, '\r\n').trim();
+        }
+        return "\n[Notice: Text extraction not supported for this file type]\n";
+    } catch (e) { return `\n[Error: Failed to parse document content - ${e.message}]\n`; }
+}
+
+// ── EXPORT ROUTING & MODAL LOGIC ──────────────────────────────────────────
+
+function openExportModal() {
+    if (!courseTree || !courseTree.modules || validModules.length === 0) return showToast("No course loaded to export.", "error");
+    
+    const container = document.getElementById('export-checkbox-container');
+    container.innerHTML = '';
+    
+    validModules.forEach(mod => {
+        const modNum = padNum(mod.num);
+        container.innerHTML += `
+            <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+                <input type="checkbox" class="mod-exp-cb" value="${mod.num}" style="accent-color:var(--primary); width:16px; height:16px;" onchange="updateSelectAllState()"> 
+                ${modNum} ${escapeHtml(mod.title)}
+            </label>`;
+    });
+
+    document.getElementById('export-select-all').checked = false;
+    document.querySelector('input[name="exp-type"][value="single"]').checked = true;
+    document.getElementById('export-module-list').style.display = 'none';
+    document.getElementById('export-modal').classList.add('active');
+}
+
+function toggleAllExportModules(selectAllCheckbox) {
+    document.querySelectorAll('.mod-exp-cb').forEach(cb => cb.checked = selectAllCheckbox.checked);
+}
+
+function updateSelectAllState() {
+    const totalBoxes = document.querySelectorAll('.mod-exp-cb').length;
+    const checkedBoxes = document.querySelectorAll('.mod-exp-cb:checked').length;
+    document.getElementById('export-select-all').checked = (totalBoxes === checkedBoxes);
+}
+
+function executeExport() {
+    const isSingle = document.querySelector('input[name="exp-type"]:checked').value === 'single';
+    document.getElementById('export-modal').classList.remove('active');
+    
+    if (isSingle) {
+        exportFullCourse();
+    } else {
+        const selectedIds = Array.from(document.querySelectorAll('.mod-exp-cb:checked')).map(cb => cb.value);
+        if (selectedIds.length === 0) return showToast("Please select at least one module to export.", "error");
+        exportSeparateModules(selectedIds);
+    }
+}
+
+// ── EXPORT PROCESSORS ──────────────────────────────────────────────────────
+
+async function buildModuleDocumentContent(mod, options) {
+    let docContent = "";
+    const addLine = (text = "") => { docContent += text + "\r\n"; };
+    const docRegex = /href=["']([^"']+\.(pdf|docx))["']/gi;
+
+    const modNum = padNum(mod.num);
+    addLine(`${modNum} ${mod.title}`);
+
+    if (!mod.lessons) return docContent;
+
+    for (const lesson of mod.lessons) {
+        const fullLesID = `${modNum}.${padNum(lesson.num)}`;
+        addLine(`${fullLesID} ${lesson.title}`);
+        if (!lesson.pages) continue;
+
+        for (const page of lesson.pages) {
+            const fullPgID = `${fullLesID}.${padNum(Number(page.num) + 1)}`;
+            addLine(`${fullPgID} ${page.title}`);
+            
+            const pageEntries = courseIndex.filter(idx => idx.locationId === fullPgID || idx.locationId.startsWith(fullPgID + '.INT-'));
+            const pageImages = courseImages.filter(img => img.locationId === fullPgID || img.locationId.startsWith(fullPgID + '.INT-'));
+            const pageVideos = courseVideos.filter(v => v.locationId === fullPgID || v.locationId.startsWith(fullPgID + '.INT-'));
+            const pageAudio = courseAudio.filter(a => a.locationId === fullPgID || a.locationId.startsWith(fullPgID + '.INT-'));
+            
+            const processedTracker = new Set();
+
+            for (const pageData of pageEntries) {
+                let contentText = "";
+                if (pageData.normalClean) contentText += pageData.normalClean + "\r\n";
+                if (pageData.mlClean) contentText += pageData.mlClean + "\r\n";
+                if (pageData.noteClean) contentText += pageData.noteClean + "\r\n";
+                if (pageData.stdClean) contentText += pageData.stdClean + "\r\n";
+                contentText = contentText.trim();
+
+                let finalContent = processPlaceholders(contentText, pageImages, pageVideos, pageAudio, processedTracker, options);
+
+                if (pageData.isInteractive) {
+                    if (options.exInt) continue; 
+                    const intMeta = courseInteractives.find(i => i.locationId === pageData.locationId);
+                    let intTag = `[Interactive: ${intMeta ? intMeta.title + ' | Folder: ' + intMeta.folder + ' | Type: ' + intMeta.interactiveType : pageData.filename.split('/').pop()}`;
+                    if (contentText) intTag += ` | Content:\r\n${contentText}`;
+                    addLine(intTag + `]`);
+                } else {
+                    if (finalContent) addLine(finalContent);
+                    
+                    if (!options.exDocs) {
+                        let match;
+                        const foundDocs = new Set();
+                        while ((match = docRegex.exec(pageData.normalRaw)) !== null) {
+                            const docFilename = match[1].split('/').pop();
+                            if (!foundDocs.has(docFilename)) {
+                                foundDocs.add(docFilename);
+                                const docText = await extractDocumentText(docFilename);
+                                addLine(`[Document: ${docFilename} | ${docText}]`);
+                            }
+                        }
+                    }
+                }
+            }
+
+            const stragglers = getStragglers(pageImages, pageVideos, pageAudio, processedTracker, options.exImgEmpty);
+            stragglers.forEach(txt => addLine(txt));
+
+            addLine(); 
+        }
+        addLine(); 
+    }
+    return docContent;
+}
+
+function triggerDownload(content, filename) {
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body><pre style='font-family: sans-serif; white-space: pre-wrap; word-wrap: break-word;'>";
+    const blob = new Blob([header + content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</pre></body></html>"], { type: 'application/msword' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
+}
+
+async function exportFullCourse() {
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked,
+        isHtml: false
+    };
+
+    showToast("Generating Single Document... This may take a moment to parse files.", "success");
+    
+    let fullContent = "";
+    for (const mod of validModules) {
+        fullContent += await buildModuleDocumentContent(mod, options) + "\r\n";
+    }
+    
+    const safeName = customCourseName ? customCourseName.replace(/[^a-z0-9]/gi, '_') : "Course_Content";
+    triggerDownload(fullContent, `${safeName}_Export.doc`);
+}
+
+async function exportSeparateModules(selectedIds) {
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked,
+        isHtml: false
+    };
+
+    showToast(`Generating ${selectedIds.length} document(s)... Please allow multiple downloads if your browser prompts you.`, "success");
+
+    for (const modId of selectedIds) {
+        const mod = validModules.find(m => String(m.num) === String(modId));
+        if (!mod) continue;
+
+        const modContent = await buildModuleDocumentContent(mod, options);
+        
+        const modNum = padNum(mod.num);
+        const safeTitle = mod.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        
+        triggerDownload(modContent, `${modNum}_${safeTitle}.doc`);
+        
+        // Wait 400ms between generating files so the browser doesn't block the rapid downloads
+        await new Promise(r => setTimeout(r, 400)); 
+    }
+}
+</script>
+<button id="jump-top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Jump to Top">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg>
+</button>
+
+<script>
+    window.addEventListener('scroll', () => {
+        const btn = document.getElementById('jump-top-btn');
+        if (window.scrollY > 300) btn.style.display = 'flex';
+        else btn.style.display = 'none';
+    });
+</script>
+</body>
+</html>
