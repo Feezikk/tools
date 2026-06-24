@@ -178,7 +178,6 @@
                 </div>
             </div>
 
-            <!-- NEW EXPORT OPTIONS MODAL -->
             <div id="export-modal" class="modal-overlay">
                 <div class="modal-content">
                     <div class="modal-header"><h3 style="margin:0; color:var(--primary);">Export Options</h3></div>
@@ -282,9 +281,6 @@ document.getElementById('folder-input').addEventListener('change', async (e) => 
 
         if (versionFolderIndex !== -1) {
             let courseName = pathParts[versionFolderIndex].replace(versionFolderRegex, '');
-            
-            // NEW LOGIC: If the folder name was JUST "_CourseBuilder_Import", it becomes blank. 
-            // Look up one folder level to grab the parent course's name.
             if (!courseName && versionFolderIndex > 0) {
                 courseName = pathParts[versionFolderIndex - 1];
             } else if (!courseName) {
@@ -510,7 +506,8 @@ function extractContentRecursive(obj) {
         'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 
         'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 
         'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 
-        'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes'
+        'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
+        'alttext', 'caption', 'captionheader', 'textversion', 'copyright'
     ]);
     
     const hasTags = /<[^>]+>/;
@@ -523,20 +520,9 @@ function extractContentRecursive(obj) {
             if (typeof o.classes === 'string' && o.classes.includes('d-none')) return;
             if (o.fieldValues && typeof o.fieldValues.classes === 'string' && o.fieldValues.classes.includes('d-none')) return;
 
-            if (o.contentType === 'image' && o.fieldValues) {
-                const fn = (o.fieldValues.src || "").split('/').pop() || "Unknown";
-                streams[ctx].clean.push(`[[[IMG|||${fn}]]]`);
-            }
-            if (o.contentType === 'media' && o.fieldValues) {
-                const kType = (o.fieldValues.kalturaType || "").toLowerCase();
-                const kId = o.fieldValues.kalturaEntryId || "Unknown";
-                if (kType.includes('video')) streams[ctx].clean.push(`[[[VID|||${kId}]]]`);
-                else if (kType.includes('audio')) streams[ctx].clean.push(`[[[AUD|||${kId}]]]`);
-            }
-
             for (const key in o) {
                 const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                if (ignoreKeys.has(safeKey) || ['alttext', 'caption', 'captionheader', 'textversion', 'copyright'].includes(safeKey)) continue;
+                if (ignoreKeys.has(safeKey)) continue;
 
                 let nextCtx = ctx;
                 if (safeKey === 'ml' || safeKey === 'chathistory') nextCtx = 'ml';
@@ -590,53 +576,149 @@ async function processPage(filename, locationId, pageRef) {
     try {
         const contentText = await fileMap.get(filename).text();
         const json = JSON.parse(contentText);
-        const extracted = extractContentRecursive(json);
-
-        if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
-            courseIndex.push({ locationId, filename, ...extracted, isInteractive: false });
-        }
-
-        courseVideos.push(...findMedia(json, locationId, 'video'));
-        courseAudio.push(...findMedia(json, locationId, 'audio'));
-        courseImages.push(...extractImages(json, locationId));
 
         let intCounter = 1;
-        for (const intPath of findInteractivesPaths(json)) {
-            let targetFiles = [];
-            const cleanPath = intPath.replace(/^\/+/, '');
-            const targetFileName = cleanPath.split('/').pop();
+        let globalOrderCounter = 0;
 
-            for (const key of (fileNameIndex.get(targetFileName) || [])) {
-                if (key === cleanPath || key.endsWith('/' + cleanPath)) targetFiles.push(key);
+        async function parseNode(node) {
+            if (!node) return;
+            if (Array.isArray(node)) {
+                for (let item of node) await parseNode(item);
+                return;
             }
-            if (!targetFiles.length) {
-                const folderName = cleanPath.split('/').length > 1 ? cleanPath.split('/')[cleanPath.split('/').length - (cleanPath.toLowerCase().endsWith('.json') ? 2 : 1)] : cleanPath;
-                for (const key of (folderIndex.get(folderName) || [])) if (key.toLowerCase().endsWith('.json')) targetFiles.push(key);
-            }
+            if (typeof node === 'object') {
+                if (typeof node.classes === 'string' && node.classes.includes('d-none')) return;
+                if (node.fieldValues && typeof node.fieldValues.classes === 'string' && node.fieldValues.classes.includes('d-none')) return;
 
-            for (const fileKey of [...new Set(targetFiles)]) {
-                try {
-                    const intLocationId = `${locationId}.INT-${intCounter++}`;
-                    const intText = await fileMap.get(fileKey).text();
-                    const intJson = JSON.parse(intText);
+                if (node.contentType) {
+                    if (node.contentType === 'interactive') {
+                        const intPath = node.fieldValues?.value || "Unknown Path";
+                        const intType = node.fieldValues?.type || "unknown";
+                        const textVer = node.fieldValues?.textVersion || "";
 
-                    courseVideos.push(...findMedia(intJson, intLocationId, 'video'));
-                    courseAudio.push(...findMedia(intJson, intLocationId, 'audio'));
-                    courseImages.push(...extractImages(intJson, intLocationId));
+                        const intLocationId = `${locationId}.INT-${intCounter++}`;
 
-                    const extractedInt = extractContentRecursive(intJson);
-                    if (extractedInt.normalClean || extractedInt.mlClean || extractedInt.noteClean || extractedInt.stdClean) {
-                        courseIndex.push({ locationId: intLocationId, filename: fileKey, ...extractedInt, isInteractive: true });
+                        let folderName = "Interactive";
+                        const cleanPath = intPath.replace(/^\/+/, '');
+                        const targetFileName = cleanPath.split('/').pop();
+                        if (cleanPath.includes('/')) {
+                            const parts = cleanPath.split('/');
+                            folderName = parts[parts.length - (targetFileName.includes('.') ? 2 : 1)];
+                        } else {
+                            folderName = cleanPath;
+                        }
+
+                        // Always register the interactive metadata
+                        courseInteractives.push({
+                            locationId: intLocationId,
+                            title: node.title || node.interactiveTitle || targetFileName,
+                            folder: folderName,
+                            interactiveType: intType
+                        });
+
+                        let internalContentFound = false;
+
+                        if (intPath !== "Unknown Path") {
+                            let targetFiles = [];
+                            for (const key of (fileNameIndex.get(targetFileName) || [])) {
+                                if (key === cleanPath || key.endsWith('/' + cleanPath)) targetFiles.push(key);
+                            }
+                            if (!targetFiles.length) {
+                                for (const key of (folderIndex.get(folderName) || [])) {
+                                    if (key.toLowerCase().endsWith('.json')) targetFiles.push(key);
+                                }
+                            }
+
+                            for (const fileKey of [...new Set(targetFiles)]) {
+                                try {
+                                    if (fileKey.toLowerCase().endsWith('.json')) {
+                                        const intText = await fileMap.get(fileKey).text();
+                                        const intJson = JSON.parse(intText);
+
+                                        courseVideos.push(...findMedia(intJson, intLocationId, 'video'));
+                                        courseAudio.push(...findMedia(intJson, intLocationId, 'audio'));
+                                        courseImages.push(...extractImages(intJson, intLocationId));
+
+                                        const extractedInt = extractContentRecursive(intJson);
+                                        if (extractedInt.normalClean || extractedInt.mlClean || extractedInt.noteClean || extractedInt.stdClean) {
+                                            courseIndex.push({
+                                                locationId: intLocationId,
+                                                filename: fileKey,
+                                                ...extractedInt,
+                                                isInteractive: true,
+                                                order: globalOrderCounter++
+                                            });
+                                            internalContentFound = true;
+                                        }
+                                        
+                                        let metaTitle = null, p = 0;
+                                        const scan = (o) => { if(o&&typeof o==='object'&&p<2){ if(o.interactiveTitle){metaTitle=stripHtml(o.interactiveTitle);p=2;}else if(o.title&&p<1){metaTitle=stripHtml(o.title);p=1;} Object.values(o).forEach(scan); }};
+                                        scan(intJson);
+                                        if (metaTitle) {
+                                            const intMeta = courseInteractives.find(i => i.locationId === intLocationId);
+                                            if (intMeta) intMeta.title = metaTitle;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn(`Could not parse interactive JSON: ${fileKey}`, e);
+                                }
+                            }
+                        }
+
+                        // Fall back to textVersion if we couldn't dig into a JSON file
+                        if (!internalContentFound) {
+                            let cleanTextVer = textVer ? stripHtml(textVer) : "";
+                            courseIndex.push({
+                                locationId: intLocationId,
+                                filename: intPath,
+                                normalClean: cleanTextVer,
+                                normalRaw: textVer,
+                                mlClean: "", mlRaw: "", noteClean: "", stdClean: "",
+                                isInteractive: true,
+                                order: globalOrderCounter++
+                            });
+                        }
+                    } else {
+                        const extracted = extractContentRecursive(node);
+                        courseVideos.push(...findMedia(node, locationId, 'video'));
+                        courseAudio.push(...findMedia(node, locationId, 'audio'));
+                        courseImages.push(...extractImages(node, locationId));
+
+                        if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean || node.contentType === 'image' || node.contentType === 'media') {
+                            courseIndex.push({ locationId, filename, ...extracted, isInteractive: false, order: globalOrderCounter++ });
+                        }
                     }
-                    
-                    let metaTitle = "Untitled", p = 0;
-                    const scan = (o) => { if(o&&typeof o==='object'&&p<2){ if(o.interactiveTitle){metaTitle=stripHtml(o.interactiveTitle);p=2;}else if(o.title&&p<1){metaTitle=stripHtml(o.title);p=1;} Object.values(o).forEach(scan); }};
-                    scan(intJson);
-                    
-                    courseInteractives.push({ locationId: intLocationId, title: metaTitle, folder: fileKey.split('/').length>1?fileKey.split('/')[fileKey.split('/').length-2]:"Interactive", interactiveType: (intText.match(/"type"\s*:\s*"([^"]+)"/i)?.[1] || "unknown") });
-                } catch (e) {}
+                    return; // Stop deep-scanning manually; extractContentRecursive handled it
+                }
+
+                for (const key in node) {
+                    if (key === 'info' || key === 'notes' || key === 'recoveredContent') {
+                        const extracted = extractContentRecursive({ [key]: node[key] });
+                        courseVideos.push(...findMedia({ [key]: node[key] }, locationId, 'video'));
+                        courseAudio.push(...findMedia({ [key]: node[key] }, locationId, 'audio'));
+                        courseImages.push(...extractImages({ [key]: node[key] }, locationId));
+
+                        if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
+                            courseIndex.push({ locationId, filename, ...extracted, isInteractive: false, order: globalOrderCounter++ });
+                        }
+                    } else if (typeof node[key] === 'string' && node[key].trim() !== '') {
+                        const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                        const ignoreKeys = new Set(['id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes', 'alttext', 'caption', 'captionheader', 'textversion', 'copyright']);
+                        if (!ignoreKeys.has(safeKey)) {
+                            const extracted = extractContentRecursive({ [key]: node[key] });
+                            if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
+                                courseIndex.push({ locationId, filename, ...extracted, isInteractive: false, order: globalOrderCounter++ });
+                            }
+                        }
+                    } else {
+                        await parseNode(node[key]);
+                    }
+                }
             }
         }
+
+        await parseNode(json);
+
     } catch (e) {}
 }
 
@@ -661,16 +743,6 @@ function extractImages(obj, locationId, found = []) {
             found.push({ locationId, fileName: obj.fieldValues.src?.split('/').pop() || "Unknown", altText: obj.fieldValues.altText || "", captionHeader: obj.fieldValues.captionHeader || "", caption: obj.fieldValues.caption || "", copyright: obj.fieldValues.copyright || "", textVersion: obj.fieldValues.textVersion || "" });
         }
         for (const key in obj) extractImages(obj[key], locationId, found);
-    }
-    return found;
-}
-
-function findInteractivesPaths(obj, found = []) {
-    if (!obj) return found;
-    if (Array.isArray(obj)) obj.forEach(item => findInteractivesPaths(item, found));
-    else if (typeof obj === 'object') {
-        if (obj.contentType === 'interactive' && obj.fieldValues?.value) found.push(obj.fieldValues.value);
-        for (const key in obj) findInteractivesPaths(obj[key], found);
     }
     return found;
 }
@@ -772,8 +844,17 @@ function getStragglers(pageImages, pageVideos, pageAudio, processedTracker, exIm
 function renderCourseViewer() {
     const container = document.getElementById('course-viewer');
     const tocSidebar = document.getElementById('toc-sidebar');
-    container.innerHTML = '';
     
+    // Capture currently open details elements to preserve state
+    const openDetailIds = new Set();
+    const isReRender = container.innerHTML.trim() !== '';
+    if (isReRender) {
+        document.querySelectorAll('#app-wrapper details[open]').forEach(det => {
+            if (det.id) openDetailIds.add(det.id);
+        });
+    }
+
+    container.innerHTML = '';
     tocSidebar.innerHTML = '<h3 class="toc-header">Table of Contents</h3>';
     tocSidebar.style.display = 'block';
     container.style.display = 'block';
@@ -799,6 +880,8 @@ function renderCourseViewer() {
 
         const tocModDetails = document.createElement('details');
         tocModDetails.className = 'toc-module';
+        tocModDetails.id = 'toc-' + modId;
+        if (isReRender && openDetailIds.has(tocModDetails.id)) tocModDetails.open = true;
         tocModDetails.innerHTML = `<summary onclick="document.getElementById('${modId}').scrollIntoView({behavior: 'smooth'})">${modNum} ${escapeHtml(mod.title)}</summary>`;
         const tocModContent = document.createElement('div');
         tocModContent.className = 'toc-tree-content';
@@ -811,7 +894,7 @@ function renderCourseViewer() {
                 const lesDet = document.createElement('details');
                 lesDet.className = 'lesson-details';
                 lesDet.id = lesId;
-                if (options.exInt || options.exDocs || options.exImgEmpty) lesDet.open = true; 
+                if (isReRender && openDetailIds.has(lesId)) lesDet.open = true; 
                 lesDet.innerHTML = `<summary class="lesson-summary">${fullLesID} ${escapeHtml(lesson.title)}</summary>`;
                 
                 const lesContent = document.createElement('div');
@@ -821,7 +904,7 @@ function renderCourseViewer() {
                 const tocLesDetails = document.createElement('details');
                 tocLesDetails.className = 'toc-lesson';
                 tocLesDetails.id = tocLesId;
-                if (options.exInt || options.exDocs || options.exImgEmpty) tocLesDetails.open = true; 
+                if (isReRender && openDetailIds.has(tocLesId)) tocLesDetails.open = true; 
                 tocLesDetails.innerHTML = `<summary onclick="document.getElementById('${lesId}').scrollIntoView({behavior: 'smooth'})">${fullLesID} ${escapeHtml(lesson.title)}</summary>`;
                 const tocLesContent = document.createElement('div');
                 tocLesContent.className = 'toc-tree-content';
@@ -866,6 +949,10 @@ function renderCourseViewer() {
                         tocLesContent.appendChild(tocPageDiv);
 
                         const pageEntries = courseIndex.filter(idx => idx.locationId === fullPgID || idx.locationId.startsWith(fullPgID + '.INT-'));
+                        
+                        // Enforce Sequential Order
+                        pageEntries.sort((a, b) => a.order - b.order);
+
                         const pageImages = courseImages.filter(img => img.locationId === fullPgID || img.locationId.startsWith(fullPgID + '.INT-'));
                         const pageVideos = courseVideos.filter(v => v.locationId === fullPgID || v.locationId.startsWith(fullPgID + '.INT-'));
                         const pageAudio = courseAudio.filter(a => a.locationId === fullPgID || a.locationId.startsWith(fullPgID + '.INT-'));
@@ -1031,6 +1118,10 @@ async function buildModuleDocumentContent(mod, options) {
             addLine(`${fullPgID} ${page.title}`);
             
             const pageEntries = courseIndex.filter(idx => idx.locationId === fullPgID || idx.locationId.startsWith(fullPgID + '.INT-'));
+            
+            // Enforce Sequential Order
+            pageEntries.sort((a, b) => a.order - b.order);
+
             const pageImages = courseImages.filter(img => img.locationId === fullPgID || img.locationId.startsWith(fullPgID + '.INT-'));
             const pageVideos = courseVideos.filter(v => v.locationId === fullPgID || v.locationId.startsWith(fullPgID + '.INT-'));
             const pageAudio = courseAudio.filter(a => a.locationId === fullPgID || a.locationId.startsWith(fullPgID + '.INT-'));
