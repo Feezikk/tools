@@ -209,8 +209,6 @@
         </div>
     </div>
 </div>
-    </div>
-</div>
 
 <script>
 // =============================================================================
@@ -264,7 +262,8 @@ document.getElementById('folder-input').addEventListener('change', async (e) => 
     availableCoursesFromScan.clear();
     const courseVersionsTracker = new Map();
     const rootFallbackMap = new Map();
-    const versionFolderRegex = /(_v(\d+)|_?cbimport)$/i;
+    
+    const versionFolderRegex = /(_v(\d+)|_?cbimport|_?coursebuilder_import|_?import)$/i;
 
     for (const file of files) {
         const originalPath = file.webkitRelativePath || file.name;
@@ -275,14 +274,23 @@ document.getElementById('folder-input').addEventListener('change', async (e) => 
             const m = pathParts[j].match(versionFolderRegex);
             if (m) {
                 versionFolderIndex = j;
-                if (m[0].toLowerCase().includes('cbimport')) { isCbImport = true; displayVersion = "cbimport"; }
+                if (m[0].toLowerCase().includes('import')) { isCbImport = true; displayVersion = "cbimport"; }
                 else { versionWeight = parseInt(m[2], 10); displayVersion = `v${versionWeight}`; }
                 break;
             }
         }
 
         if (versionFolderIndex !== -1) {
-            const courseName = pathParts[versionFolderIndex].replace(versionFolderRegex, '');
+            let courseName = pathParts[versionFolderIndex].replace(versionFolderRegex, '');
+            
+            // NEW LOGIC: If the folder name was JUST "_CourseBuilder_Import", it becomes blank. 
+            // Look up one folder level to grab the parent course's name.
+            if (!courseName && versionFolderIndex > 0) {
+                courseName = pathParts[versionFolderIndex - 1];
+            } else if (!courseName) {
+                courseName = "Imported_Course";
+            }
+
             if (!courseVersionsTracker.has(courseName)) courseVersionsTracker.set(courseName, { bestNumeric: null, cbImport: null });
             
             const tracker = courseVersionsTracker.get(courseName);
@@ -759,7 +767,6 @@ function getStragglers(pageImages, pageVideos, pageAudio, processedTracker, exIm
     });
     return stragglers;
 }
-
 
 // ── RENDER UI ──────────────────────────────────────────────────────────────
 function renderCourseViewer() {
