@@ -574,11 +574,31 @@ function extractContentRecursive(obj) {
         'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 
         'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
         'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
-        'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
-		'chances'
+        'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading'
     ]);
     
     const hasTags = /<[^>]+>/;
+
+    // --- PRE-SCAN: Check if 'directions' exists anywhere in this interactive ---
+    let globalHasDirections = false;
+    function checkGlobalDirections(n) {
+        if (!n || globalHasDirections) return;
+        if (Array.isArray(n)) { n.forEach(checkGlobalDirections); return; }
+        if (typeof n === 'object') {
+            for (let k in n) {
+                if (k.replace(/[^a-z0-9]/gi, '').toLowerCase() === 'directions') {
+                    if (typeof n[k] === 'string' && n[k].trim() !== '') {
+                        globalHasDirections = true;
+                        return;
+                    }
+                }
+                if (typeof n[k] === 'object') {
+                    checkGlobalDirections(n[k]);
+                }
+            }
+        }
+    }
+    checkGlobalDirections(obj);
 
     // Custom helper to assemble flipcard text + alt tags onto a single line
     function getCardSideContent(cardObj, sideLabel) {
@@ -689,13 +709,55 @@ function extractContentRecursive(obj) {
                 return; 
             }
 
+            // 3. Intercept Fill-In-The-Blank (FITB) objects
+            if (typeof o.type === 'string' && o.type.toLowerCase() === 'fitb' && o.quiz) {
+                let rawQuiz = String(o.quiz);
+                let optionIndex = 0;
+                let optionsArr = Array.isArray(o.options) ? o.options : [];
+                
+                let modifiedQuiz = rawQuiz.replace(/\*\_/g, () => {
+                    if (optionIndex < optionsArr.length) {
+                        let optData = optionsArr[optionIndex];
+                        let allOpts = [];
+                        
+                        if (optData.answer !== undefined && optData.answer !== null) {
+                            allOpts.push("*" + stripHtml(String(optData.answer)).trim());
+                        }
+                        if (Array.isArray(optData.options)) {
+                            optData.options.forEach(opt => {
+                                allOpts.push(stripHtml(String(opt)).trim());
+                            });
+                        }
+                        
+                        optionIndex++;
+                        return `[${allOpts.join(', ')}]`;
+                    }
+                    return `*_`;
+                });
+                
+                let preCleaned = modifiedQuiz.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
+                const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
+                const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
+                
+                if (coreText) {
+                    streams.normal.raw.push(modifiedQuiz);
+                    streams.normal.clean.push(cleanedText);
+                }
+                return; // Stop normal traversal for this FITB object
+            }
+
             for (const key in o) {
                 const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
                 
                 if (safeKey === 'interactivetitle') continue; 
 
-                // 3. Intercept flipcards that use "front" or "back" as keys
-                if (safeKey === 'front' || safeKey === 'cardfront') {
+                // 4. Prevent duplicate directions using the pre-scan flag
+                if (safeKey === 'directionstextversion' && globalHasDirections) {
+                    continue; // Skip extracting this, let "directions" handle it
+                }
+
+                // 5. Intercept flipcards that use "front" or "back" as keys
+                else if (safeKey === 'front' || safeKey === 'cardfront') {
                     let extracted = getCardSideContent(o[key], 'Front');
                     streams.normal.clean.push(extracted.clean);
                     streams.normal.raw.push(extracted.raw);
@@ -706,7 +768,7 @@ function extractContentRecursive(obj) {
                     streams.normal.raw.push(extracted.raw);
                     continue;
                 } 
-                // 4. Intercept matching options (left and right pairs)
+                // 6. Intercept matching options (left and right pairs)
                 else if (safeKey === 'left' && o.right !== undefined) {
                     if ((typeof o.left === 'string' || typeof o.left === 'number') && (typeof o.right === 'string' || typeof o.right === 'number')) {
                         let lText = stripHtml(String(o.left)).trim();
@@ -722,7 +784,7 @@ function extractContentRecursive(obj) {
                         continue; // Already processed above when 'left' was hit
                     }
                 }
-                // 5. Intercept standard image alt tags (for isolated images not caught above)
+                // 7. Intercept standard image alt tags (for isolated images not caught above)
                 else if (safeKey === 'alt' || safeKey === 'alttext') {
                     let valStr = stripHtml(String(o[key])).trim();
                     if (valStr) {
@@ -897,39 +959,46 @@ async function processPage(filename, locationId, pageRef) {
                                 } catch (e) {}
                             }
 
-                           // --- Determine actual Interactive Type (exclude 'config' and 'customjs') ---
+                            // --- Determine actual Interactive Type (exclude 'config' and 'customjs') ---
                             let validTypes = Array.from(foundTypes).filter(t => {
                                 let cleanT = t.toLowerCase();
                                 return cleanT !== 'config' && cleanT !== 'customjs' && cleanT !== '';
                             });
-
+                            
                             const intMetaObj = courseInteractives.find(i => i.locationId === intLocationId);
                             if (intMetaObj) {
                                 intMetaObj.interactiveType = validTypes.length > 0 ? validTypes[0] : "";
                             }
 
-                            // If a path was found, extract its content
+                            // --- LOCATE AND EXTRACT TEXT VERSION ---
                             if (textVersionPath) {
                                 let tvFileName = textVersionPath.split('/').pop();
                                 let tvFile = null;
                                 
-                                // Prioritize the file in the SAME folder as the interactive
+                                // Establish base path from the interactive's first JSON file
+                                let baseDirPath = uniqueFiles.length > 0 ? uniqueFiles[0].split('/').slice(0, -1).join('/') : "";
+                                let baseDirParts = baseDirPath.split('/');
+
+                                // Score all matching filenames based on path overlap to find the closest match
+                                let bestMatchFile = null;
+                                let maxOverlap = -1;
+
                                 for (const [k, f] of fileMap.entries()) {
-                                    if (k.toLowerCase().endsWith(tvFileName.toLowerCase()) && k.includes(folderName)) {
-                                        tvFile = f;
-                                        break;
-                                    }
-                                }
-                                
-                                // Fallback: match the filename anywhere in the course if not in the folder
-                                if (!tvFile) {
-                                    for (const [k, f] of fileMap.entries()) {
-                                        if (k.toLowerCase().endsWith(tvFileName.toLowerCase())) {
-                                            tvFile = f;
-                                            break;
+                                    if (k.toLowerCase().endsWith(tvFileName.toLowerCase())) {
+                                        let kParts = k.split('/');
+                                        let overlap = 0;
+                                        for (let i = 0; i < Math.min(baseDirParts.length, kParts.length); i++) {
+                                            if (baseDirParts[i] === kParts[i]) overlap++;
+                                            else break;
+                                        }
+                                        if (overlap > maxOverlap) {
+                                            maxOverlap = overlap;
+                                            bestMatchFile = f;
                                         }
                                     }
                                 }
+                                
+                                tvFile = bestMatchFile;
 
                                 if (tvFile) {
                                     if (tvFileName.toLowerCase().endsWith('.pdf') || tvFileName.toLowerCase().endsWith('.docx')) {
