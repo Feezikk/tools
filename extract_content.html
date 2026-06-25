@@ -156,7 +156,7 @@
                         <input type="checkbox" id="ex-int" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Interactives
                     </label>
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;" title="Alt Text, Text Version, Caption, Header">
-                        <input type="checkbox" id="ex-img-empty" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images w/o Text
+                        <input type="checkbox" id="ex-img-empty" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images w/o Metadata
                     </label>
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                         <input type="checkbox" id="ex-glossary" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Glossary Definitions
@@ -164,6 +164,11 @@
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                         <input type="checkbox" id="ex-tooltips" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Tooltips
                     </label>
+                </div>
+                
+                <div id="dynamic-state-controls" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
+                    <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Unlock States (Uncheck to exclude):</strong>
+                    <div id="state-checkbox-container" style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.9rem; color:var(--text);"></div>
                 </div>
             </div>
             
@@ -190,7 +195,7 @@
                         </label>
                         <label style="display:block; margin-bottom:15px; font-size:1.05rem; cursor:pointer;">
                             <input type="radio" name="exp-type" value="separate" onchange="document.getElementById('export-module-list').style.display='block'" style="accent-color:var(--primary);"> 
-                            <strong>Separate Documents</strong> (By Module as a .zip file)
+                            <strong>Separate Documents</strong> (By Module)
                         </label>
                         
                         <div id="export-module-list" style="display:none; margin-left:25px; border-left:3px solid var(--border); padding-left:15px;">
@@ -229,6 +234,7 @@ let courseInteractives = [];
 let courseImages = [];
 let fileNameIndex = new Map();
 let folderIndex = new Map();
+let courseUnlockStates = new Set();
 let availableCoursesFromScan = new Map();
 let customCourseName = "";
 
@@ -399,7 +405,7 @@ async function runIndexing() {
 
     courseIndex = [];
     courseVideos = []; courseAudio = []; courseInteractives = []; courseImages = [];
-    validModules = []; fileNameIndex.clear(); folderIndex.clear(); courseGlossary.clear();
+    validModules = []; fileNameIndex.clear(); folderIndex.clear(); courseGlossary.clear(); courseUnlockStates.clear();
 
     const glossaryFile = fileMap.get('global/data/glossary.json') || fileMap.get('data/glossary.json') || fileMap.get('glossary.json');
     if (glossaryFile) {
@@ -443,11 +449,27 @@ async function runIndexing() {
         if (!IGNORE_TITLES.some(k => title.includes(k)) && !IGNORE_IDS.includes(id)) {
             // Create a clean copy of the module, explicitly filtering out hidden lessons and pages
             let cleanedMod = Object.assign({}, mod);
+            
+            // Extract gl_state at module level
+            if (cleanedMod.glKeys && cleanedMod.glKeys.gl_state) {
+                cleanedMod.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
+            }
+
             if (cleanedMod.lessons) {
                 cleanedMod.lessons = cleanedMod.lessons.filter(lesson => lesson.visible !== false);
                 cleanedMod.lessons.forEach(lesson => {
+                    // Extract gl_state at lesson level
+                    if (lesson.glKeys && lesson.glKeys.gl_state) {
+                        lesson.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
+                    }
                     if (lesson.pages) {
                         lesson.pages = lesson.pages.filter(page => page.visible !== false);
+                        lesson.pages.forEach(page => {
+                            // Extract gl_state at page level
+                            if (page.glKeys && page.glKeys.gl_state) {
+                                page.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
+                            }
+                        });
                     }
                 });
             }
@@ -472,7 +494,35 @@ async function runIndexing() {
     document.getElementById('setup-area').style.display = 'none';
     document.getElementById('header-actions').style.display = 'flex';
     document.getElementById('export-controls').style.display = 'block';
+
+    const stateContainer = document.getElementById('state-checkbox-container');
+    stateContainer.innerHTML = '';
+    if (courseUnlockStates.size > 0) {
+        document.getElementById('dynamic-state-controls').style.display = 'block';
+        courseUnlockStates.forEach(state => {
+            stateContainer.innerHTML += `
+                <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" class="state-filter-cb" value="${state}" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> ${state}
+                </label>`;
+        });
+    } else {
+        document.getElementById('dynamic-state-controls').style.display = 'none';
+    }
+
     renderCourseViewer();
+}
+
+function getExcludedStates() {
+    const excluded = new Set();
+    document.querySelectorAll('.state-filter-cb:not(:checked)').forEach(cb => excluded.add(cb.value));
+    return excluded;
+}
+
+// Helper to check if a module, lesson, or page should be excluded based on its gl_state
+function isExcludedByGlState(item, excludedStates) {
+    if (!item.glKeys || !item.glKeys.gl_state || typeof item.glKeys.gl_state !== 'string') return false;
+    const states = item.glKeys.gl_state.split(/\s+/).filter(Boolean);
+    return states.some(s => excludedStates.has(s));
 }
 
 function stripHtml(html) {
@@ -513,6 +563,7 @@ function stripHtml(html) {
 
 function extractContentRecursive(obj) {
     const streams = { normal: { clean: [], raw: [] }, ml: { clean: [], raw: [] }, std: { clean: [], raw: [] }, note: { clean: [], raw: [] } };
+    let unlockStateFound = null;
     
     const ignoreKeys = new Set([
         'id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 
@@ -527,16 +578,143 @@ function extractContentRecursive(obj) {
     
     const hasTags = /<[^>]+>/;
 
+    // Custom helper to assemble flipcard text + alt tags onto a single line
+    function getCardSideContent(cardObj, sideLabel) {
+        let texts = [];
+        let rawTexts = [];
+        let alts = [];
+        function walkCard(n) {
+            if (!n) return;
+            if (Array.isArray(n)) { n.forEach(walkCard); return; }
+            if (typeof n === 'object') {
+                for (const k in n) {
+                    const sk = k.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                    
+                    if (sk === 'type' && typeof n[k] === 'string' && (n[k].toLowerCase() === 'front' || n[k].toLowerCase() === 'back')) continue; 
+                    if (sk === 'front' || sk === 'cardfront' || sk === 'back' || sk === 'cardback') continue;
+
+                    if (sk === 'alt' || sk === 'alttext') {
+                        let v = stripHtml(String(n[k])).trim();
+                        if (v) alts.push(`[${v}]`);
+                        continue;
+                    }
+                    if (ignoreKeys.has(sk)) continue;
+
+                    let val = n[k];
+                    if (typeof val === 'string' && val.trim() !== '') {
+                        let preCleaned = val.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
+                        const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
+                        const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
+                        
+                        if (!coreText) continue;
+                        if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(coreText)) continue;
+                        if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden|print|pagename|simplicity|onclick|mclass\d*|english|en|video)[\.\s]*$/i.test(coreText)) continue;
+                        if (/^-?\d+(\.\d+)?(%|px|em|rem|vh|vw)$/i.test(coreText)) continue;
+                        if (/col-(md|sm|xs|lg)-\d+/.test(coreText) || /"contentType"\s*:/.test(coreText) || /"fieldValues"\s*:/.test(coreText)) continue;
+
+                        texts.push(cleanedText);
+                        rawTexts.push(val);
+                    } else if (typeof val === 'object') {
+                        walkCard(val);
+                    }
+                }
+            }
+        }
+        walkCard(cardObj);
+        
+        let cleanStr = `[${sideLabel}]`;
+        if (texts.length > 0) cleanStr += ` ${texts.join(' ')}`;
+        if (alts.length > 0) cleanStr += ` ${alts.join(' ')}`;
+        
+        let rawStr = `[${sideLabel}]`;
+        if (rawTexts.length > 0) rawStr += ` ${rawTexts.join(' ')}`;
+        if (alts.length > 0) rawStr += ` ${alts.join(' ')}`;
+
+        return { clean: cleanStr.trim(), raw: rawStr.trim() };
+    }
+
     function traverse(o, ctx) {
         if (!o) return;
         if (Array.isArray(o)) { for (const item of o) traverse(item, ctx); return; }
         if (typeof o === 'object') {
             
-            if (typeof o.classes === 'string' && o.classes.includes('d-none')) return;
-            if (o.fieldValues && typeof o.fieldValues.classes === 'string' && o.fieldValues.classes.includes('d-none')) return;
+            let classStr = "";
+            if (typeof o.classes === 'string') classStr = o.classes;
+            else if (o.fieldValues && typeof o.fieldValues.classes === 'string') classStr = o.fieldValues.classes;
+
+            if (classStr.includes('d-none')) return;
+
+            const stateMatch = classStr.match(/unlock\s+(?:default\s+)?state(?:\s+default)?\s+([a-zA-Z0-9_-]+)/i);
+            if (stateMatch && stateMatch[1].trim() !== '') {
+                unlockStateFound = stateMatch[1].trim();
+                courseUnlockStates.add(unlockStateFound);
+            }
+
+            // --- INJECT MEDIA PLACEHOLDERS IN SEQUENCE ---
+            if (o.contentType === 'image' && o.fieldValues && o.fieldValues.src) {
+                const fileName = o.fieldValues.src.split('/').pop();
+                if (fileName) {
+                    streams.normal.clean.push(`[[[IMG|||${fileName}]]]`);
+                    streams.normal.raw.push(`[[[IMG|||${fileName}]]]`);
+                }
+                // Stop normal traversal here so we don't duplicate raw alt tags. The media builder handles it.
+                return; 
+            }
+            if (o.contentType === 'media' && o.fieldValues && o.fieldValues.kalturaEntryId) {
+                const entryId = o.fieldValues.kalturaEntryId;
+                const kType = o.fieldValues.kalturaType;
+                const isVid = ['video', 'videoNoCC', 'videoplaylist'].includes(kType);
+                const tag = isVid ? 'VID' : 'AUD';
+                streams.normal.clean.push(`[[[${tag}|||${entryId}]]]`);
+                streams.normal.raw.push(`[[[${tag}|||${entryId}]]]`);
+                return;
+            }
+
+            // 1. Intercept the Interactive Title
+            if (o.interactiveTitle && typeof o.interactiveTitle === 'string') {
+                let valStr = stripHtml(o.interactiveTitle).trim();
+                if (valStr) {
+                    streams.normal.clean.push(`[${valStr}]`);
+                    streams.normal.raw.push(`[${valStr}]`);
+                }
+            }
+
+            // 2. Intercept flipcard objects that use "type": "front" or "back"
+            if (typeof o.type === 'string' && (o.type.toLowerCase() === 'front' || o.type.toLowerCase() === 'back')) {
+                let sideLabel = o.type.toLowerCase() === 'front' ? 'Front' : 'Back';
+                let extracted = getCardSideContent(o, sideLabel);
+                streams.normal.clean.push(extracted.clean);
+                streams.normal.raw.push(extracted.raw);
+                return; 
+            }
 
             for (const key in o) {
                 const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                
+                if (safeKey === 'interactivetitle') continue; 
+
+                // 3. Intercept flipcards that use "front" or "back" as keys
+                if (safeKey === 'front' || safeKey === 'cardfront') {
+                    let extracted = getCardSideContent(o[key], 'Front');
+                    streams.normal.clean.push(extracted.clean);
+                    streams.normal.raw.push(extracted.raw);
+                    continue; 
+                } else if (safeKey === 'back' || safeKey === 'cardback') {
+                    let extracted = getCardSideContent(o[key], 'Back');
+                    streams.normal.clean.push(extracted.clean);
+                    streams.normal.raw.push(extracted.raw);
+                    continue;
+                } 
+                // 4. Intercept standard image alt tags (for isolated images not caught above)
+                else if (safeKey === 'alt' || safeKey === 'alttext') {
+                    let valStr = stripHtml(String(o[key])).trim();
+                    if (valStr) {
+                        streams.normal.clean.push(`[${valStr}]`);
+                        streams.normal.raw.push(`[${valStr}]`);
+                    }
+                    continue;
+                }
+
                 if (ignoreKeys.has(safeKey)) continue;
 
                 let nextCtx = ctx;
@@ -577,13 +755,16 @@ function extractContentRecursive(obj) {
             }
         }
     }
+    
     traverse(obj, 'normal');
+    
     function formatStream(arr) { return arr.map(s => s.trim()).filter(Boolean).join("\r\n"); }
     
     return {
         normalClean: formatStream(streams.normal.clean), normalRaw: formatStream(streams.normal.raw),
         mlClean: formatStream(streams.ml.clean), mlRaw: formatStream(streams.ml.raw),
-        stdClean: formatStream(streams.std.clean), noteClean: formatStream(streams.note.clean)
+        stdClean: formatStream(streams.std.clean), noteClean: formatStream(streams.note.clean),
+        unlockState: unlockStateFound
     };
 }
 
@@ -595,15 +776,25 @@ async function processPage(filename, locationId, pageRef) {
         let intCounter = 1;
         let globalOrderCounter = 0;
 
-        async function parseNode(node) {
+        async function parseNode(node, inheritedState = null) {
             if (!node) return;
             if (Array.isArray(node)) {
-                for (let item of node) await parseNode(item);
+                for (let item of node) await parseNode(item, inheritedState);
                 return;
             }
             if (typeof node === 'object') {
-                if (typeof node.classes === 'string' && node.classes.includes('d-none')) return;
-                if (node.fieldValues && typeof node.fieldValues.classes === 'string' && node.fieldValues.classes.includes('d-none')) return;
+                let classStr = "";
+                if (typeof node.classes === 'string') classStr = node.classes;
+                else if (node.fieldValues && typeof node.fieldValues.classes === 'string') classStr = node.fieldValues.classes;
+
+                if (classStr.includes('d-none')) return;
+
+                let currentState = inheritedState;
+                const stateMatch = classStr.match(/unlock\s+(?:default\s+)?state(?:\s+default)?\s+([a-zA-Z0-9_-]+)/i);
+                if (stateMatch && stateMatch[1].trim() !== '') {
+                    currentState = stateMatch[1].trim();
+                    courseUnlockStates.add(currentState); 
+                }
 
                 if (node.contentType) {
                     if (node.contentType === 'interactive') {
@@ -623,7 +814,6 @@ async function processPage(filename, locationId, pageRef) {
                             folderName = cleanPath;
                         }
 
-                        // Always register the interactive metadata
                         courseInteractives.push({
                             locationId: intLocationId,
                             title: node.title || node.interactiveTitle || targetFileName,
@@ -644,34 +834,117 @@ async function processPage(filename, locationId, pageRef) {
                                 }
                             }
 
-                            for (const fileKey of [...new Set(targetFiles)]) {
+                            const uniqueFiles = [...new Set(targetFiles)].filter(f => f.toLowerCase().endsWith('.json'));
+
+                            // --- PASS 1: Search for a Text Version linked in ANY of the interactive's JSON files ---
+                            let textVersionPath = null;
+                            let textVersionContent = null;
+
+                            for (const fileKey of uniqueFiles) {
                                 try {
-                                    if (fileKey.toLowerCase().endsWith('.json')) {
-                                        const intText = await fileMap.get(fileKey).text();
-                                        const intJson = JSON.parse(intText);
+                                    const intText = await fileMap.get(fileKey).text();
+                                    const intJson = JSON.parse(intText);
 
-                                        courseVideos.push(...findMedia(intJson, intLocationId, 'video'));
-                                        courseAudio.push(...findMedia(intJson, intLocationId, 'audio'));
-                                        courseImages.push(...extractImages(intJson, intLocationId));
+                                    function findTextVersionPath(o) {
+                                        if (textVersionPath || !o) return;
+                                        if (Array.isArray(o)) { o.forEach(findTextVersionPath); return; }
+                                        if (typeof o === 'object') {
+                                            for (let k in o) {
+                                                let val = o[k];
+                                                // Exclude .json to prevent reading interactive config files as text versions
+                                                if (typeof val === 'string' && val.toLowerCase().includes('textversion') && /\.(html|htm|txt|md|pdf|docx)$/i.test(val)) {
+                                                    textVersionPath = val;
+                                                    return;
+                                                } else if (typeof val === 'object') {
+                                                    findTextVersionPath(val);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    findTextVersionPath(intJson);
+                                    if (textVersionPath) break; // Found one, stop searching
+                                } catch (e) {}
+                            }
 
+                            // If a path was found, extract its content
+                            if (textVersionPath) {
+                                let tvFileName = textVersionPath.split('/').pop();
+                                let tvFile = null;
+                                
+                                // Prioritize the file in the SAME folder as the interactive
+                                for (const [k, f] of fileMap.entries()) {
+                                    if (k.toLowerCase().endsWith(tvFileName.toLowerCase()) && k.includes(folderName)) {
+                                        tvFile = f;
+                                        break;
+                                    }
+                                }
+                                
+                                // Fallback: match the filename anywhere in the course if not in the folder
+                                if (!tvFile) {
+                                    for (const [k, f] of fileMap.entries()) {
+                                        if (k.toLowerCase().endsWith(tvFileName.toLowerCase())) {
+                                            tvFile = f;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (tvFile) {
+                                    if (tvFileName.toLowerCase().endsWith('.pdf') || tvFileName.toLowerCase().endsWith('.docx')) {
+                                        textVersionContent = await extractDocumentText(tvFileName);
+                                    } else {
+                                        let rawText = await tvFile.text();
+                                        textVersionContent = stripHtml(rawText);
+                                    }
+                                }
+                            }
+
+                            // If we successfully pulled the text version, push it to the index once.
+                            if (textVersionContent) {
+                                courseIndex.push({
+                                    locationId: intLocationId,
+                                    filename: intPath,
+                                    normalClean: `[Text Version Linked: ${textVersionPath.split('/').pop()}]\r\n${textVersionContent}`,
+                                    normalRaw: textVersionContent,
+                                    mlClean: "", mlRaw: "", noteClean: "", stdClean: "",
+                                    unlockState: currentState,
+                                    isInteractive: true,
+                                    order: globalOrderCounter++
+                                });
+                                internalContentFound = true;
+                            }
+
+                            // --- PASS 2: Extract Media & standard text (if text version was NOT found) ---
+                            for (const fileKey of uniqueFiles) {
+                                try {
+                                    const intText = await fileMap.get(fileKey).text();
+                                    const intJson = JSON.parse(intText);
+
+                                    courseVideos.push(...findMedia(intJson, intLocationId, 'video'));
+                                    courseAudio.push(...findMedia(intJson, intLocationId, 'audio'));
+                                    courseImages.push(...extractImages(intJson, intLocationId));
+                                    
+                                    let metaTitle = null, p = 0;
+                                    const scan = (o) => { if(o&&typeof o==='object'&&p<2){ if(o.interactiveTitle){metaTitle=stripHtml(o.interactiveTitle);p=2;}else if(o.title&&p<1){metaTitle=stripHtml(o.title);p=1;} Object.values(o).forEach(scan); }};
+                                    scan(intJson);
+                                    if (metaTitle) {
+                                        const intMeta = courseInteractives.find(i => i.locationId === intLocationId);
+                                        if (intMeta) intMeta.title = metaTitle;
+                                    }
+
+                                    // Only run standard text extraction if the text version wasn't loaded
+                                    if (!textVersionContent) {
                                         const extractedInt = extractContentRecursive(intJson);
                                         if (extractedInt.normalClean || extractedInt.mlClean || extractedInt.noteClean || extractedInt.stdClean) {
                                             courseIndex.push({
                                                 locationId: intLocationId,
                                                 filename: fileKey,
                                                 ...extractedInt,
+                                                unlockState: currentState,
                                                 isInteractive: true,
                                                 order: globalOrderCounter++
                                             });
                                             internalContentFound = true;
-                                        }
-                                        
-                                        let metaTitle = null, p = 0;
-                                        const scan = (o) => { if(o&&typeof o==='object'&&p<2){ if(o.interactiveTitle){metaTitle=stripHtml(o.interactiveTitle);p=2;}else if(o.title&&p<1){metaTitle=stripHtml(o.title);p=1;} Object.values(o).forEach(scan); }};
-                                        scan(intJson);
-                                        if (metaTitle) {
-                                            const intMeta = courseInteractives.find(i => i.locationId === intLocationId);
-                                            if (intMeta) intMeta.title = metaTitle;
                                         }
                                     }
                                 } catch (e) {
@@ -680,7 +953,6 @@ async function processPage(filename, locationId, pageRef) {
                             }
                         }
 
-                        // Fall back to textVersion if we couldn't dig into a JSON file
                         if (!internalContentFound) {
                             let cleanTextVer = textVer ? stripHtml(textVer) : "";
                             courseIndex.push({
@@ -689,6 +961,7 @@ async function processPage(filename, locationId, pageRef) {
                                 normalClean: cleanTextVer,
                                 normalRaw: textVer,
                                 mlClean: "", mlRaw: "", noteClean: "", stdClean: "",
+                                unlockState: currentState,
                                 isInteractive: true,
                                 order: globalOrderCounter++
                             });
@@ -700,10 +973,11 @@ async function processPage(filename, locationId, pageRef) {
                         courseImages.push(...extractImages(node, locationId));
 
                         if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean || node.contentType === 'image' || node.contentType === 'media') {
-                            courseIndex.push({ locationId, filename, ...extracted, isInteractive: false, order: globalOrderCounter++ });
+
+                            courseIndex.push({ locationId, filename, ...extracted, unlockState: currentState, isInteractive: false, order: globalOrderCounter++ });
                         }
                     }
-                    return; // Stop deep-scanning manually; extractContentRecursive handled it
+                    return; 
                 }
 
                 for (const key in node) {
@@ -714,7 +988,7 @@ async function processPage(filename, locationId, pageRef) {
                         courseImages.push(...extractImages({ [key]: node[key] }, locationId));
 
                         if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
-                            courseIndex.push({ locationId, filename, ...extracted, isInteractive: false, order: globalOrderCounter++ });
+                            courseIndex.push({ locationId, filename, ...extracted, unlockState: currentState, isInteractive: false, order: globalOrderCounter++ });
                         }
                     } else if (typeof node[key] === 'string' && node[key].trim() !== '') {
                         const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -722,17 +996,17 @@ async function processPage(filename, locationId, pageRef) {
                         if (!ignoreKeys.has(safeKey)) {
                             const extracted = extractContentRecursive({ [key]: node[key] });
                             if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
-                                courseIndex.push({ locationId, filename, ...extracted, isInteractive: false, order: globalOrderCounter++ });
+                                courseIndex.push({ locationId, filename, ...extracted, unlockState: currentState, isInteractive: false, order: globalOrderCounter++ });
                             }
                         }
                     } else {
-                        await parseNode(node[key]);
+                        await parseNode(node[key], currentState);
                     }
                 }
             }
         }
 
-        await parseNode(json);
+        await parseNode(json, null);
 
     } catch (e) {}
 }
@@ -886,8 +1160,12 @@ function renderCourseViewer() {
         exTooltips: document.getElementById('ex-tooltips').checked,
         isHtml: true
     };
+    
+    const excludedStates = getExcludedStates();
 
     validModules.forEach(mod => {
+        if (isExcludedByGlState(mod, excludedStates)) return;
+
         const modNum = padNum(mod.num);
         const modId = generateSafeId('mod', modNum);
         
@@ -906,6 +1184,8 @@ function renderCourseViewer() {
 
         if (mod.lessons) {
             mod.lessons.forEach(lesson => {
+                if (isExcludedByGlState(lesson, excludedStates)) return;
+
                 const fullLesID = `${modNum}.${padNum(lesson.num)}`;
                 const lesId = generateSafeId('les', fullLesID);
                 
@@ -949,6 +1229,8 @@ function renderCourseViewer() {
 
                 if (lesson.pages) {
                     lesson.pages.forEach(page => {
+                        if (isExcludedByGlState(page, excludedStates)) return;
+
                         const fullPgID = `${fullLesID}.${padNum(Number(page.num) + 1)}`;
                         const pgId = generateSafeId('pg', fullPgID);
                         
@@ -978,6 +1260,7 @@ function renderCourseViewer() {
                         const processedTracker = new Set();
 
                         pageEntries.forEach(pageData => {
+                            if (pageData.unlockState && excludedStates.has(pageData.unlockState)) return;
                             let contentText = "";
                             if (pageData.normalClean) contentText += pageData.normalClean + "\r\n";
                             if (pageData.mlClean) contentText += pageData.mlClean + "\r\n";
@@ -1120,6 +1403,9 @@ async function buildModuleDocumentContent(mod, options) {
     let docContent = "";
     const addLine = (text = "") => { docContent += text + "\r\n"; };
     const docRegex = /href=["']([^"']+\.(pdf|docx))["']/gi;
+    const excludedStates = getExcludedStates();
+
+    if (isExcludedByGlState(mod, excludedStates)) return docContent;
 
     const modNum = padNum(mod.num);
     addLine(`${modNum} ${mod.title}`);
@@ -1127,11 +1413,15 @@ async function buildModuleDocumentContent(mod, options) {
     if (!mod.lessons) return docContent;
 
     for (const lesson of mod.lessons) {
+        if (isExcludedByGlState(lesson, excludedStates)) continue;
+
         const fullLesID = `${modNum}.${padNum(lesson.num)}`;
         addLine(`${fullLesID} ${lesson.title}`);
         if (!lesson.pages) continue;
 
         for (const page of lesson.pages) {
+            if (isExcludedByGlState(page, excludedStates)) continue;
+
             const fullPgID = `${fullLesID}.${padNum(Number(page.num) + 1)}`;
             addLine(`${fullPgID} ${page.title}`);
             
@@ -1147,6 +1437,7 @@ async function buildModuleDocumentContent(mod, options) {
             const processedTracker = new Set();
 
             for (const pageData of pageEntries) {
+                if (pageData.unlockState && excludedStates.has(pageData.unlockState)) continue;
                 let contentText = "";
                 if (pageData.normalClean) contentText += pageData.normalClean + "\r\n";
                 if (pageData.mlClean) contentText += pageData.mlClean + "\r\n";
