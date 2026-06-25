@@ -573,7 +573,9 @@ function extractContentRecursive(obj) {
         'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 
         'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 
         'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
-        'alttext', 'caption', 'captionheader', 'textversion', 'copyright'
+        'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
+        'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
+		'chances'
     ]);
     
     const hasTags = /<[^>]+>/;
@@ -657,7 +659,6 @@ function extractContentRecursive(obj) {
                     streams.normal.clean.push(`[[[IMG|||${fileName}]]]`);
                     streams.normal.raw.push(`[[[IMG|||${fileName}]]]`);
                 }
-                // Stop normal traversal here so we don't duplicate raw alt tags. The media builder handles it.
                 return; 
             }
             if (o.contentType === 'media' && o.fieldValues && o.fieldValues.kalturaEntryId) {
@@ -705,7 +706,23 @@ function extractContentRecursive(obj) {
                     streams.normal.raw.push(extracted.raw);
                     continue;
                 } 
-                // 4. Intercept standard image alt tags (for isolated images not caught above)
+                // 4. Intercept matching options (left and right pairs)
+                else if (safeKey === 'left' && o.right !== undefined) {
+                    if ((typeof o.left === 'string' || typeof o.left === 'number') && (typeof o.right === 'string' || typeof o.right === 'number')) {
+                        let lText = stripHtml(String(o.left)).trim();
+                        let rText = stripHtml(String(o.right)).trim();
+                        if (lText || rText) {
+                            streams.normal.clean.push(`${lText} — ${rText}`);
+                            streams.normal.raw.push(`${o.left} — ${o.right}`);
+                        }
+                        continue;
+                    }
+                } else if (safeKey === 'right' && o.left !== undefined) {
+                    if ((typeof o.left === 'string' || typeof o.left === 'number') && (typeof o.right === 'string' || typeof o.right === 'number')) {
+                        continue; // Already processed above when 'left' was hit
+                    }
+                }
+                // 5. Intercept standard image alt tags (for isolated images not caught above)
                 else if (safeKey === 'alt' || safeKey === 'alttext') {
                     let valStr = stripHtml(String(o[key])).trim();
                     if (valStr) {
@@ -730,7 +747,18 @@ function extractContentRecursive(obj) {
                 }
 
                 const processString = (str) => {
-                    if (str.trim().toLowerCase().endsWith('.json') && !str.trim().includes(' ')) return;
+                    const trimmed = str.trim();
+                    if (!trimmed) return;
+                    
+                    // --- SUPPRESS FILE PATHS AND EXTENSIONS ---
+                    if (!trimmed.includes(' ')) {
+                        // Suppress known file extensions
+                        if (/\.(json|css|htm|html|js|xml|png|jpg|jpeg|gif|svg|mp3|mp4)$/i.test(trimmed)) return;
+                        // Suppress obvious internal path strings (e.g., content/interactives/... or paths with slashes and dots)
+                        if (trimmed.startsWith('content/') || trimmed.startsWith('global/')) return;
+                        if (trimmed.includes('/') && trimmed.includes('.')) return; 
+                    }
+
                     let preCleaned = str.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
                     const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
                     const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
@@ -818,7 +846,7 @@ async function processPage(filename, locationId, pageRef) {
                             locationId: intLocationId,
                             title: node.title || node.interactiveTitle || targetFileName,
                             folder: folderName,
-                            interactiveType: intType
+                            interactiveType: intType // default, will be overridden
                         });
 
                         let internalContentFound = false;
@@ -836,34 +864,48 @@ async function processPage(filename, locationId, pageRef) {
 
                             const uniqueFiles = [...new Set(targetFiles)].filter(f => f.toLowerCase().endsWith('.json'));
 
-                            // --- PASS 1: Search for a Text Version linked in ANY of the interactive's JSON files ---
+                            // --- PASS 1: Search for Text Version AND collect Types ---
                             let textVersionPath = null;
                             let textVersionContent = null;
+                            let foundTypes = new Set();
 
                             for (const fileKey of uniqueFiles) {
                                 try {
                                     const intText = await fileMap.get(fileKey).text();
                                     const intJson = JSON.parse(intText);
 
-                                    function findTextVersionPath(o) {
-                                        if (textVersionPath || !o) return;
-                                        if (Array.isArray(o)) { o.forEach(findTextVersionPath); return; }
+                                    function scanIntJson(o) {
+                                        if (!o) return;
+                                        if (Array.isArray(o)) { o.forEach(scanIntJson); return; }
                                         if (typeof o === 'object') {
                                             for (let k in o) {
                                                 let val = o[k];
-                                                // Exclude .json to prevent reading interactive config files as text versions
+                                                // Capture Types
+                                                if (k.toLowerCase() === 'type' && typeof val === 'string') {
+                                                    foundTypes.add(val.trim());
+                                                }
+                                                // Capture Text Version
                                                 if (typeof val === 'string' && val.toLowerCase().includes('textversion') && /\.(html|htm|txt|md|pdf|docx)$/i.test(val)) {
-                                                    textVersionPath = val;
-                                                    return;
+                                                    if (!textVersionPath) textVersionPath = val;
                                                 } else if (typeof val === 'object') {
-                                                    findTextVersionPath(val);
+                                                    scanIntJson(val);
                                                 }
                                             }
                                         }
                                     }
-                                    findTextVersionPath(intJson);
-                                    if (textVersionPath) break; // Found one, stop searching
+                                    scanIntJson(intJson);
                                 } catch (e) {}
+                            }
+
+                           // --- Determine actual Interactive Type (exclude 'config' and 'customjs') ---
+                            let validTypes = Array.from(foundTypes).filter(t => {
+                                let cleanT = t.toLowerCase();
+                                return cleanT !== 'config' && cleanT !== 'customjs' && cleanT !== '';
+                            });
+
+                            const intMetaObj = courseInteractives.find(i => i.locationId === intLocationId);
+                            if (intMetaObj) {
+                                intMetaObj.interactiveType = validTypes.length > 0 ? validTypes[0] : "";
                             }
 
                             // If a path was found, extract its content
@@ -973,7 +1015,6 @@ async function processPage(filename, locationId, pageRef) {
                         courseImages.push(...extractImages(node, locationId));
 
                         if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean || node.contentType === 'image' || node.contentType === 'media') {
-
                             courseIndex.push({ locationId, filename, ...extracted, unlockState: currentState, isInteractive: false, order: globalOrderCounter++ });
                         }
                     }
@@ -1273,7 +1314,7 @@ function renderCourseViewer() {
                             if (pageData.isInteractive) {
                                 if (options.exInt) return;
                                 const intMeta = courseInteractives.find(i => i.locationId === pageData.locationId);
-                                let tagText = `[Interactive: ${intMeta ? intMeta.title + ' | Folder: ' + intMeta.folder + ' | Type: ' + intMeta.interactiveType : pageData.filename.split('/').pop()}`;
+                                let tagText = `[Interactive: ${intMeta ? intMeta.title + ' | Folder: ' + intMeta.folder + (intMeta.interactiveType ? ' | Type: ' + intMeta.interactiveType : '') : pageData.filename.split('/').pop()}`;
                                 if (contentText) tagText += ` | Content:\r\n${contentText}`;
                                 tagText += ']';
                                 pgDiv.innerHTML += `<div class="media-tag">${escapeHtml(tagText)}</div>`;
@@ -1450,7 +1491,7 @@ async function buildModuleDocumentContent(mod, options) {
                 if (pageData.isInteractive) {
                     if (options.exInt) continue; 
                     const intMeta = courseInteractives.find(i => i.locationId === pageData.locationId);
-                    let intTag = `[Interactive: ${intMeta ? intMeta.title + ' | Folder: ' + intMeta.folder + ' | Type: ' + intMeta.interactiveType : pageData.filename.split('/').pop()}`;
+                    let intTag = `[Interactive: ${intMeta ? intMeta.title + ' | Folder: ' + intMeta.folder + (intMeta.interactiveType ? ' | Type: ' + intMeta.interactiveType : '') : pageData.filename.split('/').pop()}`;
                     if (contentText) intTag += ` | Content:\r\n${contentText}`;
                     addLine(intTag + `]`);
                 } else {
