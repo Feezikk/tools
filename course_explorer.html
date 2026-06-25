@@ -813,7 +813,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.35</span>
+                        Course Explorer Tool <span class="version-pill">v7.38</span>
                     </div>
                 </div>
             </div>
@@ -3845,7 +3845,12 @@ function findInteractivesPaths(obj, found = []) {
         obj.forEach(item => findInteractivesPaths(item, found));
     } else if (typeof obj === 'object') {
         if (obj.contentType === 'interactive' && obj.fieldValues?.value) {
-            found.push(obj.fieldValues.value);
+            // Push an object containing the path, type, and textVersion
+            found.push({
+                path: obj.fieldValues.value,
+                type: obj.fieldValues.type || 'unknown',
+                textVersion: obj.fieldValues.textVersion || ''
+            });
         }
         for (const key in obj) findInteractivesPaths(obj[key], found);
     }
@@ -3921,12 +3926,12 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
             pageRef._parsedStandards = [];
         }
 
-        const interactivePaths = findInteractivesPaths(json);
+      const interactiveDefs = findInteractivesPaths(json);
         let intCounter = 1;
 
-        for (const intPath of interactivePaths) {
+        for (const intDef of interactiveDefs) {
             let targetFiles = [];
-            const cleanPath      = intPath.replace(/^\/+/, '');
+            const cleanPath      = intDef.path.replace(/^\/+/, '');
             const pathParts      = cleanPath.split('/');
             const targetFileName = pathParts[pathParts.length - 1];
 
@@ -3956,6 +3961,58 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
                     })();
 
                     const intText = await fileMap.get(fileKey).text();
+
+                    // NEW: Handle HTML custom interactives gracefully
+                    if (fileKey.toLowerCase().endsWith('.htm') || fileKey.toLowerCase().endsWith('.html')) {
+                        const titleMatch = intText.match(/<title[^>]*>([^<]+)<\/title>/i);
+                        const extractedTitle = titleMatch && titleMatch[1].trim() ? titleMatch[1].trim() : "Custom Interactive";
+                        const parts   = fileKey.split('/');
+                        const folder  = parts.length > 1 ? parts[parts.length - 2] : "Interactive";
+
+                        // Check the folder index for any Geogebra (.ggb) files
+                        let finalType = intDef.type === 'custom' ? 'custom' : 'html-interactive';
+                        const filesInFolder = folderIndex.get(folder) || [];
+                        const hasGgb = filesInFolder.some(f => f.toLowerCase().endsWith('.ggb'));
+                        
+                        let iframeCode = "";
+
+                        if (hasGgb) {
+                            finalType = 'Geogebra';
+                            // Extract the iframe block from the HTML string
+                            const iframeMatch = intText.match(/<iframe[^>]*>[\s\S]*?<\/iframe>/i);
+                            if (iframeMatch) {
+                                iframeCode = iframeMatch[0];
+                            }
+                        }
+
+                        courseInteractives.push({
+                            locationId:      intLocationId,
+                            folder,
+                            filename:        fileKey,
+                            title:           extractedTitle,
+                            rawJson:         "", 
+                            interactiveType: finalType,
+                            textVersion:     intDef.textVersion || "",
+                            iframeCode:      iframeCode
+                        });
+
+                        // Optionally index the textVersion so it's searchable in the main search bar
+                        if (intDef.textVersion) {
+                             courseIndex.push({
+                                breadcrumb:  intBreadcrumb,
+                                locationId:  intLocationId,
+                                filename:    fileKey,
+                                normalClean: stripHtml(intDef.textVersion),
+                                normalRaw:   intDef.textVersion,
+                                mlClean: '', mlRaw: '', stdClean: '', stdRaw: '', noteClean: '', noteRaw: '', mediaClean: '', mediaRaw: '',
+                                isInteractive: true, hasML: false, hasNote: false
+                            });
+                        }
+                        
+                        _processedInteractives.add(fileKey);
+                        continue; // Skip the JSON processing below!
+                    }
+
                     const intJson = JSON.parse(intText);
 
                     courseVideos.push(...findMedia(intJson, intLocationId, intBreadcrumb, 'video'));
@@ -3999,13 +4056,15 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
                         filename:        fileKey,
                         title:           meta.title,
                         rawJson:         JSON.stringify(intJson, null, 2),
-                        interactiveType: intType
+                        interactiveType: intDef.type === 'custom' ? 'custom' : intType,
+                        textVersion:     intDef.textVersion || ""
                     });
 
                 } catch (e) {
+                    // Silently ignore parsing errors
                 }
             }
-        }
+        }  
 
     } catch (e) {
         pageRef._parsedStandards = null;
@@ -6271,19 +6330,44 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
         modalBody.innerHTML = playerHtml + (mediaObj.textVersion || transcriptFallback);
 
     } else if (type === 'interactive') {
-        modalHeader.innerHTML = `
-            <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
-                ${escapeHtml(mediaObj.title)}
-            </h3>
-            <div class="flex-center gap-10"
-                 style="font-size:0.85rem; color:var(--text-light); justify-content:flex-start;">
-                <span class="id-number"># ${mediaObj.locationId}</span>
-                &nbsp;|&nbsp;
-                <span class="flex-center gap-10">${SVGS.folder} ${mediaObj.folder}</span>
-                &nbsp;|&nbsp;
-                <span>Type: ${mediaObj.interactiveType || 'Unknown'}</span>
-            </div>`;
-        modalBody.innerHTML = `
+                modalHeader.innerHTML = `
+                    <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
+                        ${escapeHtml(mediaObj.title)}
+                    </h3>
+                    <div class="flex-center gap-10"
+                         style="font-size:0.85rem; color:var(--text-light); justify-content:flex-start;">
+                        <span class="id-number"># ${mediaObj.locationId}</span>
+                        &nbsp;|&nbsp;
+                        <span class="flex-center gap-10">${SVGS.folder} ${mediaObj.folder}</span>
+                        &nbsp;|&nbsp;
+                        <span>Type: ${mediaObj.interactiveType || 'Unknown'}</span>
+                    </div>`;
+                    
+                let bodyHtml = '';
+                
+                // Show the Geogebra iframe if we extracted one
+                if (mediaObj.iframeCode) {
+                    bodyHtml += `
+                        <div style="margin-bottom:20px; text-align:center; background:#f8f9fa; padding:15px; border-radius:6px; border:1px solid var(--border); overflow:hidden;">
+                            ${mediaObj.iframeCode.replace(/<iframe/i, '<iframe style="max-width:100%; max-height: 60vh; border:none;"')}
+                        </div>`;
+                }
+                
+                // Show text version if it was pulled from the page configuration
+                if (mediaObj.textVersion) {
+            bodyHtml += `
+                <div style="margin-bottom:10px; border-bottom:1px dashed var(--border); padding-bottom:5px;">
+                    <strong style="color:var(--text-light); text-transform:uppercase; font-size:0.75rem; letter-spacing:0.5px;">
+                        Text Version
+                    </strong>
+                </div>
+                <div style="margin-bottom: 20px; font-size:0.95rem; line-height:1.6; color:var(--text); background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid var(--border); overflow-x: auto;">
+                    ${mediaObj.textVersion}
+                </div>`;
+        }
+        
+        if (mediaObj.rawJson) {
+             bodyHtml += `
             <div style="margin-bottom:15px;">
                 <strong style="color:var(--text-light);">🧑‍💻 Code View (JSON Content)</strong>
             </div>
@@ -6292,6 +6376,13 @@ window.openMediaModalFromObj = function openMediaModalFromObj(mediaObj, type, in
                         border-radius:4px; overflow-x:auto; white-space:pre-wrap;
                         word-wrap:break-word; margin:0;">
 ${escapeHtml(mediaObj.rawJson)}</pre>`;
+       } else {
+             bodyHtml += `
+                <div style="padding:15px; background:#e8f4fd; color:#0d47a1; border:1px solid #b8daff; border-radius:6px; font-size:0.9rem;">
+                    ${SVGS.info} This is a Custom HTML Interactive. There is no JSON configuration file to display.
+                </div>`;
+        }
+        modalBody.innerHTML = bodyHtml;
 
     } else if (type === 'glossary') {
         modalHeader.innerHTML = `
