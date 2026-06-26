@@ -447,10 +447,8 @@ async function runIndexing() {
         const id = String(mod.mID || "").toLowerCase();
         
         if (!IGNORE_TITLES.some(k => title.includes(k)) && !IGNORE_IDS.includes(id)) {
-            // Create a clean copy of the module, explicitly filtering out hidden lessons and pages
             let cleanedMod = Object.assign({}, mod);
             
-            // Extract gl_state at module level
             if (cleanedMod.glKeys && cleanedMod.glKeys.gl_state) {
                 cleanedMod.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
             }
@@ -458,14 +456,12 @@ async function runIndexing() {
             if (cleanedMod.lessons) {
                 cleanedMod.lessons = cleanedMod.lessons.filter(lesson => lesson.visible !== false);
                 cleanedMod.lessons.forEach(lesson => {
-                    // Extract gl_state at lesson level
                     if (lesson.glKeys && lesson.glKeys.gl_state) {
                         lesson.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
                     }
                     if (lesson.pages) {
                         lesson.pages = lesson.pages.filter(page => page.visible !== false);
                         lesson.pages.forEach(page => {
-                            // Extract gl_state at page level
                             if (page.glKeys && page.glKeys.gl_state) {
                                 page.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
                             }
@@ -518,7 +514,6 @@ function getExcludedStates() {
     return excluded;
 }
 
-// Helper to check if a module, lesson, or page should be excluded based on its gl_state
 function isExcludedByGlState(item, excludedStates) {
     if (!item.glKeys || !item.glKeys.gl_state || typeof item.glKeys.gl_state !== 'string') return false;
     const states = item.glKeys.gl_state.split(/\s+/).filter(Boolean);
@@ -574,10 +569,36 @@ function extractContentRecursive(obj) {
         'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 
         'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
         'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
-        'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading'
+        'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
+        'chances'
     ]);
     
     const hasTags = /<[^>]+>/;
+
+    // --- SHARED HELPER: Clean, Validate, and Suppress Strings ---
+    function cleanAndValidateText(str) {
+        const trimmed = String(str).trim();
+        if (!trimmed) return null;
+
+        // --- SUPPRESS FILE PATHS AND EXTENSIONS ---
+        if (!trimmed.includes(' ')) {
+            if (/\.(json|css|htm|html|js|xml|png|jpg|jpeg|gif|svg|mp3|mp4)$/i.test(trimmed)) return null;
+            if (trimmed.startsWith('content/') || trimmed.startsWith('global/')) return null;
+            if (trimmed.includes('/') && trimmed.includes('.')) return null; 
+        }
+
+        let preCleaned = trimmed.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
+        const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
+        const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
+
+        if (!coreText) return null;
+        if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(coreText)) return null;
+        if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden|print|pagename|simplicity|onclick|mclass\d*|english|en|video)[\.\s]*$/i.test(coreText)) return null;
+        if (/^-?\d+(\.\d+)?(%|px|em|rem|vh|vw)$/i.test(coreText)) return null;
+        if (/col-(md|sm|xs|lg)-\d+/.test(coreText) || /"contentType"\s*:/.test(coreText) || /"fieldValues"\s*:/.test(coreText)) return null;
+
+        return cleanedText;
+    }
 
     // --- PRE-SCAN: Check if 'directions' exists anywhere in this interactive ---
     let globalHasDirections = false;
@@ -624,18 +645,11 @@ function extractContentRecursive(obj) {
 
                     let val = n[k];
                     if (typeof val === 'string' && val.trim() !== '') {
-                        let preCleaned = val.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
-                        const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
-                        const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
-                        
-                        if (!coreText) continue;
-                        if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(coreText)) continue;
-                        if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden|print|pagename|simplicity|onclick|mclass\d*|english|en|video)[\.\s]*$/i.test(coreText)) continue;
-                        if (/^-?\d+(\.\d+)?(%|px|em|rem|vh|vw)$/i.test(coreText)) continue;
-                        if (/col-(md|sm|xs|lg)-\d+/.test(coreText) || /"contentType"\s*:/.test(coreText) || /"fieldValues"\s*:/.test(coreText)) continue;
-
-                        texts.push(cleanedText);
-                        rawTexts.push(val);
+                        let validText = cleanAndValidateText(val);
+                        if (validText) {
+                            texts.push(validText);
+                            rawTexts.push(val);
+                        }
                     } else if (typeof val === 'object') {
                         walkCard(val);
                     }
@@ -695,8 +709,8 @@ function extractContentRecursive(obj) {
             if (o.interactiveTitle && typeof o.interactiveTitle === 'string') {
                 let valStr = stripHtml(o.interactiveTitle).trim();
                 if (valStr) {
-                    streams.normal.clean.push(`[${valStr}]`);
-                    streams.normal.raw.push(`[${valStr}]`);
+                    streams.normal.clean.push(`[Interactive Title] ${valStr}`);
+                    streams.normal.raw.push(`[Interactive Title] ${valStr}`);
                 }
             }
 
@@ -709,8 +723,11 @@ function extractContentRecursive(obj) {
                 return; 
             }
 
-            // 3. Intercept Fill-In-The-Blank (FITB) objects
-            if (typeof o.type === 'string' && o.type.toLowerCase() === 'fitb' && o.quiz) {
+            // 3. Intercept Fill-In-The-Blank (FITB) and Word Bank (WB) objects
+            let isFITB = typeof o.type === 'string' && o.type.toLowerCase() === 'fitb' && o.quiz;
+            let isWB = typeof o.type === 'string' && o.type.toLowerCase() === 'wb' && o.quiz;
+            
+            if (isFITB || isWB) {
                 let rawQuiz = String(o.quiz);
                 let optionIndex = 0;
                 let optionsArr = Array.isArray(o.options) ? o.options : [];
@@ -720,13 +737,18 @@ function extractContentRecursive(obj) {
                         let optData = optionsArr[optionIndex];
                         let allOpts = [];
                         
-                        if (optData.answer !== undefined && optData.answer !== null) {
-                            allOpts.push("*" + stripHtml(String(optData.answer)).trim());
-                        }
-                        if (Array.isArray(optData.options)) {
-                            optData.options.forEach(opt => {
-                                allOpts.push(stripHtml(String(opt)).trim());
-                            });
+                        if (isFITB) {
+                            if (optData.answer !== undefined && optData.answer !== null) {
+                                allOpts.push("*" + stripHtml(String(optData.answer)).trim());
+                            }
+                            if (Array.isArray(optData.options)) {
+                                optData.options.forEach(opt => {
+                                    allOpts.push(stripHtml(String(opt)).trim());
+                                });
+                            }
+                        } else {
+                            // Word Bank logic (flat array)
+                            allOpts.push(stripHtml(String(optData)).trim());
                         }
                         
                         optionIndex++;
@@ -735,15 +757,62 @@ function extractContentRecursive(obj) {
                     return `*_`;
                 });
                 
-                let preCleaned = modifiedQuiz.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
-                const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
-                const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
-                
-                if (coreText) {
+               let cleanedText = cleanAndValidateText(modifiedQuiz);
+                if (cleanedText) {
                     streams.normal.raw.push(modifiedQuiz);
                     streams.normal.clean.push(cleanedText);
                 }
-                return; // Stop normal traversal for this FITB object
+                return; 
+            }
+
+            // 3b. Intercept Selectable objects
+            if (typeof o.type === 'string' && o.type.toLowerCase() === 'selectable' && o.quiz) {
+                let cleanQuiz = cleanAndValidateText(o.quiz) || stripHtml(String(o.quiz)).trim();
+                let cleanOutput = cleanQuiz + "\r\n";
+                let rawOutput = String(o.quiz) + "\r\n";
+
+                // Process Correct Answers
+                let answers = Array.isArray(o.answer) ? o.answer : (o.answer ? [o.answer] : []);
+                if (answers.length > 0) {
+                    cleanOutput += "[Correct Answers]\r\n";
+                    rawOutput += "[Correct Answers]\r\n";
+                    answers.forEach(ans => {
+                        let cleanAns = cleanAndValidateText(ans) || stripHtml(String(ans)).trim();
+                        if (cleanAns) {
+                            cleanOutput += cleanAns + "\r\n";
+                            rawOutput += String(ans) + "\r\n";
+                        }
+                    });
+                }
+
+                // Process Incorrect Choices (options)
+                let optionsArr = Array.isArray(o.options) ? o.options : (o.options ? [o.options] : []);
+                if (optionsArr.length > 0) {
+                    cleanOutput += "[Incorrect Choices]\r\n";
+                    rawOutput += "[Incorrect Choices]\r\n";
+                    optionsArr.forEach(opt => {
+                        let cleanOpt = cleanAndValidateText(opt) || stripHtml(String(opt)).trim();
+                        if (cleanOpt) {
+                            cleanOutput += cleanOpt + "\r\n";
+                            rawOutput += String(opt) + "\r\n";
+                        }
+                    });
+                }
+
+                streams.normal.clean.push(cleanOutput.trim());
+                streams.normal.raw.push(rawOutput.trim());
+                return; 
+            }
+
+            // 4. Intercept generic items with both title and text (like imagemap bubbles)
+            if (typeof o.title === 'string' && typeof o.text === 'string' && o.title.trim() !== '') {
+                let cleanTitle = stripHtml(o.title).trim();
+                let cleanText = cleanAndValidateText(o.text) || "";
+                if (cleanTitle) {
+                    streams.normal.clean.push(`${cleanTitle}\r\n${cleanText}`.trim());
+                    streams.normal.raw.push(`${o.title}\r\n${o.text}`.trim());
+                    return; 
+                }
             }
 
             for (const key in o) {
@@ -808,37 +877,24 @@ function extractContentRecursive(obj) {
                     else if (Array.isArray(val)) val = val.map(v => (typeof v === 'string' || typeof v === 'number') ? String(v) + ' [Correct]' : v);
                 }
 
-                const processString = (str) => {
-                    const trimmed = str.trim();
-                    if (!trimmed) return;
-                    
-                    // --- SUPPRESS FILE PATHS AND EXTENSIONS ---
-                    if (!trimmed.includes(' ')) {
-                        // Suppress known file extensions
-                        if (/\.(json|css|htm|html|js|xml|png|jpg|jpeg|gif|svg|mp3|mp4)$/i.test(trimmed)) return;
-                        // Suppress obvious internal path strings (e.g., content/interactives/... or paths with slashes and dots)
-                        if (trimmed.startsWith('content/') || trimmed.startsWith('global/')) return;
-                        if (trimmed.includes('/') && trimmed.includes('.')) return; 
-                    }
-
-                    let preCleaned = str.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
-                    const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
-                    const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
-                    
-                    if (!coreText) return;
-                    if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(coreText)) return;
-                    if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden|print|pagename|simplicity|onclick|mclass\d*|english|en|video)[\.\s]*$/i.test(coreText)) return;
-                    if (/^-?\d+(\.\d+)?(%|px|em|rem|vh|vw)$/i.test(coreText)) return;
-                    if (/col-(md|sm|xs|lg)-\d+/.test(coreText) || /"contentType"\s*:/.test(coreText) || /"fieldValues"\s*:/.test(coreText)) return;
-
-                    streams[nextCtx].raw.push(str);
-                    streams[nextCtx].clean.push(cleanedText);
-                };
-
                 if (typeof val === 'string' && val.trim() !== '') {
-                    processString(val);
+                    let validText = cleanAndValidateText(val);
+                    if (validText) {
+                        streams[nextCtx].raw.push(val);
+                        streams[nextCtx].clean.push(validText);
+                    }
                 } else if (Array.isArray(val)) {
-                    val.forEach(item => { if (typeof item === 'string' && item.trim() !== '') processString(item); else traverse(item, nextCtx); });
+                    val.forEach(item => { 
+                        if (typeof item === 'string' && item.trim() !== '') {
+                            let validText = cleanAndValidateText(item);
+                            if (validText) {
+                                streams[nextCtx].raw.push(item);
+                                streams[nextCtx].clean.push(validText);
+                            }
+                        } else {
+                            traverse(item, nextCtx); 
+                        }
+                    });
                 } else {
                     traverse(val, nextCtx);
                 }
@@ -930,6 +986,8 @@ async function processPage(filename, locationId, pageRef) {
                             let textVersionPath = null;
                             let textVersionContent = null;
                             let foundTypes = new Set();
+                            let hasPgField = false;
+                            let customTextversionCount = 0;
 
                             for (const fileKey of uniqueFiles) {
                                 try {
@@ -946,6 +1004,14 @@ async function processPage(filename, locationId, pageRef) {
                                                 if (k.toLowerCase() === 'type' && typeof val === 'string') {
                                                     foundTypes.add(val.trim());
                                                 }
+                                                // Capture pg field exception
+                                                if (k === 'pg' || k.toLowerCase() === 'pg') {
+                                                    hasPgField = true;
+                                                }
+                                                // Capture multiple customTextversion exception
+                                                if (k === 'customTextversion' || k.toLowerCase() === 'customtextversion') {
+                                                    customTextversionCount++;
+                                                }
                                                 // Capture Text Version
                                                 if (typeof val === 'string' && val.toLowerCase().includes('textversion') && /\.(html|htm|txt|md|pdf|docx)$/i.test(val)) {
                                                     if (!textVersionPath) textVersionPath = val;
@@ -957,6 +1023,11 @@ async function processPage(filename, locationId, pageRef) {
                                     }
                                     scanIntJson(intJson);
                                 } catch (e) {}
+                            }
+
+                            // If a "pg" field was found, or multiple customTextversions exist, ignore the text version so the JSON is parsed instead
+                            if (hasPgField || customTextversionCount > 1) {
+                                textVersionPath = null;
                             }
 
                             // --- Determine actual Interactive Type (exclude 'config' and 'customjs') ---
@@ -974,31 +1045,40 @@ async function processPage(filename, locationId, pageRef) {
                             if (textVersionPath) {
                                 let tvFileName = textVersionPath.split('/').pop();
                                 let tvFile = null;
-                                
-                                // Establish base path from the interactive's first JSON file
-                                let baseDirPath = uniqueFiles.length > 0 ? uniqueFiles[0].split('/').slice(0, -1).join('/') : "";
-                                let baseDirParts = baseDirPath.split('/');
-
-                                // Score all matching filenames based on path overlap to find the closest match
-                                let bestMatchFile = null;
-                                let maxOverlap = -1;
-
-                                for (const [k, f] of fileMap.entries()) {
-                                    if (k.toLowerCase().endsWith(tvFileName.toLowerCase())) {
-                                        let kParts = k.split('/');
-                                        let overlap = 0;
-                                        for (let i = 0; i < Math.min(baseDirParts.length, kParts.length); i++) {
-                                            if (baseDirParts[i] === kParts[i]) overlap++;
-                                            else break;
+                                let cleanTvPath = textVersionPath.replace(/^\/+/, '');
+                        
+                                // 1. Try exact path match
+                                if (fileMap.has(cleanTvPath)) {
+                                    tvFile = fileMap.get(cleanTvPath);
+                                } else {
+                                    // 2. Try in the interactive's exact folder
+                                    let baseDirPath = uniqueFiles.length > 0 ? uniqueFiles[0].split('/').slice(0, -1).join('/') : "";
+                                    if (baseDirPath && fileMap.has(baseDirPath + '/' + tvFileName)) {
+                                        tvFile = fileMap.get(baseDirPath + '/' + tvFileName);
+                                    } 
+                                    // 3. Fallback search: ONLY for uniquely named files to prevent cross-contamination
+                                    else if (!['textversion.htm', 'textversion.html', 'index.htm', 'index.html'].includes(tvFileName.toLowerCase())) {
+                                        let bestMatchFile = null;
+                                        let maxOverlap = -1;
+                                        let baseDirParts = baseDirPath.split('/');
+                        
+                                        for (const [k, f] of fileMap.entries()) {
+                                            if (k.toLowerCase().endsWith(tvFileName.toLowerCase())) {
+                                                let kParts = k.split('/');
+                                                let overlap = 0;
+                                                for (let i = 0; i < Math.min(baseDirParts.length, kParts.length); i++) {
+                                                    if (baseDirParts[i] === kParts[i]) overlap++;
+                                                    else break;
+                                                }
+                                                if (overlap > maxOverlap) {
+                                                    maxOverlap = overlap;
+                                                    bestMatchFile = f;
+                                                }
+                                            }
                                         }
-                                        if (overlap > maxOverlap) {
-                                            maxOverlap = overlap;
-                                            bestMatchFile = f;
-                                        }
+                                        tvFile = bestMatchFile;
                                     }
                                 }
-                                
-                                tvFile = bestMatchFile;
 
                                 if (tvFile) {
                                     if (tvFileName.toLowerCase().endsWith('.pdf') || tvFileName.toLowerCase().endsWith('.docx')) {
@@ -1300,6 +1380,7 @@ function renderCourseViewer() {
                 const lesId = generateSafeId('les', fullLesID);
                 
                 const lesDet = document.createElement('details');
+
                 lesDet.className = 'lesson-details';
                 lesDet.id = lesId;
                 if (isReRender && openDetailIds.has(lesId)) lesDet.open = true; 
