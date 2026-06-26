@@ -570,7 +570,7 @@ function extractContentRecursive(obj) {
         'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
         'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
         'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
-        'chances','entrywidth','summaryLength'
+        'chances','entrywidth','summarylength', 'colorscheme'
     ]);
     
     const hasTags = /<[^>]+>/;
@@ -1177,7 +1177,7 @@ async function processPage(filename, locationId, pageRef) {
                         }
                     } else if (typeof node[key] === 'string' && node[key].trim() !== '') {
                         const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                        const ignoreKeys = new Set(['id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes', 'alttext', 'caption', 'captionheader', 'textversion', 'copyright']);
+                        const ignoreKeys = new Set(['id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes', 'alttext', 'caption', 'captionheader', 'textversion', 'copyright', 'chances', 'summarylength', 'colorscheme', 'entrywidth']);
                         if (!ignoreKeys.has(safeKey)) {
                             const extracted = extractContentRecursive({ [key]: node[key] });
                             if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
