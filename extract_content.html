@@ -570,7 +570,7 @@ function extractContentRecursive(obj) {
         'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
         'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
         'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
-        'chances'
+        'chances','entrywidth','summaryLength'
     ]);
     
     const hasTags = /<[^>]+>/;
@@ -986,7 +986,6 @@ async function processPage(filename, locationId, pageRef) {
                             let textVersionPath = null;
                             let textVersionContent = null;
                             let foundTypes = new Set();
-                            let hasPgField = false;
                             let customTextversionCount = 0;
 
                             for (const fileKey of uniqueFiles) {
@@ -1003,10 +1002,6 @@ async function processPage(filename, locationId, pageRef) {
                                                 // Capture Types
                                                 if (k.toLowerCase() === 'type' && typeof val === 'string') {
                                                     foundTypes.add(val.trim());
-                                                }
-                                                // Capture pg field exception
-                                                if (k === 'pg' || k.toLowerCase() === 'pg') {
-                                                    hasPgField = true;
                                                 }
                                                 // Capture multiple customTextversion exception
                                                 if (k === 'customTextversion' || k.toLowerCase() === 'customtextversion') {
@@ -1025,8 +1020,8 @@ async function processPage(filename, locationId, pageRef) {
                                 } catch (e) {}
                             }
 
-                            // If a "pg" field was found, or multiple customTextversions exist, ignore the text version so the JSON is parsed instead
-                            if (hasPgField || customTextversionCount > 1) {
+                            // If multiple customTextversions exist, ignore the text version so the JSON is parsed instead
+                            if (customTextversionCount > 1) {
                                 textVersionPath = null;
                             }
 
