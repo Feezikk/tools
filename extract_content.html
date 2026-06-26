@@ -570,7 +570,7 @@ function extractContentRecursive(obj) {
         'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
         'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
         'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
-        'chances','entrywidth','summarylength', 'colorscheme'
+        'chances','entrywidth','summarylength', 'colorscheme', 'showinteractive'
     ]);
     
     const hasTags = /<[^>]+>/;
@@ -703,6 +703,40 @@ function extractContentRecursive(obj) {
                 streams.normal.clean.push(`[[[${tag}|||${entryId}]]]`);
                 streams.normal.raw.push(`[[[${tag}|||${entryId}]]]`);
                 return;
+            }
+
+            // Intercept Smartchart objects
+            if (typeof o.src === 'string' && o.src.toLowerCase() === 'smartchart' && Array.isArray(o.data)) {
+                let cleanOutput = [];
+                let rawOutput = [];
+                
+                if (o.title) {
+                    cleanOutput.push(stripHtml(String(o.title)).trim());
+                    rawOutput.push(String(o.title));
+                }
+                if (o.description) {
+                    cleanOutput.push(stripHtml(String(o.description)).trim());
+                    rawOutput.push(String(o.description));
+                }
+                if (o.amounttype) {
+                    cleanOutput.push("Amount Type: " + stripHtml(String(o.amounttype)).trim());
+                    rawOutput.push("Amount Type: " + String(o.amounttype));
+                }
+                
+                o.data.forEach(item => {
+                    if (item.title !== undefined && item.amount !== undefined) {
+                        let cleanLine = stripHtml(String(item.title)).trim() + ": " + stripHtml(String(item.amount)).trim();
+                        let rawLine = String(item.title) + ": " + String(item.amount);
+                        cleanOutput.push(cleanLine);
+                        rawOutput.push(rawLine);
+                    }
+                });
+
+                if (cleanOutput.length > 0) {
+                    streams.normal.clean.push(cleanOutput.join("\r\n"));
+                    streams.normal.raw.push(rawOutput.join("\r\n"));
+                }
+                return; // Prevent traversing the rest of this config object to avoid duplicates
             }
 
             // 1. Intercept the Interactive Title
@@ -860,6 +894,31 @@ function extractContentRecursive(obj) {
                         streams.normal.clean.push(`[${valStr}]`);
                         streams.normal.raw.push(`[${valStr}]`);
                     }
+                    continue;
+                }
+                // 8. Intercept dragdrop bins to preserve category titles
+                else if (safeKey === 'bins' && Array.isArray(o[key])) {
+                    o[key].forEach(bin => {
+                        if (bin.title) {
+                            let cleanTitle = stripHtml(String(bin.title)).trim();
+                            if (cleanTitle) {
+                                streams.normal.clean.push(`[${cleanTitle}]`);
+                                streams.normal.raw.push(`[${bin.title}]`);
+                            }
+                        }
+                        if (Array.isArray(bin.item)) {
+                            bin.item.forEach(itm => {
+                                let itemText = typeof itm === 'string' ? itm : itm.text;
+                                if (itemText) {
+                                    let cleanItem = cleanAndValidateText(itemText) || stripHtml(String(itemText)).trim();
+                                    if (cleanItem) {
+                                        streams.normal.clean.push(cleanItem);
+                                        streams.normal.raw.push(String(itemText));
+                                    }
+                                }
+                            });
+                        }
+                    });
                     continue;
                 }
 
@@ -1075,12 +1134,21 @@ async function processPage(filename, locationId, pageRef) {
                                     }
                                 }
 
-                                if (tvFile) {
+                               if (tvFile) {
                                     if (tvFileName.toLowerCase().endsWith('.pdf') || tvFileName.toLowerCase().endsWith('.docx')) {
                                         textVersionContent = await extractDocumentText(tvFileName);
                                     } else {
                                         let rawText = await tvFile.text();
-                                        textVersionContent = stripHtml(rawText);
+                                        
+                                        // Detect if the file is a dynamic template (e.g., AngularJS) rather than static text
+                                        const isTemplate = /ng-bind(-html)?|data-ng-(repeat|if|click|show)|ng-(repeat|if|click|show)|\{\{.*?\}\}/i.test(rawText);
+                                        
+                                        if (isTemplate) {
+                                            // Reject the template so the script falls back to parsing the JSON directly
+                                            textVersionContent = null; 
+                                        } else {
+                                            textVersionContent = stripHtml(rawText);
+                                        }
                                     }
                                 }
                             }
@@ -1177,7 +1245,7 @@ async function processPage(filename, locationId, pageRef) {
                         }
                     } else if (typeof node[key] === 'string' && node[key].trim() !== '') {
                         const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
-                        const ignoreKeys = new Set(['id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes', 'alttext', 'caption', 'captionheader', 'textversion', 'copyright', 'chances', 'summarylength', 'colorscheme', 'entrywidth']);
+                        const ignoreKeys = new Set(['id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes', 'alttext', 'caption', 'captionheader', 'textversion', 'copyright', 'chances', 'summarylength', 'colorscheme', 'entrywidth', 'showinteractive']);
                         if (!ignoreKeys.has(safeKey)) {
                             const extracted = extractContentRecursive({ [key]: node[key] });
                             if (extracted.normalClean || extracted.mlClean || extracted.noteClean || extracted.stdClean) {
