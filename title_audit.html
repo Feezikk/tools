@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" type="image/x-icon" href="llama.ico">
 <title>CB Title Assessment Audit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -252,7 +253,7 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
 <div id="toast-container"></div>
 <div id="modal-backdrop" class="modal-backdrop" onclick="closeModal()"></div>
 <nav id="sidebar">
-  <div class="logo"><h1>CB Title Assessment<br>Audit</h1><span class="vtag">v3.18 &middot; Smart Bulk Paste</span></div>
+  <div class="logo"><h1>CB Title Assessment<br>Audit</h1><span class="vtag">v3.18-r &middot; Refactored</span></div>
   <div class="ns"><div class="nsl">Overview</div>
     <div class="ni active" onclick="show('cover',this)"><span class="dot"></span>Cover &amp; Guide</div>
     <div class="ni" onclick="show('summary',this)"><span class="dot"></span>Summary</div>
@@ -309,7 +310,7 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
   <div class="info"><strong>Character limit:</strong> Title Character Count cannot exceed <strong>100 characters</strong>. Validated automatically in CS Source.<br><br>
     <strong>N/A Override:</strong> By default, all downstream tabs (2-7) strictly evaluate every row entered in CS Source. If a specific field legitimately does not require a match, manually type <strong>N/A</strong> into that downstream cell to bypass the check.</div>
   <div class="stl">Prohibited Characters</div>
-  <div class="chips"><span class="chip">forward slash /</span><span class="chip">quotes "}</span><span class="chip">asterisk *</span><span class="chip">less than &lt;</span><span class="chip">greater than &gt;</span><span class="chip">plus +</span><span class="chip">equals =</span><span class="chip">pipe |</span><span class="chip">percent %</span><span class="chip">em dash &#x2014;</span><span class="chip">en dash &#x2013;</span></div>
+  <div class="chips"><span class="chip">forward slash /</span><span class="chip">quotes "</span><span class="chip">asterisk *</span><span class="chip">less than &lt;</span><span class="chip">greater than &gt;</span><span class="chip">plus +</span><span class="chip">equals =</span><span class="chip">pipe |</span><span class="chip">percent %</span><span class="chip">em dash &#x2014;</span><span class="chip">en dash &#x2013;</span></div>
 </div>
 
 <div id="tab-summary" class="panel"><div class="ph"><h2>Audit and Point Summary</h2><p>Overall pass/fail status across all audit sections.</p></div><div id="summary-content"></div></div>
@@ -577,7 +578,7 @@ tr.dragging{opacity:.4;background:rgba(79,142,247,.08)!important}tr.drag-over{bo
 <script>
 'use strict';
 // ════════════════════════════════════════════════════════════════════════════
-// CB TITLE ASSESSMENT AUDIT v3.13
+// CB TITLE ASSESSMENT AUDIT v3.18-r (refactored)
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── GLOBALS ─────────────────────────────────────────────────────────────────
@@ -697,7 +698,7 @@ function createEmptyRow(c = []) {
     dv:{divTitle:'',rubricTitle:'',rubricPts:''},
     gb:{gbTitle:'',gbPts:''},
     ak:{akTitle:'',akPts:''},
-    ipp:{ippGsTitle:'',ippGsTime:'',ippFlTitle:'',ippFlTime:''},
+    ipp:{ippPrefix:'',ippGsTitle:'',ippGsTime:'',ippFlTitle:'',ippFlTime:''},
     pc:{tradTitle:'',accelTitle:'',seg2Title:''},
     rp:{normalWeek:null,accelWeek:null},
     hp:{normalWeek:null,accelWeek:null}
@@ -1048,7 +1049,13 @@ function syncRowStaticData(i) {
     const tr = document.getElementById(`${prefix}-row-${i}`); if (!tr) return;
     const tds = tr.children;
     const off = MULTI_STATE_ENABLED ? 2 : 1;
-    if (tds[off] && tds[off].textContent !== r.cs.title) tds[off].textContent = r.cs.title;
+    if (tds[off]) {
+      if (prefix === 'ipp') {
+        // ipp title cell contains a hint div — don't clobber it; renderSection handles it
+      } else if (tds[off].textContent !== r.cs.title) {
+        tds[off].textContent = r.cs.title;
+      }
+    }
     if (prefix !== 'ipp' && prefix !== 'pc') { const po = off+1; if (tds[po]) { const pv = cv(r.cs.points); if (tds[po].innerHTML !== pv) tds[po].innerHTML = pv; } }
     if (MULTI_STATE_ENABLED && tds[1]) { const sv = r.cs.state||'—'; if (tds[1].textContent !== sv) tds[1].textContent = sv; }
   });
@@ -1071,6 +1078,31 @@ function syncRowStaticData(i) {
 }
 
 // ── ROW CALCULATIONS ─────────────────────────────────────────────────────────
+// ── RUBRIC TOGGLE HELPER ─────────────────────────────────────────────────────
+// Shared logic for enabling/disabling rubric title+pts cells and syncing match styles.
+// prefix: tab prefix (e.g. 'dv'), suffix: id suffix (e.g. i or "i-pIdx"),
+// active: bool, title/pts: current stored values, hrId: the rubric badge element id.
+function setRubricToggle(prefix, suffix, active, hrId, title, pts, matchTitle, matchPts) {
+  setHtml(hrId, `<span class="badge ${active?'bp':'bn'}">${active?'Yes':'No'}</span>`);
+  setMatchStyle(prefix,'rubricTitle',suffix, active ? matchTitle : 'NA');
+  setMatchStyle(prefix,'rubricPts',  suffix, active ? matchPts  : 'NA');
+  const tEl = document.getElementById(`ed-${prefix}-rubricTitle-${suffix}`);
+  const pEl = document.getElementById(`ed-${prefix}-rubricPts-${suffix}`);
+  if (!tEl || !pEl) return;
+  if (active) {
+    tEl.contentEditable = pEl.contentEditable = 'true';
+    tEl.style.opacity = pEl.style.opacity = ''; tEl.style.pointerEvents = pEl.style.pointerEvents = '';
+    if (tEl.textContent==='N/A') tEl.textContent = title||'';
+    if (pEl.textContent==='N/A') pEl.textContent = pts!==undefined ? pts : '';
+  } else {
+    tEl.contentEditable = pEl.contentEditable = 'false';
+    tEl.style.opacity = pEl.style.opacity = '0.35'; tEl.style.pointerEvents = pEl.style.pointerEvents = 'none';
+    if (tEl.textContent!=='N/A') tEl.textContent = 'N/A';
+    if (pEl.textContent!=='N/A') pEl.textContent = 'N/A';
+    setMatchStyle(prefix,'rubricTitle',suffix,null); setMatchStyle(prefix,'rubricPts',suffix,null);
+  }
+}
+
 function updateRowCalculations(i) {
   const r = APP_STATE[i];
   const tt = calcTimeTotal(i);
@@ -1095,66 +1127,37 @@ function updateRowCalculations(i) {
   if (!r.cs.title) return;
   setHtml(`cl-cs-tt-${i}`, cv(tt)); setHtml(`ipp-cs-tt-${i}`, cv(tt));
   setMatchStyle('cl','sitemapTitle',i,matchExact(r.cs.title,r.cl.sitemapTitle));
-  setMatchStyle('cl','sitemapPts',i,matchNum(r.cs.points,r.cl.sitemapPts));
-  setMatchStyle('cl','sitemapTime',i,matchNum(tt,r.cl.sitemapTime));
-  setMatchStyle('dv','divTitle',i,matchExact(r.cs.title,r.dv.divTitle));
+  setMatchStyle('cl','sitemapPts',  i,matchNum(r.cs.points,r.cl.sitemapPts));
+  setMatchStyle('cl','sitemapTime', i,matchNum(tt,r.cl.sitemapTime));
+  setMatchStyle('dv','divTitle',    i,matchExact(r.cs.title,r.dv.divTitle));
   const rubActive = r.cs.rubricTitle==='Yes';
-  setHtml(`dv-hr-${i}`,`<span class="badge ${rubActive?'bp':'bn'}">${rubActive?'Yes':'No'}</span>`);
-  setMatchStyle('dv','rubricTitle',i,rubActive?matchExact(r.cs.title,r.dv.rubricTitle):'NA');
-  setMatchStyle('dv','rubricPts',i,rubActive?matchNum(r.cs.points,r.dv.rubricPts):'NA');
-  const rtEl = document.getElementById(`ed-dv-rubricTitle-${i}`), rpEl = document.getElementById(`ed-dv-rubricPts-${i}`);
-  if (rtEl && rpEl) {
-    if (rubActive) {
-      rtEl.contentEditable = rpEl.contentEditable = 'true';
-      rtEl.style.opacity = rpEl.style.opacity = ''; rtEl.style.pointerEvents = rpEl.style.pointerEvents = '';
-      if (rtEl.textContent==='N/A') rtEl.textContent = r.dv.rubricTitle||'';
-      if (rpEl.textContent==='N/A') rpEl.textContent = r.dv.rubricPts!==undefined?r.dv.rubricPts:'';
-    } else {
-      rtEl.contentEditable = rpEl.contentEditable = 'false';
-      rtEl.style.opacity = rpEl.style.opacity = '0.35'; rtEl.style.pointerEvents = rpEl.style.pointerEvents = 'none';
-      if (rtEl.textContent!=='N/A') rtEl.textContent = 'N/A'; if (rpEl.textContent!=='N/A') rpEl.textContent = 'N/A';
-      setMatchStyle('dv','rubricTitle',i,null); setMatchStyle('dv','rubricPts',i,null);
-    }
-  }
-  setMatchStyle('gb','gbTitle',i,matchExact(r.cs.title,r.gb.gbTitle)); setMatchStyle('gb','gbPts',i,matchNum(r.cs.points,r.gb.gbPts));
-  setMatchStyle('ak','akTitle',i,matchExact(r.cs.title,r.ak.akTitle)); setMatchStyle('ak','akPts',i,matchNum(r.cs.points,r.ak.akPts));
-  setMatchStyle('ipp','ippGsTitle',i,matchExact(r.cs.title,r.ipp.ippGsTitle)); setMatchStyle('ipp','ippGsTime',i,matchNum(tt,r.ipp.ippGsTime));
-  setMatchStyle('ipp','ippFlTitle',i,matchExact(r.cs.title,r.ipp.ippFlTitle)); setMatchStyle('ipp','ippFlTime',i,matchNum(tt,r.ipp.ippFlTime));
-  setMatchStyle('pc','tradTitle',i,matchExact(r.cs.title,r.pc.tradTitle));
-  setMatchStyle('pc','accelTitle',i,matchExact(r.cs.title,r.pc.accelTitle));
-  setMatchStyle('pc','seg2Title',i,r.cs.seg===2?matchExact(r.cs.title,r.pc.seg2Title):'NA');
+  setRubricToggle('dv',i,rubActive,`dv-hr-${i}`,r.dv.rubricTitle,r.dv.rubricPts,
+    matchExact(r.cs.title,r.dv.rubricTitle), matchNum(r.cs.points,r.dv.rubricPts));
+  setMatchStyle('gb','gbTitle',     i,matchExact(r.cs.title,r.gb.gbTitle));
+  setMatchStyle('gb','gbPts',       i,matchNum(r.cs.points,r.gb.gbPts));
+  setMatchStyle('ak','akTitle',     i,matchExact(r.cs.title,r.ak.akTitle));
+  setMatchStyle('ak','akPts',       i,matchNum(r.cs.points,r.ak.akPts));
+  const ippEffTitle = r.ipp.ippPrefix ? r.ipp.ippPrefix + r.cs.title : r.cs.title;
+  setMatchStyle('ipp','ippGsTitle', i,matchExact(ippEffTitle,r.ipp.ippGsTitle));
+  setMatchStyle('ipp','ippGsTime',  i,matchNum(tt,r.ipp.ippGsTime));
+  setMatchStyle('ipp','ippFlTitle', i,matchExact(ippEffTitle,r.ipp.ippFlTitle));
+  setMatchStyle('ipp','ippFlTime',  i,matchNum(tt,r.ipp.ippFlTime));
+  setMatchStyle('pc','tradTitle',   i,matchExact(r.cs.title,r.pc.tradTitle));
+  setMatchStyle('pc','accelTitle',  i,matchExact(r.cs.title,r.pc.accelTitle));
+  setMatchStyle('pc','seg2Title',   i,r.cs.seg===2?matchExact(r.cs.title,r.pc.seg2Title):'NA');
 
-  // Handle nested multi-part data matching for Divs & Gradebuilder
+  // Multi-part children: Divs & Gradebuilder
   if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
     r.cs.multiPartData.forEach((p, pIdx) => {
       const pdv = p.dv || {divTitle:'',rubricTitle:'',rubricPts:''};
       const pgb = p.gb || {gbTitle:'',gbPts:''};
-
-      setMatchStyle('dvpart','divTitle',`${i}-${pIdx}`, matchExact(p.title, pdv.divTitle));
-      
+      const sid  = `${i}-${pIdx}`;
+      setMatchStyle('dvpart','divTitle',sid, matchExact(p.title, pdv.divTitle));
       const partRubActive = p.rubricTitle === 'Yes';
-      setHtml(`dvpart-hr-${i}-${pIdx}`,`<span class="badge ${partRubActive?'bp':'bn'}">${partRubActive?'Yes':'No'}</span>`);
-      setMatchStyle('dvpart','rubricTitle',`${i}-${pIdx}`, partRubActive ? matchExact(p.title, pdv.rubricTitle) : 'NA');
-      setMatchStyle('dvpart','rubricPts',`${i}-${pIdx}`, partRubActive ? matchNum(p.points, pdv.rubricPts) : 'NA');
-      
-      const prtEl = document.getElementById(`ed-dvpart-rubricTitle-${i}-${pIdx}`);
-      const prpEl = document.getElementById(`ed-dvpart-rubricPts-${i}-${pIdx}`);
-      if (prtEl && prpEl) {
-        if (partRubActive) {
-          prtEl.contentEditable = prpEl.contentEditable = 'true';
-          prtEl.style.opacity = prpEl.style.opacity = ''; prtEl.style.pointerEvents = prpEl.style.pointerEvents = '';
-          if (prtEl.textContent==='N/A') prtEl.textContent = pdv.rubricTitle||'';
-          if (prpEl.textContent==='N/A') prpEl.textContent = pdv.rubricPts!==undefined?pdv.rubricPts:'';
-        } else {
-          prtEl.contentEditable = prpEl.contentEditable = 'false';
-          prtEl.style.opacity = prpEl.style.opacity = '0.35'; prtEl.style.pointerEvents = prpEl.style.pointerEvents = 'none';
-          if (prtEl.textContent!=='N/A') prtEl.textContent = 'N/A'; if (prpEl.textContent!=='N/A') prpEl.textContent = 'N/A';
-          setMatchStyle('dvpart','rubricTitle',`${i}-${pIdx}`,null); setMatchStyle('dvpart','rubricPts',`${i}-${pIdx}`,null);
-        }
-      }
-
-      setMatchStyle('gbpart','gbTitle',`${i}-${pIdx}`, matchExact(p.title, pgb.gbTitle));
-      setMatchStyle('gbpart','gbPts',`${i}-${pIdx}`, matchNum(p.points, pgb.gbPts));
+      setRubricToggle('dvpart',sid,partRubActive,`dvpart-hr-${sid}`,pdv.rubricTitle,pdv.rubricPts,
+        matchExact(p.title,pdv.rubricTitle), matchNum(p.points,pdv.rubricPts));
+      setMatchStyle('gbpart','gbTitle',sid, matchExact(p.title, pgb.gbTitle));
+      setMatchStyle('gbpart','gbPts',  sid, matchNum(p.points, pgb.gbPts));
     });
   }
 }
@@ -1167,24 +1170,12 @@ function stateCell(r) { return MULTI_STATE_ENABLED ? `<td class="ds-state-col ds
 function renderDownstreamHeaders() {
   const S = MULTI_STATE_ENABLED;
   const stH = S ? '<th class="ds-state-col ds-stk-state">State</th>' : '';
-  
-  document.getElementById('cl-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:85px;"><col style="width:280px;"><col style="width:85px;"><col style="width:85px;"><col style="width:auto;">`;
-  document.getElementById('cl-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3">Points</th><th class="ds-stk-4 ds-stk-last">Time</th><th>Sitemap Title</th><th>Sitemap Pts</th><th>Sitemap Time</th><th></th></tr>`;
-  
-  document.getElementById('dv-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:75px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
-  document.getElementById('dv-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Div Title</th><th>Rubric?</th><th>Rubric Title</th><th>Rubric Pts</th><th></th></tr>`;
-  
-  document.getElementById('gb-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
-  document.getElementById('gb-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Gradebuilder Title</th><th>Points</th><th></th></tr>`;
-  
-  document.getElementById('ak-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
-  document.getElementById('ak-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Title in Answer Key</th><th>Points</th><th></th></tr>`;
-  
-  document.getElementById('ipp-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`;
-  document.getElementById('ipp-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Time: From CS</th><th>IPP GS Title</th><th>GS Time</th><th>IPP FL Title</th><th>FL Time</th><th></th></tr>`;
-  
-  document.getElementById('pc-colgroup').innerHTML = `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:280px;"><col style="width:280px;"><col style="width:280px;"><col style="width:auto;">`;
-  document.getElementById('pc-thead').innerHTML = `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2 ds-stk-last">Title: From CS</th><th>Traditional Title</th><th>Accelerated Title</th><th>2nd Seg Title</th><th></th></tr>`;
+  for (const [sec, cfg] of Object.entries(SEC_CONFIG)) {
+    const cg = document.getElementById(`${sec}-colgroup`);
+    const th = document.getElementById(`${sec}-thead`);
+    if (cg) cg.innerHTML = cfg.cols(S);
+    if (th) th.innerHTML = cfg.thead(stH);
+  }
 }
 
 // ── MASTER RENDER ─────────────────────────────────────────────────────────────
@@ -1192,8 +1183,8 @@ const debouncedHeavyRender = debounce(() => { renderRegularPace(); renderHonorsP
 function renderCSAndRecalc() { renderCS(true); APP_STATE.forEach((_,i) => updateRowCalculations(i)); }
 function renderAllTables() {
   renderDownstreamHeaders();
-  renderCS(true); renderChecklist(true); renderDivs(true); renderGradebuilder(true);
-  renderAnswerKeys(true); renderIPP(true); renderPaceCharts(true);
+  renderCS(true);
+  for (const sec of Object.keys(SEC_CONFIG)) renderSection(sec, true);
   renderRegularPace(); renderHonorsPace(); updateHonorsState();
   renderSegWeights(); renderVersion();
   APP_STATE.forEach((_,i) => updateRowCalculations(i));
@@ -1260,96 +1251,140 @@ function renderCS(skipCalc) {
 }
 
 // ── RENDER: DOWNSTREAM ────────────────────────────────────────────────────────
-function renderChecklist(skipCalc) {
-  document.getElementById('cl-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="cl-row-${i}" class="${modClass(r.cs.title)}">
-    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
-    <td class="ds-stk-3 cs-from">${cv(r.cs.points)}</td><td class="ds-stk-4 ds-stk-last cs-from" id="cl-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
-    <td>${ed(r.cl.sitemapTitle,'cl','sitemapTitle',i)}</td><td>${ed(r.cl.sitemapPts,'cl','sitemapPts',i)}</td><td>${ed(r.cl.sitemapTime,'cl','sitemapTime',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('cl',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-  </tr>`).join('');
-  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
-}
-
-function renderDivs(skipCalc) {
-  let html = '';
-  APP_STATE.forEach((r, i) => {
-    if (!r.cs.title || !shouldShowState(r.cs.state)) return;
-    const mc = modClass(r.cs.title);
-    html += `<tr id="dv-row-${i}" class="${mc}">
+// ── SEC CONFIG ────────────────────────────────────────────────────────────────
+// Single source of truth for each downstream section: body ID, clear helpers,
+// row HTML builder, and colgroup/thead for renderDownstreamHeaders.
+const SEC_CONFIG = {
+  cl: {
+    bodyId: 'cl-body',
+    cols:  S   => `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:85px;"><col style="width:280px;"><col style="width:85px;"><col style="width:85px;"><col style="width:auto;">`,
+    thead: stH => `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3">Points</th><th class="ds-stk-4 ds-stk-last">Time</th><th>Sitemap Title</th><th>Sitemap Pts</th><th>Sitemap Time</th><th></th></tr>`,
+    clearRow: r => { r.cl.sitemapTitle=''; r.cl.sitemapPts=''; r.cl.sitemapTime=''; },
+    rowHtml: (r,i) => `<tr id="cl-row-${i}" class="${modClass(r.cs.title)}">
+      <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+      <td class="ds-stk-3 cs-from">${cv(r.cs.points)}</td><td class="ds-stk-4 ds-stk-last cs-from" id="cl-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
+      <td>${ed(r.cl.sitemapTitle,'cl','sitemapTitle',i)}</td><td>${ed(r.cl.sitemapPts,'cl','sitemapPts',i)}</td><td>${ed(r.cl.sitemapTime,'cl','sitemapTime',i)}</td>
+      <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('cl',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+    </tr>`
+  },
+  dv: {
+    bodyId: 'dv-body',
+    cols:  S   => `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:75px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`,
+    thead: stH => `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Div Title</th><th>Rubric?</th><th>Rubric Title</th><th>Rubric Pts</th><th></th></tr>`,
+    clearRow: r => { r.dv.divTitle=''; r.dv.rubricTitle=''; r.dv.rubricPts=''; },
+    clearPart: p => { if(p.dv){p.dv.divTitle='';p.dv.rubricTitle='';p.dv.rubricPts='';} },
+    rowHtml: (r,i) => {
+      const mc=modClass(r.cs.title);
+      let h=`<tr id="dv-row-${i}" class="${mc}">
+        <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+        <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
+        <td>${ed(r.dv.divTitle,'dv','divTitle',i)}</td><td id="dv-hr-${i}"></td>
+        <td>${ed(r.dv.rubricTitle,'dv','rubricTitle',i)}</td><td>${ed(r.dv.rubricPts,'dv','rubricPts',i)}</td>
+        <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('dv',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+      </tr>`;
+      if(MULTI_PART_ENABLED&&r.cs.multiPart&&r.cs.multiPartData.length){
+        r.cs.multiPartData.forEach((p,pIdx)=>{
+          const pdv=p.dv||{divTitle:'',rubricTitle:'',rubricPts:''};
+          h+=`<tr id="dvpart-row-${i}-${pIdx}" class="${mc}" style="background:rgba(0,0,0,.12)">
+            <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
+            <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
+            <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
+            <td>${ed(pdv.divTitle,'dvpart','divTitle',i,'',pIdx)}</td><td id="dvpart-hr-${i}-${pIdx}"></td>
+            <td>${ed(pdv.rubricTitle,'dvpart','rubricTitle',i,'',pIdx)}</td><td>${ed(pdv.rubricPts,'dvpart','rubricPts',i,'',pIdx)}</td>
+            <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('dv',${i},${pIdx})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+          </tr>`;
+        });
+      }
+      return h;
+    }
+  },
+  gb: {
+    bodyId: 'gb-body',
+    cols:  S   => `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`,
+    thead: stH => `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Gradebuilder Title</th><th>Points</th><th></th></tr>`,
+    clearRow: r => { r.gb.gbTitle=''; r.gb.gbPts=''; },
+    clearPart: p => { if(p.gb){p.gb.gbTitle='';p.gb.gbPts='';} },
+    rowHtml: (r,i) => {
+      const mc=modClass(r.cs.title);
+      let h=`<tr id="gb-row-${i}" class="${mc}">
+        <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
+        <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
+        <td>${ed(r.gb.gbTitle,'gb','gbTitle',i)}</td><td>${ed(r.gb.gbPts,'gb','gbPts',i)}</td>
+        <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('gb',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+      </tr>`;
+      if(MULTI_PART_ENABLED&&r.cs.multiPart&&r.cs.multiPartData.length){
+        r.cs.multiPartData.forEach((p,pIdx)=>{
+          const pgb=p.gb||{gbTitle:'',gbPts:''};
+          h+=`<tr id="gbpart-row-${i}-${pIdx}" class="${mc}" style="background:rgba(0,0,0,.12)">
+            <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
+            <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
+            <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
+            <td>${ed(pgb.gbTitle,'gbpart','gbTitle',i,'',pIdx)}</td><td>${ed(pgb.gbPts,'gbpart','gbPts',i,'',pIdx)}</td>
+            <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('gb',${i},${pIdx})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+          </tr>`;
+        });
+      }
+      return h;
+    }
+  },
+  ak: {
+    bodyId: 'ak-body',
+    cols:  S   => `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`,
+    thead: stH => `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Points</th><th>Title in Answer Key</th><th>Points</th><th></th></tr>`,
+    clearRow: r => { r.ak.akTitle=''; r.ak.akPts=''; },
+    rowHtml: (r,i) => `<tr id="ak-row-${i}" class="${modClass(r.cs.title)}">
       <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
       <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
-      <td>${ed(r.dv.divTitle,'dv','divTitle',i)}</td><td id="dv-hr-${i}"></td>
-      <td>${ed(r.dv.rubricTitle,'dv','rubricTitle',i)}</td><td>${ed(r.dv.rubricPts,'dv','rubricPts',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('dv',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-    </tr>`;
-
-    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
-      r.cs.multiPartData.forEach((p, pIdx) => {
-        const pdv = p.dv || {divTitle:'',rubricTitle:'',rubricPts:''};
-        html += `<tr id="dvpart-row-${i}-${pIdx}" class="${mc}" style="background:rgba(0,0,0,.12)">
-          <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
-          <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
-          <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
-          <td>${ed(pdv.divTitle,'dvpart','divTitle',i,'',pIdx)}</td><td id="dvpart-hr-${i}-${pIdx}"></td>
-          <td>${ed(pdv.rubricTitle,'dvpart','rubricTitle',i,'',pIdx)}</td><td>${ed(pdv.rubricPts,'dvpart','rubricPts',i,'',pIdx)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('dv',${i},${pIdx})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-        </tr>`;
-      });
+      <td>${ed(r.ak.akTitle,'ak','akTitle',i)}</td><td>${ed(r.ak.akPts,'ak','akPts',i)}</td>
+      <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('ak',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+    </tr>`
+  },
+  ipp: {
+    bodyId: 'ipp-body',
+    cols:  S   => `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:120px;"><col style="width:280px;"><col style="width:85px;"><col style="width:280px;"><col style="width:65px;"><col style="width:280px;"><col style="width:65px;"><col style="width:auto;">`,
+    thead: stH => `<tr><th class="ds-stk-1">#</th>${stH}<th title="Optional prefix prepended to CS title for IPP match">Prefix</th><th class="ds-stk-2">Title: From CS</th><th class="ds-stk-3 ds-stk-last">Time: From CS</th><th>IPP GS Title</th><th>GS Time</th><th>IPP FL Title</th><th>FL Time</th><th></th></tr>`,
+    clearRow: r => { r.ipp.ippPrefix=''; r.ipp.ippGsTitle=''; r.ipp.ippGsTime=''; r.ipp.ippFlTitle=''; r.ipp.ippFlTime=''; },
+    rowHtml: (r,i) => {
+      const effTitle = (r.ipp.ippPrefix ? r.ipp.ippPrefix + r.cs.title : r.cs.title);
+      return `<tr id="ipp-row-${i}" class="${modClass(r.cs.title)}">
+        <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}
+        <td>${ed(r.ipp.ippPrefix,'ipp','ippPrefix',i,'min-width:80px;max-width:120px;')}</td>
+        <td class="ds-stk-2 cs-from">
+          <div>${r.cs.title}</div>
+          <div id="ipp-hint-${i}" style="font-size:10px;color:var(--accent);margin-top:2px;line-height:1.4;opacity:.8;">${r.ipp.ippPrefix ? '&#x21B3; ' + effTitle : ''}</div>
+        </td>
+        <td class="ds-stk-3 ds-stk-last cs-from" id="ipp-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
+        <td>${ed(r.ipp.ippGsTitle,'ipp','ippGsTitle',i)}</td><td>${ed(r.ipp.ippGsTime,'ipp','ippGsTime',i)}</td>
+        <td>${ed(r.ipp.ippFlTitle,'ipp','ippFlTitle',i)}</td><td>${ed(r.ipp.ippFlTime,'ipp','ippFlTime',i)}</td>
+        <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('ipp',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+      </tr>`;
     }
-  });
-  document.getElementById('dv-body').innerHTML = html;
+  },
+  pc: {
+    bodyId: 'pc-body',
+    cols:  S   => `<col style="width:45px;">${S?'<col style="width:70px;">':''}<col style="width:280px;"><col style="width:280px;"><col style="width:280px;"><col style="width:280px;"><col style="width:auto;">`,
+    thead: stH => `<tr><th class="ds-stk-1">#</th>${stH}<th class="ds-stk-2 ds-stk-last">Title: From CS</th><th>Traditional Title</th><th>Accelerated Title</th><th>2nd Seg Title</th><th></th></tr>`,
+    clearRow: r => { r.pc.tradTitle=''; r.pc.accelTitle=''; r.pc.seg2Title=''; },
+    rowHtml: (r,i) => `<tr id="pc-row-${i}" class="${modClass(r.cs.title)}">
+      <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 ds-stk-last cs-from">${r.cs.title}</td>
+      <td>${ed(r.pc.tradTitle,'pc','tradTitle',i)}</td><td>${ed(r.pc.accelTitle,'pc','accelTitle',i)}</td>
+      <td>${ed(r.pc.seg2Title,'pc','seg2Title',i)}</td>
+      <td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('pc',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
+    </tr>`
+  }
+};
+
+// Single unified downstream section renderer — replaces the 6 individual functions.
+function renderSection(sec, skipCalc) {
+  const cfg = SEC_CONFIG[sec];
+  const html = APP_STATE.map((r,i) =>
+    (!r.cs.title || !shouldShowState(r.cs.state)) ? '' : cfg.rowHtml(r,i)
+  ).join('');
+  document.getElementById(cfg.bodyId).innerHTML = html;
   if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
 }
 
-function renderGradebuilder(skipCalc) {
-  let html = '';
-  APP_STATE.forEach((r, i) => {
-    if (!r.cs.title || !shouldShowState(r.cs.state)) return;
-    const mc = modClass(r.cs.title);
-    html += `<tr id="gb-row-${i}" class="${mc}">
-      <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
-      <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
-      <td>${ed(r.gb.gbTitle,'gb','gbTitle',i)}</td><td>${ed(r.gb.gbPts,'gb','gbPts',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('gb',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-    </tr>`;
-
-    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
-      r.cs.multiPartData.forEach((p, pIdx) => {
-        const pgb = p.gb || {gbTitle:'',gbPts:''};
-        html += `<tr id="gbpart-row-${i}-${pIdx}" class="${mc}" style="background:rgba(0,0,0,.12)">
-          <td class="ds-stk-1"></td>${MULTI_STATE_ENABLED?'<td class="ds-state-col ds-stk-state"></td>':''}
-          <td class="ds-stk-2 cs-from" style="padding-left:24px;"><div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--accent);font-size:10px;">&darr;</span><span class="part-title-text">${p.title}</span></div></td>
-          <td class="ds-stk-3 ds-stk-last cs-from">${cv(p.points)}</td>
-          <td>${ed(pgb.gbTitle,'gbpart','gbTitle',i,'',pIdx)}</td><td>${ed(pgb.gbPts,'gbpart','gbPts',i,'',pIdx)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('gb',${i},${pIdx})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-        </tr>`;
-      });
-    }
-  });
-  document.getElementById('gb-body').innerHTML = html;
-  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
-}
-
-function renderAnswerKeys(skipCalc) {
-  document.getElementById('ak-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="ak-row-${i}" class="${modClass(r.cs.title)}">
-    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
-    <td class="ds-stk-3 ds-stk-last cs-from">${cv(r.cs.points)}</td>
-    <td>${ed(r.ak.akTitle,'ak','akTitle',i)}</td><td>${ed(r.ak.akPts,'ak','akPts',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('ak',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-  </tr>`).join('');
-  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
-}
-function renderIPP(skipCalc) {
-  document.getElementById('ipp-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="ipp-row-${i}" class="${modClass(r.cs.title)}">
-    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 cs-from">${r.cs.title}</td>
-    <td class="ds-stk-3 ds-stk-last cs-from" id="ipp-cs-tt-${i}">${cv(calcTimeTotal(i))}</td>
-    <td>${ed(r.ipp.ippGsTitle,'ipp','ippGsTitle',i)}</td><td>${ed(r.ipp.ippGsTime,'ipp','ippGsTime',i)}</td>
-    <td>${ed(r.ipp.ippFlTitle,'ipp','ippFlTitle',i)}</td><td>${ed(r.ipp.ippFlTime,'ipp','ippFlTime',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('ipp',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-  </tr>`).join('');
-  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
-}
-function renderPaceCharts(skipCalc) {
-  document.getElementById('pc-body').innerHTML = APP_STATE.map((r,i) => !r.cs.title || !shouldShowState(r.cs.state) ? '' : `<tr id="pc-row-${i}" class="${modClass(r.cs.title)}">
-    <td class="ds-stk-1 td-num">${i+1}</td>${stateCell(r)}<td class="ds-stk-2 ds-stk-last cs-from">${r.cs.title}</td>
-    <td>${ed(r.pc.tradTitle,'pc','tradTitle',i)}</td><td>${ed(r.pc.accelTitle,'pc','accelTitle',i)}</td>
-    <td>${ed(r.pc.seg2Title,'pc','seg2Title',i)}</td><td style="text-align:left;"><button class="tbtn-del" onclick="clearRowData('pc',${i})" title="Clear row data" style="font-size:16px;">&#x21BA;</button></td>
-  </tr>`).join('');
-  if (!skipCalc) APP_STATE.forEach((r,i) => { if(r.cs.title) updateRowCalculations(i); });
-}
+// renderSection(sec) is the unified downstream renderer — no named aliases needed.
 
 // ── RENDER: VERSION ───────────────────────────────────────────────────────────
 function renderVersion() {
@@ -1385,59 +1420,29 @@ function deleteCSRow(i) { if (APP_STATE.length <= 1) return alert('Cannot delete
 function clearAllCS() { if (!confirm('Clear all CS Source rows and reset to 35 blank rows?')) return; APP_STATE = Array.from({length:35}, () => createEmptyRow()); renderAllTables(); }
 
 function clearSection(sec) {
-  const names = { cl: 'Checklist', dv: 'Divs & Rubrics', gb: 'Gradebuilder', ak: 'Answer Keys', ipp: 'IPP', pc: 'Pace Charts' };
+  const names = { cl:'Checklist', dv:'Divs & Rubrics', gb:'Gradebuilder', ak:'Answer Keys', ipp:'IPP', pc:'Pace Charts' };
   if (!confirm(`Are you sure you want to clear all data in the ${names[sec]} section?`)) return;
-  
+  const cfg = SEC_CONFIG[sec];
   APP_STATE.forEach(r => {
-    if (sec === 'cl') { r.cl.sitemapTitle = ''; r.cl.sitemapPts = ''; r.cl.sitemapTime = ''; }
-    if (sec === 'dv') { r.dv.divTitle = ''; r.dv.rubricTitle = ''; r.dv.rubricPts = ''; }
-    if (sec === 'gb') { r.gb.gbTitle = ''; r.gb.gbPts = ''; }
-    if (sec === 'ak') { r.ak.akTitle = ''; r.ak.akPts = ''; }
-    if (sec === 'ipp') { r.ipp.ippGsTitle = ''; r.ipp.ippGsTime = ''; r.ipp.ippFlTitle = ''; r.ipp.ippFlTime = ''; }
-    if (sec === 'pc') { r.pc.tradTitle = ''; r.pc.accelTitle = ''; r.pc.seg2Title = ''; }
-    
-    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length) {
-      r.cs.multiPartData.forEach(p => {
-        if (sec === 'dv' && p.dv) { p.dv.divTitle = ''; p.dv.rubricTitle = ''; p.dv.rubricPts = ''; }
-        if (sec === 'gb' && p.gb) { p.gb.gbTitle = ''; p.gb.gbPts = ''; }
-      });
-    }
+    cfg.clearRow(r);
+    if (MULTI_PART_ENABLED && r.cs.multiPart && r.cs.multiPartData.length && cfg.clearPart)
+      r.cs.multiPartData.forEach(p => cfg.clearPart(p));
   });
-  
-  if (sec === 'cl') renderChecklist();
-  if (sec === 'dv') renderDivs();
-  if (sec === 'gb') renderGradebuilder();
-  if (sec === 'ak') renderAnswerKeys();
-  if (sec === 'ipp') renderIPP();
-  if (sec === 'pc') renderPaceCharts();
-  
+  renderSection(sec);
   showToast(`${names[sec]} data cleared.`, 'warn');
 }
 
 window.clearRowData = function(sec, i, pIdx) {
   const r = APP_STATE[i];
+  const cfg = SEC_CONFIG[sec];
   if (pIdx !== undefined && pIdx !== null) {
-    const p = r.cs.multiPartData[pIdx];
-    if (sec === 'dv' && p.dv) { p.dv.divTitle = ''; p.dv.rubricTitle = ''; p.dv.rubricPts = ''; }
-    if (sec === 'gb' && p.gb) { p.gb.gbTitle = ''; p.gb.gbPts = ''; }
+    if (cfg.clearPart) cfg.clearPart(r.cs.multiPartData[pIdx]);
   } else {
-    if (sec === 'cl') { r.cl.sitemapTitle = ''; r.cl.sitemapPts = ''; r.cl.sitemapTime = ''; }
-    if (sec === 'dv') { r.dv.divTitle = ''; r.dv.rubricTitle = ''; r.dv.rubricPts = ''; }
-    if (sec === 'gb') { r.gb.gbTitle = ''; r.gb.gbPts = ''; }
-    if (sec === 'ak') { r.ak.akTitle = ''; r.ak.akPts = ''; }
-    if (sec === 'ipp') { r.ipp.ippGsTitle = ''; r.ipp.ippGsTime = ''; r.ipp.ippFlTitle = ''; r.ipp.ippFlTime = ''; }
-    if (sec === 'pc') { r.pc.tradTitle = ''; r.pc.accelTitle = ''; r.pc.seg2Title = ''; }
+    cfg.clearRow(r);
   }
-
   updateRowCalculations(i);
   refreshSummary();
-  
-  if (sec === 'cl') renderChecklist();
-  if (sec === 'dv') renderDivs();
-  if (sec === 'gb') renderGradebuilder();
-  if (sec === 'ak') renderAnswerKeys();
-  if (sec === 'ipp') renderIPP();
-  if (sec === 'pc') renderPaceCharts();
+  renderSection(sec);
 };
 
 function sortCSTitles() {
@@ -1461,14 +1466,40 @@ function toggleGBPaste(){  togglePaste('gb-paste-zone',  'gb-paste-input', 'gb-p
 function toggleIPPPaste(){ togglePaste('ipp-paste-zone', 'ipp-paste-input', 'ipp-paste-start'); }
 function toggleAKPaste(){  togglePaste('ak-paste-zone',  'ak-paste-input', 'ak-paste-start'); }
 
+// ── SHARED PASTE HELPER ───────────────────────────────────────────────────────
+// Collects target rows from the paste zone, warns on overwrite, applies, re-renders.
+// sec: section key, toggle: fn to close paste zone, assignFn(row, cols): writes data,
+// hasFn(row): returns true if row already has data (for overwrite warning).
+function _applyPaste(sec, toggleFn, assignFn, hasFn, successMsg) {
+  const prefix = sec === 'ipp' ? 'ipp' : sec;
+  const text = document.getElementById(`${prefix}-paste-input`).value;
+  if (!text.trim()) return toggleFn();
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  let st = parseInt(document.getElementById(`${prefix}-paste-start`).value) - 1;
+  if (isNaN(st) || st < 0) st = 0;
+  const tgts = []; let li = 0;
+  for (let i = st; i < APP_STATE.length && li < lines.length; i++) {
+    if (APP_STATE[i].cs.title) tgts.push({ r: APP_STATE[i], l: lines[li++] });
+  }
+  if (tgts.some(t => hasFn(t.r)) && !confirm('Existing data found. Overwrite?')) return;
+  tgts.forEach(t => assignFn(t.r, t.l.split('\t')));
+  toggleFn();
+  renderSection(sec);
+  const over = lines.length - tgts.length;
+  if (over > 0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`, 'warn');
+  else showToast(successMsg, 'success');
+}
+
 function applyCLPaste() {
-  const text=document.getElementById('cl-paste-input').value; if(!text.trim()) return toggleCLPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('cl-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
-  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){ if(APP_STATE[i].cs.title) tgts.push({r:APP_STATE[i],l:lines[li++]}); }
-  if(tgts.some(t=>t.r.cl.sitemapTitle||t.r.cl.sitemapPts||t.r.cl.sitemapTime) && !confirm("Existing data found. Overwrite?")) return;
-  tgts.forEach(t=>{ const c=t.l.split('\t'); t.r.cl.sitemapTitle=c[0]?c[0].replace(/[\r\n]+/g,'').trim():''; t.r.cl.sitemapPts=c[1]?c[1].replace(/(points?|pts?)/gi,'').trim():''; t.r.cl.sitemapTime=c[2]?c[2].replace(/(minutes?|mins?)/gi,'').trim():''; });
-  toggleCLPaste(); renderChecklist(); const over=lines.length-tgts.length;
-  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast('Checklist data pasted.','success');
+  _applyPaste('cl', toggleCLPaste,
+    (r, c) => {
+      r.cl.sitemapTitle = c[0] ? c[0].replace(/[\r\n]+/g,'').trim() : '';
+      r.cl.sitemapPts   = c[1] ? c[1].replace(/(points?|pts?)/gi,'').trim() : '';
+      r.cl.sitemapTime  = c[2] ? c[2].replace(/(minutes?|mins?)/gi,'').trim() : '';
+    },
+    r => r.cl.sitemapTitle || r.cl.sitemapPts || r.cl.sitemapTime,
+    'Checklist data pasted.'
+  );
 }
 
 function applyGBPaste() {
@@ -1480,29 +1511,34 @@ function applyGBPaste() {
   }
   if(tgts.some(t=>t.p?(t.p.gb&&(t.p.gb.gbTitle||t.p.gb.gbPts)):(t.r.gb.gbTitle||t.r.gb.gbPts)) && !confirm("Existing data found. Overwrite?")) return;
   tgts.forEach(t=>{ const c=t.l.split('\t'), tVal=c[0]?c[0].replace(/[\r\n]+/g,'').replace(/^[\.\s]+/,'').trim():'', pVal=c[1]?c[1].replace(/[^\d.-]/g,''):''; if(t.p){if(!t.p.gb)t.p.gb={gbTitle:'',gbPts:''}; t.p.gb.gbTitle=tVal; t.p.gb.gbPts=pVal;}else{t.r.gb.gbTitle=tVal; t.r.gb.gbPts=pVal;} });
-  toggleGBPaste(); renderGradebuilder(); const over=lines.length-tgts.length;
+  toggleGBPaste(); renderSection('gb'); const over=lines.length-tgts.length;
   if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast('Gradebuilder data pasted.','success');
 }
 
 function applyAKPaste() {
-  const text=document.getElementById('ak-paste-input').value; if(!text.trim()) return toggleAKPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('ak-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
-  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){ if(APP_STATE[i].cs.title){ const tRaw=lines[li++].split('\t')[0]||'', pRaw=lines[li]?(lines[li].split('\t')[1]||''):''; tgts.push({r:APP_STATE[i],tRaw,pRaw}); } }
-  if(tgts.some(t=>t.r.ak.akTitle||t.r.ak.akPts) && !confirm("Existing data found. Overwrite?")) return;
-  tgts.forEach(t=>{ t.r.ak.akTitle=t.tRaw.replace(/\.{2,}\s*\d+\s*$/,'').replace(/\s*\d+\s*$/,'').trim(); t.r.ak.akPts=t.pRaw.replace(/[^\d.-]/g,''); });
-  toggleAKPaste(); renderAnswerKeys(); const over=lines.length-tgts.length;
-  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast('Answer Keys TOC pasted.','success');
+  _applyPaste('ak', toggleAKPaste,
+    (r, c) => {
+      const tRaw = c[0] || '', pRaw = c[1] || '';
+      r.ak.akTitle = tRaw.replace(/\.{2,}\s*\d+\s*$/,'').replace(/\s*\d+\s*$/,'').trim();
+      r.ak.akPts   = pRaw.replace(/[^\d.-]/g,'');
+    },
+    r => r.ak.akTitle || r.ak.akPts,
+    'Answer Keys TOC pasted.'
+  );
 }
 
 function applyIPPPaste() {
-  const text=document.getElementById('ipp-paste-input').value, tType=document.getElementById('ipp-paste-type').value;
-  if(!text.trim()) return toggleIPPPaste();
-  const lines=text.split(/\r?\n/).filter(l=>l.trim()); let st=parseInt(document.getElementById('ipp-paste-start').value)-1; if(isNaN(st)||st<0)st=0;
-  let tgts=[], li=0; for(let i=st; i<APP_STATE.length&&li<lines.length; i++){ if(APP_STATE[i].cs.title) tgts.push({r:APP_STATE[i],l:lines[li++]}); }
-  if(tgts.some(t=>tType==='GS'?(t.r.ipp.ippGsTitle||t.r.ipp.ippGsTime):(t.r.ipp.ippFlTitle||t.r.ipp.ippFlTime)) && !confirm(`Existing ${tType} data found. Overwrite?`)) return;
-  tgts.forEach(t=>{ const c=t.l.split('\t'), title=c[0]?c[0].replace(/[\r\n]+/g,'').trim():'', time=c[2]?c[2].replace(/[^\d.-]/g,''):''; if(tType==='GS'){t.r.ipp.ippGsTitle=title; t.r.ipp.ippGsTime=time;}else{t.r.ipp.ippFlTitle=title; t.r.ipp.ippFlTime=time;} });
-  toggleIPPPaste(); renderIPP(); const over=lines.length-tgts.length;
-  if(over>0) showToast(`Pasted ${tgts.length} rows. ${over} skipped (no room).`,'warn'); else showToast(`IPP ${tType} data pasted.`,'success');
+  const tType = document.getElementById('ipp-paste-type').value;
+  _applyPaste('ipp', toggleIPPPaste,
+    (r, c) => {
+      const title = c[0] ? c[0].replace(/[\r\n]+/g,'').trim() : '';
+      const time  = c[2] ? c[2].replace(/[^\d.-]/g,'') : '';
+      if (tType === 'GS') { r.ipp.ippGsTitle = title; r.ipp.ippGsTime = time; }
+      else                { r.ipp.ippFlTitle = title; r.ipp.ippFlTime = time; }
+    },
+    r => tType === 'GS' ? (r.ipp.ippGsTitle || r.ipp.ippGsTime) : (r.ipp.ippFlTitle || r.ipp.ippFlTime),
+    `IPP ${tType} data pasted.`
+  );
 }
 
 // ── TABLE FILTER ──────────────────────────────────────────────────────────────
@@ -1746,6 +1782,16 @@ document.getElementById('main').addEventListener('input', e => {
     updateRowCalculations(i);refreshSummary();return;
   }
 
+  // IPP prefix — update hint div surgically (no re-render = no focus loss)
+  if(tab==='ipp'&&field==='ippPrefix'){
+    APP_STATE[i].ipp.ippPrefix = val;
+    const hintEl = document.getElementById(`ipp-hint-${i}`);
+    if (hintEl) hintEl.innerHTML = val ? '&#x21B3; ' + val + (APP_STATE[i].cs.title||'') : '';
+    updateRowCalculations(i);
+    refreshSummary();
+    return;
+  }
+
   // Standard
   if(tab&&field){
     let v=val;
@@ -1769,8 +1815,7 @@ document.getElementById('main').addEventListener('input', e => {
       updateRowClasses(i);
 
       if (titleStateChanged) {
-          renderChecklist(true); renderDivs(true); renderGradebuilder(true);
-          renderAnswerKeys(true); renderIPP(true); renderPaceCharts(true);
+          for (const sec of Object.keys(SEC_CONFIG)) renderSection(sec, true);
           APP_STATE.forEach((r, idx) => { if (r.cs.title) updateRowCalculations(idx); });
       } else {
           syncRowStaticData(i);
