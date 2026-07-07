@@ -814,7 +814,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.38</span>
+                        Course Explorer Tool <span class="version-pill">v7.42</span>
                     </div>
                 </div>
             </div>
@@ -3474,13 +3474,16 @@ async function runIndexingAndShowUI(wasRefreshed) {
         } catch (e) {}
 
         // 1. Add terms that were found in the content
-        for (const [id, locSet] of Object.entries(foundGlossaryIds)) {
+        for (const [id, locMap] of Object.entries(foundGlossaryIds)) {
             const data = rawGlossaryMap[id.toString()];
             courseGlossary.push({
                 id,
                 title:      data ? (data.term || data.title)  : `Glossary Term ${id}`,
                 definition: data ? data.definition             : "<em>Definition not found in course glossary data.</em>",
-                locations:  Array.from(locSet).sort()
+                // Sort numerically, then append the speaker icon to the string if audio is present
+                locations:  Array.from(locMap.entries())
+                                .sort((a, b) => a[0].localeCompare(b[0]))
+                                .map(([lId, hasAud]) => hasAud ? `${lId} 🔊` : lId)
             });
         }
 
@@ -3736,28 +3739,55 @@ function determineInteractiveType(rawJsonString) {
 
 function extractGlossaryIds(text, locId) {
     if (!text) return;
-    const elementRegex = /<element\b([^>]*)>/gi;
+    
+    // Helper to check for nearby audio (HTML or bracket format)
+    const checkAudio = (index) => {
+        const windowSize = 200; // Checks 200 characters before and after the glossary tag
+        const start = Math.max(0, index - windowSize);
+        const end = Math.min(text.length, index + windowSize);
+        const context = text.substring(start, end);
+        return /<element[^>]+data-type=\\?["']audio\\?["'][^>]*>|\[\[\s*audio\b[^\]]*\]\]/i.test(context);
+    };
+
+    // Helper to log the glossary ID, its audio status, and the term name
+    const addGlossaryHit = (id, index, termName) => {
+        if (!foundGlossaryIds[id]) foundGlossaryIds[id] = new Map();
+        const hasAudio = checkAudio(index);
+        
+        const current = foundGlossaryIds[id].get(locId) || { hasAudio: false, termName: termName };
+        foundGlossaryIds[id].set(locId, { 
+            hasAudio: current.hasAudio || hasAudio, 
+            // Keep the cleanest term name we can find as a fallback
+            termName: termName ? termName.trim() : current.termName 
+        });
+    };
+
+    // 1. Existing HTML Element Scanner (Now captures inner text!)
+    const elementRegex = /<element\b([^>]*)>(?:(.*?)<\/element>)?/gi;
     let match;
     while ((match = elementRegex.exec(text)) !== null) {
         const attrs = match[1];
+        const innerText = match[2] ? match[2].replace(/<[^>]+>/g, '') : ""; // strip nested tags just in case
         if (!/data-type=\\?["']glossary\\?["']/i.test(attrs)) continue;
         const idMatch = attrs.match(/data-id=\\?["'](\d+)\\?["']/i);
-        if (idMatch?.[1]) {
-            const id = idMatch[1];
-            if (!foundGlossaryIds[id]) foundGlossaryIds[id] = new Set();
-            foundGlossaryIds[id].add(locId);
-        }
+        if (idMatch?.[1]) addGlossaryHit(idMatch[1], match.index, innerText);
+    }
+
+    // 2. Bracket Scanner: [[ glossary | 21776668 | holiness ]]
+    const bracketRegex = /\[\[\s*glossary\s*\|\s*(\d+)\s*\|\s*([^\]]+?)\s*\]\]/gi;
+    while ((match = bracketRegex.exec(text)) !== null) {
+        addGlossaryHit(match[1], match.index, match[2]);
     }
 }
 
 function extractMp3Files(text, locationId, breadcrumb) {
     const found = [];
     if (!text) return found;
-    const mp3Regex = /(?:data-src|src|data-cbdisplay)=\\?["']([^"']+\.mp3)\\?["']/gi;
-    const seen     = new Set();
-    let match;
-    while ((match = mp3Regex.exec(text)) !== null) {
-        const fullPath = match[1];
+    const mp3Regex = /(?:data-src|src|data-cbdisplay)=\\?["']([^"']+\.mp3)\\?["']|\[\[\s*audio[^\]]*?([^|\s\]"']+\.mp3)[^\]]*?\]\]/gi;
+        const seen     = new Set();
+        let match;
+        while ((match = mp3Regex.exec(text)) !== null) {
+            const fullPath = match[1] || match[2];
         if (seen.has(fullPath)) continue;
         seen.add(fullPath);
         const filename = fullPath.split('/').pop().replace(/\.mp3$/i, '');
@@ -6386,6 +6416,8 @@ ${escapeHtml(mediaObj.rawJson)}</pre>`;
         modalBody.innerHTML = bodyHtml;
 
     } else if (type === 'glossary') {
+        const speakerSvg = `<svg viewBox="0 0 24 24" style="width:1.1em; height:1.1em; vertical-align:text-bottom; color:var(--primary); margin-left:4px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+
         modalHeader.innerHTML = `
             <h3 style="margin:0 0 5px 0; font-size:1.25rem; color:var(--primary);">
                 ${escapeHtml(mediaObj.title)}
@@ -6393,8 +6425,12 @@ ${escapeHtml(mediaObj.rawJson)}</pre>`;
             <div style="font-size:0.85rem; color:var(--text-light); display:flex; align-items:center; gap:6px;">
                 Located at:
                 ${mediaObj.locations && mediaObj.locations.length > 0 
-                    ? mediaObj.locations.map(l => `<span class="id-number"># ${l}</span>`).join('')
-                    : `<span class="id-number" style="color:#842029; ">Present In Glossary: Tooltip Not Applied</span>`
+                    ? mediaObj.locations.map(l => {
+                        const hasAudio = l.includes('🔊');
+                        const cleanLoc = l.replace('🔊', '').trim();
+                        return `<span class="id-number"># ${cleanLoc}${hasAudio ? speakerSvg : ''}</span>`;
+                    }).join('')
+                    : `<span class="id-number" style="color:#842029; ">Present In Glossary only</span>`
                 }
             </div>`;
         modalBody.innerHTML =
@@ -6611,11 +6647,17 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
             itemDiv.className    = `glossary-item ${isDup ? 'duplicate-term' : ''}`;
             currentDisplayedMedia.push({ item: g, type: 'glossary' });
             itemDiv.dataset.index = currentDisplayedMedia.length - 1;
+            const speakerSvg = `<svg viewBox="0 0 24 24" style="width:1.1em; height:1.1em; vertical-align:text-bottom; color:var(--primary); margin-left:4px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+
             itemDiv.innerHTML = `
                 <div class="glossary-term">${escapeHtml(g.title)}</div>
                 <div class="glossary-locs">
                     ${g.locations.length > 0 
-                        ? g.locations.map(loc => `<span class="glossary-loc-badge" title="Location">${loc}</span>`).join('')
+                        ? g.locations.map(loc => {
+                            const hasAudio = loc.includes('🔊');
+                            const cleanLoc = loc.replace('🔊', '').trim();
+                            return `<span class="glossary-loc-badge" title="Location">${cleanLoc}${hasAudio ? speakerSvg : ''}</span>`;
+                        }).join('')
                         : `<span class="glossary-loc-badge" style="background:#ffe3e6; color:#842029;">Glossary Only</span>`
                     }
                 </div>`;
