@@ -814,7 +814,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.42</span>
+                        Course Explorer Tool <span class="version-pill">v7.43</span>
                     </div>
                 </div>
             </div>
@@ -3934,7 +3934,9 @@ async function processPage(filename, breadcrumb, locationId, pageRef) {
             });
         }
 
-        extractGlossaryIds(contentText, locationId);
+        // Isolate the actual page content (rows) to ignore the hidden 'info' and 'standards' metadata
+            const glossarySearchText = json.rows ? JSON.stringify(json.rows) : contentText;
+            extractGlossaryIds(glossarySearchText, locationId);
         courseVideos.push(...findMedia(json, locationId, breadcrumb, 'video'));
         courseAudio.push(...findMedia(json, locationId, breadcrumb, 'audio'));
         courseAudio.push(...extractMp3Files(contentText, locationId, breadcrumb));
