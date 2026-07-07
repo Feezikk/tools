@@ -814,7 +814,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.43</span>
+                        Course Explorer Tool <span class="version-pill">v7.45</span>
                     </div>
                 </div>
             </div>
@@ -3473,17 +3473,29 @@ async function runIndexingAndShowUI(wasRefreshed) {
             );
         } catch (e) {}
 
-        // 1. Add terms that were found in the content
+       // 1. Add terms that were found in the content
         for (const [id, locMap] of Object.entries(foundGlossaryIds)) {
             const data = rawGlossaryMap[id.toString()];
+            
+            let fallbackName = `Glossary Term ${id}`;
+            let termAudioPath = null;
+            const locationsArray = [];
+            
+            const sortedLocs = Array.from(locMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+            
+            for (const [lId, locData] of sortedLocs) {
+                // Grab the first audio path we find for this term
+                if (!termAudioPath && locData.audioPath) termAudioPath = locData.audioPath;
+                if (fallbackName === `Glossary Term ${id}` && locData.termName) fallbackName = locData.termName;
+                locationsArray.push(locData.audioPath ? `${lId} 🔊` : lId);
+            }
+
             courseGlossary.push({
                 id,
-                title:      data ? (data.term || data.title)  : `Glossary Term ${id}`,
+                title:      data ? (data.term || data.title)  : fallbackName,
                 definition: data ? data.definition             : "<em>Definition not found in course glossary data.</em>",
-                // Sort numerically, then append the speaker icon to the string if audio is present
-                locations:  Array.from(locMap.entries())
-                                .sort((a, b) => a[0].localeCompare(b[0]))
-                                .map(([lId, hasAud]) => hasAud ? `${lId} 🔊` : lId)
+                locations:  locationsArray,
+                audioPath:  termAudioPath
             });
         }
 
@@ -3740,40 +3752,43 @@ function determineInteractiveType(rawJsonString) {
 function extractGlossaryIds(text, locId) {
     if (!text) return;
     
-    // Helper to check for nearby audio (HTML or bracket format)
+    // Helper to check for nearby audio and extract the path
     const checkAudio = (index) => {
-        const windowSize = 200; // Checks 200 characters before and after the glossary tag
+        const windowSize = 200;
         const start = Math.max(0, index - windowSize);
         const end = Math.min(text.length, index + windowSize);
         const context = text.substring(start, end);
-        return /<element[^>]+data-type=\\?["']audio\\?["'][^>]*>|\[\[\s*audio\b[^\]]*\]\]/i.test(context);
+        
+        let m = /<element[^>]+data-type=\\?["']audio\\?["'][^>]*?(?:data-src|src|data-cbdisplay)=\\?["']([^"']+\.mp3)\\?["']/i.exec(context);
+        if (m) return m[1];
+        
+        m = /\[\[\s*audio\b[^\]]*?([^|\s\]"']+\.mp3)[^\]]*?\]\]/i.exec(context);
+        if (m) return m[1];
+        
+        return null;
     };
 
-    // Helper to log the glossary ID, its audio status, and the term name
     const addGlossaryHit = (id, index, termName) => {
         if (!foundGlossaryIds[id]) foundGlossaryIds[id] = new Map();
-        const hasAudio = checkAudio(index);
+        const audioPath = checkAudio(index);
         
-        const current = foundGlossaryIds[id].get(locId) || { hasAudio: false, termName: termName };
+        const current = foundGlossaryIds[id].get(locId) || { audioPath: null, termName: termName };
         foundGlossaryIds[id].set(locId, { 
-            hasAudio: current.hasAudio || hasAudio, 
-            // Keep the cleanest term name we can find as a fallback
+            audioPath: current.audioPath || audioPath, 
             termName: termName ? termName.trim() : current.termName 
         });
     };
 
-    // 1. Existing HTML Element Scanner (Now captures inner text!)
     const elementRegex = /<element\b([^>]*)>(?:(.*?)<\/element>)?/gi;
     let match;
     while ((match = elementRegex.exec(text)) !== null) {
         const attrs = match[1];
-        const innerText = match[2] ? match[2].replace(/<[^>]+>/g, '') : ""; // strip nested tags just in case
+        const innerText = match[2] ? match[2].replace(/<[^>]+>/g, '') : "";
         if (!/data-type=\\?["']glossary\\?["']/i.test(attrs)) continue;
         const idMatch = attrs.match(/data-id=\\?["'](\d+)\\?["']/i);
         if (idMatch?.[1]) addGlossaryHit(idMatch[1], match.index, innerText);
     }
 
-    // 2. Bracket Scanner: [[ glossary | 21776668 | holiness ]]
     const bracketRegex = /\[\[\s*glossary\s*\|\s*(\d+)\s*\|\s*([^\]]+?)\s*\]\]/gi;
     while ((match = bracketRegex.exec(text)) !== null) {
         addGlossaryHit(match[1], match.index, match[2]);
@@ -5925,14 +5940,18 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                 currentDisplayedMedia.push({ item: vid, type: 'video' });
                 const idx = currentDisplayedMedia.length - 1;
                 
+                const isMissing = isMissingId(vid.entryId);
+                const displayId = isMissing ? '<span style="color:#dc3545; font-weight:bold;">Blank</span>' : vid.entryId;
+                const copyBtn = isMissing ? '' : `<button class="copy-btn flex-center" data-id="${vid.entryId}" title="Copy ID">${SVGS.clipboard}</button>`;
+
                 tableRows += `
                     <tr data-index="${idx}">
                         <td style="font-family:var(--code-font); color:var(--id-color); font-size:0.8rem;">${vid.locationId}</td>
                         <td style="font-weight:500; white-space:normal; min-width:200px;">${escapeHtml(vid.title)}</td>
                         <td style="font-family:var(--code-font); font-size:0.8rem;">
                             <div style="display:flex; align-items:center; gap:6px;">
-                                ${vid.entryId}
-                                <button class="copy-btn flex-center" data-id="${vid.entryId}" title="Copy ID">${SVGS.clipboard}</button>
+                                ${displayId}
+                                ${copyBtn}
                             </div>
                         </td>
                         <td><span class="type-badge" style="margin:0;">${vid.kalturaType}</span></td>
@@ -5958,6 +5977,10 @@ window.renderMediaDashboard = function renderMediaDashboard() {
             filteredVideos.forEach(vid => {
                 const hasTranscript = vid.textVersion?.replace(/<[^>]*>?/gm, '').trim();
                 currentDisplayedMedia.push({ item: vid, type: 'video' });
+                const isMissing = isMissingId(vid.entryId);
+                const displayId = isMissing ? '<span style="color:#dc3545; font-weight:bold;">Blank</span>' : vid.entryId;
+                const copyBtn = isMissing ? '' : ` <button class="copy-btn flex-center" data-id="${vid.entryId}" title="Copy ID">${SVGS.clipboard}</button>`;
+
                 const card = document.createElement('div');
                 card.className     = 'media-card';
                 card.dataset.index = currentDisplayedMedia.length - 1;
@@ -5970,7 +5993,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                         ${escapeHtml(vid.title)} ${hasTranscript ? `<span title="Transcript Available" style="color:var(--primary); cursor:help;">${SVGS.fileText}</span>` : ''}
                     </h3>
                     <div class="media-card-footer">
-                        <span class="kaltura-badge">ID: ${vid.entryId} <button class="copy-btn flex-center" data-id="${vid.entryId}" title="Copy ID">${SVGS.clipboard}</button></span>
+                        <span class="kaltura-badge">ID: ${displayId}${copyBtn}</span>
                         <span class="type-badge">Type: ${vid.kalturaType}</span>
                     </div>`;
                 frag.appendChild(card);
@@ -5994,8 +6017,9 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                 const idx = currentDisplayedMedia.length - 1;
                 
                let displayLoc  = aud.locationId;
-                let idOrSource = aud.entryId;
-                let copyBtnHtml = `<button class="copy-btn flex-center" data-id="${aud.entryId}" title="Copy ID">${SVGS.clipboard}</button>`;
+                const isMissing = isMissingId(aud.entryId);
+                let idOrSource = isMissing ? '<span style="color:#dc3545; font-weight:bold;">Blank</span>' : aud.entryId;
+                let copyBtnHtml = isMissing ? '' : `<button class="copy-btn flex-center" data-id="${aud.entryId}" title="Copy ID">${SVGS.clipboard}</button>`;
                 
                 if (aud.kalturaType === 'mp3') {
                     displayLoc  = displayLoc.replace(/\.INT-\d+/i, '');
@@ -6042,7 +6066,10 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                     displayLoc  = displayLoc.replace(/\.INT-\d+/i, '');
                     idBadgeHtml = `<span class="kaltura-badge" style="background:var(--badge-neutral); color:var(--text); cursor:default;">Source: In Course</span>`;
                 } else {
-                    idBadgeHtml = `<span class="kaltura-badge">ID: ${aud.entryId} <button class="copy-btn flex-center" data-id="${aud.entryId}" title="Copy ID">${SVGS.clipboard}</button></span>`;
+                    const isMissing = isMissingId(aud.entryId);
+                    const displayId = isMissing ? '<span style="color:#dc3545; font-weight:bold;">Blank</span>' : aud.entryId;
+                    const copyBtn = isMissing ? '' : ` <button class="copy-btn flex-center" data-id="${aud.entryId}" title="Copy ID">${SVGS.clipboard}</button>`;
+                    idBadgeHtml = `<span class="kaltura-badge">ID: ${displayId}${copyBtn}</span>`;
                 }
                 const card = document.createElement('div');
                 card.className     = 'media-card';
@@ -6432,11 +6459,32 @@ ${escapeHtml(mediaObj.rawJson)}</pre>`;
                         const cleanLoc = l.replace('🔊', '').trim();
                         return `<span class="id-number"># ${cleanLoc}${hasAudio ? speakerSvg : ''}</span>`;
                     }).join('')
-                    : `<span class="id-number" style="color:#842029; ">Present In Glossary only</span>`
+                    : `<span class="id-number" style="color:#842029; ">Present In Glossary: Tooltip Not Applied</span>`
                 }
             </div>`;
-        modalBody.innerHTML =
-            `<div style="font-size:1.05rem; line-height:1.6; color:var(--text);">
+            
+        let audioPlayerHtml = '';
+        if (mediaObj.audioPath) {
+            const cleanPath = mediaObj.audioPath.replace(/^\/+/, '');
+            if (fileMap.has(cleanPath)) {
+                // Reuse the global audio blob URL so it gets cleared safely on modal close
+                currentAudioBlobUrl = URL.createObjectURL(fileMap.get(cleanPath));
+                audioPlayerHtml = `
+                    <div style="margin-bottom: 20px; padding: 10px 15px; background: #f8f9fa; border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 0.85rem; font-weight: bold; color: var(--primary);">Audio:</span>
+                        <audio controls src="${currentAudioBlobUrl}" style="height: 35px; flex-grow: 1; outline: none;"></audio>
+                    </div>`;
+            } else {
+                audioPlayerHtml = `
+                    <div style="padding:15px; background:#fff3cd; color:#856404; border:1px solid #ffeeba; border-radius:6px; margin-bottom:20px; font-size:0.9rem;">
+                        ${SVGS.alert} Audio file (<strong>${mediaObj.audioPath}</strong>) not found in the loaded folder.
+                    </div>`;
+            }
+        }
+
+        modalBody.innerHTML = `
+            ${audioPlayerHtml}
+            <div style="font-size:1.05rem; line-height:1.6; color:var(--text);">
                  ${mediaObj.definition}
              </div>`;
     }
