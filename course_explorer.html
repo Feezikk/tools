@@ -814,7 +814,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.45</span>
+                        Course Explorer Tool <span class="version-pill">v7.46</span>
                     </div>
                 </div>
             </div>
@@ -1539,6 +1539,7 @@ let isGlobalDarkImageBg               = false;
 let activeGlossaryLetters    = new Set();
 let showOnlyDuplicates       = false;
 let showOnlyUnused           = false;
+let glossaryAudioFilter      = 'all'; // 'all', 'with', 'without'
 
 let activeStandardGroups     = new Set();
 
@@ -3376,6 +3377,9 @@ async function runIndexingAndShowUI(wasRefreshed) {
         currentSearchResults     = [];
         currentStdsSearchResults = [];
         activeGlossaryLetters.clear();
+        showOnlyDuplicates = false;
+        showOnlyUnused = false;
+        glossaryAudioFilter = 'all';
         extractedCourseTitle = "";
         fileNameIndex.clear();
         folderIndex.clear();
@@ -6561,6 +6565,11 @@ window.toggleUnusedFilter = function toggleUnusedFilter() {
     renderGlossaryList(document.getElementById('glossary-search')?.value || '');
 };
 
+window.setGlossaryAudioFilter = function setGlossaryAudioFilter(val) {
+    glossaryAudioFilter = val;
+    renderGlossaryList(document.getElementById('glossary-search')?.value || '');
+};
+
 window.applyGlossaryFilters = function applyGlossaryFilters() {
     const allBtn = document.getElementById('btn-az-All');
     if (allBtn) {
@@ -6604,6 +6613,9 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
         if (showOnlyUnused && g.locations.length > 0) return false;
         if (showOnlyDuplicates && g.locations.length <= 1) return false;
         
+        if (glossaryAudioFilter === 'with' && !g.audioPath) return false;
+        if (glossaryAudioFilter === 'without' && g.audioPath) return false;
+        
         // If module filters are active, bypass them ONLY IF we are specifically looking for unused terms
         if (activeMediaModules.size > 0 && !showOnlyUnused &&
             !g.locations.some(loc => activeMediaModules.has(loc.split('.')[0]))) return false;
@@ -6630,6 +6642,17 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
          <div class="divider" style="margin:0 4px; height:auto;"></div>`;
                  
     let specialFiltersHtml = '';
+    
+    const hasAnyAudio = courseGlossary.some(g => g.audioPath);
+    if (hasAnyAudio) {
+        specialFiltersHtml += `
+            <div class="segmented-control" style="margin-right: 10px; align-items: center;">
+                <label><input type="radio" name="gloss-audio-filter" value="all" onchange="setGlossaryAudioFilter('all')" ${glossaryAudioFilter === 'all' ? 'checked' : ''}><span style="padding: 4px 12px;">All</span></label>
+                <label><input type="radio" name="gloss-audio-filter" value="with" onchange="setGlossaryAudioFilter('with')" ${glossaryAudioFilter === 'with' ? 'checked' : ''}><span style="padding: 4px 12px;">With Audio</span></label>
+                <label><input type="radio" name="gloss-audio-filter" value="without" onchange="setGlossaryAudioFilter('without')" ${glossaryAudioFilter === 'without' ? 'checked' : ''}><span style="padding: 4px 12px;">Without Audio</span></label>
+            </div>
+        `;
+    }
     
     if (hasDuplicates || showOnlyDuplicates) {
         specialFiltersHtml += `<button class="az-btn duplicate-btn ${showOnlyDuplicates ? 'active' : ''}"
