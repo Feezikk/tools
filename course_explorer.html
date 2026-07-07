@@ -5752,7 +5752,7 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                         </button>
                         <button class="media-tab-btn ${currentMediaTab === 'glossary'     ? 'active' : ''}" onclick="setMediaTab('glossary')">
                             ${SVGS.glossary} Glossary
-                            <span style="font-size:0.8em; opacity:0.7;">(${filteredGlossary.length})</span>
+                            <span id="glossary-tab-count" style="font-size:0.8em; opacity:0.7;">(${filteredGlossary.length})</span>
                         </button>
                     </div>
                     
@@ -6634,6 +6634,12 @@ window.renderGlossaryList = function renderGlossaryList(query = '') {
         g.locations.length > 1
     );
     const hasUnused = courseGlossary.some(g => g.locations.length === 0);
+
+    // Update the tab count dynamically based on the current active filters
+    const tabCountEl = document.getElementById('glossary-tab-count');
+    if (tabCountEl) {
+        tabCountEl.innerText = `(${filteredGlossary.length})`;
+    }
 
     let azHtml =
         `<button id="btn-az-All"
