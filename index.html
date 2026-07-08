@@ -42,7 +42,6 @@
       --mtn-back:   #DCA788;
       --mtn-front:  #8C6A5D;
       --sky-orb:    var(--sun);
-      --orb-y:      0px;
       --cloud-fill: rgba(255, 255, 255, 0.8);
 
       --font-display: 'Playfair Display', serif;
@@ -63,12 +62,7 @@
       --mtn-back:  #646A87;
       --mtn-front: #4B516C;
       --sky-orb:   #FFAD7A; /* Peachy early sun */
-      --orb-y:     5px;     /* Sun just peeking over the mountains */
       --cloud-fill: rgba(255, 219, 186, 0.5); 
-      
-      /* Hide the moon cutout */
-      --cutout-x:  20px;
-      --cutout-y:  -20px;
     }  
 	  
     [data-theme="afternoon"] {
@@ -81,10 +75,7 @@
       --mtn-back:  #A3B899;
       --mtn-front: #6B7D64;
       --sky-orb:   var(--sun);
-      --orb-y:     -14px; 
       --cloud-fill: rgba(255, 255, 255, 0.9);
-      --cutout-x:  20px;
-      --cutout-y:  -20px;
     }
 
     [data-theme="sunset"] {
@@ -97,10 +88,7 @@
       --mtn-back:  #D28F79;
       --mtn-front: #5C3D31;
       --sky-orb:   #FF9F1C;
-      --orb-y:     14px; 
       --cloud-fill: rgba(255, 209, 102, 0.6); 
-      --cutout-x:  20px;
-      --cutout-y:  -20px;
     }
 
     [data-theme="night"] {
@@ -114,12 +102,7 @@
       --mtn-back:  #4D577A; 
       --mtn-front: #353C57; 
       --sky-orb:   #F3EAD8;
-      --orb-y:     -10px; 
       --cloud-fill: rgba(142, 151, 184, 0.4); 
-      
-      /* Crescent Moon Variables */
-      --cutout-x:  0px;
-      --cutout-y:  0px;
     }
 
     ::selection {
@@ -295,13 +278,15 @@
 
     .celestial-orb {
       fill: var(--sky-orb);
-      transform: translateY(var(--orb-y));
+      /* JavaScript calculates and sets these translation variables */
+      transform: translate(var(--orb-x, 0px), var(--orb-y, 0px));
       transition: fill 1.5s ease, transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .moon-cutout {
-      transform-origin: 165px 25px;
-      transform: translate(var(--cutout-x, 20px), var(--cutout-y, -20px));
+      transform-origin: 160px 30px;
+      /* Dynamic translation tied to the orb + the phase mask shift */
+      transform: translate(calc(var(--orb-x, 0px) + var(--cutout-x, 20px)), calc(var(--orb-y, 0px) + var(--cutout-y, -20px)));
       transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -372,16 +357,6 @@
       transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color 1.5s ease, color 1.5s ease;
       animation: fadeUp .55s ease both;
     }
-
-    /* Staggered load animation */
-    .tool-card:nth-child(1) { animation-delay: .30s; }
-    .tool-card:nth-child(2) { animation-delay: .38s; }
-    .tool-card:nth-child(3) { animation-delay: .46s; }
-    .tool-card:nth-child(4) { animation-delay: .54s; }
-    .tool-card:nth-child(5) { animation-delay: .62s; }
-	  .tool-card:nth-child(6) { animation-delay: .70s; } 
-	  .tool-card:nth-child(7) { animation-delay: .78s; }
-	  .tool-card:nth-child(8) { animation-delay: .83s; }
 
     .tool-card::before {
       content: '';
@@ -463,6 +438,46 @@
       transform: translateX(6px);
     }
 	  
+	/* ─── MULTI-ACTION CARD BUTTONS ──────────────────────────────── */
+    .card-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: auto; /* Pushes the buttons to the bottom of the card */
+      position: relative;
+      z-index: 1;
+    }
+
+    .action-link {
+      text-decoration: none;
+      color: var(--ink);
+      background: var(--mist);
+      padding: 10px 16px;
+      border-radius: 99px; /* Pill shape */
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1; /* Makes buttons equal width */
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .action-link span {
+      transition: transform 0.3s cubic-bezier(0.5, -0.5, 0.2, 1.5);
+    }
+
+    .action-link:hover,
+    .action-link:focus-visible {
+      background-color: var(--card-accent);
+      color: #fff;
+    }
+
+    .action-link:hover span,
+    .action-link:focus-visible span {
+      transform: translateX(4px);
+    }  
+	  
 	/* ─── MINI CARDS (LESSER IMPORTANCE) ─────────────────────────── */
     .mini-cards-column {
       display: flex;
@@ -529,7 +544,7 @@
       min-height: 160px;
       border-radius: var(--radius);
       padding: 28px;
-      animation: fadeUp .55s .78s ease both;
+      animation: fadeUp .55s ease both; /* Adjusted to let JS handle the delay */
       transition: border-color 1.5s ease, color 1.5s ease;
     }
     .card-placeholder .plus { font-size: 2rem; line-height: 1; }
@@ -761,7 +776,7 @@
 		  </clipPath>
           <mask id="moon-mask">
             <rect x="0" y="0" width="320" height="60" fill="white" />
-            <circle class="moon-cutout" cx="165" cy="25" r="10" fill="black" />
+            <circle class="moon-cutout" cx="160" cy="30" r="10" fill="black" />
           </mask>
 		</defs>
 
@@ -814,7 +829,7 @@
         <div class="card-arrow">→</div>
       </a>
 		
-		<a class="tool-card" href="course_colors.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #C882A4;">
+	  <a class="tool-card" href="course_colors.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #C882A4;">
         <div class="card-icon">🎨</div>
         <div class="card-content">
           <div class="card-name">Course Colors</div>
@@ -823,37 +838,24 @@
         <div class="card-arrow">→</div>
       </a>
 
-    
-		<div class="mini-cards-column">
-        <a class="tool-card mini" href="extract_content.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #81B29A; animation-delay: .70s;">
-          <div class="card-content">
-            <div class="card-name">Content Extractor (CB)</div>
-            <div class="card-desc">Chew through CB course material and gracefully extract all the course content.</div>
-          </div>
-          <div class="card-arrow">→</div>
-        </a>
-
-        <a class="tool-card mini" href="extract_4_0_content.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #FFD166; animation-delay: .78s;">
-          <div class="card-content">
-           <div class="card-name">Content Extractor (4.0)</div>
-            <div class="card-desc">Munch through 4.0 courses and quicly extract all the course content.</div>
-          </div>
-          <div class="card-arrow">→</div>
-        </a>
-      </div>
-		
-	<!--	
-		<a class="tool-card" href="extract_content.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #E07A5F;">
-			
+     <!-- Multi-Action Card -->
+      <div class="tool-card" style="--card-accent: #E07A5F;">
         <div class="card-icon">📄</div>
         <div class="card-content">
           <div class="card-name">Content Extractor</div>
-          <div class="card-desc">Chew through your course material and gracefully extract all the course content.</div>
+          <div class="card-desc">Chew through your course material and gracefully extract all the content. Select your pasture below.</div>
         </div>
-        <div class="card-arrow">→</div>
-      </a>-->
+        <div class="card-actions">
+          <a href="extract_content.html" target="_blank" rel="noopener noreferrer" class="action-link">
+            CB Version <span>→</span>
+          </a>
+          <a href="extract_4_0_content.html" target="_blank" rel="noopener noreferrer" class="action-link">
+            4.0 Version <span>→</span>
+          </a>
+        </div>
+      </div>
 		
-		 <a class="tool-card" href="assessment_checker.html" target="_blank"  rel="noopener noreferrer" style="--card-accent: #FFD166;">
+	  <a class="tool-card" href="assessment_checker.html" target="_blank"  rel="noopener noreferrer" style="--card-accent: #FFD166;">
         <div class="dev-badge">🚧 In Dev</div>
         <div class="card-icon">✅</div>
         <div class="card-content">
@@ -863,10 +865,8 @@
         <div class="card-arrow">→</div>
       </a>
 		
-		
-		
-     <div class="mini-cards-column">
-        <a class="tool-card mini" href="extract_objectives.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #81B29A; animation-delay: .70s;">
+      <div class="mini-cards-column">
+        <a class="tool-card mini" href="extract_objectives.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #81B29A;">
           <div class="card-content">
             <div class="card-name">Extract Objectives</div>
             <div class="card-desc">Pull out all the juicy objectives from a course without breaking a sweat.</div>
@@ -874,7 +874,7 @@
           <div class="card-arrow">→</div>
         </a>
 
-        <a class="tool-card mini" href="site_mapper.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #FFD166; animation-delay: .78s;">
+        <a class="tool-card mini" href="site_mapper.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #FFD166;">
           <div class="card-content">
             <div class="card-name">Sitemap Mapper</div>
             <div class="card-desc">Map json file name to course page number.</div>
@@ -883,16 +883,16 @@
         </a>
       </div>
 		
-		<a class="tool-card" href="guided_notes_assist.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #3D9BE9;">
-  <div class="card-icon">📓</div>
-  <div class="card-content">
-    <div class="card-name">Guided Notes Assist</div>
-    <div class="card-desc">Keep your herd of documents orderly by generating tidy file names for your guided notes.</div>
-  </div>
-  <div class="card-arrow">→</div>
-</a>
+      <a class="tool-card" href="guided_notes_assist.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #3D9BE9;">
+        <div class="card-icon">📓</div>
+        <div class="card-content">
+          <div class="card-name">Guided Notes Assist</div>
+          <div class="card-desc">Keep your herd of documents orderly by generating tidy file names for your guided notes.</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
 
-      <div class="card-placeholder" style="animation-delay: .86s;">
+      <div class="card-placeholder">
         <span class="plus">＋</span>
         <p>More tools grazing<br>in the fields — coming soon.</p>
       </div>
@@ -975,33 +975,77 @@
   </footer>
 
   <script>
-   // --- 1. Theme Management (Auto & Manual) ---
-const themeToggle = document.getElementById('themeToggle');
-const root = document.documentElement;
-let timeCheckInterval;
+    // --- 1. Theme Management & Dynamic Sun/Moon (Auto & Manual) ---
+    const themeToggle = document.getElementById('themeToggle');
+    const root = document.documentElement;
+    let timeCheckInterval;
 
-/**
- * Robust, data-driven theme calculation.
- * The array is checked in order; it returns the first theme where the 
- * current hour is less than the 'upTo' value.
- */
-function calculateTimeTheme() {
-  const hour = new Date().getHours();
-  const themes = [
-      { upTo: 6,  name: 'night' },      // 00:00 - 05:59
-      { upTo: 9,  name: 'dawn' },       // 06:00 - 08:59
-      { upTo: 12, name: 'morning' },    // 09:00 - 11:59
-      { upTo: 17, name: 'afternoon' },  // 12:00 - 16:59
-      { upTo: 20, name: 'sunset' },     // 17:00 - 19:59
-      { upTo: 24, name: 'night' }       // 20:00 - 23:59
-    ];
-  
-  // .find() is efficient here as it stops as soon as it hits the first match
-  const match = themes.find(t => hour < t.upTo);
-  return match ? match.name : 'morning'; // Fallback to morning just in case
-}
+    function calculateTimeTheme() {
+      const hour = new Date().getHours();
+      const themes = [
+          { upTo: 6,  name: 'night' },      // 00:00 - 05:59
+          { upTo: 9,  name: 'dawn' },       // 06:00 - 08:59
+          { upTo: 12, name: 'morning' },    // 09:00 - 11:59
+          { upTo: 17, name: 'afternoon' },  // 12:00 - 16:59
+          { upTo: 20, name: 'sunset' },     // 17:00 - 19:59
+          { upTo: 24, name: 'night' }       // 20:00 - 23:59
+        ];
+      
+      const match = themes.find(t => hour < t.upTo);
+      return match ? match.name : 'morning';
+    }
 
-// Keep your applyTheme, startAutoTheme, and initTheme functions as they are...
+    // --- Dynamic Sun & Moon Trajectory & Phases ---
+    function updateCelestialPosition() {
+      const now = new Date();
+      const t = now.getHours() + (now.getMinutes() / 60);
+
+      // Check if the night theme is currently applied (either naturally or manually forced)
+      const isNightTheme = document.documentElement.getAttribute('data-theme') === 'night';
+
+      let theta;
+      let isActuallyNightTime = false;
+
+      if (t >= 6 && t < 18) {
+        // Day arc (6:00 AM to 5:59 PM)
+        theta = ((t - 6) / 12) * Math.PI;
+      } else {
+        // Night arc (6:00 PM to 5:59 AM)
+        isActuallyNightTime = true;
+        const tn = t < 6 ? t + 24 : t;
+        theta = ((tn - 18) / 12) * Math.PI;
+      }
+
+      // Calculate absolute SVG coordinates
+      const newX = 160 + (130 * Math.cos(theta));
+      const newY = 60 - (50 * Math.sin(theta));
+
+      const translateX = newX - 160;
+      const translateY = newY - 30;
+
+      document.documentElement.style.setProperty('--orb-x', `${translateX}px`);
+      document.documentElement.style.setProperty('--orb-y', `${translateY}px`);
+
+      // --- Moon Phase Calculation ---
+      if (isActuallyNightTime || isNightTheme) {
+        const knownNewMoon = 1704974220000; 
+        const lunarCycle = 29.53058867 * 24 * 60 * 60 * 1000;
+        const phase = ((now.getTime() - knownNewMoon) % lunarCycle) / lunarCycle;
+
+        let cutoutX;
+        if (phase < 0.5) {
+          cutoutX = phase * 2 * -22;
+        } else {
+          cutoutX = (1 - phase) * 2 * 22;
+        }
+
+        document.documentElement.style.setProperty('--cutout-x', `${cutoutX}px`);
+        document.documentElement.style.setProperty('--cutout-y', `-2px`);
+      } else {
+        document.documentElement.style.setProperty('--cutout-x', `20px`);
+        document.documentElement.style.setProperty('--cutout-y', `-20px`);
+      }
+    }
 
     function applyTheme(theme) {
       if (theme === 'morning') {
@@ -1010,11 +1054,9 @@ function calculateTimeTheme() {
         root.setAttribute('data-theme', theme);
       }
       
-      // Update the toggle button icon and accessibility label
       themeToggle.textContent = theme === 'night' ? '☀️' : '🌙';
       themeToggle.setAttribute('aria-label', theme === 'night' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
       
-      // Update the llama's tooltip message based on the theme
       const tooltip = document.querySelector('.mascot-tooltip');
       if (tooltip) {
         tooltip.textContent = theme === 'night' ? "Shh... I'm sleeping!" : "Give me a pet!";
@@ -1023,15 +1065,18 @@ function calculateTimeTheme() {
 
     function startAutoTheme() {
       applyTheme(calculateTimeTheme());
+      updateCelestialPosition();
       timeCheckInterval = setInterval(() => {
         applyTheme(calculateTimeTheme());
-      }, 600000); 
+        updateCelestialPosition();
+      }, 60000); 
     }
 
     function initTheme() {
       const savedPreference = localStorage.getItem('llama-theme-pref');
       if (savedPreference === 'night') {
         applyTheme('night');
+        updateCelestialPosition();
       } else {
         startAutoTheme();
       }
@@ -1046,6 +1091,7 @@ function calculateTimeTheme() {
         localStorage.setItem('llama-theme-pref', 'night');
         clearInterval(timeCheckInterval);
         applyTheme('night');
+        updateCelestialPosition();
       }
     });
 
@@ -1057,21 +1103,17 @@ function calculateTimeTheme() {
     document.addEventListener('mousemove', (e) => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       
-      // Store the coordinates from the event
       const clientX = e.clientX;
       const clientY = e.clientY;
 
-      // If an animation frame is not already requested, request one
       if (!isTicking) {
         window.requestAnimationFrame(() => {
-          // Calculate and apply the shift values right before the next paint
           const x = (clientX / window.innerWidth - 0.5) * 15;
           const y = (clientY / window.innerHeight - 0.5) * 15;
           
           document.body.style.setProperty('--mouse-x', `${-x}px`);
           document.body.style.setProperty('--mouse-y', `${-y}px`);
           
-          // Reset the flag so the next mouse move can request a new frame
           isTicking = false; 
         });
         
@@ -1079,7 +1121,22 @@ function calculateTimeTheme() {
       }
     });
 
-    // --- 3. Card Animation Fix ---
+    // --- 3. Card Animation Fix & Dynamic Delays ---
+    
+    // Assign dynamic animation delays to all cards
+    function setDynamicCardDelays() {
+      const cards = document.querySelectorAll('.tool-card, .card-placeholder');
+      let currentDelay = 0.30;
+      const delayStep = 0.08;
+      
+      cards.forEach(card => {
+        card.style.animationDelay = `${currentDelay.toFixed(2)}s`;
+        currentDelay += delayStep;
+      });
+    }
+    setDynamicCardDelays();
+
+    // Handle hover/focus resets
     document.querySelectorAll('.tool-card').forEach(card => {
       card.addEventListener('animationend', (e) => {
         if (e.animationName === 'fadeUp') {
@@ -1140,53 +1197,42 @@ function calculateTimeTheme() {
       const frontLayer = document.getElementById('cloud-layer-front');
       if (!backLayer || !frontLayer) return;
 
-      // Randomly spawn between 0 and 3 clouds
       const numClouds = Math.floor(Math.random() * 4); 
 
-      // 3 Different Cloud SVG Paths
       const cloudShapes = [
-        "M18.5 15.5 A3.5 3.5 0 0 1 15 19 L5 19 A3 3 0 0 1 5 13 A3.5 3.5 0 0 1 8.5 10.5 A4.5 4.5 0 0 1 17 12 A3.5 3.5 0 0 1 18.5 15.5 Z", // Classic fluffy
-        "M22 16 A3 3 0 0 1 19 19 L4 19 A2.5 2.5 0 0 1 4 14 A3.5 3.5 0 0 1 8 11.5 A4 4 0 0 1 15 12 A3 3 0 0 1 22 16 Z",                   // Wider, flatter
-        "M14 14 A2.5 2.5 0 0 1 11.5 16.5 L4.5 16.5 A2 2 0 0 1 4.5 12.5 A2.5 2.5 0 0 1 7 10.5 A3 3 0 0 1 12 11.5 A2 2 0 0 1 14 14 Z"      // Small and round
+        "M18.5 15.5 A3.5 3.5 0 0 1 15 19 L5 19 A3 3 0 0 1 5 13 A3.5 3.5 0 0 1 8.5 10.5 A4.5 4.5 0 0 1 17 12 A3.5 3.5 0 0 1 18.5 15.5 Z", 
+        "M22 16 A3 3 0 0 1 19 19 L4 19 A2.5 2.5 0 0 1 4 14 A3.5 3.5 0 0 1 8 11.5 A4 4 0 0 1 15 12 A3 3 0 0 1 22 16 Z",                   
+        "M14 14 A2.5 2.5 0 0 1 11.5 16.5 L4.5 16.5 A2 2 0 0 1 4.5 12.5 A2.5 2.5 0 0 1 7 10.5 A3 3 0 0 1 12 11.5 A2 2 0 0 1 14 14 Z"      
       ];
 
       for (let i = 0; i < numClouds; i++) {
         const ns = "http://www.w3.org/2000/svg";
         const cloud = document.createElementNS(ns, "path");
         
-        // Pick a random shape
         cloud.setAttribute("d", cloudShapes[Math.floor(Math.random() * cloudShapes.length)]);
         cloud.setAttribute("class", "cloud-svg");
         
-        // Randomly place it in front of or behind the mountains
         const isFront = Math.random() > 0.5;
         const targetLayer = isFront ? frontLayer : backLayer;
         
-        // Varied height (front clouds can drift a bit lower)
         const baseY = isFront ? 5 : 0;
         cloud.style.setProperty('--random-y', `${Math.random() * 15 + baseY}px`); 
         
-        // Varied sizes (from 0.6x to 1.4x scale)
         cloud.style.setProperty('--random-scale', `${Math.random() * 0.8 + 0.6}`); 
         
-        // Varied shading (multiply the base theme opacity by 50% to 100%)
         cloud.style.opacity = Math.random() * 0.5 + 0.5;
 
-        // Slow drift (25s - 45s) with a random stagger start so they don't spawn clumped
         const startDelay = Math.random() * 8; 
         cloud.style.animation = `driftAcross ${Math.random() * 20 + 25}s linear ${startDelay}s both`; 
         
         targetLayer.appendChild(cloud);
         
-        // Clean up the DOM once the cloud floats off screen
         cloud.addEventListener('animationend', () => cloud.remove());
       }
 
-      // Schedule the next cycle (Between 20s and 30s)
       setTimeout(spawnClouds, Math.random() * 10000 + 20000);
     }
 
-    // Trigger the first cycle slightly after page load
     setTimeout(spawnClouds, 1500);
 
   </script>
