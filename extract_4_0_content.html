@@ -16,7 +16,7 @@
             --accent:        #F6BF41;
             --bg:            #f4f7f9;
             --card-bg:       #ffffff;
-            --text:          --text;
+            --text:          #2c3e50;
             --text-light:    #546e7a;
             --border:        #e0e6ed;
             --code-font:     "Consolas", "Monaco", "Courier New", monospace;
@@ -536,7 +536,13 @@ async function processHTMLPage(fileKey, locationId, pageRef) {
         // 6. Extract Popovers (Tooltips)
         pageContent.querySelectorAll('.pop-over').forEach(pop => {
             const term = pop.textContent;
-            const def = pop.getAttribute('data-content');
+            let def = pop.getAttribute('data-content') || "";
+            
+            // Clean up any embedded HTML/images inside the popover content attribute
+            if (def.includes('<') || def.includes('>')) {
+                def = stripHtml(def);
+            }
+            
             const placeholder = doc.createTextNode(` [[[POP|||${term}|||${def}]]] `);
             pop.parentNode.replaceChild(placeholder, pop);
         });
@@ -639,7 +645,7 @@ function stripHtml(html) {
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/(p|div|h[1-6])>/gi, '\n')
         .replace(/<li[^>]*>/gi, '\n• ')
-        .replace(/<\/li>/gi);
+        .replace(/<\/li>/gi, '');
 
     const doc = new DOMParser().parseFromString(formattedHtml, 'text/html');
     const hiddenElements = doc.querySelectorAll('.d-none, mark');
@@ -711,7 +717,7 @@ function extractContentRecursive(obj) {
             if (trimmed.includes('/') && trimmed.includes('.')) return null; 
         }
 
-        let preCleaned = trimmed.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
+        let preCleaned = trimmed.replace(/<element[^>]*data-type=["']tagger["'][^>]*>[\s\S]*?<\/element>/gi, '');
         const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
         const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
 
@@ -1259,7 +1265,12 @@ function toggleAllExportModules(selectAll) {
 function executeExport() {
     const isSingle = document.querySelector('input[name="exp-type"]:checked').value === 'single';
     document.getElementById('export-modal').classList.remove('active');
-    if (isSingle) exportFullCourse();
+    
+    if (isSingle) {
+        exportFullCourse();
+    } else {
+        exportSeparateModules();
+    }
 }
 
 async function exportFullCourse() {
@@ -1351,12 +1362,133 @@ async function exportFullCourse() {
         }
     }
     
-    const htmlBody = fullContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p></p>`).join('');
+    const htmlBody = fullContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
     const blob = htmlDocx.asBlob(fullHtml);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `Course_Content_Export.docx`;
+    link.click();
+}
+async function exportSeparateModules() {
+    // 1. Determine which modules the user actually checked
+    const selectedIndexes = Array.from(document.querySelectorAll('.mod-exp-cb:checked')).map(cb => parseInt(cb.value));
+    
+    if (selectedIndexes.length === 0) {
+        return showToast("No modules selected for export.", "error");
+    }
+
+    showToast("Generating ZIP file, please wait...", "success");
+    const zip = new JSZip();
+    
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked
+    };
+
+    // 2. Build individual docs for selected modules
+    for (const idx of selectedIndexes) {
+        const mod = validModules[idx];
+        if (!mod) continue;
+
+        const modNum = padNum(mod.num);
+        let modContent = `${modNum} ${mod.title}\r\n`;
+
+        if (mod.lessons) {
+            for (const les of mod.lessons) {
+                const fullLesID = parseLessonBaseID(mod, les);
+                modContent += `${fullLesID} ${les.title}\r\n`;
+                
+                if (les.pages) {
+                    for (const page of les.pages) {
+                        const pageNum = parsePageNum(page.src, les.pages.indexOf(page));
+                        const fullPgID = `${fullLesID}.${padNum(pageNum)}`;
+                        modContent += `${fullPgID} ${page.title}\r\n`;
+                        
+                        const entries = courseIndex.filter(e => e.locationId === fullPgID || e.locationId.startsWith(fullPgID + '.INT-'));
+                        const htmlEntry = entries.find(e => !e.isInteractive);
+                        
+                        if (htmlEntry) { 
+                            let text = htmlEntry.normalClean;
+                            
+                            // Re-apply your extraction text replacements
+                            text = text.replace(/\[\[\[TEXTVERSION\|\|\|(.*?)\|\|\|([\s\S]*?)\|\|\|(.*?)\]\]\]/g, (match, fileName, textContent, vidId) => {
+                                let titleTag = `[Text Version Linked: ${fileName}]`;
+                                if (vidId && vidId.trim() !== '') titleTag = `[Video: ${vidId} | Text Version Linked: ${fileName}]`;
+                                return `\r\n${titleTag}\r\n${textContent.trim()}\r\n`;
+                            });
+
+                           text = text.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+                                const img = courseImages.find(i => i.fileName === fileName);
+                                if (img) {
+                                    const hasMeta = (img.altText && img.altText.trim() !== "") || (img.dataContent && img.dataContent.trim() !== "");
+                                    if (options.exImgEmpty && !hasMeta) return '';
+
+                                    let imgString = `[Image: ${img.fileName}`;
+                                    if (img.altText) imgString += ` | Alt: ${img.altText}`;
+                                    if (img.dataContent) imgString += ` | Data-Content: ${img.dataContent}`;
+                                    imgString += `]`;
+                                    return `\r\n${imgString}\r\n`;
+                                }
+                                return '';
+                            });
+
+                            text = text.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => `\r\n[Video: ${entryId}]\r\n`);
+                            text = text.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, fileName) => `\r\n[Audio: ${fileName}]\r\n`);
+                            
+                            text = text.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
+                                if (options.exGlossary) return term;
+                                const definition = courseGlossary.get(id) || courseGlossary.get(term.toLowerCase().trim());
+                                return definition ? ` ${term} [${definition}] ` : ` ${term} [definition unavailable] `;
+                            });
+                            
+                            text = text.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|([\s\S]*?)\]\]\]/g, (match, term, popText) => {
+                                return options.exTooltips ? term : ` ${term} [${popText.trim()}] `;
+                            });
+                            
+                            const docMatches = [...text.matchAll(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g)];
+                            for (const match of docMatches) {
+                                const fileName = match[1];
+                                let docText = "";
+                                if (!options.exDocs) docText = await extractDocumentText(fileName);
+                                text = text.replace(match[0], options.exDocs ? '' : `\r\n[Document: ${fileName} | ${docText}]\r\n`);
+                            }
+
+                           text = text.replace(/\[\[\[INT\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, path, intId) => {
+                                if (options.exInt) return '';
+                                const intEntry = entries.find(e => e.locationId === intId && e.isInteractive);
+                                const intContent = intEntry ? intEntry.normalClean : "";
+                                const intMeta = courseInteractives.find(i => i.locationId === intId);
+                                const intFolder = intMeta ? intMeta.folder : "Interactive";
+                                let intTitle = intMeta ? intMeta.title : path.split('/').pop();
+                                if (intTitle === 'index.html') intTitle = intFolder;
+                                return `\r\n[Interactive Content: ${intTitle} | Folder: ${intFolder}]\r\n${intContent}\r\n`;
+                            });
+                            
+                            modContent += `${text}\r\n`; 
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 3. Convert to HTML, package into a blob, and add to ZIP
+        const htmlBody = modContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
+        const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
+        
+        const blob = htmlDocx.asBlob(fullHtml);
+        const safeTitle = mod.title.replace(/[^a-zA-Z0-9]/g, '_');
+        zip.file(`Module_${modNum}_${safeTitle}.docx`, blob);
+    }
+
+    // 4. Download the final ZIP payload
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = `Course_Modules_Export.zip`;
     link.click();
 }
 </script>
