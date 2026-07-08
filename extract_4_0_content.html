@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" type="image/x-icon" href="llama.ico">
+    <title>Course Content Extractor - 4.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --primary:       #1C355E;
+            --primary-light: #2A4D8A;
+            --accent:        #F6BF41;
+            --bg:            #f4f7f9;
+            --card-bg:       #ffffff;
+            --text:          #2c3e50;
+            --text-light:    #546e7a;
+            --border:        #e0e6ed;
+            --code-font:     "Consolas", "Monaco", "Courier New", monospace;
+            --shadow:        0 4px 16px rgba(28, 53, 94, 0.08);
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        #app-wrapper { display: flex; min-height: 100vh; width: 100%; }
+        #toc-sidebar { width: 320px; flex-shrink: 0; background: var(--card-bg); border-right: 1px solid var(--border); padding: 20px; box-sizing: border-box; position: sticky; top: 0; height: 100vh; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.03); display: none; }
+        .toc-header { margin: 0 0 15px 0; color: var(--primary); font-size: 1.1rem; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .toc-module, .toc-lesson { margin-bottom: 4px; }
+        .toc-tree-content { margin-left: 12px; padding-left: 10px; border-left: 1px dashed #cbd5e0; margin-top: 4px; }
+        .toc-module summary, .toc-lesson summary { padding: 6px 8px; border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--text); font-size: 0.9rem; transition: background 0.2s, color 0.2s; user-select: none; }
+        .toc-module > summary { color: var(--primary); font-size: 0.95rem; }
+        .toc-module summary:hover, .toc-lesson summary:hover { background: #f0f4f8; color: var(--primary); }
+        .toc-page { padding: 6px 8px; cursor: pointer; font-size: 0.85rem; color: var(--text-light); border-radius: 6px; transition: background 0.2s, color 0.2s; margin-bottom: 2px; }
+        .toc-page:hover { background: #f0f4f8; color: var(--primary-light); }
+        .main-wrapper { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 1000px; width: 100%; }
+        .header-card { background: var(--card-bg); padding: 20px 30px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        .header-logo-group h1 { margin: 0; font-size: 1.6rem; color: var(--primary); }
+        .header-subtitle { font-size: 0.8rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+        .drop-zone { border: 2px dashed #cbd5e0; border-radius: 10px; padding: 40px; cursor: pointer; background: #fafafa; margin-top: 15px; text-align: center; transition: all 0.2s; }
+        .drop-zone:hover { border-color: var(--primary); background: #f0f4f8; transform: translateY(-2px); }
+        #folder-input { display: none; }
+        .action-btn { background: var(--primary-light); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .action-btn:hover { background: var(--primary); transform: translateY(-1px); }
+        .nav-btn { background: #f8f9fa; border: 1px solid var(--border); padding: 4px 10px; font-size: 0.75rem; color: var(--text); border-radius: 4px; cursor: pointer; }
+        .nav-btn:hover { background: #e2e6ea; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(28,53,94,0.1); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(28,53,94,0.6); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fff; width: 90%; max-width: 600px; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border); background: #f8f9fa; border-radius: 12px 12px 0 0; }
+        .modal-body { padding: 25px; max-height: 60vh; overflow-y: auto; }
+        .course-list-item { display: inline-flex; width: 100%; align-items: center; padding: 6px; cursor: pointer; }
+        .course-list-item:hover { background: #f8f9fa; }
+        .module-block { background: #fff; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; padding: 20px; box-shadow: var(--shadow); scroll-margin-top: 20px; }
+        .module-title { color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; font-size: 1.3rem; }
+        details.lesson-details { margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; scroll-margin-top: 20px; }
+        summary.lesson-summary { background: #f8f9fa; padding: 12px 15px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--primary); }
+        summary.lesson-summary:hover { background: #f0f4f8; }
+        details.lesson-details[open] summary { border-bottom: 1px solid var(--border); border-radius: 6px 6px 0 0; }
+        .lesson-content { padding: 15px; }
+        .page-block { margin-bottom: 25px; border-left: 4px solid var(--primary-light); padding-left: 15px; scroll-margin-top: 20px; }
+        .page-block:last-child { margin-bottom: 0; }
+        .page-title { margin: 0 0 10px 0; color: var(--text); font-size: 1.1rem; }
+        .page-text { font-family: sans-serif; white-space: pre-wrap; color: var(--text); font-size: 0.95rem; line-height: 1.6; }
+        .media-tag { background: #e9ecef; padding: 10px 12px; border-radius: 6px; font-family: var(--code-font); font-size: 0.85rem; margin-top: 10px; margin-bottom: 10px; color: var(--text-light); border-left: 3px solid var(--accent); white-space: pre-wrap; }
+        .toast { position: fixed; bottom: 90px; right: 30px; background: var(--primary); color: #fff; padding: 12px 24px; border-radius: 8px; box-shadow: 0 8px 24px rgba(28,53,94,0.25); z-index: 9999; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #dc3545; }
+        #jump-top-btn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 1000; background: var(--primary); color: #fff; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); align-items: center; justify-content: center; transition: background 0.3s, transform 0.2s; }
+        #jump-top-btn:hover { background: var(--primary-light); transform: translateY(-3px); }
+        #jump-top-btn svg { width: 24px; height: 24px; stroke-width: 2.5; }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <div id="toc-sidebar"></div>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="header-card">
+                <div class="header-logo-group">
+                    <div>
+                        <h1 id="main-title">4.0 Course Extractor</h1>
+                        <div class="header-subtitle">Standalone Content Viewer</div>
+                    </div>
+                </div>
+                <div id="header-actions" style="display:none; gap: 10px;">
+                    <button class="action-btn" onclick="openExportModal()">Export to Word</button>
+                    <button class="action-btn" style="background:#fff; color:var(--primary); border:1px solid var(--border);" onclick="location.reload()">Start Over</button>
+                </div>
+            </div>
+
+            <div id="setup-area">
+                <p style="color:var(--text-light); text-align: center;">Select your <strong>4.0 Course</strong> root folder to begin extracting.</p>
+                <div class="drop-zone" onclick="document.getElementById('folder-input').click()">
+                    <div style="margin-top:10px; font-weight:bold; color:var(--primary);">Click to Browse Folder</div>
+                    <input type="file" id="folder-input" webkitdirectory directory multiple />
+                </div>
+                <div id="status-area" style="margin-top:20px; text-align:center; font-weight:600; display:none;"></div>
+            </div>
+
+            <div id="export-controls" style="display:none; width:100%; background:var(--card-bg); padding:15px 20px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px; box-shadow:var(--shadow); box-sizing:border-box;">
+                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Exclusions:</strong>
+                <div style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.9rem; color:var(--text);">
+                    <label><input type="checkbox" id="ex-docs" onchange="renderCourseViewer()"> Documents</label>
+                    <label><input type="checkbox" id="ex-int" onchange="renderCourseViewer()"> Interactives</label>
+                    <label><input type="checkbox" id="ex-img-empty" checked onchange="renderCourseViewer()"> Images w/o Metadata</label>
+                    <label><input type="checkbox" id="ex-glossary" onchange="renderCourseViewer()"> Glossary Definitions</label>
+                    <label><input type="checkbox" id="ex-tooltips" onchange="renderCourseViewer()"> Tooltips</label>
+                </div>
+                <div id="dynamic-state-controls" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
+                    <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Unlock States (Uncheck to exclude):</strong>
+                    <div id="state-checkbox-container" style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.9rem; color:var(--text);"></div>
+                </div>
+            </div>
+            
+            <div id="course-viewer" style="display:none; width:100%;"></div>
+
+            <!-- Modals -->
+            <div id="course-selection-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header"><h3>Select a Course to Load</h3></div>
+                    <div class="modal-body" id="course-list-container"></div>
+                    <div class="modal-header" style="justify-content:flex-end; gap:10px;">
+                        <button class="nav-btn" onclick="location.reload()">Cancel</button>
+                        <button class="action-btn" onclick="confirmCourseSelection()">Load Course</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="export-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header"><h3>Export Options</h3></div>
+                    <div class="modal-body">
+                        <label><input type="radio" name="exp-type" value="single" checked onchange="document.getElementById('export-module-list').style.display='none'"> Single Document</label>
+                        <label><input type="radio" name="exp-type" value="separate" onchange="document.getElementById('export-module-list').style.display='block'"> Separate Documents</label>
+                        <div id="export-module-list" style="display:none; margin-left:25px; padding-left:15px;">
+                            <label><input type="checkbox" id="export-select-all" onchange="toggleAllExportModules(this)"> Select All</label>
+                            <div id="export-checkbox-container"></div>
+                        </div>
+                    </div>
+                    <div class="modal-header" style="justify-content:flex-end; gap:10px;">
+                        <button class="nav-btn" onclick="document.getElementById('export-modal').classList.remove('active')">Cancel</button>
+                        <button class="action-btn" onclick="executeExport()">Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =============================================================================
+// STANDALONE 4.0 EXTRACTOR LOGIC
+// =============================================================================
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+let fileMap = new Map();
+let courseIndex = [];
+let courseGlossary = new Map();
+let courseTree = {};
+let validModules = [];
+let courseVideos = [];
+let courseAudio = [];
+let courseInteractives = [];
+let courseImages = [];
+let fileNameIndex = new Map();
+let folderIndex = new Map();
+let courseUnlockStates = new Set();
+let availableCoursesFromScan = new Map();
+let customCourseName = "";
+
+const IGNORE_TITLES = ["style guide", "styleguide"];
+const IGNORE_IDS = ["wf", "gs"];
+
+function padNum(num) { return (num == null) ? "00" : num.toString().padStart(2, '0'); }
+function escapeHtml(t) { return !t ? "" : t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+function generateSafeId(prefix, str) { return prefix + '-' + str.replace(/[^a-zA-Z0-9-]/g, '-'); }
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type} show`;
+    toast.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// Support for dynamically reading extracted PDF/Doc files
+async function loadDocContentUI(btn, filename) {
+    btn.innerHTML = "Extracting...";
+    btn.disabled = true;
+    const text = await extractDocumentText(filename);
+    const textSpan = document.createElement('span');
+    textSpan.innerHTML = ` | Content:\r\n<span style="font-family:sans-serif; color:var(--text); white-space:pre-wrap;">${escapeHtml(text)}</span>`;
+    btn.parentElement.insertBefore(textSpan, btn.nextSibling);
+    btn.remove();
+}
+
+async function extractDocumentText(filename) {
+    let targetFile = null;
+    const searchName = filename.split('/').pop().toLowerCase();
+    for (const [key, file] of fileMap.entries()) if (key.toLowerCase().endsWith(searchName)) { targetFile = file; break; }
+    if (!targetFile) return "\n[Error: Document not found in scanned folder]\n";
+
+    try {
+        const arrayBuffer = await targetFile.arrayBuffer();
+        if (searchName.endsWith('.pdf')) {
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) fullText += (await (await pdf.getPage(i)).getTextContent()).items.map(item => item.str).join(' ') + "\n";
+            return fullText.replace(/(?:\r?\n\s*)+/g, '\r\n').trim();
+        } else if (searchName.endsWith('.docx')) {
+            return (await mammoth.extractRawText({ arrayBuffer })).value.replace(/(?:\r?\n\s*)+/g, '\r\n').trim();
+        }
+        return "\n[Notice: Text extraction not supported for this file type]\n";
+    } catch (e) { return `\n[Error: Failed to parse document content - ${e.message}]\n`; }
+}
+
+function parseLessonBaseID(module, lesson) {
+    let fullLesID = lesson.num || "00.00";
+    if (!fullLesID.includes('.')) {
+        const modNum = module.num ? padNum(module.num) : "00";
+        fullLesID = `${modNum}.${padNum(fullLesID)}`;
+    }
+    return fullLesID;
+}
+
+function parsePageNum(pageSrc, index) {
+    let pageNum = index + 1;
+    if (pageSrc) {
+        const parts = pageSrc.split('_');
+        if (parts.length > 1) {
+            const lastPart = parts.pop().split('.')[0];
+            if (!isNaN(lastPart) && lastPart.trim() !== "") {
+                pageNum = Number(lastPart);
+            }
+        }
+    }
+    return pageNum;
+}
+
+// Custom block-aware HTML text extraction to fix source code line break wrapping
+function extractTextFromHTML(node, linesArray) {
+    if (node.nodeType === Node.ELEMENT_NODE && (node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE')) return;
+    
+    if (node.nodeType === Node.TEXT_NODE) {
+        let text = node.nodeValue.replace(/\s+/g, ' ');
+        if (text) linesArray[linesArray.length - 1] += text;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const isBlock = /^(p|div|h[1-6]|li|br|tr|ul|ol|table|article|section|aside|blockquote)$/i.test(node.nodeName);
+        
+        if (isBlock && linesArray[linesArray.length - 1].trim() !== '') {
+            linesArray.push("");
+        }
+        
+        node.childNodes.forEach(child => extractTextFromHTML(child, linesArray));
+        
+        if (isBlock && linesArray[linesArray.length - 1].trim() !== '') {
+            linesArray.push("");
+        }
+    }
+}
+
+// ── INIT BATCH SCAN ────────────────────────────────────────────────────────
+document.getElementById('folder-input').addEventListener('change', async (e) => {
+    const files = e.target.files;
+    if (!files.length) return;
+    
+    document.getElementById('setup-area').querySelector('.drop-zone').style.display = 'none';
+    const status = document.getElementById('status-area');
+    status.style.display = 'block';
+    status.innerHTML = `<div class="spinner"></div> Scanning folder...`;
+
+    availableCoursesFromScan.clear();
+    fileNameIndex.clear();
+    folderIndex.clear();
+    const rootFallbackMap = new Map();
+    
+    for (const file of files) {
+        const originalPath = file.webkitRelativePath || file.name;
+        rootFallbackMap.set(originalPath, file);
+        
+        const parts = originalPath.split('/');
+        const name = parts[parts.length - 1];
+        if (!fileNameIndex.has(name)) fileNameIndex.set(name, []);
+        fileNameIndex.get(name).push(originalPath);
+        
+        if (parts.length > 1) {
+            const folder = parts[parts.length - 2];
+            if (!folderIndex.has(folder)) folderIndex.set(folder, []);
+            folderIndex.get(folder).push(originalPath);
+        }
+    }
+
+    let sitemapFound = false;
+    for (const key of rootFallbackMap.keys()) {
+        if (key.endsWith('sitemap.xml')) {
+            sitemapFound = true;
+            availableCoursesFromScan.set("4.0 Course", rootFallbackMap);
+            break;
+        }
+    }
+
+    if (!sitemapFound) {
+        status.innerHTML = `<span style="color:#dc3545;">Error: No valid course structure or 'sitemap.xml' found.</span>`;
+        return;
+    }
+
+    fileMap = rootFallbackMap;
+    customCourseName = "Extracted Course";
+    runIndexing();
+});
+
+// ── INDEXING ENGINE ────────────────────────────────────────────────────────
+async function runIndexing() {
+    document.getElementById('main-title').textContent = customCourseName;
+    
+    const status = document.getElementById('status-area');
+    status.style.display = 'block';
+    status.innerHTML = `<div class="spinner"></div> Extracting HTML content...`;
+
+    courseIndex = []; courseVideos = []; courseAudio = []; courseInteractives = []; courseImages = [];
+    validModules = []; courseGlossary.clear(); courseUnlockStates.clear();
+
+    const parser = new DOMParser();
+
+    // 1. Parse Glossary XML
+    let glossaryFile = null;
+    for (const key of fileMap.keys()) if (key.endsWith('glossary.xml')) { glossaryFile = fileMap.get(key); break; }
+    
+    if (glossaryFile) {
+        try {
+            const glossaryText = await glossaryFile.text();
+            const glosDoc = parser.parseFromString(glossaryText, "text/xml");
+            const terms = glosDoc.querySelectorAll('term, item, definition, entry');
+            terms.forEach(node => {
+                let term = node.getAttribute('name') || node.querySelector('name')?.textContent || node.querySelector('term')?.textContent;
+                let def = node.getAttribute('definition') || node.querySelector('definition')?.textContent || node.querySelector('desc')?.textContent;
+                if (term && def) courseGlossary.set(term.toLowerCase().trim(), def.trim());
+            });
+        } catch(e) { console.warn("Failed to parse glossary.xml"); }
+    }
+
+    // 2. Parse Sitemap XML
+    let sitemapFile = null;
+    for (const key of fileMap.keys()) if (key.endsWith('sitemap.xml')) { sitemapFile = fileMap.get(key); break; }
+
+    const sitemapText = await sitemapFile.text();
+    const xmlDoc = parser.parseFromString(sitemapText, "text/xml");
+    
+    const modules = Array.from(xmlDoc.querySelectorAll("module")).map(mod => {
+        return {
+            title: mod.getAttribute("title"),
+            mID: mod.getAttribute("mID"),
+            num: mod.getAttribute("num"),
+            visible: mod.getAttribute("visible") !== "false",
+            glKeys: { gl_state: mod.getAttribute("gl_state") },
+            lessons: Array.from(mod.querySelectorAll("lesson")).map(les => ({
+                title: les.getAttribute("title"),
+                num: les.getAttribute("num"),
+                visible: les.getAttribute("visible") !== "false",
+                glKeys: { gl_state: les.getAttribute("gl_state") },
+                pages: Array.from(les.querySelectorAll("page")).map(pg => ({
+                    title: pg.getAttribute("title"),
+                    src: pg.getAttribute("href"), 
+                    glKeys: { gl_state: pg.getAttribute("gl_state") },
+                    visible: pg.getAttribute("visible") !== "false"
+                }))
+            }))
+        };
+    });
+
+    courseTree = { modules };
+
+    courseTree.modules.forEach(mod => {
+        if (mod.visible === false) return;
+        const title = String(mod.title || "").toLowerCase();
+        const id = String(mod.mID || "").toLowerCase();
+        
+        if (!IGNORE_TITLES.some(k => title.includes(k)) && !IGNORE_IDS.includes(id)) {
+            if (mod.glKeys && mod.glKeys.gl_state) mod.glKeys.gl_state.split(/\s+/).filter(Boolean).forEach(s => courseUnlockStates.add(s));
+            validModules.push(mod);
+        }
+    });
+
+    const tasks = [];
+    validModules.forEach(module => {
+        if (!module.lessons) return;
+        module.lessons.forEach(lesson => {
+            if (!lesson.pages) return;
+            
+            const fullLesID = parseLessonBaseID(module, lesson);
+
+            lesson.pages.forEach((page, idx) => {
+                const pageNum = parsePageNum(page.src, idx);
+                const locationId = `${fullLesID}.${padNum(pageNum)}`;
+                
+                if (page.src) {
+                    const targetName = page.src.split('/').pop();
+                    const matchedFiles = fileNameIndex.get(targetName);
+                    if (matchedFiles && matchedFiles.length > 0) {
+                        tasks.push(() => processHTMLPage(matchedFiles[0], locationId, page));
+                    }
+                }
+            });
+        });
+    });
+
+    for (let i = 0; i < tasks.length; i += 10) await Promise.all(tasks.slice(i, i + 10).map(fn => fn()));
+
+    document.getElementById('setup-area').style.display = 'none';
+    document.getElementById('header-actions').style.display = 'flex';
+    document.getElementById('export-controls').style.display = 'block';
+
+    renderCourseViewer();
+}
+
+// ── HTML DOM PARSER ────────────────────────────────────────────────────────
+async function processHTMLPage(fileKey, locationId, pageRef) {
+    try {
+        const htmlText = await fileMap.get(fileKey).text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, "text/html");
+        
+        const pageContent = doc.getElementById("pageContent") || doc.body;
+        if (!pageContent) return;
+
+        let intCounter = 1;
+        let currentState = pageRef.glKeys?.gl_state || null;
+
+        // 0. Remove unwanted Interactive Buttons/Toggles
+        pageContent.querySelectorAll('.il_textbtn, button.d2l-toggle').forEach(btn => btn.remove());
+
+        // 1. Asynchronously Extract Text Versions from linked files (.htmltext_version wrappers)
+        const tvElements = Array.from(pageContent.querySelectorAll('.htmltext_version'));
+        for (const tv of tvElements) {
+            const tvSrc = tv.getAttribute('data-src');
+            if (tvSrc) {
+                const tvFileName = tvSrc.split('/').pop();
+                let tvContent = "";
+                const matchedFiles = fileNameIndex.get(tvFileName);
+                if (matchedFiles && matchedFiles.length > 0) {
+                    try {
+                        const rawTvText = await fileMap.get(matchedFiles[0]).text();
+                        const tvDoc = parser.parseFromString(rawTvText, "text/html");
+                        
+                        let tvLines = [""];
+                        extractTextFromHTML(tvDoc.body, tvLines);
+                        tvContent = tvLines.map(l => l.trim()).filter(l => l !== '').join('\r\n');
+                    } catch (e) {
+                        tvContent = "[Error reading text version file]";
+                    }
+                } else {
+                    tvContent = "[Text version file not found in course assets directory]";
+                }
+                
+                // If the Text Version wraps a Kaltura Video, combine them
+                let vidId = "";
+                const vid = tv.querySelector('.kaltura');
+                if (vid) {
+                    vidId = vid.getAttribute('id') || "";
+                    vid.remove(); // Prevent double extraction of the standalone video tag
+                }
+                
+                const tvMarker = doc.createTextNode(` [[[TEXTVERSION|||${tvFileName}|||${tvContent}|||${vidId}]]] `);
+                tv.parentNode.insertBefore(tvMarker, tv);
+            }
+        }
+
+        // 2. Extract Documents (PDF/DOC)
+        pageContent.querySelectorAll('a').forEach(anchor => {
+            const href = anchor.getAttribute('href');
+            if (href && /\.(pdf|doc|docx)$/i.test(href)) {
+                const fileName = href.split('/').pop();
+                const placeholder = doc.createTextNode(` [[[DOC|||${fileName}]]] `);
+                anchor.parentNode.replaceChild(placeholder, anchor);
+            }
+        });
+
+       // 3. Extract Images
+        pageContent.querySelectorAll('img').forEach(img => {
+            const src = img.getAttribute('src');
+            const alt = img.getAttribute('alt') || "";
+            if (src && !src.includes('spacer.gif')) {
+                const fileName = src.split('/').pop();
+                
+                // Find adjacent copyright link for data-content
+                let dataContent = "";
+                const nextSibling = img.nextElementSibling;
+                if (nextSibling && nextSibling.tagName === 'A' && nextSibling.classList.contains('copyright-link')) {
+                    dataContent = nextSibling.getAttribute('data-content') || "";
+                    
+                    // Remove the element completely so the '©' character isn't extracted into normal text
+                    nextSibling.remove(); 
+                }
+
+                courseImages.push({ locationId, fileName, altText: alt, dataContent: dataContent });
+                const placeholder = doc.createTextNode(` [[[IMG|||${fileName}]]] `);
+                img.parentNode.replaceChild(placeholder, img);
+            }
+        });
+
+        // 4. Extract Audio
+        pageContent.querySelectorAll('audio').forEach(aud => {
+            let src = aud.getAttribute('src');
+            if (!src) {
+                const sourceNode = aud.querySelector('source');
+                if (sourceNode) src = sourceNode.getAttribute('src');
+            }
+            if (src) {
+                const fileName = src.split('/').pop();
+                courseAudio.push({ locationId, entryId: fileName, kalturaType: 'mp3' });
+                const placeholder = doc.createTextNode(` [[[AUD|||${fileName}]]] `);
+                aud.parentNode.replaceChild(placeholder, aud);
+            } else {
+                aud.parentNode.removeChild(aud);
+            }
+        });
+
+        // 5. Extract Video (Kaltura)
+        pageContent.querySelectorAll('.kaltura').forEach(vid => {
+            const id = vid.getAttribute('id');
+            if (id) {
+                courseVideos.push({ locationId, entryId: id, kalturaType: 'video' });
+                const placeholder = doc.createTextNode(` [[[VID|||${id}]]] `);
+                vid.parentNode.replaceChild(placeholder, vid);
+            }
+        });
+
+        // 6. Extract Popovers (Tooltips)
+        pageContent.querySelectorAll('.pop-over').forEach(pop => {
+            const term = pop.textContent;
+            const def = pop.getAttribute('data-content');
+            const placeholder = doc.createTextNode(` [[[POP|||${term}|||${def}]]] `);
+            pop.parentNode.replaceChild(placeholder, pop);
+        });
+
+        // 7. Handle Interactives via configuration routing 
+        let interactiveTasks = [];
+        pageContent.querySelectorAll('[data-json], .interactive[data-src]').forEach(intDiv => {
+            let targetPath = intDiv.getAttribute('data-json');
+            
+            if (!targetPath) {
+                const dataSrc = intDiv.getAttribute('data-src');
+                if (dataSrc) targetPath = dataSrc.split(':')[0];
+            }
+
+            if (targetPath) {
+                const intLocationId = `${locationId}.INT-${intCounter++}`;
+                const placeholder = doc.createTextNode(` [[[INT|||${targetPath}|||${intLocationId}]]] `);
+                intDiv.parentNode.replaceChild(placeholder, intDiv);
+                
+                if (targetPath.endsWith('.json')) {
+                    const targetName = targetPath.split('/').pop();
+                    const matchedFiles = fileNameIndex.get(targetName);
+                    if (matchedFiles && matchedFiles.length > 0) {
+                        interactiveTasks.push(processLegacyInteractive(matchedFiles[0], intLocationId, targetPath));
+                    }
+                } else if (targetPath.endsWith('.html') || targetPath.endsWith('.htm')) {
+                    const pathParts = targetPath.split('/');
+                    const folderName = pathParts[pathParts.length - 2]; 
+                    if (folderName) {
+                        let jsonFileKey = null;
+                        
+                        // Look for data/data.json first
+                        for (const key of fileMap.keys()) {
+                            if (key.endsWith(`${folderName}/data/data.json`) || key.includes(`/${folderName}/data/data.json`)) {
+                                jsonFileKey = key;
+                                break;
+                            }
+                        }
+                        
+                        // Fallback to scanning for any JSON in the folder
+                        if (!jsonFileKey) {
+                            for (const key of fileMap.keys()) {
+                                if (key.includes(`/${folderName}/`) && key.endsWith('.json') && !key.endsWith('settings.json')) {
+                                    jsonFileKey = key;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (jsonFileKey) {
+                            interactiveTasks.push(processLegacyInteractive(jsonFileKey, intLocationId, targetPath));
+                        }
+                    }
+                }
+            }
+        });
+        
+        await Promise.all(interactiveTasks);
+
+        let lines = [""];
+        extractTextFromHTML(pageContent, lines);
+        let cleanText = lines.map(l => l.trim()).filter(l => l !== '').join('\r\n');
+
+        if (cleanText) {
+            courseIndex.push({
+                locationId: locationId,
+                filename: fileKey,
+                normalClean: cleanText,
+                normalRaw: cleanText,
+                mlClean: "", mlRaw: "", noteClean: "", stdClean: "",
+                unlockState: currentState,
+                isInteractive: false,
+                order: 0
+            });
+        }
+    } catch (e) { console.warn(`Error processing HTML page ${fileKey}`, e); }
+}
+
+// ── ADVANCED INTERACTIVE PARSING LOGIC ──────────────────────────────────────
+function stripHtml(html) {
+    let safeHtml = html.replace(/([a-zA-Z0-9-]+)=(['"])(.*?)\2/g, (match, attr, quote, inner) => {
+        if (inner.includes('<') || inner.includes('>')) return ''; 
+        return match;
+    });
+
+    let formattedHtml = safeHtml
+        .replace(/&amp;nbsp;/gi, ' ')
+        .replace(/&nbsp;/gi, ' ') 
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6])>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '\n• ')
+        .replace(/<\/li>/gi, '');
+
+    const doc = new DOMParser().parseFromString(formattedHtml, 'text/html');
+    const hiddenElements = doc.querySelectorAll('.d-none, mark');
+    hiddenElements.forEach(el => el.remove());
+
+    const glossaryElements = doc.querySelectorAll('element[data-type="glossary"]');
+    glossaryElements.forEach(el => {
+        let term = el.textContent.trim() || el.getAttribute('data-cbdisplay') || '';
+        let id = el.getAttribute('data-id') || '';
+        el.textContent = `[[[GLS|||${term}|||${id}]]]`;
+    });
+
+    const popoverElements = doc.querySelectorAll('element[data-type="popover"]');
+    popoverElements.forEach(el => {
+        let display = el.getAttribute('data-cbdisplay') || el.textContent.trim() || '';
+        let text = el.getAttribute('data-text') || '';
+        el.textContent = `[[[POP|||${display}|||${text}]]]`;
+    });
+
+    let text = doc.body.textContent || "";
+    return text.replace(/^[ \t]+/gm, '').replace(/[ \t]+$/gm, '').replace(/(?:\n){2,}/g, '\r\n').trim();
+}
+
+function extractContentRecursive(obj) {
+    const streams = { normal: { clean: [], raw: [] }, ml: { clean: [], raw: [] }, std: { clean: [], raw: [] }, note: { clean: [], raw: [] } };
+    let unlockStateFound = null;
+    
+    const ignoreKeys = new Set([
+        'id', 'type', 'contenttype', 'status', 'classes', 'version', 'grid', 'combotype', 
+        'print', 'reveal', 'revealtitle', 'imgclasses', 'lightbox', 'animation', 'animbutton', 
+        'animduration', 'unlock', 'layout', 'align', 'alignment', 'position', 'role', 
+        'ariahidden', 'tabindex', 'src', 'title', 'recoveredcontent', 'complexity', 
+        'designedfor', 'duration', 'grades', 'badstandardmatches', 'info', 
+        'chathistory', 'ml', 'pagename', 'simplicity', 'onclick', 'width', 'height', 
+        'kalturaentryid', 'kalturatype', 'videocc', 'label', 'srclang', 'srt', 'notes',
+        'alttext', 'caption', 'captionheader', 'textversion', 'copyright',
+        'correct', 'incorrect', 'failed', 'correctheading', 'incorrectheading', 'failedheading',
+        'chances','entrywidth','summarylength', 'colorscheme', 'showinteractive', 'hashkey'
+    ]);
+    
+    const hasTags = /<[^>]+>/;
+
+    function cleanAndValidateText(str) {
+        const trimmed = String(str).trim();
+        if (!trimmed) return null;
+
+        if (!trimmed.includes(' ')) {
+            if (/\.(json|css|htm|html|js|xml|png|jpg|jpeg|gif|svg|mp3|mp4)$/i.test(trimmed)) return null;
+            if (trimmed.startsWith('content/') || trimmed.startsWith('global/')) return null;
+            if (trimmed.includes('/') && trimmed.includes('.')) return null; 
+        }
+
+        let preCleaned = trimmed.replace(/<element[^>]*data-type=["']tagger["'][^>]*>.*?<\/element>/gi, '');
+        const cleanedText = hasTags.test(preCleaned) ? stripHtml(preCleaned) : preCleaned.replace(/&amp;nbsp;/gi, ' ').replace(/&nbsp;/gi, ' ').trim();
+        const coreText = cleanedText.replace(/&nbsp;/gi, '').trim();
+
+        if (!coreText) return null;
+        if (/^(col-(md|sm|xs|lg)-\d+\s*)+$/.test(coreText)) return null;
+        if (/^(left|right|center|top|bottom|title|subtitle|visible|hidden|print|pagename|simplicity|onclick|mclass\d*|english|en|video)[\.\s]*$/i.test(coreText)) return null;
+        if (/^-?\d+(\.\d+)?(%|px|em|rem|vh|vw)$/i.test(coreText)) return null;
+        if (/col-(md|sm|xs|lg)-\d+/.test(coreText) || /"contentType"\s*:/.test(coreText) || /"fieldValues"\s*:/.test(coreText)) return null;
+
+        return cleanedText;
+    }
+
+    let globalHasDirections = false;
+    function checkGlobalDirections(n) {
+        if (!n || globalHasDirections) return;
+        if (Array.isArray(n)) { n.forEach(checkGlobalDirections); return; }
+        if (typeof n === 'object') {
+            for (let k in n) {
+                if (k.replace(/[^a-z0-9]/gi, '').toLowerCase() === 'directions') {
+                    if (typeof n[k] === 'string' && n[k].trim() !== '') {
+                        globalHasDirections = true;
+                        return;
+                    }
+                }
+                if (typeof n[k] === 'object') checkGlobalDirections(n[k]);
+            }
+        }
+    }
+    checkGlobalDirections(obj);
+
+    function getCardSideContent(cardObj, sideLabel) {
+        let texts = [];
+        let rawTexts = [];
+        let alts = [];
+        function walkCard(n) {
+            if (!n) return;
+            if (Array.isArray(n)) { n.forEach(walkCard); return; }
+            if (typeof n === 'object') {
+                for (const k in n) {
+                    const sk = k.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                    
+                    if (sk === 'type' && typeof n[k] === 'string' && (n[k].toLowerCase() === 'front' || n[k].toLowerCase() === 'back')) continue; 
+                    if (sk === 'front' || sk === 'cardfront' || sk === 'back' || sk === 'cardback') continue;
+
+                    if (sk === 'alt' || sk === 'alttext') {
+                        let v = stripHtml(String(n[k])).trim();
+                        if (v) alts.push(`[${v}]`);
+                        continue;
+                    }
+                    if (ignoreKeys.has(sk)) continue;
+
+                    let val = n[k];
+                    if (typeof val === 'string' && val.trim() !== '') {
+                        let validText = cleanAndValidateText(val);
+                        if (validText) {
+                            texts.push(validText);
+                            rawTexts.push(val);
+                        }
+                    } else if (typeof val === 'object') walkCard(val);
+                }
+            }
+        }
+        walkCard(cardObj);
+        
+        let cleanStr = `[${sideLabel}]`;
+        if (texts.length > 0) cleanStr += ` ${texts.join(' ')}`;
+        if (alts.length > 0) cleanStr += ` ${alts.join(' ')}`;
+        
+        let rawStr = `[${sideLabel}]`;
+        if (rawTexts.length > 0) rawStr += ` ${rawTexts.join(' ')}`;
+        if (alts.length > 0) rawStr += ` ${alts.join(' ')}`;
+
+        return { clean: cleanStr.trim(), raw: rawStr.trim() };
+    }
+
+    function traverse(o, ctx) {
+        if (!o) return;
+        if (Array.isArray(o)) { for (const item of o) traverse(item, ctx); return; }
+        if (typeof o === 'object') {
+            
+            let classStr = "";
+            if (typeof o.classes === 'string') classStr = o.classes;
+            else if (o.fieldValues && typeof o.fieldValues.classes === 'string') classStr = o.fieldValues.classes;
+
+            if (classStr.includes('d-none')) return;
+
+            const stateMatch = classStr.match(/unlock\s+(?:default\s+)?state(?:\s+default)?\s+([a-zA-Z0-9_-]+)/i);
+            if (stateMatch && stateMatch[1].trim() !== '') {
+                unlockStateFound = stateMatch[1].trim();
+                courseUnlockStates.add(unlockStateFound);
+            }
+
+            if (o.contentType === 'image' && o.fieldValues && o.fieldValues.src) {
+                const fileName = o.fieldValues.src.split('/').pop();
+                if (fileName) {
+                    streams.normal.clean.push(`[[[IMG|||${fileName}]]]`);
+                    streams.normal.raw.push(`[[[IMG|||${fileName}]]]`);
+                }
+                return; 
+            }
+            if (o.contentType === 'media' && o.fieldValues && o.fieldValues.kalturaEntryId) {
+                const entryId = o.fieldValues.kalturaEntryId;
+                const kType = o.fieldValues.kalturaType;
+                const isVid = ['video', 'videoNoCC', 'videoplaylist'].includes(kType);
+                const tag = isVid ? 'VID' : 'AUD';
+                streams.normal.clean.push(`[[[${tag}|||${entryId}]]]`);
+                streams.normal.raw.push(`[[[${tag}|||${entryId}]]]`);
+                return;
+            }
+
+            if (typeof o.src === 'string' && o.src.toLowerCase() === 'smartchart' && Array.isArray(o.data)) {
+                let cleanOutput = [];
+                let rawOutput = [];
+                
+                if (o.title) {
+                    cleanOutput.push(stripHtml(String(o.title)).trim());
+                    rawOutput.push(String(o.title));
+                }
+                if (o.description) {
+                    cleanOutput.push(stripHtml(String(o.description)).trim());
+                    rawOutput.push(String(o.description));
+                }
+                if (o.amounttype) {
+                    cleanOutput.push("Amount Type: " + stripHtml(String(o.amounttype)).trim());
+                    rawOutput.push("Amount Type: " + String(o.amounttype));
+                }
+                
+                o.data.forEach(item => {
+                    if (item.title !== undefined && item.amount !== undefined) {
+                        let cleanLine = stripHtml(String(item.title)).trim() + ": " + stripHtml(String(item.amount)).trim();
+                        let rawLine = String(item.title) + ": " + String(item.amount);
+                        cleanOutput.push(cleanLine);
+                        rawOutput.push(rawLine);
+                    }
+                });
+
+                if (cleanOutput.length > 0) {
+                    streams.normal.clean.push(cleanOutput.join("\r\n"));
+                    streams.normal.raw.push(rawOutput.join("\r\n"));
+                }
+                return; 
+            }
+
+            if (o.interactiveTitle && typeof o.interactiveTitle === 'string') {
+                let valStr = stripHtml(o.interactiveTitle).trim();
+                if (valStr) {
+                    streams.normal.clean.push(`[Interactive Title] ${valStr}`);
+                    streams.normal.raw.push(`[Interactive Title] ${valStr}`);
+                }
+            }
+
+            if (typeof o.type === 'string' && (o.type.toLowerCase() === 'front' || o.type.toLowerCase() === 'back')) {
+                let sideLabel = o.type.toLowerCase() === 'front' ? 'Front' : 'Back';
+                let extracted = getCardSideContent(o, sideLabel);
+                streams.normal.clean.push(extracted.clean);
+                streams.normal.raw.push(extracted.raw);
+                return; 
+            }
+
+            let isFITB = typeof o.type === 'string' && o.type.toLowerCase() === 'fitb' && o.quiz;
+            let isWB = typeof o.type === 'string' && o.type.toLowerCase() === 'wb' && o.quiz;
+            
+            if (isFITB || isWB) {
+                let rawQuiz = String(o.quiz);
+                let optionIndex = 0;
+                let optionsArr = Array.isArray(o.options) ? o.options : [];
+                
+                let modifiedQuiz = rawQuiz.replace(/\*\_/g, () => {
+                    if (optionIndex < optionsArr.length) {
+                        let optData = optionsArr[optionIndex];
+                        let allOpts = [];
+                        
+                        if (isFITB) {
+                            if (optData.answer !== undefined && optData.answer !== null) {
+                                allOpts.push("*" + stripHtml(String(optData.answer)).trim());
+                            }
+                            if (Array.isArray(optData.options)) {
+                                optData.options.forEach(opt => {
+                                    allOpts.push(stripHtml(String(opt)).trim());
+                                });
+                            }
+                        } else {
+                            allOpts.push(stripHtml(String(optData)).trim());
+                        }
+                        
+                        optionIndex++;
+                        return `[${allOpts.join(', ')}]`;
+                    }
+                    return `*_`;
+                });
+                
+               let cleanedText = cleanAndValidateText(modifiedQuiz);
+                if (cleanedText) {
+                    streams.normal.raw.push(modifiedQuiz);
+                    streams.normal.clean.push(cleanedText);
+                }
+                return; 
+            }
+
+            if (typeof o.type === 'string' && o.type.toLowerCase() === 'selectable' && o.quiz) {
+                let cleanQuiz = cleanAndValidateText(o.quiz) || stripHtml(String(o.quiz)).trim();
+                let cleanOutput = cleanQuiz + "\r\n";
+                let rawOutput = String(o.quiz) + "\r\n";
+
+                let answers = Array.isArray(o.answer) ? o.answer : (o.answer ? [o.answer] : []);
+                if (answers.length > 0) {
+                    cleanOutput += "[Correct Answers]\r\n";
+                    rawOutput += "[Correct Answers]\r\n";
+                    answers.forEach(ans => {
+                        let cleanAns = cleanAndValidateText(ans) || stripHtml(String(ans)).trim();
+                        if (cleanAns) {
+                            cleanOutput += cleanAns + "\r\n";
+                            rawOutput += String(ans) + "\r\n";
+                        }
+                    });
+                }
+
+                let optionsArr = Array.isArray(o.options) ? o.options : (o.options ? [o.options] : []);
+                if (optionsArr.length > 0) {
+                    cleanOutput += "[Incorrect Choices]\r\n";
+                    rawOutput += "[Incorrect Choices]\r\n";
+                    optionsArr.forEach(opt => {
+                        let cleanOpt = cleanAndValidateText(opt) || stripHtml(String(opt)).trim();
+                        if (cleanOpt) {
+                            cleanOutput += cleanOpt + "\r\n";
+                            rawOutput += String(opt) + "\r\n";
+                        }
+                    });
+                }
+
+                streams.normal.clean.push(cleanOutput.trim());
+                streams.normal.raw.push(rawOutput.trim());
+                return; 
+            }
+
+            if (typeof o.title === 'string' && typeof o.text === 'string' && o.title.trim() !== '') {
+                let cleanTitle = stripHtml(o.title).trim();
+                let cleanText = cleanAndValidateText(o.text) || "";
+                if (cleanTitle) {
+                    streams.normal.clean.push(`${cleanTitle}\r\n${cleanText}`.trim());
+                    streams.normal.raw.push(`${o.title}\r\n${o.text}`.trim());
+                    return; 
+                }
+            }
+
+            for (const key in o) {
+                const safeKey = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+                
+                if (safeKey === 'interactivetitle') continue; 
+
+                if (safeKey === 'directionstextversion' && globalHasDirections) {
+                    continue; 
+                }
+                else if (safeKey === 'front' || safeKey === 'cardfront') {
+                    let extracted = getCardSideContent(o[key], 'Front');
+                    streams.normal.clean.push(extracted.clean);
+                    streams.normal.raw.push(extracted.raw);
+                    continue; 
+                } else if (safeKey === 'back' || safeKey === 'cardback') {
+                    let extracted = getCardSideContent(o[key], 'Back');
+                    streams.normal.clean.push(extracted.clean);
+                    streams.normal.raw.push(extracted.raw);
+                    continue;
+                } 
+                else if (safeKey === 'left' && o.right !== undefined) {
+                    if ((typeof o.left === 'string' || typeof o.left === 'number') && (typeof o.right === 'string' || typeof o.right === 'number')) {
+                        let lText = stripHtml(String(o.left)).trim();
+                        let rText = stripHtml(String(o.right)).trim();
+                        if (lText || rText) {
+                            streams.normal.clean.push(`${lText} — ${rText}`);
+                            streams.normal.raw.push(`${o.left} — ${o.right}`);
+                        }
+                        continue;
+                    }
+                } else if (safeKey === 'right' && o.left !== undefined) {
+                    if ((typeof o.left === 'string' || typeof o.left === 'number') && (typeof o.right === 'string' || typeof o.right === 'number')) {
+                        continue; 
+                    }
+                }
+                else if (safeKey === 'alt' || safeKey === 'alttext') {
+                    let valStr = stripHtml(String(o[key])).trim();
+                    if (valStr) {
+                        streams.normal.clean.push(`[${valStr}]`);
+                        streams.normal.raw.push(`[${valStr}]`);
+                    }
+                    continue;
+                }
+                else if (safeKey === 'bins' && Array.isArray(o[key])) {
+                    o[key].forEach(bin => {
+                        if (bin.title) {
+                            let cleanTitle = stripHtml(String(bin.title)).trim();
+                            if (cleanTitle) {
+                                streams.normal.clean.push(`[${cleanTitle}]`);
+                                streams.normal.raw.push(`[${bin.title}]`);
+                            }
+                        }
+                        if (Array.isArray(bin.item)) {
+                            bin.item.forEach(itm => {
+                                let itemText = typeof itm === 'string' ? itm : itm.text;
+                                if (itemText) {
+                                    let cleanItem = cleanAndValidateText(itemText) || stripHtml(String(itemText)).trim();
+                                    if (cleanItem) {
+                                        streams.normal.clean.push(cleanItem);
+                                        streams.normal.raw.push(String(itemText));
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    continue;
+                }
+
+                if (ignoreKeys.has(safeKey)) continue;
+
+                let nextCtx = ctx;
+                if (safeKey === 'ml' || safeKey === 'chathistory') nextCtx = 'ml';
+                else if (safeKey === 'standards' || safeKey === 'standard') nextCtx = 'std';
+                else if (safeKey === 'notes' || safeKey === 'note') nextCtx = 'note';
+
+                let val = o[key];
+                
+                if (safeKey === 'answer') {
+                    if (typeof val === 'string' || typeof val === 'number') val = String(val) + ' [Correct]';
+                    else if (Array.isArray(val)) val = val.map(v => (typeof v === 'string' || typeof v === 'number') ? String(v) + ' [Correct]' : v);
+                }
+
+                if (typeof val === 'string' && val.trim() !== '') {
+                    let validText = cleanAndValidateText(val);
+                    if (validText) {
+                        streams[nextCtx].raw.push(val);
+                        streams[nextCtx].clean.push(validText);
+                    }
+                } else if (Array.isArray(val)) {
+                    val.forEach(item => { 
+                        if (typeof item === 'string' && item.trim() !== '') {
+                            let validText = cleanAndValidateText(item);
+                            if (validText) {
+                                streams[nextCtx].raw.push(item);
+                                streams[nextCtx].clean.push(validText);
+                            }
+                        } else {
+                            traverse(item, nextCtx); 
+                        }
+                    });
+                } else {
+                    traverse(val, nextCtx);
+                }
+            }
+        }
+    }
+    
+    traverse(obj, 'normal');
+    function formatStream(arr) { return arr.map(s => s.trim()).filter(Boolean).join("\r\n"); }
+    
+    return {
+        normalClean: formatStream(streams.normal.clean), normalRaw: formatStream(streams.normal.raw),
+        mlClean: formatStream(streams.ml.clean), mlRaw: formatStream(streams.ml.raw),
+        stdClean: formatStream(streams.std.clean), noteClean: formatStream(streams.note.clean),
+        unlockState: unlockStateFound
+    };
+}
+
+async function processLegacyInteractive(fileKey, locationId, originalPath) {
+    try {
+        const contentText = await fileMap.get(fileKey).text();
+        const json = JSON.parse(contentText);
+        
+        let iFolder = "Interactive";
+        const pathParts = originalPath.split('/');
+        if (pathParts[0] === 'interactives' && pathParts.length > 1) {
+            iFolder = pathParts[1];
+        } else if (pathParts.length > 1) {
+            iFolder = pathParts[pathParts.length - 2];
+            if (iFolder.toLowerCase() === 'json' && pathParts.length > 2) {
+                iFolder = pathParts[pathParts.length - 3];
+            }
+        }
+
+       courseInteractives.push({
+            locationId: locationId,
+            title: json.title || json.interactiveTitle || (originalPath.endsWith('index.html') ? iFolder : originalPath.split('/').pop()),
+            folder: iFolder,
+            interactiveType: json.type || "unknown"
+        });
+
+        let intText = [];
+        
+        const textVersionKey = Object.keys(json).find(k => k.toLowerCase() === 'textversion');
+        let finalClean = "";
+        let finalRaw = "";
+
+        if (textVersionKey && typeof json[textVersionKey] === 'string' && json[textVersionKey].trim() !== '') {
+            let formattedText = json[textVersionKey]
+                .replace(/<p[^>]*>/gi, '\r\n')
+                .replace(/<br\s*\/?>/gi, '\r\n')
+                .replace(/<[^>]+>/g, '')
+                .trim();
+            finalClean = `Text Version:\r\n${formattedText}`;
+            finalRaw = finalClean;
+        } else {
+            const extracted = extractContentRecursive(json);
+            finalClean = extracted.normalClean;
+            finalRaw = extracted.normalRaw;
+        }
+
+        if (finalClean) {
+            courseIndex.push({
+                locationId: locationId,
+                filename: fileKey,
+                normalClean: finalClean,
+                normalRaw: finalRaw,
+                mlClean: "", mlRaw: "", noteClean: "", stdClean: "",
+                unlockState: null,
+                isInteractive: true,
+                order: 1
+            });
+        }
+    } catch (e) { console.warn(`Failed to parse interactive JSON: ${fileKey}`); }
+}
+
+// ── RENDER ENGINE ──────────────────────────────────────────────────────────
+function renderCourseViewer() {
+    const container = document.getElementById('course-viewer');
+    const tocSidebar = document.getElementById('toc-sidebar');
+    
+    container.innerHTML = '';
+    tocSidebar.innerHTML = '<h3 class="toc-header">Table of Contents</h3>';
+    tocSidebar.style.display = 'block';
+    container.style.display = 'block';
+
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked
+    };
+
+    validModules.forEach(mod => {
+        const modNum = padNum(mod.num);
+        const modId = generateSafeId('mod', modNum);
+        
+        const modDiv = document.createElement('div');
+        modDiv.className = 'module-block';
+        modDiv.id = modId;
+        modDiv.innerHTML = `<h2 class="module-title">${modNum} ${escapeHtml(mod.title)}</h2>`;
+
+        const tocModDetails = document.createElement('details');
+        tocModDetails.className = 'toc-module';
+        tocModDetails.innerHTML = `<summary onclick="document.getElementById('${modId}').scrollIntoView({behavior: 'smooth'})">${modNum} ${escapeHtml(mod.title)}</summary>`;
+        const tocModContent = document.createElement('div');
+        tocModContent.className = 'toc-tree-content';
+
+        if (mod.lessons) {
+            mod.lessons.forEach(lesson => {
+                const fullLesID = parseLessonBaseID(mod, lesson);
+                const lesId = generateSafeId('les', fullLesID);
+                
+                const lesDet = document.createElement('details');
+                lesDet.className = 'lesson-details';
+                lesDet.id = lesId;
+                lesDet.innerHTML = `<summary class="lesson-summary">${fullLesID} ${escapeHtml(lesson.title)}</summary>`;
+                
+                const lesContent = document.createElement('div');
+                lesContent.className = 'lesson-content';
+
+                const tocLesId = 'toc-' + lesId;
+                const tocLesDetails = document.createElement('details');
+                tocLesDetails.className = 'toc-lesson';
+                tocLesDetails.id = tocLesId;
+                tocLesDetails.innerHTML = `<summary onclick="document.getElementById('${lesId}').scrollIntoView({behavior: 'smooth'})">${fullLesID} ${escapeHtml(lesson.title)}</summary>`;
+                const tocLesContent = document.createElement('div');
+                tocLesContent.className = 'toc-tree-content';
+
+                let isSyncing = false;
+                lesDet.addEventListener('toggle', () => {
+                    if (isSyncing) return;
+                    if (lesDet.open && !tocModDetails.open) tocModDetails.open = true;
+                    if (tocLesDetails.open !== lesDet.open) {
+                        isSyncing = true;
+                        tocLesDetails.open = lesDet.open;
+                        setTimeout(() => isSyncing = false, 10);
+                    }
+                });
+                
+                tocLesDetails.addEventListener('toggle', () => {
+                    if (isSyncing) return;
+                    if (lesDet.open !== tocLesDetails.open) {
+                        isSyncing = true;
+                        lesDet.open = tocLesDetails.open;
+                        setTimeout(() => isSyncing = false, 10);
+                    }
+                });
+
+                if (lesson.pages) {
+                    lesson.pages.forEach((page, idx) => {
+                        const pageNum = parsePageNum(page.src, idx);
+                        const fullPgID = `${fullLesID}.${padNum(pageNum)}`;
+                        const pgId = generateSafeId('pg', fullPgID);
+                        
+                        const pgDiv = document.createElement('div');
+                        pgDiv.className = 'page-block';
+                        pgDiv.id = pgId;
+                        pgDiv.innerHTML = `<h3 class="page-title">${fullPgID} ${escapeHtml(page.title)}</h3>`;
+
+                        const tocPageDiv = document.createElement('div');
+                        tocPageDiv.className = 'toc-page';
+                        tocPageDiv.innerHTML = `${fullPgID} ${escapeHtml(page.title)}`;
+                        tocPageDiv.onclick = () => {
+                            lesDet.open = true; 
+                            document.getElementById(pgId).scrollIntoView({behavior: 'smooth'});
+                        };
+                        tocLesContent.appendChild(tocPageDiv);
+
+                        const pageEntries = courseIndex.filter(idx => idx.locationId === fullPgID || idx.locationId.startsWith(fullPgID + '.INT-'));
+                        
+                        pageEntries.sort((a, b) => a.order - b.order);
+
+                      pageEntries.forEach(pageData => {
+                            if (pageData.isInteractive) {
+                                return;
+                            }
+
+                            let contentText = pageData.normalClean;
+
+                            contentText = contentText.replace(/\[\[\[TEXTVERSION\|\|\|(.*?)\|\|\|([\s\S]*?)\|\|\|(.*?)\]\]\]/g, (match, fileName, textContent, vidId) => {
+                                let titleTag = `[Text Version Linked: ${fileName}]`;
+                                if (vidId && vidId.trim() !== '') {
+                                    titleTag = `[Video: ${vidId} | Text Version Linked: ${fileName}]`;
+                                }
+                                return `</div><div class="media-tag"><strong>${titleTag}</strong><br/><br/>${textContent.trim()}</div><div class="page-text">`;
+                            });
+
+                           contentText = contentText.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+                                const img = courseImages.find(i => i.fileName === fileName);
+                                if (img) {
+                                    const hasMeta = (img.altText && img.altText.trim() !== "") || (img.dataContent && img.dataContent.trim() !== "");
+                                    if (options.exImgEmpty && !hasMeta) return '';
+
+                                    let imgString = `[Image: ${img.fileName}`;
+                                    if (img.altText) imgString += ` | Alt: ${img.altText}`;
+                                    if (img.dataContent) imgString += ` | Data-Content: ${img.dataContent}`;
+                                    imgString += `]`;
+                                    
+                                    return `</div><div class="media-tag">${escapeHtml(imgString)}</div><div class="page-text">`;
+                                }
+                                return '';
+                            });
+
+                            contentText = contentText.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => {
+                                return `</div><div class="media-tag">[Video: ${entryId}]</div><div class="page-text">`;
+                            });
+
+                            contentText = contentText.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+                                return `</div><div class="media-tag">[Audio: ${fileName}]</div><div class="page-text">`;
+                            });
+
+                            contentText = contentText.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
+                                if (options.exGlossary) return term;
+                                const definition = courseGlossary.get(id) || courseGlossary.get(term.toLowerCase().trim());
+                                if (definition) {
+                                    return `${term} <span style="background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; color: var(--text); font-size: 0.95em; font-family: sans-serif;">[${definition}]</span>`;
+                                }
+                                return `${term} <span style="background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; color: var(--text); font-size: 0.95em; font-family: sans-serif;">[definition unavailable]</span>`;
+                            });
+
+                            contentText = contentText.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|([\s\S]*?)\]\]\]/g, (match, term, text) => {
+                                return options.exTooltips ? term : `${term} <span style="background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; color: var(--text); font-size: 0.95em; font-family: sans-serif;">[${text.trim()}]</span>`;
+                            });
+
+                            if (!options.exDocs) {
+                                contentText = contentText.replace(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+                                    return `</div><div class="media-tag"><strong>[Document: ${escapeHtml(fileName)}]</strong> <button class="nav-btn" style="margin-left:10px;" onclick="loadDocContentUI(this, '${escapeHtml(fileName)}')">Load Text</button></div><div class="page-text">`;
+                                });
+                            } else {
+                                contentText = contentText.replace(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g, '');
+                            }
+
+                           contentText = contentText.replace(/\[\[\[INT\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, path, intId) => {
+                                if (options.exInt) return '';
+                                const intEntry = pageEntries.find(e => e.locationId === intId && e.isInteractive);
+                                const intContent = intEntry ? intEntry.normalClean : "";
+                                const intMeta = courseInteractives.find(i => i.locationId === intId);
+                                const intFolder = intMeta ? intMeta.folder : "Interactive";
+                                let intTitle = intMeta ? intMeta.title : path.split('/').pop();
+                                if (intTitle === 'index.html') intTitle = intFolder;
+                                return `</div><div class="media-tag"><strong>[Interactive Content: ${escapeHtml(intTitle)} | Folder: ${escapeHtml(intFolder)}]</strong><br/><br/>${escapeHtml(intContent)}</div><div class="page-text">`;
+                            });
+
+                            pgDiv.innerHTML += `<div class="page-text">${contentText}</div>`;
+                        });
+
+                        lesContent.appendChild(pgDiv);
+                    });
+                }
+                tocLesDetails.appendChild(tocLesContent);
+                tocModContent.appendChild(tocLesDetails);
+                lesDet.appendChild(lesContent);
+                modDiv.appendChild(lesDet);
+            });
+        }
+        tocModDetails.appendChild(tocModContent);
+        tocSidebar.appendChild(tocModDetails);
+        container.appendChild(modDiv);
+    });
+}
+
+// ── WORD EXPORT ROUTINES ───────────────────────────────────────────────────
+function openExportModal() {
+    if (validModules.length === 0) return showToast("No course loaded to export.", "error");
+    const container = document.getElementById('export-checkbox-container');
+    container.innerHTML = '';
+    
+    validModules.forEach((mod, idx) => {
+        container.innerHTML += `<label style="display:block;"><input type="checkbox" class="mod-exp-cb" value="${idx}"> ${padNum(mod.num)} ${escapeHtml(mod.title)}</label>`;
+    });
+    document.getElementById('export-modal').classList.add('active');
+}
+
+function toggleAllExportModules(selectAll) {
+    document.querySelectorAll('.mod-exp-cb').forEach(cb => cb.checked = selectAll.checked);
+}
+
+function executeExport() {
+    const isSingle = document.querySelector('input[name="exp-type"]:checked').value === 'single';
+    document.getElementById('export-modal').classList.remove('active');
+    if (isSingle) exportFullCourse();
+}
+
+async function exportFullCourse() {
+    let fullContent = "";
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked
+    };
+    for (const mod of validModules) {
+        const modNum = padNum(mod.num);
+        fullContent += `${modNum} ${mod.title}\r\n`;
+        if(mod.lessons) {
+            for(const les of mod.lessons) {
+                const fullLesID = parseLessonBaseID(mod, les);
+                fullContent += `${fullLesID} ${les.title}\r\n`;
+                if(les.pages) {
+                    for(const page of les.pages) {
+                        const pageNum = parsePageNum(page.src, les.pages.indexOf(page));
+                        const fullPgID = `${fullLesID}.${padNum(pageNum)}`;
+                        fullContent += `${fullPgID} ${page.title}\r\n`;
+                        
+                        const entries = courseIndex.filter(e => e.locationId === fullPgID || e.locationId.startsWith(fullPgID + '.INT-'));
+                        const htmlEntry = entries.find(e => !e.isInteractive);
+                        
+                        if(htmlEntry) { 
+                            let text = htmlEntry.normalClean;
+                            
+                            text = text.replace(/\[\[\[TEXTVERSION\|\|\|(.*?)\|\|\|([\s\S]*?)\|\|\|(.*?)\]\]\]/g, (match, fileName, textContent, vidId) => {
+                                let titleTag = `[Text Version Linked: ${fileName}]`;
+                                if (vidId && vidId.trim() !== '') {
+                                    titleTag = `[Video: ${vidId} | Text Version Linked: ${fileName}]`;
+                                }
+                                return `\r\n${titleTag}\r\n${textContent.trim()}\r\n`;
+                            });
+
+                           text = text.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+                                const img = courseImages.find(i => i.fileName === fileName);
+                                if (img) {
+                                    const hasMeta = (img.altText && img.altText.trim() !== "") || (img.dataContent && img.dataContent.trim() !== "");
+                                    if (options.exImgEmpty && !hasMeta) return '';
+
+                                    let imgString = `[Image: ${img.fileName}`;
+                                    if (img.altText) imgString += ` | Alt: ${img.altText}`;
+                                    if (img.dataContent) imgString += ` | Data-Content: ${img.dataContent}`;
+                                    imgString += `]`;
+                                    
+                                    return `\r\n${imgString}\r\n`;
+                                }
+                                return '';
+                            });
+
+                            text = text.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => `\r\n[Video: ${entryId}]\r\n`);
+                            text = text.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, fileName) => `\r\n[Audio: ${fileName}]\r\n`);
+                            
+                            text = text.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
+                                if (options.exGlossary) return term;
+                                const definition = courseGlossary.get(id) || courseGlossary.get(term.toLowerCase().trim());
+                                return definition ? ` ${term} [${definition}] ` : ` ${term} [definition unavailable] `;
+                            });
+                            
+                            text = text.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|([\s\S]*?)\]\]\]/g, (match, term, popText) => {
+                                return options.exTooltips ? term : ` ${term} [${popText.trim()}] `;
+                            });
+                            
+                            const docMatches = [...text.matchAll(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g)];
+                            for (const match of docMatches) {
+                                const fileName = match[1];
+                                let docText = "";
+                                if (!options.exDocs) {
+                                    docText = await extractDocumentText(fileName);
+                                }
+                                text = text.replace(match[0], options.exDocs ? '' : `\r\n[Document: ${fileName} | ${docText}]\r\n`);
+                            }
+
+                           text = text.replace(/\[\[\[INT\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, path, intId) => {
+                                if (options.exInt) return '';
+                                const intEntry = entries.find(e => e.locationId === intId && e.isInteractive);
+                                const intContent = intEntry ? intEntry.normalClean : "";
+                                const intMeta = courseInteractives.find(i => i.locationId === intId);
+                                const intFolder = intMeta ? intMeta.folder : "Interactive";
+                                let intTitle = intMeta ? intMeta.title : path.split('/').pop();
+                                if (intTitle === 'index.html') intTitle = intFolder;
+                                return `\r\n[Interactive Content: ${intTitle} | Folder: ${intFolder}]\r\n${intContent}\r\n`;
+                            });
+                            
+                            fullContent += `${text}\r\n`; 
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    const htmlBody = fullContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
+    const blob = htmlDocx.asBlob(fullHtml);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Course_Content_Export.docx`;
+    link.click();
+}
+</script>
+</body>
+</html>
