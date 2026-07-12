@@ -285,8 +285,11 @@
     
     .moon-cutout {
       transform-origin: 160px 30px;
-      /* Dynamic translation tied to the orb + the phase mask shift */
-      transform: translate(calc(var(--orb-x, 0px) + var(--cutout-x, 20px)), calc(var(--orb-y, 0px) + var(--cutout-y, -20px)));
+      /* Phase-only offset — the mask already travels with the orb automatically,
+         since it's attached via the mask attribute to an element that shares the
+         same ambient transform. Re-adding --orb-x/--orb-y here would double it up
+         and throw the cutout circle far outside the visible orb. */
+      transform: translate(var(--cutout-x, 20px), var(--cutout-y, -20px));
       transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -774,7 +777,7 @@
 		  <clipPath id="horizon-clip">
 			<rect x="0" y="0" width="320" height="50" />
 		  </clipPath>
-          <mask id="moon-mask">
+          <mask id="moon-mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="0" width="320" height="60">
             <rect x="0" y="0" width="320" height="60" fill="white" />
             <circle class="moon-cutout" cx="160" cy="30" r="10" fill="black" />
           </mask>
