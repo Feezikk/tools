@@ -254,6 +254,15 @@
             background-color: #e2e8f0 !important;
         }
 
+        /* Highlight rows that are likely not guided notes */
+        .warning-row td {
+            background-color: #ffedd5 !important; /* Light orange notification */
+        }
+        
+        tr.warning-row:hover td {
+            background-color: #fed7aa !important; /* Darker orange on hover */
+        }
+
         .badge-num {
             display: inline-block;
             background: #e2e8f0;
@@ -487,6 +496,26 @@ function generateRows() {
                 
             const row = document.createElement('tr');
             
+            // Highlight logic and Tooltips
+            const hasExamWord = /\bexam\b/i.test(lessonData.lessonName);
+            const hasDBA = /discussion[- ]based assessment/i.test(lessonData.lessonName);
+            const hasCollab = /collaboration/i.test(lessonData.lessonName);
+            const hasEnrichment = /enrichment/i.test(lessonData.lessonName);
+            const endsWith00 = lessonData.lessonNumber && lessonData.lessonNumber.endsWith('.00');
+            
+            let warningReasons = [];
+            if (endsWith00) warningReasons.push(".00 page");
+            if (hasDBA) warningReasons.push("DBA page");
+            if (hasExamWord) warningReasons.push("Exam page");
+            if (hasCollab) warningReasons.push("Collaboration page");
+            if (hasEnrichment) warningReasons.push("Enrichment page");
+            
+            if (warningReasons.length > 0) {
+                row.classList.add('warning-row');
+                // Create the hover tooltip 
+                row.title = `Likely non-guided notes lesson due to being a ${warningReasons.join(' and ')}`;
+            }
+            
             // Index Number Box
             const cellNum = document.createElement('td');
             if (lessonData.lessonNumber) {
@@ -517,7 +546,7 @@ function generateRows() {
             cellFile.appendChild(fileContainer);
             row.appendChild(cellFile);
             
-            // RESTORED: Collapsible assessment preview panel wrapper
+            // Collapsible assessment preview panel wrapper
             const cellText = document.createElement('td');
             const detailsContainer = document.createElement('details');
             const summaryLabel = document.createElement('summary');
