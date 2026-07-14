@@ -162,7 +162,7 @@
     .step-item:hover::before { background-color: var(--card-accent); color: #fff; }
     
     .step-text { font-size: 1.1rem; line-height: 1.6; font-weight: 400; margin-bottom: 16px; }
-    .step-code { font-family: monospace; background-color: color-mix(in srgb, var(--ink) 5%, transparent); padding: 4px 8px; border-radius: 6px; font-size: 0.95em; color: var(--card-accent); font-weight: 600; }
+    .step-code { font-family: monospace; background-color: black; padding: 4px 8px; border-radius: 6px; font-size: 0.95em; color: var(--card-accent); font-weight: 600; }
     
     .instruction-image { 
       max-width: 100%; height: auto; border-radius: var(--radius-sm);
@@ -266,12 +266,12 @@
           <p class="step-text">Open Chrome and enter: <span class="step-code">chrome://extensions/</span></p>
         </li>
         <li class="step-item">
-          <p class="step-text">Ensure Developer mode is ON. <br>
+			<p class="step-text">Ensure Developer mode is <span class="step-code">ON</span>. <br>
           (Found in the upper right-hand corner.)</p>
           <img src="images/ipp_01.png" alt="Developer mode toggle turned on" class="instruction-image" />
         </li>
         <li class="step-item">
-          <p class="step-text">Select <strong>Load Unpacked</strong></p>
+          <p class="step-text">Select <span class="step-code">Load Unpacked</span></p>
           <img src="images/ipp_02.png" alt="Load unpacked button in Chrome" class="instruction-image" />
         </li>
         <li class="step-item">
