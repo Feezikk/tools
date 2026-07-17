@@ -154,6 +154,22 @@
       background-repeat: repeat;
       background-size: 450px 150px;
     }
+	  
+	  .action-link-small {
+      text-decoration: none;
+      color: var(--ink);
+      background: var(--mist);
+      padding: 8px 12px; /* Reduced padding to match smaller text */
+      border-radius: 99px; /* Pill shape */
+      font-size: 0.75rem; /* Made the text smaller */
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1; /* Makes buttons equal width */
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
 
     [data-theme="night"] #stars {
       opacity: 0.6;
@@ -896,20 +912,31 @@
       </a>
 		
 		
-		  <!-- Multi-Action Card -->
+	<!-- Multi-Action Card: Magic IPP Automation -->
       <div class="tool-card" style="--card-accent: #E07A5F;">
         <div class="card-icon">🪄</div>
         <div class="card-content">
           <div class="card-name">Magic IPP Automation</div>
           <div class="card-desc">Wave a wand and watch your lesson data automatically organize itself into the pasture—no manual entry required.</div>
         </div>
-        <div class="card-actions">
-          <a href="ipp_automation.zip" target="_blank" rel="noopener noreferrer" class="action-link">
-            Download Extension <span>→</span>
-          </a>
-          <a href="ipp_how_to.html" target="_blank" rel="noopener noreferrer" class="action-link">
-            How To Setup <span>→</span>
-          </a>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;">
+          <div class="card-actions" style="margin-top: 0;">
+            <a href="ipp_automation.zip" target="_blank" rel="noopener noreferrer" class="action-link-small">
+              Chrome (.zip) <span>→</span>
+            </a>
+            <a href="ipp_how_to.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
+              Setup <span>→</span>
+            </a>
+          </div>
+			<hr />
+          <div class="card-actions" style="margin-top: 0;">
+            <a href="ipp_automation_firefox.xpi" target="_blank" rel="noopener noreferrer" class="action-link-small">
+              Firefox (.xpi) <span>→</span>
+            </a>
+            <a href="ipp_how_to_firefox.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
+              Setup <span>→</span>
+            </a>
+          </div>
         </div>
       </div>
 		
