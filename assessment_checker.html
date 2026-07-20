@@ -311,7 +311,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
 <body>
 
 <header>
-  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v6.05</span></div>
+  <div class="logo">⬡ Educator Assessment Checker <span class="logo-badge">v6.06</span></div>
   <label class="cdn-label">
     Course Image Folder:
     <span class="cdn-prefix">//cdn.flvs.net/assessment_images/</span><input id="img-base-path" class="cdn-input cdn-input-folder" type="text"
@@ -325,6 +325,9 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       <option value="H">Honors</option>
       <option value="M">Mixed</option>
     </select>
+  </label>
+  <label class="cdn-label" style="margin-left: 14px; cursor:pointer;" title="Enable to allow data-associatedlessons to contain descriptive lesson text instead of the standard ##.##R/##.##H format.">
+    <input type="checkbox" id="math-course-checkbox"> Math Course
   </label>
   <button class="btn btn-dashboard" id="fr-toggle-btn" title="Find and Replace in text" style="margin-left: 10px;">🔍 Find</button>
   <button class="btn btn-dashboard" id="dashboard-btn" disabled title="Run an audit first">⊞ Dashboard</button>
@@ -387,7 +390,7 @@ mark.error-highlight{background:#fecaca;color:#991b1b;padding:0 3px;border-radiu
       </div>
       <div style="display:flex; gap:6px;">
         <button class="fr-btn" id="fr-replace-btn">Replace</button>
-        <button class="fr-btn fr-btn-primary" id="fr-replace-all-btn">All</button>
+        <button class="fr-btn fr-btn-primary" id="fr-replace-all-btn">Replace All</button>
       </div>
     </div>
   </div>
@@ -473,6 +476,7 @@ const AppState = {
   dashData:         null, // built by buildDashboardData after each audit
   dashMeta:         null, // { questions, groups }
   courseType:       'R',  // 'R' | 'H' | 'M' set by header dropdown
+  isMathCourse:     false, // true when the "Math Course" checkbox is enabled
   imgCourseFolder:  '',   // set by the header input
   imgBasePath:      '',   // derived from imgCourseFolder
   hasRunOnce:       false,
@@ -491,6 +495,7 @@ const DOM = (() => {
     imgBasePath:    $('img-base-path'),
     cdnAutoBadge:   $('cdn-auto-badge'),
     courseTypeSelect: $('course-type-select'),
+    mathCourseCheckbox: $('math-course-checkbox'),
     dashboardBtn:   $('dashboard-btn'),
     // Left panel
     cmEditor:       $('cm-editor'),
@@ -1935,10 +1940,15 @@ const AssessmentChecker = (() => {
     'img-dimensions-check'(rule, qs, raw, lines) {
       return lines.flatMap((line, i) => {
         const imgs=line.match(/<img\b(?:"[^"]*"|'[^']*'|[^>])*>/gi)||[];
-        return imgs.flatMap(img => [
-          /\bwidth\s*=/i.test(img) ? fail(rule,rule.message.replace('{line}',i+1).replace('{found}','width'),i+1,'width') : null,
-          /\bheight\s*=/i.test(img) ? fail(rule,rule.message.replace('{line}',i+1).replace('{found}','height'),i+1,'height') : null
-        ].filter(Boolean));
+        return imgs.flatMap(img => {
+          const srcMatch = img.match(/\bsrc\s*=\s*"([^"]*)"|\bsrc\s*=\s*'([^']*)'/i);
+          const src = srcMatch ? (srcMatch[1] || srcMatch[2] || '') : '';
+          const isSvg = /\.svg(\?.*)?$/i.test(src.trim());
+          return [
+            (!isSvg && /\bwidth\s*=/i.test(img)) ? fail(rule,rule.message.replace('{line}',i+1).replace('{found}','width'),i+1,'width') : null,
+            /\bheight\s*=/i.test(img) ? fail(rule,rule.message.replace('{line}',i+1).replace('{found}','height'),i+1,'height') : null
+          ].filter(Boolean);
+        });
       });
     },
 
@@ -1947,11 +1957,15 @@ const AssessmentChecker = (() => {
       return lines.flatMap((line, i) => {
         const imgs=line.match(/<img[^>]*>/gi)||[];
         return imgs.flatMap(img=>{
+          const srcMatch = img.match(/\bsrc\s*=\s*"([^"]*)"|\bsrc\s*=\s*'([^']*)'/i);
+          const src = srcMatch ? (srcMatch[1] || srcMatch[2] || '') : '';
+          const isSvg = /\.svg(\?.*)?$/i.test(src.trim());
           const img2=img.replace(/(=\s*"[^"]*"|=\s*'[^']*')/g,'=""');
           const re=/\b([a-zA-Z][a-zA-Z0-9-]*)\s*=/g;
           let m, found=[];
           while((m=re.exec(img2))!==null){
             const name=m[1].toLowerCase();
+            if(isSvg && name==='width') continue;
             if(!ALLOWED.includes(name)){
               // Ignore align="absmiddle" so the dedicated rule can handle it alone
               if (name === 'align' && /\balign\s*=\s*["']?absmiddle["']?/i.test(img)) continue;
@@ -2178,6 +2192,9 @@ const AssessmentChecker = (() => {
 
     'span-associatedlessons-format-check'(rule, qs) {
       const results=[];
+      // Math courses may use descriptive lesson text (e.g. "01.02 Solving Equations")
+      // instead of the standard ##.##R/##.##H format, so skip this check entirely.
+      if (AppState.isMathCourse) return results;
       for(const q of qs){
         if(!q.stem.includes('<span')) continue;
         const sm=q.stem.match(/<span([^>]*?)\/?>([\s\S]*?)(?:<\/span>|<br|\n|$)/i); if(!sm) continue;
@@ -2278,6 +2295,10 @@ const AssessmentChecker = (() => {
 
     'span-content-match-check'(rule, qs) {
       const results=[];
+      // Math courses may populate data-associatedlessons with descriptive lesson
+      // text rather than the standard ##.##R/##.##H format, so the span content
+      // (e.g. "(01.02 LC)") can't be reliably validated against it here.
+      if (AppState.isMathCourse) return results;
       for(const q of qs){
         if(!q.stem.includes('<span')) continue;
         // Match attributes and handle optional self-closing (/>), then capture text up to </span>, <br, newline, or end of string
@@ -5613,6 +5634,11 @@ requestAnimationFrame(()=>{cm.refresh();cm.focus();});
 // Header: course type select
 DOM.courseTypeSelect.addEventListener('change', function() {
   AppState.courseType = this.value;
+});
+
+// Header: math course checkbox
+DOM.mathCourseCheckbox.addEventListener('change', function() {
+  AppState.isMathCourse = this.checked;
 });
 
 // Header: course image folder input
