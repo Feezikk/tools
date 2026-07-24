@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="llama.ico">
+    <title>Course Explorer</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+<div class="container">
+
+    <div class="header-card">
+        <div class="header-top-row">
+            <div class="header-logo-group">
+                <div class="header-logo-icon" id="svg-header-logo"></div>
+                <div>
+                    <h1 id="main-title">Course Explorer</h1>
+                    <div class="header-subtitle">
+                        Course Explorer Tool <span class="version-pill">v7.46</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-center gap-10 flex-wrap">
+                <button id="refresh-btn"      class="icon-btn btn-base" style="display:none;" title="Re-scan current folder and apply previous settings"></button>
+                <button id="select-course-btn" class="icon-btn btn-base" style="display:none;" title="Select a different course from the scanned folder"></button>
+            </div>
+        </div>
+
+       <div class="view-switcher" id="view-switcher" style="display:none;">
+            <button id="btn-view-search" class="view-btn active" onclick="switchView('search')"></button>
+            <button id="btn-view-media"  class="view-btn"        onclick="switchView('media')"></button>
+            <button id="btn-view-audit"  class="view-btn"        onclick="switchView('audit')"></button>
+            <button id="btn-view-stds"   class="view-btn"        onclick="switchView('stds')"></button>
+            <button id="btn-view-read"   class="view-btn"        onclick="switchView('readability')"></button>
+        </div>
+
+        <div id="setup-area">
+            <p style="color:var(--text-light); margin-bottom:10px;">
+                Select your <strong>.Courses</strong> root folder to begin scanning.
+            </p>
+            <div class="drop-zone" id="drop-zone"
+                 onclick="document.getElementById('folder-input').click()">
+                <div style="margin-bottom:10px; color:var(--primary);" id="svg-drop-zone"></div>
+                <strong style="color:var(--primary);">Click to Browse .Courses Folder</strong>
+                <input type="file" id="folder-input" webkitdirectory directory multiple />
+            </div>
+            <div id="history-area">
+                <div class="history-label">Last Folder</div>
+                <div id="history-list"></div>
+            </div>
+        </div>
+
+        <div id="config-screen" style="display:none; text-align:left; position:relative; padding-bottom:20px;">
+            <div style="text-align:center; margin-bottom:20px;" id="config-header"></div>
+
+            <div style="background:#fff; border:1px solid var(--border); border-radius:8px;
+                        max-height:55vh; overflow-y:auto; margin-bottom:20px;
+                        box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);">
+                <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead style="position:sticky; top:0; background:#f8f9fa; z-index:10;
+                                  box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                        <tr style="border-bottom:2px solid #ddd; text-align:left;">
+                            <th style="padding:12px 15px; color:var(--primary);">Lesson</th>
+                            <th style="padding:10px; width:120px; text-align:center; color:var(--primary);">Objectives</th>
+                            <th style="padding:10px; width:120px; text-align:center; color:var(--primary);">Standards</th>
+                        </tr>
+                    </thead>
+                    <tbody id="config-table-body"></tbody>
+                </table>
+            </div>
+
+            <div style="position:sticky; bottom:0; text-align:center; padding:15px 0; z-index:100;
+                        background:var(--bg); margin:0 -20px; padding-left:20px; padding-right:20px;
+                        border-radius:0 0 12px 12px;">
+                <button class="action-btn btn-base"
+                        style="background:var(--primary); color:#fff; padding:12px 30px;
+                               font-size:1rem; border:none; margin:0 auto;
+                               box-shadow:0 4px 15px rgba(28,53,94,0.2);"
+                        onclick="applyAuditConfig()">
+                    View Curriculum Map
+                </button>
+            </div>
+        </div>
+
+        <div id="status-area" style="margin-top:10px; font-weight:500;"></div>
+    </div>
+    
+    <div id="search-wrapper" class="sticky-top-wrapper" style="display:none;">
+        <div class="white-card-header" style="display:flex; flex-direction:column; gap:15px;">
+
+            <div style="display: flex; gap: 10px; width: 100%; align-items: center;">
+                <div class="main-search-wrapper" style="flex-grow: 1;">
+                    <div class="main-search-icon" id="svg-content-search-icon"></div>
+                    <input type="text" id="search-input" placeholder="Enter your search..." autocomplete="off">
+                    <button id="search-clear-btn" class="main-search-clear" style="display:none;" title="Clear search">&times;</button>
+                </div>
+                <button id="advanced-search-toggle" title="Advanced Search Options" onclick="toggleAdvancedSearch()">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="width:1.2em; height:1.2em;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
+
+                <div class="flex-center gap-10">
+                    <div class="filter-dropdown-wrapper">
+                        <button class="filter-btn btn-base" id="search-mod-btn"
+                                onclick="toggleFilterDropdown('search-mod-dropdown', event)">
+                            Modules <span id="svg-arrow-down-search-mod"></span>
+                        </button>
+                        <div id="search-mod-dropdown" class="filter-dropdown-content"
+                             style="width:350px;" onclick="event.stopPropagation()">
+                            <div class="filter-actions">
+                                <button class="filter-action-btn" onclick="toggleAllSearchModules(false)">Clear All</button>
+                            </div>
+                            <div id="search-module-dropdown-list"
+                                 style="max-height:250px; overflow-y:auto; overflow-x:hidden; padding-right:5px;"></div>
+                        </div>
+                    </div>
+
+                   <div class="filter-dropdown-wrapper">
+                        <button class="filter-btn btn-base" id="search-type-btn"
+                                onclick="toggleFilterDropdown('search-type-dropdown', event)">
+                            Exclude <span id="svg-arrow-down-search-type"></span>
+                        </button>
+                        <div id="search-type-dropdown" class="filter-dropdown-content"
+                             style="width:250px;" onclick="event.stopPropagation()">
+                            <div class="filter-actions">
+                                <button class="filter-action-btn" onclick="toggleAllSearchTypes(false)">Clear All</button>
+                            </div>
+                            <div id="search-type-dropdown-list"
+                                 style="max-height:250px; overflow-y:auto; overflow-x:hidden; padding-right:5px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider" style="height:24px; margin:0 -5px;"></div>
+
+                <div class="pill-checkbox-group">
+                    <label class="pill-label">
+                        <input type="checkbox" id="html-toggle" checked>
+                        <span><i id="svg-icon-code"></i> HTML</span>
+                    </label>
+                    <label class="pill-label">
+                        <input type="checkbox" id="whole-word-toggle">
+                        <span>Exact Match</span>
+                    </label>
+                    <label class="pill-label">
+                        <input type="checkbox" id="case-sensitive-toggle">
+                        <span>Match Case</span>
+                    </label>
+                </div>
+
+                <div class="flex-center gap-10" style="margin-left:auto;">
+                    <button id="export-search-btn" class="action-btn btn-base"
+                            style="display:none;" onclick="exportSearchResults()"></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="search-stats" class="search-summary-bar" style="display:none;"></div>
+    </div>
+
+    <div id="results-area"></div>
+
+
+    <div id="stds-search-area" style="display:none; width:100%; text-align:left;">
+        <div class="sticky-top-wrapper">
+            <div class="white-card-header" style="display:flex; flex-direction:column; gap:15px;">
+
+                <div class="main-search-wrapper">
+                    <div class="main-search-icon" id="svg-stds-search-icon"></div>
+                    <input type="text" id="stds-search-input"
+                           placeholder="Search standard codes or descriptions..." autocomplete="off">
+                    <button id="stds-search-clear" class="main-search-clear"
+                            style="display:none;" title="Clear search">&times;</button>
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
+
+                    <div class="flex-center gap-10">
+                        <div class="filter-dropdown-wrapper">
+                            <button class="filter-btn btn-base" id="stds-mod-btn"
+                                    onclick="toggleFilterDropdown('stds-mod-dropdown', event)">
+                                Modules <span id="svg-arrow-down-stds-mod"></span>
+                            </button>
+                            <div id="stds-mod-dropdown" class="filter-dropdown-content"
+                                 style="width:350px;" onclick="event.stopPropagation()">
+                                <div class="filter-actions">
+                                    <button class="filter-action-btn" onclick="toggleAllStdsModules(false)">Clear All</button>
+                                </div>
+                                <div id="stds-module-dropdown-list"
+                                     style="max-height:250px; overflow-y:auto; overflow-x:hidden; padding-right:5px;"></div>
+                            </div>
+                        </div>
+
+                        <div class="filter-dropdown-wrapper">
+                            <button class="filter-btn btn-base" id="stds-state-btn"
+                                    onclick="toggleFilterDropdown('stds-state-dropdown', event)">
+                                States <span id="svg-arrow-down-stds-state"></span>
+                            </button>
+                            <div id="stds-state-dropdown" class="filter-dropdown-content"
+                                 style="width:450px;" onclick="event.stopPropagation()">
+                                <div class="filter-actions">
+                                    <button class="filter-action-btn" onclick="toggleAllStdsStates(false)">Clear All</button>
+                                </div>
+                                <div id="stds-state-dropdown-list"
+                                     style="max-height:350px; overflow-y:auto; overflow-x:hidden; padding-right:5px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider" style="height:24px; margin:0 -5px;"></div>
+
+                    <div class="flex-center gap-15" style="flex-wrap:wrap;">
+                        <div class="segmented-control">
+                            <label><input type="radio" name="stds-view" value="page"   onchange="setStdsView('page')">  <span>Page</span></label>
+                            <label><input type="radio" name="stds-view" value="lesson" onchange="setStdsView('lesson')" checked><span>Lesson</span></label>
+                            <label><input type="radio" name="stds-view" value="table"  onchange="setStdsView('table')"> <span>Table</span></label>
+                        </div>
+                        <div class="pill-checkbox-group">
+                            <label class="pill-label" id="lbl-stds-group-toggle">
+                                <input type="checkbox" id="stds-group-toggle" onchange="runStdsSearch()">
+                                <span><i id="svg-icon-layers"></i> Show Shared</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex-center gap-10" style="margin-left:auto;">
+                        <button id="fullscreen-stds-btn" class="action-btn btn-base"
+                                style="display:none;" onclick="openFullscreenTable()"></button>
+                        <button id="export-stds-btn" class="action-btn btn-base"
+                                style="display:none;" onclick="exportStdsSearchResults()"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stds-stats" class="search-summary-bar" style="display:none;"></div>
+        </div>
+
+        <div id="stds-results-grid"></div>
+    </div>
+
+
+    <div id="media-area"></div>
+	
+	<div id="readability-area">
+        <div class="sticky-top-wrapper">
+            <div class="readability-controls">
+                <div class="readability-setting">
+                    <label for="target-grade-select">Target Grade Level</label>
+                    <select id="target-grade-select" class="readability-select" onchange="updateReadabilitySettings()">
+                        <option value="early_elem">Early Elementary (K-2)</option>
+                        <option value="upper_elem">Upper Elementary (3-5)</option>
+                        <option value="middle">Middle School (6-8)</option>
+                        <option value="high" selected>High School (9-12)</option>
+                        <option value="custom">Custom Range...</option>
+                    </select>
+                </div>
+
+                <div id="custom-grade-inputs" style="display:none; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="readability-setting">
+                        <label>Min Grade</label>
+                        <input type="number" id="custom-min" value="6" step="0.1" style="width: 70px;" class="readability-select" onchange="updateReadabilitySettings()">
+                    </div>
+                    <div class="readability-setting">
+                        <label>Max Grade</label>
+                        <input type="number" id="custom-max" value="9" step="0.1" style="width: 70px;" class="readability-select" onchange="updateReadabilitySettings()">
+                    </div>
+                </div>
+
+                <div class="readability-setting" style="margin-left: auto;">
+                    <label>&nbsp;</label>
+                    <label class="pill-label read-media-label">
+                        <input type="checkbox" id="read-exclude-media" onchange="updateReadabilitySettings()">
+                        <span class="read-media-toggle">Exclude Media Text</span>
+                    </label>
+                </div>
+
+                <div class="readability-setting">
+                    <label for="readability-filter-select">Filter View</label>
+                    <select id="readability-filter-select" class="readability-select" style="height: 35px; box-sizing: border-box;" onchange="renderReadabilityDashboard()">
+                        <option value="all" selected>Show All Content</option>
+                        <option value="flagged">Any Flagged Issue</option>
+                        <option value="grade">High F-K Grade Only</option>
+                        <option value="sentences">Long Sentences Only</option>
+                    </select>
+                </div>
+                
+                <div class="flex-center gap-15">
+                    <button id="readability-toggle-all-btn" class="action-btn btn-base" onclick="toggleAllReadabilityState()">Collapse All</button>
+                    <button class="action-btn btn-base btn-primary" style="background:var(--primary); color:#fff; border:none;" onclick="exportReadabilityReport()">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="readability-grid-container" class="readability-grid">
+            </div>
+    </div>
+
+
+    <div id="advanced-search-modal" class="modal-overlay" onclick="closeAdvSearchModal(event)">
+        <div class="modal-content" style="max-width: 800px; padding: 0;" onclick="event.stopPropagation()">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: var(--primary); font-size: 1.2rem;">Advanced Search Options</strong>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="adv-mode-toggle" style="margin: 0;">
+                        <button class="adv-mode-btn active" id="btn-mode-guided" onclick="setAdvMode('guided')">Guided Builder</button>
+                        <button class="adv-mode-btn" id="btn-mode-power" onclick="setAdvMode('power')">Power User syntax</button>
+                    </div>
+                    <button class="close-modal-btn" onclick="closeAdvSearchModal()">&times;</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="background: #fcfcfc;">
+                <div id="guided-builder-area">
+                    <div class="query-bucket bucket-all">
+                        <div class="query-bucket-header">Must include ALL of these terms:</div>
+                        <div id="bucket-all-rules"></div>
+                        <button class="add-btn" onclick="addBucketRule('all')">+ Add Term</button>
+                    </div>
+                    
+                    <div class="query-bucket bucket-any">
+                        <div class="query-bucket-header">Can include ANY of these terms:</div>
+                        <div id="bucket-any-rules"></div>
+                        <button class="add-btn" onclick="addBucketRule('any')">+ Add Term</button>
+                    </div>
+                    
+                    <div class="query-bucket bucket-none">
+                        <div class="query-bucket-header">Must NOT include these terms:</div>
+                        <div id="bucket-none-rules"></div>
+                        <button class="add-btn" onclick="addBucketRule('none')">+ Add Term</button>
+                    </div>
+                </div>
+
+                <div id="power-user-area" style="display: none; flex-direction: column; gap: 10px;">
+                    <label for="power-user-input" style="font-size: 0.85rem; color: var(--text-light);">Enter Boolean query (Supports AND, OR, NOT, parentheses, and "exact phrases"):</label>
+                    <textarea id="power-user-input" placeholder='e.g., "Stock Market" AND ("Bull Market" OR "Bear Market")'></textarea>
+                </div>
+
+                <div id="adv-query-preview" class="adv-preview" style="margin-top: 20px;">Compiled Query: <span id="adv-compiled-output"></span></div>
+            </div>
+            
+            <div class="modal-header" style="background:#fff; border-top:1px solid var(--border); border-bottom:none; border-radius:0 0 12px 12px; justify-content: flex-end; gap: 10px;">
+                <button class="action-btn btn-base" onclick="clearAdvancedSearch()">Reset</button>
+                <button class="action-btn btn-base btn-primary" onclick="executeAdvancedSearch()">Apply & Search</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="media-modal" class="modal-overlay" onclick="closeMediaModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div id="modal-header-content"></div>
+                <button class="close-modal-btn" onclick="closeMediaModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body-content"></div>
+        </div>
+    </div>
+
+
+    <div id="course-selection-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:600px;">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--primary);">Select a Course to Load</h3>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.9rem; color:var(--text-light); margin-top:0;">
+                    We found the following course versions in the selected folder.
+                    Please choose one to explore.
+                </p>
+                <div id="course-list-container"></div>
+            </div>
+            <div class="modal-header"
+                 style="background:#fff; border-top:1px solid var(--border);
+                        border-bottom:none; border-radius:0 0 12px 12px;
+                        justify-content:flex-end; gap:10px;">
+                <button class="action-btn btn-base" onclick="cancelCourseSelection()">Cancel</button>
+                <button class="action-btn btn-base" onclick="confirmCourseSelection()"
+                        style="background:var(--primary); color:#fff; border:none;">Load Course</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="audit-top-bar">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <h2 style="margin:0; font-size:1.4rem; color:var(--primary);">Curriculum Map</h2>
+            <div id="audit-stats" style="font-size:0.85rem; color:var(--text-light); font-weight:600;"></div>
+        </div>
+        <div class="flex-center gap-10">
+            <button id="reconfig-btn"  class="action-btn btn-base" onclick="reconfigureAudit()"></button>
+            <button id="download-btn"  class="action-btn btn-base"
+                    style="background:var(--accent); color:var(--primary);
+                           font-weight:700; border:none; box-shadow:0 2px 4px rgba(0,0,0,0.1);"
+                    onclick="generateSpreadsheet()"></button>
+        </div>
+    </div>
+
+    <div id="dashboard-grid"></div>
+
+    <div id="audit-detail-area">
+        <div class="sticky-top-wrapper">
+            <div class="white-card-header"
+                 style="padding:15px 20px; display:flex; flex-direction:column; gap:15px;">
+
+                <div class="flex-between flex-wrap gap-10"
+                     style="border-bottom:1px solid var(--border); padding-bottom:15px;">
+                    <button id="btn-nav-dash" class="nav-btn nav-btn-primary btn-base"
+                            onclick="backToDashboard()"></button>
+                    <div class="flex-center gap-10">
+                        <button id="btn-prev-mod" class="nav-btn btn-base" onclick="navModule(-1)"></button>
+                        <div id="current-mod-label"
+                             style="font-weight:700; color:var(--primary); font-size:1rem;
+                                    padding:0 10px; white-space:nowrap;"></div>
+                        <button id="btn-next-mod" class="nav-btn btn-base" onclick="navModule(1)"></button>
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:25px; width:100%;">
+
+                    <div class="flex-center gap-15">
+                        <div class="segmented-control">
+                            <label><input type="radio" name="audit-filter" value="all" checked><span>Both</span></label>
+                            <label><input type="radio" name="audit-filter" value="obj">        <span>Objectives</span></label>
+                            <label><input type="radio" name="audit-filter" value="std">        <span>Standards</span></label>
+                        </div>
+                    </div>
+
+                    <div class="divider" id="std-filter-divider"
+                         style="height:24px; margin:0 -5px; display:none;"></div>
+                    <div class="filter-dropdown-wrapper" id="std-filter-wrapper" style="display:none;">
+                        <button class="filter-btn btn-base" id="std-filter-btn"
+                                onclick="toggleStdFilterDropdown(event)">
+                            States <span id="svg-arrow-down-audit-state"></span>
+                        </button>
+                        <div id="std-filter-dropdown" class="filter-dropdown-content"
+                             style="width:450px;" onclick="event.stopPropagation()"></div>
+                    </div>
+
+                    <div class="divider" style="height:24px; margin:0 -5px;"></div>
+
+                    <div class="pill-checkbox-group flex-center gap-15">
+                        <label class="pill-label danger-pill" id="lbl-gap-toggle">
+                            <input type="checkbox" id="gap-toggle">
+                            <span><i id="svg-icon-alert"></i> Gaps Only</span>
+                        </label>
+                    </div>
+
+                    <div class="flex-center gap-10" style="margin-left:auto;">
+                        <button id="toggle-all-btn" class="action-btn btn-base"
+                                onclick="toggleAllLessonsState()"></button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="module-detail-content"></div>
+    </div>
+
+</div><button id="back-to-top"
+        onclick="window.scrollTo({top:0, behavior:'smooth'})"
+        title="Back to Top"></button>
+	
+
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utilities.js"></script>
+<script src="js/modules/query-parser.js"></script>
+<script src="js/modules/search-worker.js"></script>
+<script src="js/modules/readability.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/modules/file-scan.js"></script>
+<script src="js/modules/indexing.js"></script>
+<script src="js/modules/search.js"></script>
+<script src="js/modules/lessons.js"></script>
+<script src="js/modules/standards.js"></script>
+<script src="js/modules/media.js"></script>
+<script src="js/modules/glossary.js"></script>
+<script src="js/import-export.js"></script>
+<script src="js/modules/checklist.js"></script>
+<script src="js/modules/dashboard.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

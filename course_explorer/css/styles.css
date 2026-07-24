@@ -1,0 +1,13 @@
+/* ==========================================================================
+   STYLES.CSS - Main stylesheet entry point
+   Course Explorer v6.04
+
+   Imports (order matters for the cascade):
+     1. themes.css      - color variables / design tokens
+     2. layout.css       - page structure, containers, grids
+     3. components.css   - buttons, modals, dropdowns, cards, etc.
+   ========================================================================== */
+
+@import url('themes.css');
+@import url('layout.css');
+@import url('components.css');
