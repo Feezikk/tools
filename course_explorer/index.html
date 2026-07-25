@@ -6,6 +6,7 @@
     <link rel="icon" type="image/x-icon" href="llama.ico">
     <title>Course Explorer</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
@@ -19,7 +20,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v7.46</span>
+                        Course Explorer Tool <span class="version-pill">v8.01</span>
                     </div>
                 </div>
             </div>
@@ -364,6 +365,29 @@
     </div>
 
 
+    <div id="accessibility-report-modal" class="modal-overlay" onclick="closeAccessibilityReportModal(event)">
+        <div class="modal-content" style="max-width:700px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div>
+                    <strong style="color:var(--primary); font-size:1.2rem;">Structure Check Report</strong>
+                    <div id="accessibility-report-filename" style="font-size:0.85rem; color:var(--text-light); margin-top:4px;"></div>
+                </div>
+                <button class="close-modal-btn" onclick="closeAccessibilityReportModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="accessibility-report-body"></div>
+        </div>
+    </div>
+
+    <div id="structure-check-info-modal" class="modal-overlay" onclick="closeStructureCheckInfoModal(event)">
+        <div class="modal-content" style="max-width:650px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <strong style="color:var(--primary); font-size:1.2rem;">What Structure Check Looks For</strong>
+                <button class="close-modal-btn" onclick="closeStructureCheckInfoModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="structure-check-info-body"></div>
+        </div>
+    </div>
+
     <div id="course-selection-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:600px;">
             <div class="modal-header">
@@ -482,6 +506,7 @@
 <script src="js/modules/lessons.js"></script>
 <script src="js/modules/standards.js"></script>
 <script src="js/modules/media.js"></script>
+<script src="js/modules/accessibility.js"></script>
 <script src="js/modules/glossary.js"></script>
 <script src="js/import-export.js"></script>
 <script src="js/modules/checklist.js"></script>

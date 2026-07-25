@@ -144,6 +144,7 @@ function getUnlinkedDocuments() {
 
     unlinked.sort((a, b) => a.fileName.localeCompare(b.fileName));
     cachedUnlinkedDocuments = unlinked;
+    queueAccessibilityChecks(unlinked);
     return unlinked;
 }
 
@@ -208,11 +209,12 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                         <td style="font-family:var(--code-font); color:var(--text-light); font-size:0.8rem;">${escapeHtml(doc.fileType)}</td>
                         <td style="color:#888; font-size:0.85rem;">${escapeHtml(doc.folder)}</td>
                         <td><span class="type-badge" style="background:var(--badge-missing); color:var(--badge-missing-text);">${escapeHtml(doc.status)}</span></td>
+                        <td>${renderAccessibilityCell(doc)}</td>
                     </tr>`;
             });
             wrapper.innerHTML = `
                 <table class="image-list-table">
-                    <thead><tr><th>Filename</th><th>Type</th><th>Folder</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Filename</th><th>Type</th><th>Folder</th><th>Status</th><th>Structure Check ${structureCheckInfoButton()}</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>`;
         } else {
@@ -225,11 +227,12 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                         <td style="font-weight:500; white-space:normal; min-width:200px;">${escapeHtml(doc.title)}</td>
                         <td>${escapeHtml(doc.fileName)}</td>
                         <td style="font-family:var(--code-font); color:var(--text-light); font-size:0.8rem;">${escapeHtml(doc.fileType)}</td>
+                        <td>${renderAccessibilityCell(doc)}</td>
                     </tr>`;
             });
             wrapper.innerHTML = `
                 <table class="image-list-table">
-                    <thead><tr><th>Location</th><th>Title</th><th>Filename</th><th>Type</th></tr></thead>
+                    <thead><tr><th>Location</th><th>Title</th><th>Filename</th><th>Type</th><th>Structure Check ${structureCheckInfoButton()}</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>`;
         }
@@ -257,6 +260,7 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                     <div class="media-card-footer">
                         <span class="flex-center gap-10" style="color:#888; font-size:0.85rem; font-weight:500;" title="Folder">${SVGS.folder} ${escapeHtml(doc.folder)}</span>
                         <span class="type-badge">Type: ${escapeHtml(doc.fileType)}</span>
+                        ${renderAccessibilityCell(doc)}
                     </div>`;
                 frag.appendChild(card);
             });
@@ -275,6 +279,7 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                     <div class="media-card-footer">
                         <span style="color:#888; font-size:0.85rem;" title="Filename">${escapeHtml(doc.fileName)}</span>
                         <span class="type-badge">Type: ${escapeHtml(doc.fileType)}</span>
+                        ${renderAccessibilityCell(doc)}
                     </div>`;
                 frag.appendChild(card);
             });
@@ -282,29 +287,46 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
 
         grid.appendChild(frag);
     }
+
+    updateAccessibilityProgressUI();
 };
 
 // Opens a linked or unlinked document directly (PDFs render inline in most
-// browsers via the blob URL; Word/Excel files fall back to the browser's
-// native "open or download" handling for that file type).
+// browsers via the blob URL; everything else downloads with its original
+// filename preserved rather than the browser's random blob-URL id).
 window.openDocumentFile = function openDocumentFile(path) {
     const cleanPath = (path || '').replace(/^\/+/, '');
     if (!fileMap.has(cleanPath)) {
         alert(`File not found in the loaded folder: ${cleanPath}`);
         return;
     }
-    const file = fileMap.get(cleanPath);
-    const url  = URL.createObjectURL(file);
-    const win  = window.open(url, '_blank');
-    if (!win) {
-        // Popup blocked — fall back to a direct download.
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = cleanPath.split('/').pop();
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    const file     = fileMap.get(cleanPath);
+    const fileName = cleanPath.split('/').pop();
+    const url      = URL.createObjectURL(file);
+
+    // Only a handful of formats render usefully inline in a new browser tab.
+    // For everything else (Word, Excel, PowerPoint, zip, etc.), window.open()
+    // on a blob URL still just downloads the file — but names it after the
+    // random blob id instead of the real filename. Downloading directly via
+    // an anchor's `download` attribute preserves the original filename.
+    const INLINE_VIEWABLE_EXTENSIONS = new Set(['pdf', 'txt', 'htm', 'html']);
+    const ext = (fileName.split('.').pop() || '').toLowerCase();
+
+    if (INLINE_VIEWABLE_EXTENSIONS.has(ext)) {
+        const win = window.open(url, '_blank');
+        if (win) {
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            return;
+        }
+        // Popup blocked — fall through to a direct download below.
     }
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 };
 
@@ -550,10 +572,11 @@ window.renderMediaDashboard = function renderMediaDashboard() {
                     <div class="glossary-az-bar" id="glossary-az-bar"></div>
                 ` : ''}
                ${isDownloads ? `
-                    <div class="glossary-search-wrapper">
+                    <div class="glossary-search-wrapper downloads-search-wrapper">
                         <input type="text" id="downloads-search" class="glossary-search" placeholder="Search by title, filename, type, or location…" autocomplete="off" value="${escapeHtml(downloadsSearchQuery)}" oninput="filterDownloadsList(this.value); toggleDownloadsClearBtn(this.value)">
                         <button id="downloads-search-clear" class="glossary-search-clear" onclick="clearDownloadsSearch()" title="Clear search" style="display:${downloadsSearchQuery ? 'block' : 'none'};">&times;</button>
                     </div>
+                    <div id="a11y-progress-indicator" class="a11y-progress-indicator" style="display:none;"></div>
                 ` : ''}
             </div>
         </div>

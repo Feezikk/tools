@@ -579,6 +579,72 @@
 
         /* ── Glossary ───────────────────────────────────────────────────────── */
         .glossary-search-wrapper { margin-top: 15px; width: 100%; box-sizing: border-box; position: relative; }
+        .downloads-search-wrapper { margin-bottom: 15px; }
+
+        /* ── Structure Check (Downloads / documents table) ───────────────────── */
+        .info-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; padding: 0; margin-left: 4px;
+            border: none; border-radius: 50%; background: transparent;
+            color: var(--text-light); cursor: pointer; vertical-align: middle;
+            transition: color 0.15s, background 0.15s;
+        }
+        .info-btn .svg-icon { width: 14px; height: 14px; }
+        .info-btn:hover { color: var(--primary); background: rgba(0,0,0,0.05); }
+        .image-list-table th .info-btn { color: rgba(255,255,255,0.85); }
+        .image-list-table th .info-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
+        .a11y-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 6px;
+            font-weight: 700; font-size: 0.82rem;
+            border: 1px solid transparent; line-height: 1.2;
+            font-family: inherit;
+        }
+        .a11y-badge .svg-icon { width: 13px; height: 13px; }
+        .a11y-pass { background: var(--badge-present); color: var(--badge-present-text); }
+        .a11y-fail {
+            background: var(--badge-missing); color: var(--badge-missing-text);
+            cursor: pointer; transition: filter 0.15s, transform 0.15s;
+        }
+        .a11y-fail:hover { filter: brightness(0.95); transform: translateY(-1px); }
+        .a11y-error {
+            background: #fff3cd; color: #856404; border-color: #ffeeba;
+            cursor: pointer; transition: filter 0.15s;
+        }
+        .a11y-error:hover { filter: brightness(0.97); }
+        .a11y-na { background: var(--badge-neutral); color: var(--badge-neutral-text); }
+        .a11y-pending { background: var(--badge-neutral); color: var(--badge-neutral-text); }
+        .a11y-spinner { width: 11px; height: 11px; border-width: 2px; }
+
+        .a11y-progress-indicator {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem; color: var(--text-light); font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        /* Structure Check report modal */
+        .a11y-issue-card {
+            border: 1px solid var(--border); border-left: 4px solid var(--badge-missing-text);
+            border-radius: 8px; padding: 15px 18px; margin-bottom: 14px; background: var(--card-bg);
+        }
+        .a11y-issue-card:last-child { margin-bottom: 0; }
+        .a11y-issue-title {
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 700; color: var(--badge-missing-text); font-size: 1rem; margin-bottom: 8px;
+        }
+        .a11y-issue-title .svg-icon { width: 15px; height: 15px; flex-shrink: 0; }
+        .a11y-issue-desc { margin: 0 0 8px 0; color: var(--text); }
+        .a11y-issue-why, .a11y-issue-location { margin: 0 0 8px 0; font-size: 0.9rem; color: var(--text-light); }
+        .a11y-issue-recommendation {
+            background: #f8f9fa; border: 1px solid var(--border); border-radius: 6px;
+            padding: 10px 12px; font-size: 0.9rem; color: var(--text);
+        }
+        .a11y-report-pass {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--badge-present); color: var(--badge-present-text);
+            border-radius: 8px; padding: 15px 18px; font-weight: 600;
+        }
+        .a11y-report-pass .svg-icon { width: 18px; height: 18px; flex-shrink: 0; }
         .glossary-search { width: 100%; padding: 10px 40px 10px 15px; border-radius: 6px; border: 2px solid var(--border); font-size: 0.95rem; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
         .glossary-search:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(28,53,94,0.1); }
         .glossary-search-clear { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.2rem; color: #aaa; cursor: pointer; display: none; padding: 0; line-height: 1; }

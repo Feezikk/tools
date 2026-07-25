@@ -80,6 +80,15 @@ let downloadsSearchQuery              = '';
 let cachedUnlinkedDocuments           = null;     // computed lazily, invalidated on each new index run
 let isGlobalDarkImageBg               = false;
 
+// Accessibility validation state (see js/modules/accessibility.js).
+// Results are cached for the current session, keyed by course-relative file path,
+// so a document already validated is never re-processed unless a new course is indexed.
+let accessibilityResultsCache         = new Map();  // path -> { status: 'pass'|'fail'|'error'|'unavailable', issues: [...] }
+let accessibilityQueue                = [];         // documents waiting to be validated
+let accessibilityQueuedPaths          = new Set();  // paths currently queued/in-flight (de-dupe guard)
+let accessibilityInProgress           = false;
+let accessibilityProgress             = { completed: 0, total: 0 };
+
 let activeGlossaryLetters    = new Set();
 let showOnlyDuplicates       = false;
 let showOnlyUnused           = false;

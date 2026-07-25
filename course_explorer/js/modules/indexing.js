@@ -22,6 +22,11 @@ async function runIndexingAndShowUI(wasRefreshed) {
         currentDownloadsView = 'linked';
         downloadsSearchQuery = '';
         cachedUnlinkedDocuments = null;
+        accessibilityResultsCache = new Map();
+        accessibilityQueue        = [];
+        accessibilityQueuedPaths  = new Set();
+        accessibilityInProgress   = false;
+        accessibilityProgress     = { completed: 0, total: 0 };
         courseGlossary      = [];
         foundGlossaryIds    = {};
         courseStandardsList = [];
@@ -228,6 +233,11 @@ async function runIndexingAndShowUI(wasRefreshed) {
         if (searchWorker) {
             searchWorker.postMessage({ type: 'INIT', index: courseIndex });
         }
+
+        // Kick off accessibility validation for every discovered document in the
+        // background. This runs asynchronously (see accessibility.js) and does not
+        // block the UI — results stream in and patch the Downloads table as they land.
+        queueAccessibilityChecks(courseDocuments);
 
         showToast(`Loaded ${courseIndex.length} pages/interactives.`);
 
