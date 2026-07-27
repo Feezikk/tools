@@ -90,7 +90,7 @@
                     </div>
                 </div>
                 <div id="header-actions" style="display:none; gap: 10px;">
-                    <button class="action-btn" onclick="openExportModal()">Export to Word</button>
+                    <button class="action-btn" onclick="openExportModal()">Export</button>
                     <button class="action-btn" style="background:#fff; color:var(--primary); border:1px solid var(--border);" onclick="location.reload()">Start Over</button>
                 </div>
             </div>
@@ -142,6 +142,13 @@
                         <div id="export-module-list" style="display:none; margin-left:25px; padding-left:15px;">
                             <label><input type="checkbox" id="export-select-all" onchange="toggleAllExportModules(this)"> Select All</label>
                             <div id="export-checkbox-container"></div>
+                        </div>
+
+                        <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
+                            <strong style="display:block; margin-bottom:8px;">File Format:</strong>
+                            <label><input type="radio" name="exp-format" value="docx" checked> Word (.docx)</label>
+                            <label><input type="radio" name="exp-format" value="md"> Markdown (.md)</label>
+                            <label><input type="radio" name="exp-format" value="txt"> Plain Text (.txt)</label>
                         </div>
                     </div>
                     <div class="modal-header" style="justify-content:flex-end; gap:10px;">
@@ -1255,6 +1262,7 @@ function openExportModal() {
     validModules.forEach((mod, idx) => {
         container.innerHTML += `<label style="display:block;"><input type="checkbox" class="mod-exp-cb" value="${idx}"> ${padNum(mod.num)} ${escapeHtml(mod.title)}</label>`;
     });
+    document.querySelector('input[name="exp-format"][value="docx"]').checked = true;
     document.getElementById('export-modal').classList.add('active');
 }
 
@@ -1264,113 +1272,151 @@ function toggleAllExportModules(selectAll) {
 
 function executeExport() {
     const isSingle = document.querySelector('input[name="exp-type"]:checked').value === 'single';
+    const format = document.querySelector('input[name="exp-format"]:checked').value;
     document.getElementById('export-modal').classList.remove('active');
     
     if (isSingle) {
-        exportFullCourse();
+        exportFullCourse(format);
     } else {
-        exportSeparateModules();
+        exportSeparateModules(format);
     }
 }
 
-async function exportFullCourse() {
-    let fullContent = "";
-    const options = {
-        exDocs: document.getElementById('ex-docs').checked,
-        exInt: document.getElementById('ex-int').checked,
-        exImgEmpty: document.getElementById('ex-img-empty').checked,
-        exGlossary: document.getElementById('ex-glossary').checked,
-        exTooltips: document.getElementById('ex-tooltips').checked
-    };
-    for (const mod of validModules) {
-        const modNum = padNum(mod.num);
-        fullContent += `${modNum} ${mod.title}\r\n`;
-        if(mod.lessons) {
-            for(const les of mod.lessons) {
-                const fullLesID = parseLessonBaseID(mod, les);
-                fullContent += `${fullLesID} ${les.title}\r\n`;
-                if(les.pages) {
-                    for(const page of les.pages) {
-                        const pageNum = parsePageNum(page.src, les.pages.indexOf(page));
-                        const fullPgID = `${fullLesID}.${padNum(pageNum)}`;
-                        fullContent += `${fullPgID} ${page.title}\r\n`;
-                        
-                        const entries = courseIndex.filter(e => e.locationId === fullPgID || e.locationId.startsWith(fullPgID + '.INT-'));
-                        const htmlEntry = entries.find(e => !e.isInteractive);
-                        
-                        if(htmlEntry) { 
-                            let text = htmlEntry.normalClean;
-                            
-                            text = text.replace(/\[\[\[TEXTVERSION\|\|\|(.*?)\|\|\|([\s\S]*?)\|\|\|(.*?)\]\]\]/g, (match, fileName, textContent, vidId) => {
-                                let titleTag = `[Text Version Linked: ${fileName}]`;
-                                if (vidId && vidId.trim() !== '') titleTag = `[Video: ${vidId} | Text Version Linked: ${fileName}]`;
-                                return `\r\n${titleTag}\r\n${textContent.trim()}\r\n`;
-                            });
+// ── EXPORT FORMAT HELPERS ──────────────────────────────────────────────────
+function downloadBlob(blob, filename) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
+}
 
-                           text = text.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
-                                const img = courseImages.find(i => i.fileName === fileName);
-                                if (img) {
-                                    const hasMeta = (img.altText && img.altText.trim() !== "") || (img.dataContent && img.dataContent.trim() !== "");
-                                    if (options.exImgEmpty && !hasMeta) return '';
+function buildDocxBlob(content) {
+    const htmlBody = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
+    return htmlDocx.asBlob(fullHtml);
+}
 
-                                    let imgString = `[Image: ${img.fileName}`;
-                                    if (img.altText) imgString += ` | Alt: ${img.altText}`;
-                                    if (img.dataContent) imgString += ` | Data-Content: ${img.dataContent}`;
-                                    imgString += `]`;
-                                    return `\r\n${imgString}\r\n`;
-                                }
-                                return '';
-                            });
+function getExportExtension(format) {
+    if (format === 'md') return 'md';
+    if (format === 'txt') return 'txt';
+    return 'docx';
+}
 
-                            text = text.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => `\r\n[Video: ${entryId}]\r\n`);
-                            text = text.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, fileName) => `\r\n[Audio: ${fileName}]\r\n`);
-                            
-                            text = text.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
-                                if (options.exGlossary) return term;
-                                const definition = courseGlossary.get(id) || courseGlossary.get(term.toLowerCase().trim());
-                                return definition ? ` ${term} [${definition}] ` : ` ${term} [definition unavailable] `;
-                            });
-                            
-                            text = text.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|([\s\S]*?)\]\]\]/g, (match, term, popText) => {
-                                return options.exTooltips ? term : ` ${term} [${popText.trim()}] `;
-                            });
-                            
-                            const docMatches = [...text.matchAll(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g)];
-                            for (const match of docMatches) {
-                                const fileName = match[1];
-                                let docText = "";
-                                if (!options.exDocs) docText = await extractDocumentText(fileName);
-                                text = text.replace(match[0], options.exDocs ? '' : `\r\n[Document: ${fileName} | ${docText}]\r\n`);
+function triggerDownload(content, filename, format = 'docx') {
+    if (format === 'docx') {
+        downloadBlob(buildDocxBlob(content), filename);
+    } else {
+        const mime = format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
+        downloadBlob(new Blob([content], { type: mime }), filename);
+    }
+}
+
+async function buildModuleContent(mod, options) {
+    const isMd = options.format === 'md';
+    const modNum = padNum(mod.num);
+    let modContent = `${isMd ? '# ' : ''}${modNum} ${mod.title}\r\n`;
+
+    if (mod.lessons) {
+        for (const les of mod.lessons) {
+            const fullLesID = parseLessonBaseID(mod, les);
+            modContent += `${isMd ? '## ' : ''}${fullLesID} ${les.title}\r\n`;
+
+            if (les.pages) {
+                for (const page of les.pages) {
+                    const pageNum = parsePageNum(page.src, les.pages.indexOf(page));
+                    const fullPgID = `${fullLesID}.${padNum(pageNum)}`;
+                    modContent += `${isMd ? '### ' : ''}${fullPgID} ${page.title}\r\n`;
+
+                    const entries = courseIndex.filter(e => e.locationId === fullPgID || e.locationId.startsWith(fullPgID + '.INT-'));
+                    const htmlEntry = entries.find(e => !e.isInteractive);
+
+                    if (htmlEntry) {
+                        let text = htmlEntry.normalClean;
+
+                        text = text.replace(/\[\[\[TEXTVERSION\|\|\|(.*?)\|\|\|([\s\S]*?)\|\|\|(.*?)\]\]\]/g, (match, fileName, textContent, vidId) => {
+                            let titleTag = `[Text Version Linked: ${fileName}]`;
+                            if (vidId && vidId.trim() !== '') titleTag = `[Video: ${vidId} | Text Version Linked: ${fileName}]`;
+                            return `\r\n${titleTag}\r\n${textContent.trim()}\r\n`;
+                        });
+
+                        text = text.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
+                            const img = courseImages.find(i => i.fileName === fileName);
+                            if (img) {
+                                const hasMeta = (img.altText && img.altText.trim() !== "") || (img.dataContent && img.dataContent.trim() !== "");
+                                if (options.exImgEmpty && !hasMeta) return '';
+
+                                let imgString = `[Image: ${img.fileName}`;
+                                if (img.altText) imgString += ` | Alt: ${img.altText}`;
+                                if (img.dataContent) imgString += ` | Data-Content: ${img.dataContent}`;
+                                imgString += `]`;
+                                return `\r\n${imgString}\r\n`;
                             }
+                            return '';
+                        });
 
-                           text = text.replace(/\[\[\[INT\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, path, intId) => {
-                                if (options.exInt) return '';
-                                const intEntry = entries.find(e => e.locationId === intId && e.isInteractive);
-                                const intContent = intEntry ? intEntry.normalClean : "";
-                                const intMeta = courseInteractives.find(i => i.locationId === intId);
-                                const intFolder = intMeta ? intMeta.folder : "Interactive";
-                                let intTitle = intMeta ? intMeta.title : path.split('/').pop();
-                                if (intTitle === 'index.html') intTitle = intFolder;
-                                return `\r\n[Interactive Content: ${intTitle} | Folder: ${intFolder}]\r\n${intContent}\r\n`;
-                            });
-                            
-                            fullContent += `${text}\r\n`; 
+                        text = text.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => `\r\n[Video: ${entryId}]\r\n`);
+                        text = text.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, fileName) => `\r\n[Audio: ${fileName}]\r\n`);
+
+                        text = text.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
+                            if (options.exGlossary) return term;
+                            const definition = courseGlossary.get(id) || courseGlossary.get(term.toLowerCase().trim());
+                            return definition ? ` ${term} [${definition}] ` : ` ${term} [definition unavailable] `;
+                        });
+
+                        text = text.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|([\s\S]*?)\]\]\]/g, (match, term, popText) => {
+                            return options.exTooltips ? term : ` ${term} [${popText.trim()}] `;
+                        });
+
+                        const docMatches = [...text.matchAll(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g)];
+                        for (const match of docMatches) {
+                            const fileName = match[1];
+                            let docText = "";
+                            if (!options.exDocs) docText = await extractDocumentText(fileName);
+                            text = text.replace(match[0], options.exDocs ? '' : `\r\n[Document: ${fileName} | ${docText}]\r\n`);
                         }
+
+                        text = text.replace(/\[\[\[INT\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, path, intId) => {
+                            if (options.exInt) return '';
+                            const intEntry = entries.find(e => e.locationId === intId && e.isInteractive);
+                            const intContent = intEntry ? intEntry.normalClean : "";
+                            const intMeta = courseInteractives.find(i => i.locationId === intId);
+                            const intFolder = intMeta ? intMeta.folder : "Interactive";
+                            let intTitle = intMeta ? intMeta.title : path.split('/').pop();
+                            if (intTitle === 'index.html') intTitle = intFolder;
+                            return `\r\n[Interactive Content: ${intTitle} | Folder: ${intFolder}]\r\n${intContent}\r\n`;
+                        });
+
+                        modContent += `${text}\r\n`;
                     }
                 }
             }
         }
     }
-    
-    const htmlBody = fullContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
-    const blob = htmlDocx.asBlob(fullHtml);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Course_Content_Export.docx`;
-    link.click();
+
+    return modContent;
 }
-async function exportSeparateModules() {
+
+async function exportFullCourse(format = 'docx') {
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked,
+        format
+    };
+
+    let fullContent = "";
+    for (const mod of validModules) {
+        fullContent += await buildModuleContent(mod, options);
+    }
+
+    const ext = getExportExtension(format);
+    triggerDownload(fullContent, `Course_Content_Export.${ext}`, format);
+}
+async function exportSeparateModules(format = 'docx') {
     // 1. Determine which modules the user actually checked
     const selectedIndexes = Array.from(document.querySelectorAll('.mod-exp-cb:checked')).map(cb => parseInt(cb.value));
     
@@ -1386,8 +1432,11 @@ async function exportSeparateModules() {
         exInt: document.getElementById('ex-int').checked,
         exImgEmpty: document.getElementById('ex-img-empty').checked,
         exGlossary: document.getElementById('ex-glossary').checked,
-        exTooltips: document.getElementById('ex-tooltips').checked
+        exTooltips: document.getElementById('ex-tooltips').checked,
+        format
     };
+
+    const ext = getExportExtension(format);
 
     // 2. Build individual docs for selected modules
     for (const idx of selectedIndexes) {
@@ -1395,102 +1444,21 @@ async function exportSeparateModules() {
         if (!mod) continue;
 
         const modNum = padNum(mod.num);
-        let modContent = `${modNum} ${mod.title}\r\n`;
-
-        if (mod.lessons) {
-            for (const les of mod.lessons) {
-                const fullLesID = parseLessonBaseID(mod, les);
-                modContent += `${fullLesID} ${les.title}\r\n`;
-                
-                if (les.pages) {
-                    for (const page of les.pages) {
-                        const pageNum = parsePageNum(page.src, les.pages.indexOf(page));
-                        const fullPgID = `${fullLesID}.${padNum(pageNum)}`;
-                        modContent += `${fullPgID} ${page.title}\r\n`;
-                        
-                        const entries = courseIndex.filter(e => e.locationId === fullPgID || e.locationId.startsWith(fullPgID + '.INT-'));
-                        const htmlEntry = entries.find(e => !e.isInteractive);
-                        
-                        if (htmlEntry) { 
-                            let text = htmlEntry.normalClean;
-                            
-                            // Re-apply your extraction text replacements
-                            text = text.replace(/\[\[\[TEXTVERSION\|\|\|(.*?)\|\|\|([\s\S]*?)\|\|\|(.*?)\]\]\]/g, (match, fileName, textContent, vidId) => {
-                                let titleTag = `[Text Version Linked: ${fileName}]`;
-                                if (vidId && vidId.trim() !== '') titleTag = `[Video: ${vidId} | Text Version Linked: ${fileName}]`;
-                                return `\r\n${titleTag}\r\n${textContent.trim()}\r\n`;
-                            });
-
-                           text = text.replace(/\[\[\[IMG\|\|\|(.*?)\]\]\]/g, (match, fileName) => {
-                                const img = courseImages.find(i => i.fileName === fileName);
-                                if (img) {
-                                    const hasMeta = (img.altText && img.altText.trim() !== "") || (img.dataContent && img.dataContent.trim() !== "");
-                                    if (options.exImgEmpty && !hasMeta) return '';
-
-                                    let imgString = `[Image: ${img.fileName}`;
-                                    if (img.altText) imgString += ` | Alt: ${img.altText}`;
-                                    if (img.dataContent) imgString += ` | Data-Content: ${img.dataContent}`;
-                                    imgString += `]`;
-                                    return `\r\n${imgString}\r\n`;
-                                }
-                                return '';
-                            });
-
-                            text = text.replace(/\[\[\[VID\|\|\|(.*?)\]\]\]/g, (match, entryId) => `\r\n[Video: ${entryId}]\r\n`);
-                            text = text.replace(/\[\[\[AUD\|\|\|(.*?)\]\]\]/g, (match, fileName) => `\r\n[Audio: ${fileName}]\r\n`);
-                            
-                            text = text.replace(/\[\[\[GLS\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, term, id) => {
-                                if (options.exGlossary) return term;
-                                const definition = courseGlossary.get(id) || courseGlossary.get(term.toLowerCase().trim());
-                                return definition ? ` ${term} [${definition}] ` : ` ${term} [definition unavailable] `;
-                            });
-                            
-                            text = text.replace(/\[\[\[POP\|\|\|(.*?)\|\|\|([\s\S]*?)\]\]\]/g, (match, term, popText) => {
-                                return options.exTooltips ? term : ` ${term} [${popText.trim()}] `;
-                            });
-                            
-                            const docMatches = [...text.matchAll(/\[\[\[DOC\|\|\|(.*?)\]\]\]/g)];
-                            for (const match of docMatches) {
-                                const fileName = match[1];
-                                let docText = "";
-                                if (!options.exDocs) docText = await extractDocumentText(fileName);
-                                text = text.replace(match[0], options.exDocs ? '' : `\r\n[Document: ${fileName} | ${docText}]\r\n`);
-                            }
-
-                           text = text.replace(/\[\[\[INT\|\|\|(.*?)\|\|\|(.*?)\]\]\]/g, (match, path, intId) => {
-                                if (options.exInt) return '';
-                                const intEntry = entries.find(e => e.locationId === intId && e.isInteractive);
-                                const intContent = intEntry ? intEntry.normalClean : "";
-                                const intMeta = courseInteractives.find(i => i.locationId === intId);
-                                const intFolder = intMeta ? intMeta.folder : "Interactive";
-                                let intTitle = intMeta ? intMeta.title : path.split('/').pop();
-                                if (intTitle === 'index.html') intTitle = intFolder;
-                                return `\r\n[Interactive Content: ${intTitle} | Folder: ${intFolder}]\r\n${intContent}\r\n`;
-                            });
-                            
-                            modContent += `${text}\r\n`; 
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 3. Convert to HTML, package into a blob, and add to ZIP
-        const htmlBody = modContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
-        const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
-        
-        const blob = htmlDocx.asBlob(fullHtml);
+        const modContent = await buildModuleContent(mod, options);
         const safeTitle = mod.title.replace(/[^a-zA-Z0-9]/g, '_');
-        zip.file(`Module_${modNum}_${safeTitle}.docx`, blob);
+
+        // 3. Package into the right file type and add to ZIP
+        if (format === 'docx') {
+            zip.file(`Module_${modNum}_${safeTitle}.${ext}`, buildDocxBlob(modContent));
+        } else {
+            zip.file(`Module_${modNum}_${safeTitle}.${ext}`, modContent);
+        }
     }
 
     // 4. Download the final ZIP payload
     const zipBlob = await zip.generateAsync({ type: "blob" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(zipBlob);
-    link.download = `Course_Modules_Export.zip`;
-    link.click();
+    downloadBlob(zipBlob, `Course_Modules_Export.zip`);
 }
 </script>
 </body>
-</html>
+</html>
