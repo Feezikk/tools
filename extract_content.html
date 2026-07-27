@@ -1416,7 +1416,15 @@ function renderCourseViewer() {
     }
 
     container.innerHTML = '';
-    tocSidebar.innerHTML = '<h3 class="toc-header">Table of Contents</h3>';
+   tocSidebar.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">
+            <h3 class="toc-header" style="border: none; margin: 0; padding: 0;">Table of Contents</h3>
+            <button class="action-btn" id="ai-extract-btn" onclick="openAITab()" style="padding: 4px 10px; font-size: 0.75rem;" title="Extract clean text for AI prompting">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                AI Text
+            </button>
+        </div>
+    `;
     tocSidebar.style.display = 'block';
     container.style.display = 'block';
 
@@ -1855,6 +1863,70 @@ async function exportSeparateModules(selectedIds, format = 'docx') {
         downloadBlob(content, `${safeCourseName}_Modules.zip`);
     });
 }
+			
+			async function openAITab() {
+    const btn = document.getElementById('ai-extract-btn');
+    const originalText = btn.innerHTML;
+    
+    // Provide user feedback while parsing
+    btn.innerHTML = `<div class="spinner" style="width:10px; height:10px; border-top-color:#fff;"></div> Processing...`;
+    btn.disabled = true;
+
+    // Grab current user preferences from the UI filters
+    const options = {
+        exDocs: document.getElementById('ex-docs').checked,
+        exInt: document.getElementById('ex-int').checked,
+        exImgEmpty: document.getElementById('ex-img-empty').checked,
+        exGlossary: document.getElementById('ex-glossary').checked,
+        exTooltips: document.getElementById('ex-tooltips').checked,
+        isHtml: false
+    };
+
+    try {
+        let fullContent = `Course Title: ${customCourseName}\r\n=========================================\r\n\r\n`;
+        
+        // Loop through all valid modules and build the text
+        for (const mod of validModules) {
+            fullContent += await buildModuleDocumentContent(mod, options) + "\r\n";
+        }
+        
+        // Escape HTML entities to prevent rendering issues in the new tab
+        const safeText = fullContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        // Open a new tab and write the content
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>${customCourseName} - AI Extract</title>
+                <style>
+                    body {
+                        font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "Courier New", monospace;
+                        background-color: #f8f9fa;
+                        color: #24292e;
+                        padding: 40px;
+                        margin: 0;
+                        line-height: 1.6;
+                        white-space: pre-wrap;     /* Preserves line breaks and spaces */
+                        word-wrap: break-word;     /* Prevents horizontal scrolling */
+                    }
+                </style>
+            </head>
+            <body>${safeText}</body>
+            </html>
+        `);
+        newWindow.document.close();
+    } catch (error) {
+        showToast("Error generating AI text.", "error");
+        console.error(error);
+    } finally {
+        // Reset the button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
 </script>
 <button id="jump-top-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Jump to Top">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg>
@@ -1868,4 +1940,4 @@ async function exportSeparateModules(selectedIds, format = 'docx') {
     });
 </script>
 </body>
-</html>
+</html>
