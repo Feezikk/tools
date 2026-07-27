@@ -131,7 +131,7 @@
                 <div id="header-actions" style="display:none; gap: 10px;">
                     <button class="action-btn" onclick="openExportModal()">
                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> 
-                        Export to Word
+                        Export
                     </button>
                     <button class="action-btn" style="background:#fff; color:var(--primary); border:1px solid var(--border);" onclick="location.reload()">Start Over</button>
                 </div>
@@ -204,6 +204,21 @@
                                 <input type="checkbox" id="export-select-all" style="accent-color:var(--primary);" onchange="toggleAllExportModules(this)"> <em>Select All</em>
                             </label>
                             <div id="export-checkbox-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+
+                        <div style="margin-top:20px; padding-top:15px; border-top:1px dashed var(--border);">
+                            <strong style="display:block; margin-bottom:10px; color:var(--primary); font-size:0.95rem;">File Format:</strong>
+                            <div style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.95rem;">
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                    <input type="radio" name="exp-format" value="docx" checked style="accent-color:var(--primary);"> Word (.docx)
+                                </label>
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                    <input type="radio" name="exp-format" value="md" style="accent-color:var(--primary);"> Markdown (.md)
+                                </label>
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                    <input type="radio" name="exp-format" value="txt" style="accent-color:var(--primary);"> Plain Text (.txt)
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-header" style="background:#fff; border-top:1px solid var(--border); border-bottom:none; border-radius:0 0 12px 12px; justify-content:flex-end; gap:10px;">
@@ -1625,6 +1640,7 @@ function openExportModal() {
 
     document.getElementById('export-select-all').checked = false;
     document.querySelector('input[name="exp-type"][value="single"]').checked = true;
+    document.querySelector('input[name="exp-format"][value="docx"]').checked = true;
     document.getElementById('export-module-list').style.display = 'none';
     document.getElementById('export-modal').classList.add('active');
 }
@@ -1641,14 +1657,15 @@ function updateSelectAllState() {
 
 function executeExport() {
     const isSingle = document.querySelector('input[name="exp-type"]:checked').value === 'single';
+    const format = document.querySelector('input[name="exp-format"]:checked').value;
     document.getElementById('export-modal').classList.remove('active');
     
     if (isSingle) {
-        exportFullCourse();
+        exportFullCourse(format);
     } else {
         const selectedIds = Array.from(document.querySelectorAll('.mod-exp-cb:checked')).map(cb => cb.value);
         if (selectedIds.length === 0) return showToast("Please select at least one module to export.", "error");
-        exportSeparateModules(selectedIds);
+        exportSeparateModules(selectedIds, format);
     }
 }
 
@@ -1662,8 +1679,9 @@ async function buildModuleDocumentContent(mod, options) {
 
     if (isExcludedByGlState(mod, excludedStates)) return docContent;
 
+    const isMd = options.format === 'md';
     const modNum = padNum(mod.num);
-    addLine(`${modNum} ${mod.title}`);
+    addLine(`${isMd ? '# ' : ''}${modNum} ${mod.title}`);
 
     if (!mod.lessons) return docContent;
 
@@ -1671,14 +1689,14 @@ async function buildModuleDocumentContent(mod, options) {
         if (isExcludedByGlState(lesson, excludedStates)) continue;
 
         const fullLesID = `${modNum}.${padNum(lesson.num)}`;
-        addLine(`${fullLesID} ${lesson.title}`);
+        addLine(`${isMd ? '## ' : ''}${fullLesID} ${lesson.title}`);
         if (!lesson.pages) continue;
 
         for (const page of lesson.pages) {
             if (isExcludedByGlState(page, excludedStates)) continue;
 
             const fullPgID = `${fullLesID}.${padNum(Number(page.num) + 1)}`;
-            addLine(`${fullPgID} ${page.title}`);
+            addLine(`${isMd ? '### ' : ''}${fullPgID} ${page.title}`);
             
             const pageEntries = courseIndex.filter(idx => idx.locationId === fullPgID || idx.locationId.startsWith(fullPgID + '.INT-'));
             
@@ -1736,14 +1754,7 @@ async function buildModuleDocumentContent(mod, options) {
     return docContent;
 }
 
-function triggerDownload(content, filename) {
-    // Convert the plain text to HTML paragraphs for the DOCX converter
-    const safeText = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const htmlBody = safeText.split('\r\n').map(line => `<p style="margin: 0 0 8px 0; font-family: sans-serif;">${line}</p>`).join('');
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
-    
-    // Generate a true .docx file using the library
-    const blob = htmlDocx.asBlob(fullHtml);
+function downloadBlob(blob, filename) {
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = filename;
@@ -1752,14 +1763,42 @@ function triggerDownload(content, filename) {
     setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
 }
 
-async function exportFullCourse() {
+function buildDocxBlob(content) {
+    // Convert the plain text to HTML paragraphs for the DOCX converter
+    const safeText = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const htmlBody = safeText.split('\r\n').map(line => `<p style="margin: 0 0 8px 0; font-family: sans-serif;">${line}</p>`).join('');
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
+    return htmlDocx.asBlob(fullHtml);
+}
+
+function getExportExtension(format) {
+    if (format === 'md') return 'md';
+    if (format === 'txt') return 'txt';
+    return 'docx';
+}
+
+function triggerDownload(content, filename, format = 'docx') {
+    if (format === 'docx') {
+        // Generate a true .docx file using the library
+        const blob = buildDocxBlob(content);
+        downloadBlob(blob, filename);
+    } else {
+        // Markdown and plain text are just the raw content saved with the right extension/mime type
+        const mime = format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
+        const blob = new Blob([content], { type: mime });
+        downloadBlob(blob, filename);
+    }
+}
+
+async function exportFullCourse(format = 'docx') {
     const options = {
         exDocs: document.getElementById('ex-docs').checked,
         exInt: document.getElementById('ex-int').checked,
         exImgEmpty: document.getElementById('ex-img-empty').checked,
         exGlossary: document.getElementById('ex-glossary').checked,
         exTooltips: document.getElementById('ex-tooltips').checked,
-        isHtml: false
+        isHtml: false,
+        format
     };
 
     showToast("Generating Single Document... This may take a moment to parse files.", "success");
@@ -1770,17 +1809,19 @@ async function exportFullCourse() {
     }
     
     const safeName = customCourseName ? customCourseName.replace(/[^a-z0-9]/gi, '_') : "Course_Content";
-    triggerDownload(fullContent, `${safeName}_Export.docx`);
+    const ext = getExportExtension(format);
+    triggerDownload(fullContent, `${safeName}_Export.${ext}`, format);
 }
 
-async function exportSeparateModules(selectedIds) {
+async function exportSeparateModules(selectedIds, format = 'docx') {
     const options = {
         exDocs: document.getElementById('ex-docs').checked,
         exInt: document.getElementById('ex-int').checked,
         exImgEmpty: document.getElementById('ex-img-empty').checked,
         exGlossary: document.getElementById('ex-glossary').checked,
         exTooltips: document.getElementById('ex-tooltips').checked,
-        isHtml: false
+        isHtml: false,
+        format
     };
 
     showToast(`Generating ${selectedIds.length} document(s) into a Zip folder... Please wait.`, "success");
@@ -1788,6 +1829,7 @@ async function exportSeparateModules(selectedIds) {
     const zip = new JSZip();
     const safeCourseName = customCourseName ? customCourseName.replace(/[^a-zA-Z0-9_]/g, '_') : "Course_Export";
     const folder = zip.folder(safeCourseName);
+    const ext = getExportExtension(format);
 
     for (const modIdx of selectedIds) {
         const mod = validModules[parseInt(modIdx, 10)];
@@ -1798,24 +1840,19 @@ async function exportSeparateModules(selectedIds) {
         const modNum = padNum(mod.num);
         const safeTitle = mod.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
         
-        // Create the DOCX blob
-        const safeText = modContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const htmlBody = safeText.split('\r\n').map(line => `<p style="margin: 0 0 8px 0; font-family: sans-serif;">${line}</p>`).join('');
-        const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
-        const blob = htmlDocx.asBlob(fullHtml);
-        
-        // Add it to our Zip folder
-        folder.file(`${modNum}_${safeTitle}.docx`, blob);
+        if (format === 'docx') {
+            // Create the DOCX blob
+            const blob = buildDocxBlob(modContent);
+            folder.file(`${modNum}_${safeTitle}.${ext}`, blob);
+        } else {
+            // Markdown / plain text is just the raw content
+            folder.file(`${modNum}_${safeTitle}.${ext}`, modContent);
+        }
     }
 
     // Generate the Zip and trigger a single download
     zip.generateAsync({ type: "blob" }).then(function(content) {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(content);
-        link.download = `${safeCourseName}_Modules.zip`;
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
+        downloadBlob(content, `${safeCourseName}_Modules.zip`);
     });
 }
 </script>
@@ -1831,4 +1868,4 @@ async function exportSeparateModules(selectedIds) {
     });
 </script>
 </body>
-</html>
+</html>
