@@ -148,27 +148,28 @@
             </div>
 
             <div id="export-controls" style="display:none; width:100%; background:var(--card-bg); padding:15px 20px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px; box-shadow:var(--shadow); box-sizing:border-box;">
-                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Exclusions:</strong>
+                <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Include the following content:</strong>
                 <div style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.9rem; color:var(--text);">
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="ex-docs" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Documents
+                        <input type="checkbox" id="inc-docs" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Documents
                     </label>
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="ex-int" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Interactives
+                        <input type="checkbox" id="inc-int" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Interactives
                     </label>
-                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;" title="Alt Text, Text Version, Caption, Header">
-                        <input type="checkbox" id="ex-img-empty" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images w/o Metadata
+                  
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="inc-glossary" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Glossary Definitions
                     </label>
                     <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="ex-glossary" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Glossary Definitions
+                        <input type="checkbox" id="inc-tooltips" checked style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Tooltips
                     </label>
-                    <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="ex-tooltips" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Tooltips
+					  <label style="cursor:pointer; display:flex; align-items:center; gap:6px;" title="Images that DO NOT include Alt Text, Text Version, Caption, Header">
+                        <input type="checkbox" id="inc-img-empty" style="accent-color:var(--primary); width:16px; height:16px;" onchange="renderCourseViewer()"> Images w/o Metadata
                     </label>
                 </div>
                 
                 <div id="dynamic-state-controls" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
-                    <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Unlock States (Uncheck to exclude):</strong>
+                    <strong style="color:var(--primary); font-size:0.95rem; display:block; margin-bottom:10px;">Include content from these unlock states:</strong>
                     <div id="state-checkbox-container" style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.9rem; color:var(--text);"></div>
                 </div>
             </div>
@@ -1430,11 +1431,11 @@ function renderCourseViewer() {
 
     const docRegex = /href=["']([^"']+\.(pdf|docx))["']/gi;
     const options = {
-        exDocs: document.getElementById('ex-docs').checked,
-        exInt: document.getElementById('ex-int').checked,
-        exImgEmpty: document.getElementById('ex-img-empty').checked,
-        exGlossary: document.getElementById('ex-glossary').checked,
-        exTooltips: document.getElementById('ex-tooltips').checked,
+        exDocs: !document.getElementById('inc-docs').checked,
+        exInt: !document.getElementById('inc-int').checked,
+        exImgEmpty: !document.getElementById('inc-img-empty').checked,
+        exGlossary: !document.getElementById('inc-glossary').checked,
+        exTooltips: !document.getElementById('inc-tooltips').checked,
         isHtml: true
     };
     
@@ -1800,11 +1801,11 @@ function triggerDownload(content, filename, format = 'docx') {
 
 async function exportFullCourse(format = 'docx') {
     const options = {
-        exDocs: document.getElementById('ex-docs').checked,
-        exInt: document.getElementById('ex-int').checked,
-        exImgEmpty: document.getElementById('ex-img-empty').checked,
-        exGlossary: document.getElementById('ex-glossary').checked,
-        exTooltips: document.getElementById('ex-tooltips').checked,
+        exDocs: !document.getElementById('inc-docs').checked,
+        exInt: !document.getElementById('inc-int').checked,
+        exImgEmpty: !document.getElementById('inc-img-empty').checked,
+        exGlossary: !document.getElementById('inc-glossary').checked,
+        exTooltips: !document.getElementById('inc-tooltips').checked,
         isHtml: false,
         format
     };
@@ -1823,11 +1824,11 @@ async function exportFullCourse(format = 'docx') {
 
 async function exportSeparateModules(selectedIds, format = 'docx') {
     const options = {
-        exDocs: document.getElementById('ex-docs').checked,
-        exInt: document.getElementById('ex-int').checked,
-        exImgEmpty: document.getElementById('ex-img-empty').checked,
-        exGlossary: document.getElementById('ex-glossary').checked,
-        exTooltips: document.getElementById('ex-tooltips').checked,
+        exDocs: !document.getElementById('inc-docs').checked,
+        exInt: !document.getElementById('inc-int').checked,
+        exImgEmpty: !document.getElementById('inc-img-empty').checked,
+        exGlossary: !document.getElementById('inc-glossary').checked,
+        exTooltips: !document.getElementById('inc-tooltips').checked,
         isHtml: false,
         format
     };
@@ -1874,11 +1875,11 @@ async function exportSeparateModules(selectedIds, format = 'docx') {
 
     // Grab current user preferences from the UI filters
     const options = {
-        exDocs: document.getElementById('ex-docs').checked,
-        exInt: document.getElementById('ex-int').checked,
-        exImgEmpty: document.getElementById('ex-img-empty').checked,
-        exGlossary: document.getElementById('ex-glossary').checked,
-        exTooltips: document.getElementById('ex-tooltips').checked,
+        exDocs: !document.getElementById('inc-docs').checked,
+        exInt: !document.getElementById('inc-int').checked,
+        exImgEmpty: !document.getElementById('inc-img-empty').checked,
+        exGlossary: !document.getElementById('inc-glossary').checked,
+        exTooltips: !document.getElementById('inc-tooltips').checked,
         isHtml: false
     };
 
