@@ -89,6 +89,11 @@ let accessibilityQueuedPaths          = new Set();  // paths currently queued/in
 let accessibilityInProgress           = false;
 let accessibilityProgress             = { completed: 0, total: 0 };
 
+// FLVS Footer Check — a separate, non-WCAG check (required copyright/trademark
+// footer text) that piggybacks on the same document pass/queue as Structure
+// Check above (one zip read per file, run through whichever checks apply).
+let footerCheckResultsCache           = new Map();  // path -> { status: 'pass'|'fail'|'error'|'unavailable', footerText }
+
 let activeGlossaryLetters    = new Set();
 let showOnlyDuplicates       = false;
 let showOnlyUnused           = false;

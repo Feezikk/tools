@@ -27,6 +27,7 @@ async function runIndexingAndShowUI(wasRefreshed) {
         accessibilityQueuedPaths  = new Set();
         accessibilityInProgress   = false;
         accessibilityProgress     = { completed: 0, total: 0 };
+        footerCheckResultsCache   = new Map();
         courseGlossary      = [];
         foundGlossaryIds    = {};
         courseStandardsList = [];

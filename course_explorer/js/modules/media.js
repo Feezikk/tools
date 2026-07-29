@@ -150,7 +150,8 @@ function getUnlinkedDocuments() {
 
 // Shared filtering logic for both the full dashboard render and the
 // keystroke-driven search (renderDownloadsList), so the two stay in sync.
-function getFilteredDownloads(query) {
+function getFilteredDownloads(query, opts = {}) {
+    const { skipTypeFilter = false } = opts;
     const q = (query || '').trim().toLowerCase();
     const matchesDocSearch = (d) => {
         if (!q) return true;
@@ -158,16 +159,14 @@ function getFilteredDownloads(query) {
             .filter(Boolean).join(' ').toLowerCase();
         return haystack.includes(q);
     };
+    const matchesType = (d) => skipTypeFilter || activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(d.fileType);
 
     if (currentDownloadsView === 'unlinked') {
-        return getUnlinkedDocuments().filter(d =>
-            (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(d.fileType)) &&
-            matchesDocSearch(d)
-        );
+        return getUnlinkedDocuments().filter(d => matchesType(d) && matchesDocSearch(d));
     }
     return courseDocuments.filter(d =>
         passesModuleFilter(d) &&
-        (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(d.fileType)) &&
+        matchesType(d) &&
         matchesDocSearch(d)
     );
 }
@@ -210,11 +209,12 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                         <td style="color:#888; font-size:0.85rem;">${escapeHtml(doc.folder)}</td>
                         <td><span class="type-badge" style="background:var(--badge-missing); color:var(--badge-missing-text);">${escapeHtml(doc.status)}</span></td>
                         <td>${renderAccessibilityCell(doc)}</td>
+                        <td>${renderFooterCheckCell(doc)}</td>
                     </tr>`;
             });
             wrapper.innerHTML = `
                 <table class="image-list-table">
-                    <thead><tr><th>Filename</th><th>Type</th><th>Folder</th><th>Status</th><th>Structure Check ${structureCheckInfoButton()}</th></tr></thead>
+                    <thead><tr><th>Filename</th><th>Type</th><th>Folder</th><th>Status</th><th>Structure Check ${structureCheckInfoButton()}</th><th>FLVS Footer ${footerCheckInfoButton()}</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>`;
         } else {
@@ -228,11 +228,12 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                         <td>${escapeHtml(doc.fileName)}</td>
                         <td style="font-family:var(--code-font); color:var(--text-light); font-size:0.8rem;">${escapeHtml(doc.fileType)}</td>
                         <td>${renderAccessibilityCell(doc)}</td>
+                        <td>${renderFooterCheckCell(doc)}</td>
                     </tr>`;
             });
             wrapper.innerHTML = `
                 <table class="image-list-table">
-                    <thead><tr><th>Location</th><th>Title</th><th>Filename</th><th>Type</th><th>Structure Check ${structureCheckInfoButton()}</th></tr></thead>
+                    <thead><tr><th>Location</th><th>Title</th><th>Filename</th><th>Type</th><th>Structure Check ${structureCheckInfoButton()}</th><th>FLVS Footer ${footerCheckInfoButton()}</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>`;
         }
@@ -261,6 +262,7 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                         <span class="flex-center gap-10" style="color:#888; font-size:0.85rem; font-weight:500;" title="Folder">${SVGS.folder} ${escapeHtml(doc.folder)}</span>
                         <span class="type-badge">Type: ${escapeHtml(doc.fileType)}</span>
                         ${renderAccessibilityCell(doc)}
+                        ${renderFooterCheckCell(doc)}
                     </div>`;
                 frag.appendChild(card);
             });
@@ -280,6 +282,7 @@ window.renderDownloadsList = function renderDownloadsList(query = '') {
                         <span style="color:#888; font-size:0.85rem;" title="Filename">${escapeHtml(doc.fileName)}</span>
                         <span class="type-badge">Type: ${escapeHtml(doc.fileType)}</span>
                         ${renderAccessibilityCell(doc)}
+                        ${renderFooterCheckCell(doc)}
                     </div>`;
                 frag.appendChild(card);
             });
@@ -338,29 +341,40 @@ window.renderMediaDashboard = function renderMediaDashboard() {
     currentDisplayedMedia = [];
     currentMediaRenderCount = 0; 
 
-    const filteredVideos = courseVideos.filter(m =>
+    // Each of these applies every active filter *except* the type filter first
+    // ("TypeAgnostic"), then the type filter is applied on top to get the final
+    // displayed list. The type-agnostic version is also what the Types checkbox
+    // list is built from — using the final (type-filtered) list there would mean
+    // selecting one type removes every other type from view, since by definition
+    // nothing else would match anymore.
+    const typeAgnosticVideos = courseVideos.filter(m =>
         passesModuleFilter(m) &&
-        (!activeMediaFilterMissingId || isMissingId(m.entryId)) &&
-        (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.kalturaType))
+        (!activeMediaFilterMissingId || isMissingId(m.entryId))
     );
-    const filteredAudio = courseAudio.filter(m =>
+    const filteredVideos = typeAgnosticVideos.filter(m =>
+        activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.kalturaType)
+    );
+
+    const typeAgnosticAudio = courseAudio.filter(m =>
         passesModuleFilter(m) &&
-        (!activeMediaFilterMissingId || isMissingId(m.entryId)) &&
-        (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.kalturaType))
+        (!activeMediaFilterMissingId || isMissingId(m.entryId))
     );
-    const filteredInteractives = courseInteractives.filter(m =>
-        passesModuleFilter(m) &&
-        (activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.interactiveType))
+    const filteredAudio = typeAgnosticAudio.filter(m =>
+        activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.kalturaType)
     );
-    
-    const filteredImages = courseImages.filter(img => {
+
+    const typeAgnosticInteractives = courseInteractives.filter(m => passesModuleFilter(m));
+    const filteredInteractives = typeAgnosticInteractives.filter(m =>
+        activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(m.interactiveType)
+    );
+
+    const typeAgnosticImages = courseImages.filter(img => {
         if (!passesModuleFilter(img)) return false;
-        if (activeMediaFilterTypes.size > 0 && !activeMediaFilterTypes.has(img.fileType)) return false;
         if (activeMediaFilterHasAlt && !img.altText.trim()) return false;
         if (activeMediaFilterHasCaption && !img.caption.trim()) return false;
         if (activeMediaFilterHasCaptionHeader && !img.captionHeader.trim()) return false;
         if (activeMediaFilterHasTextVer && !img.textVersion.trim()) return false;
-        
+
         if (activeMediaFilterCheckCopyright) {
             if (img.copyright.trim() !== '') return false;
             const nameWithoutExt = img.fileName.substring(0, img.fileName.lastIndexOf('.')) || img.fileName;
@@ -368,24 +382,28 @@ window.renderMediaDashboard = function renderMediaDashboard() {
             const hasApprovedSuffix = approvedSuffixes.some(suffix => nameWithoutExt.toLowerCase().endsWith(suffix));
             if (hasApprovedSuffix) return false;
         }
-        
+
         if (activeMediaFilterCheckTextVer) {
             const hasTextVer = !!img.textVersion.trim();
             const hasAlt = !!img.altText.trim();
             const altContainsTextVer = img.altText.toLowerCase().includes('text version');
-            
+
             const failsCondition1 = hasTextVer && !hasAlt;
             const failsCondition2 = altContainsTextVer && !hasTextVer;
-            
+
             if (!failsCondition1 && !failsCondition2) return false;
         }
-        
+
         return true;
     });
-	
-	const uniqueImagesCount = new Set(filteredImages.map(img => img.src)).size;
+    const filteredImages = typeAgnosticImages.filter(img =>
+        activeMediaFilterTypes.size === 0 || activeMediaFilterTypes.has(img.fileType)
+    );
 
-    const filteredDownloads = getFilteredDownloads(downloadsSearchQuery);
+    const uniqueImagesCount = new Set(filteredImages.map(img => img.src)).size;
+
+    const filteredDownloads       = getFilteredDownloads(downloadsSearchQuery);
+    const typeAgnosticDownloads   = getFilteredDownloads(downloadsSearchQuery, { skipTypeFilter: true });
 
     const filteredGlossary = courseGlossary.filter(g =>
         activeMediaModules.size === 0 ||
@@ -393,11 +411,11 @@ window.renderMediaDashboard = function renderMediaDashboard() {
     );
 
     const currentUniqueTypes = new Set();
-    if      (currentMediaTab === 'videos')       filteredVideos.forEach(m => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
-    else if (currentMediaTab === 'audio')        filteredAudio.forEach(m  => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
-    else if (currentMediaTab === 'interactives') filteredInteractives.forEach(m => { if (m.interactiveType) currentUniqueTypes.add(m.interactiveType); });
-    else if (currentMediaTab === 'images')       filteredImages.forEach(img => { if (img.fileType) currentUniqueTypes.add(img.fileType); });
-    else if (currentMediaTab === 'downloads')    filteredDownloads.forEach(d => { if (d.fileType) currentUniqueTypes.add(d.fileType); });
+    if      (currentMediaTab === 'videos')       typeAgnosticVideos.forEach(m => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
+    else if (currentMediaTab === 'audio')        typeAgnosticAudio.forEach(m  => { if (m.kalturaType)    currentUniqueTypes.add(m.kalturaType); });
+    else if (currentMediaTab === 'interactives') typeAgnosticInteractives.forEach(m => { if (m.interactiveType) currentUniqueTypes.add(m.interactiveType); });
+    else if (currentMediaTab === 'images')       typeAgnosticImages.forEach(img => { if (img.fileType) currentUniqueTypes.add(img.fileType); });
+    else if (currentMediaTab === 'downloads')    typeAgnosticDownloads.forEach(d => { if (d.fileType) currentUniqueTypes.add(d.fileType); });
 
     const isFiltered = activeMediaModules.size > 0 || activeMediaFilterTypes.size > 0 || 
                        activeMediaFilterMissingId || activeMediaFilterHasAlt || 

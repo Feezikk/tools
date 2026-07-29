@@ -601,7 +601,8 @@
             font-family: inherit;
         }
         .a11y-badge .svg-icon { width: 13px; height: 13px; }
-        .a11y-pass { background: var(--badge-present); color: var(--badge-present-text); }
+        .a11y-pass { background: var(--badge-present); color: var(--badge-present-text); cursor: pointer; transition: filter 0.15s, transform 0.15s; }
+        .a11y-pass:hover { filter: brightness(0.95); transform: translateY(-1px); }
         .a11y-fail {
             background: var(--badge-missing); color: var(--badge-missing-text);
             cursor: pointer; transition: filter 0.15s, transform 0.15s;

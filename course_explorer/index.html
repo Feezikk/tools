@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="../llama.ico">
+    <link rel="icon" type="image/x-icon" href="llama.ico">
     <title>Course Explorer</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -20,7 +20,7 @@
                 <div>
                     <h1 id="main-title">Course Explorer</h1>
                     <div class="header-subtitle">
-                        Course Explorer Tool <span class="version-pill">v8.01</span>
+                        Course Explorer Tool <span class="version-pill">v7.46</span>
                     </div>
                 </div>
             </div>
@@ -379,12 +379,35 @@
     </div>
 
     <div id="structure-check-info-modal" class="modal-overlay" onclick="closeStructureCheckInfoModal(event)">
-        <div class="modal-content" style="max-width:650px;" onclick="event.stopPropagation()">
+        <div class="modal-content" style="max-width:850px;" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <strong style="color:var(--primary); font-size:1.2rem;">What Structure Check Looks For</strong>
                 <button class="close-modal-btn" onclick="closeStructureCheckInfoModal()">&times;</button>
             </div>
             <div class="modal-body" id="structure-check-info-body"></div>
+        </div>
+    </div>
+
+    <div id="footer-check-report-modal" class="modal-overlay" onclick="closeFooterCheckReportModal(event)">
+        <div class="modal-content" style="max-width:650px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div>
+                    <strong style="color:var(--primary); font-size:1.2rem;">FLVS Footer Check</strong>
+                    <div id="footer-check-report-filename" style="font-size:0.85rem; color:var(--text-light); margin-top:4px;"></div>
+                </div>
+                <button class="close-modal-btn" onclick="closeFooterCheckReportModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="footer-check-report-body"></div>
+        </div>
+    </div>
+
+    <div id="footer-check-info-modal" class="modal-overlay" onclick="closeFooterCheckInfoModal(event)">
+        <div class="modal-content" style="max-width:600px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <strong style="color:var(--primary); font-size:1.2rem;">What the FLVS Footer Check Looks For</strong>
+                <button class="close-modal-btn" onclick="closeFooterCheckInfoModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="footer-check-info-body"></div>
         </div>
     </div>
 
