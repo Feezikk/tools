@@ -1,0 +1,39 @@
+/* ==========================================================================
+   THEMES.CSS - Color variables and design tokens (CSS custom properties)
+   ========================================================================== */
+
+:root {
+            /* FLVS Brand Theme */
+            --primary:       #1C355E;
+            --primary-light: #2A4D8A;
+            --accent:        #F6BF41;
+            --accent-hover:  #E4AE31;
+            --accent-soft:   rgba(246, 191, 65, 0.45);
+            --secondary:     #6c757d;
+            --bg:            #f4f7f9;
+            --card-bg:       #ffffff;
+            --text:          #2c3e50;
+            --text-light:    #546e7a;
+            --border:        #e0e6ed;
+            --tag-bg:        #f0f4f8;
+            --tag-text:      #1C355E;
+            --highlight:     #fff3cd;
+            --code-font:     "Consolas", "Monaco", "Courier New", monospace;
+            --shadow:        0 4px 16px rgba(28, 53, 94, 0.08);
+
+            /* Audit Colors */
+            --audit-less-bg:     #f8f9fa;
+            --audit-less-hover:  #f0f4f8;
+            --audit-less-border: #dee2e6;
+
+            /* ID & Badge Colors */
+            --id-color:           #495057;
+            --badge-missing:      #ffe3e6;
+            --badge-missing-text: #842029;
+            --badge-present:      #d1e7dd;
+            --badge-present-text: #0f5132;
+            --badge-neutral:      #e9ecef;
+            --badge-neutral-text: #6c757d;
+        }
+
+
