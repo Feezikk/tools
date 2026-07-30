@@ -300,14 +300,6 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .card-emoji {
-    width: 56px; height: 56px;
-    border-radius: var(--radius);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px;
-    margin-bottom: 14px;
-    flex-shrink: 0;
-  }
   .card-top-row {
     display: flex;
     align-items: flex-start;
@@ -346,12 +338,6 @@
     border-top: 1px solid var(--border);
     gap: 8px;
   }
-  .card-meta-info {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
   .card-type-chip {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 11px;
@@ -360,21 +346,12 @@
     border-radius: 4px;
     width: fit-content;
   }
-  .card-contact-line {
-    font-size: 11px;
-    color: var(--text3);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .card-contact-line a { color: var(--blue); text-decoration: none; }
-  .card-contact-line a:hover { text-decoration: underline; }
   .btn-use {
     display: flex; align-items: center; gap: 5px;
-    background: var(--blue);
-    color: #fff;
+    background: none;
+    color: var(--blue);
     border: none;
-    padding: 8px 16px;
+    padding: 6px 10px;
     border-radius: 20px;
     font-family: 'Google Sans', sans-serif;
     font-size: 13px;
@@ -384,7 +361,7 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .btn-use:hover { background: var(--blue-dark); }
+  .btn-use:hover { background: var(--blue-light); }
   .btn-use svg { width: 13px; height: 13px; }
 
   /* ── TYPE COLORS ── */
@@ -1004,22 +981,17 @@ function render() {
     return;
   }
   grid.innerHTML = list.map(function(t, i){
-    var bg = catBg[t.category] || "#F1F3F4";
     var tc = typeClass[t.type] || "type-prompt";
     return '<div class="tool-card" style="animation-delay:' + (i*0.04) + 's" onclick="openDetail(' + t.id + ')">' +
-      '<div class="card-emoji" style="background:' + bg + '">' + (catEmoji[t.category] || "🛠") + '</div>' +
       '<div class="card-top-row">' +
         '<span class="card-name">' + t.name + '</span>' +
         (t.validated ? '<span class="card-validated"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>' : '') +
       '</div>' +
       '<p class="card-desc">' + (t.desc.length > 90 ? t.desc.substring(0,90) + '…' : t.desc) + '</p>' +
       '<div class="card-footer">' +
-        '<div class="card-meta-info">' +
-          '<span class="card-type-chip ' + tc + '">' + t.type + '</span>' +
-          '<span class="card-contact-line">Contact: <a href="mailto:' + t.contactEmail + '" onclick="event.stopPropagation()">' + t.contactName + '</a></span>' +
-        '</div>' +
+        '<span class="card-type-chip ' + tc + '">' + t.type + '</span>' +
         '<button class="btn-use" onclick="event.stopPropagation(); handleCardUse(' + t.id + ')">' +
-          'Use<svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M7 2l4.5 4.5L7 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+          'View details<svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M7 2l4.5 4.5L7 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '</button>' +
       '</div>' +
     '</div>';
