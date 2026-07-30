@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Resource Hub — Curriculum Department</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Google+Sans+Display:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F8F9FA;
+    --surface: #FFFFFF;
+    --surface-hover: #F1F3F4;
+    --border: #E8EAED;
+    --border-strong: #DADCE0;
+    --text: #202124;
+    --text2: #5F6368;
+    --text3: #80868B;
+    --blue: #1A73E8;
+    --blue-light: #E8F0FE;
+    --blue-dark: #1557B0;
+    --green: #1E8E3E;
+    --green-light: #E6F4EA;
+    --red: #D93025;
+    --red-light: #FCE8E6;
+    --yellow: #F29900;
+    --yellow-light: #FEF7E0;
+    --purple: #7B2FBE;
+    --purple-light: #F3E8FD;
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --shadow-sm: 0 1px 2px rgba(60,64,67,.1), 0 1px 3px 1px rgba(60,64,67,.08);
+    --shadow: 0 1px 3px rgba(60,64,67,.12), 0 2px 8px 2px rgba(60,64,67,.08);
+    --shadow-md: 0 2px 6px rgba(60,64,67,.15), 0 4px 12px 4px rgba(60,64,67,.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Roboto', 'Google Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── TOP NAV ── */
+  .topnav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .nav-logo-icon {
+    width: 32px; height: 32px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-logo-icon svg { width: 18px; height: 18px; }
+  .nav-logo-text { font-family: 'Google Sans Display', sans-serif; font-size: 18px; font-weight: 500; color: var(--text); }
+  .nav-logo-text span { color: var(--text3); font-weight: 400; }
+
+  .nav-search {
+    flex: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .nav-search input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--border-strong);
+    border-radius: 22px;
+    padding: 0 48px 0 48px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .nav-search input:focus {
+    background: var(--surface);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.12);
+  }
+  .nav-search input::placeholder { color: var(--text3); }
+  .nav-search .search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--text3); pointer-events: none;
+  }
+  .nav-search .search-icon svg { width: 18px; height: 18px; }
+  .nav-search .search-clear {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    border: none; background: none; cursor: pointer; color: var(--text3);
+    width: 24px; height: 24px; display: none; align-items: center; justify-content: center;
+    border-radius: 50%;
+  }
+  .nav-search .search-clear:hover { background: var(--surface-hover); color: var(--text); }
+  .nav-search .search-clear svg { width: 14px; height: 14px; }
+
+  .nav-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-primary {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 0 20px;
+    height: 36px;
+    border-radius: 18px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--blue-dark); box-shadow: var(--shadow-sm); }
+  .btn-primary svg { width: 16px; height: 16px; }
+
+  /* ── LAYOUT ── */
+  .layout { display: flex; min-height: calc(100vh - 64px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 256px;
+    flex-shrink: 0;
+    padding: 16px 12px;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    padding: 8px 12px 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s, color 0.1s;
+    position: relative;
+  }
+  .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+  .nav-item.active { background: var(--blue-light); color: var(--blue); font-weight: 500; }
+  .nav-item .nav-icon { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+  .nav-item .nav-count {
+    margin-left: auto;
+    font-size: 12px;
+    background: var(--surface-hover);
+    color: var(--text3);
+    padding: 2px 8px;
+    border-radius: 99px;
+    min-width: 24px;
+    text-align: center;
+  }
+  .nav-item.active .nav-count { background: rgba(26,115,232,0.12); color: var(--blue); }
+  .sidebar-divider { height: 1px; background: var(--border); margin: 8px 12px; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; padding: 24px 28px; max-width: 1100px; }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, #E8F0FE 0%, #F3E8FD 50%, #E6F4EA 100%);
+    border-radius: var(--radius-xl);
+    padding: 32px 36px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .hero-text h1 {
+    font-family: 'Google Sans Display', sans-serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+  .hero-text p { font-size: 14px; color: var(--text2); line-height: 1.6; max-width: 480px; }
+  .hero-stats {
+    display: flex;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+  .stat {
+    text-align: center;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    min-width: 80px;
+  }
+  .stat-num { font-family: 'Google Sans Display', sans-serif; font-size: 28px; font-weight: 500; color: var(--text); }
+  .stat-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .results-info { font-size: 14px; color: var(--text2); }
+  .results-info strong { color: var(--text); font-weight: 500; }
+  .sort-wrap { display: flex; align-items: center; gap: 8px; }
+  .sort-label { font-size: 13px; color: var(--text3); }
+  .sort-select {
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 6px 14px;
+    background: var(--surface);
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* ── CHIP FILTERS ── */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 99px;
+    background: var(--surface);
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .chip:hover { background: var(--surface-hover); border-color: var(--text3); }
+  .chip.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); font-weight: 500; }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── CARDS ── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    animation: cardIn 0.25s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-emoji {
+    width: 56px; height: 56px;
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  .card-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .card-name {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .card-validated {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--green-light);
+    margin-top: 1px;
+  }
+  .card-validated svg { width: 12px; height: 12px; color: var(--green); }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.55;
+    margin-bottom: 16px;
+    flex: 1;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    gap: 8px;
+  }
+  .card-meta-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .card-type-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    width: fit-content;
+  }
+  .card-contact-line {
+    font-size: 11px;
+    color: var(--text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-contact-line a { color: var(--blue); text-decoration: none; }
+  .card-contact-line a:hover { text-decoration: underline; }
+  .btn-use {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-use:hover { background: var(--blue-dark); }
+  .btn-use svg { width: 13px; height: 13px; }
+
+  /* ── TYPE COLORS ── */
+  .type-prompt  { background: #E8F5E9; color: #2E7D32; }
+  .type-gem     { background: var(--purple-light); color: var(--purple); }
+  .type-app     { background: var(--blue-light); color: var(--blue); }
+  .type-template{ background: var(--yellow-light); color: #B06000; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 64px 32px;
+  }
+  .empty-state-icon { font-size: 56px; margin-bottom: 16px; }
+  .empty-state h3 { font-family: 'Google Sans', sans-serif; font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; color: var(--text2); }
+
+  /* ── DETAIL MODAL ── */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(32,33,36,0.6);
+    z-index: 200;
+    align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    width: 100%; max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 72px rgba(0,0,0,0.2);
+    animation: modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.94) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-top { padding: 28px 28px 0; }
+  .modal-emoji-wrap {
+    width: 72px; height: 72px;
+    border-radius: var(--radius-lg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin-bottom: 16px;
+  }
+  .modal-close-row {
+    position: absolute;
+    top: 20px; right: 20px;
+  }
+  .modal-close {
+    width: 32px; height: 32px;
+    border: none; background: var(--surface-hover);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text2);
+    transition: background 0.1s;
+    font-size: 18px;
+  }
+  .modal-close:hover { background: var(--border); color: var(--text); }
+  .modal-title {
+    font-family: 'Google Sans Display', sans-serif;
+    font-size: 22px; font-weight: 500;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .modal-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .modal-chip {
+    font-size: 12px; font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .modal-validated {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 500;
+    color: var(--green);
+    background: var(--green-light);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .modal-validated svg { width: 13px; height: 13px; }
+  .modal-body { padding: 0 28px 28px; }
+  .modal-desc {
+    font-size: 14px; color: var(--text2); line-height: 1.65;
+    margin-bottom: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section-title {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3); margin-bottom: 10px;
+  }
+  .info-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .info-pill {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+  }
+  .info-pill-label { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+  .info-pill-value { font-size: 13px; font-weight: 500; color: var(--text); }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    font-size: 12px;
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 12px;
+    border-radius: 99px;
+  }
+  .guidance-box {
+    background: var(--blue-light);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 13px;
+    color: #1557B0;
+    line-height: 1.6;
+  }
+  .modal-contact-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+  }
+  .contact-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--blue-light);
+    color: var(--blue);
+    font-family: 'Google Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .contact-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .contact-email { font-size: 12px; color: var(--blue); text-decoration: none; }
+  .contact-email:hover { text-decoration: underline; }
+  .btn-use-full {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px;
+    background: var(--blue); color: #fff; border: none;
+    border-radius: var(--radius);
+    font-family: 'Google Sans', sans-serif; font-size: 15px; font-weight: 500;
+    cursor: pointer; margin-top: 20px;
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .btn-use-full:hover { background: var(--blue-dark); box-shadow: var(--shadow); }
+  .btn-use-full svg { width: 16px; height: 16px; }
+
+  /* ── SUBMIT MODAL ── */
+  .submit-modal {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    width: 100%; max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 72px rgba(0,0,0,0.2);
+    animation: modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .submit-modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .submit-modal-header h2 {
+    font-family: 'Google Sans Display', sans-serif;
+    font-size: 20px; font-weight: 500; color: var(--text);
+  }
+  .submit-modal-header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .submit-form { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .field label {
+    display: block;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px; color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.12);
+  }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-actions {
+    display: flex; gap: 10px;
+    padding: 0 24px 24px;
+  }
+  .btn-cancel {
+    flex: 1; padding: 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    border-radius: 20px;
+    font-family: 'Google Sans', sans-serif; font-size: 14px; font-weight: 500;
+    color: var(--text2); cursor: pointer;
+    transition: background 0.1s;
+  }
+  .btn-cancel:hover { background: var(--surface-hover); }
+  .btn-submit-form {
+    flex: 2; padding: 10px;
+    background: var(--blue); color: #fff; border: none;
+    border-radius: 20px;
+    font-family: 'Google Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-submit-form:hover { background: var(--blue-dark); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: #fff;
+    padding: 12px 20px; border-radius: var(--radius);
+    font-size: 14px; font-weight: 400;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: var(--shadow-md); z-index: 300;
+    opacity: 0; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast svg { width: 18px; height: 18px; color: #34A853; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="2" width="6" height="6" rx="1.5" fill="white" fill-opacity="0.9"/>
+        <rect x="10" y="2" width="6" height="6" rx="1.5" fill="white" fill-opacity="0.65"/>
+        <rect x="2" y="10" width="6" height="6" rx="1.5" fill="white" fill-opacity="0.65"/>
+        <rect x="10" y="10" width="6" height="6" rx="1.5" fill="white" fill-opacity="0.4"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">AI Resource Hub <span>· Curriculum</span></span>
+  </a>
+
+  <div class="nav-search">
+    <span class="search-icon"><svg viewBox="0 0 18 18" fill="none"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 12l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+    <input type="text" id="searchInput" placeholder="Search tools, categories, use cases…" oninput="handleSearch(this)">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div class="nav-actions">
+    <button class="btn-primary" onclick="openSubmit()">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Submit Tool
+    </button>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <button class="nav-item active" data-cat="all" onclick="filterCat(this)">
+        <span class="nav-icon">🏠</span> All tools
+        <span class="nav-count" id="cnt-all">12</span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-label">Categories</p>
+      <button class="nav-item" data-cat="Content Creation" onclick="filterCat(this)">
+        <span class="nav-icon">✏️</span> Content Creation
+        <span class="nav-count" id="cnt-Content Creation"></span>
+      </button>
+      <button class="nav-item" data-cat="Assessment" onclick="filterCat(this)">
+        <span class="nav-icon">📊</span> Assessment
+        <span class="nav-count" id="cnt-Assessment"></span>
+      </button>
+      <button class="nav-item" data-cat="Planning" onclick="filterCat(this)">
+        <span class="nav-icon">📅</span> Planning
+        <span class="nav-count" id="cnt-Planning"></span>
+      </button>
+      <button class="nav-item" data-cat="Differentiation" onclick="filterCat(this)">
+        <span class="nav-icon">🎯</span> Differentiation
+        <span class="nav-count" id="cnt-Differentiation"></span>
+      </button>
+      <button class="nav-item" data-cat="Research" onclick="filterCat(this)">
+        <span class="nav-icon">🔬</span> Research
+        <span class="nav-count" id="cnt-Research"></span>
+      </button>
+      <button class="nav-item" data-cat="Communication" onclick="filterCat(this)">
+        <span class="nav-icon">💬</span> Communication
+        <span class="nav-count" id="cnt-Communication"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <p class="sidebar-label">Tool Type</p>
+      <button class="nav-item" data-type="Prompt" onclick="filterType(this)">
+        <span class="nav-icon">💬</span> Prompt
+      </button>
+      <button class="nav-item" data-type="Gem" onclick="filterType(this)">
+        <span class="nav-icon">💎</span> Gem
+      </button>
+      <button class="nav-item" data-type="App" onclick="filterType(this)">
+        <span class="nav-icon">⚙️</span> App
+      </button>
+      <button class="nav-item" data-type="Template" onclick="filterType(this)">
+        <span class="nav-icon">📄</span> Template
+      </button>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <button class="nav-item" data-validated="true" onclick="filterValidated(this)">
+        <span class="nav-icon">✅</span> Validated only
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-text">
+        <h1>Curriculum AI Tools</h1>
+        <p>A curated library of AI prompts, gems, apps, and templates built for educators in the Curriculum Department. All tools are reviewed by the AI Council before publishing.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num" id="heroTotal">12</div>
+          <div class="stat-label">Tools</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="heroValidated">7</div>
+          <div class="stat-label">Validated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHIP FILTERS -->
+    <div class="chip-row" id="chipRow">
+      <div class="chip active" data-chip="all" onclick="chipFilter(this)">All</div>
+      <div class="chip" data-chip="Prompt" onclick="chipFilter(this)"><span class="chip-dot" style="background:#2E7D32"></span>Prompt</div>
+      <div class="chip" data-chip="Gem" onclick="chipFilter(this)"><span class="chip-dot" style="background:#7B2FBE"></span>Gem</div>
+      <div class="chip" data-chip="App" onclick="chipFilter(this)"><span class="chip-dot" style="background:#1A73E8"></span>App</div>
+      <div class="chip" data-chip="Template" onclick="chipFilter(this)"><span class="chip-dot" style="background:#B06000"></span>Template</div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <p class="results-info"><strong id="resultCount">12</strong> tools found</p>
+      <div class="sort-wrap">
+        <span class="sort-label">Sort by</span>
+        <select class="sort-select" onchange="handleSort(this.value)">
+          <option value="newest">Newest</option>
+          <option value="alpha">A – Z</option>
+          <option value="type">Type</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- TOOL GRID -->
+    <div class="tool-grid" id="toolGrid"></div>
+  </main>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailOverlay" onclick="closeDetailBg(event)">
+  <div class="modal" style="position:relative">
+    <div class="modal-close-row">
+      <button class="modal-close" onclick="closeDetail()">×</button>
+    </div>
+    <div class="modal-top">
+      <div class="modal-emoji-wrap" id="mEmoji"></div>
+      <h2 class="modal-title" id="mTitle"></h2>
+      <div class="modal-chips" id="mChips"></div>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc" id="mDesc"></p>
+
+      <div class="modal-section">
+        <p class="modal-section-title">Details</p>
+        <div class="info-pills" id="mDetails"></div>
+      </div>
+
+      <div class="modal-section">
+        <p class="modal-section-title">Use Cases</p>
+        <div class="tag-list" id="mUseCases"></div>
+      </div>
+
+      <div class="modal-section">
+        <p class="modal-section-title">User Guidance</p>
+        <div class="guidance-box" id="mGuidance"></div>
+      </div>
+
+      <div class="modal-section">
+        <p class="modal-section-title">Tool Maintenance</p>
+        <div id="mContact"></div>
+      </div>
+
+      <button class="btn-use-full" onclick="handleUseTool()">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Open Tool
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="overlay" id="submitOverlay" onclick="closeSubmitBg(event)">
+  <div class="submit-modal">
+    <div class="submit-modal-header">
+      <div>
+        <h2>Submit a Tool</h2>
+        <p>Reviewed by the AI Council before publishing to the hub.</p>
+      </div>
+      <button class="modal-close" onclick="closeSubmit()">×</button>
+    </div>
+    <div class="submit-form">
+      <div class="field">
+        <label>Tool name *</label>
+        <input type="text" id="f-name" placeholder="e.g. Unit Plan Generator">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Tool type *</label>
+          <select id="f-type">
+            <option value="">Select…</option>
+            <option>Prompt</option><option>Gem</option><option>App</option><option>Template</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Category *</label>
+          <select id="f-cat">
+            <option value="">Select…</option>
+            <option>Content Creation</option><option>Assessment</option><option>Planning</option>
+            <option>Differentiation</option><option>Research</option><option>Communication</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Description *</label>
+        <textarea id="f-desc" placeholder="What does this tool do and who is it for?"></textarea>
+      </div>
+      <div class="field">
+        <label>Use cases</label>
+        <input type="text" id="f-uses" placeholder="Lesson planning, rubric design, parent letters…">
+        <p class="field-hint">Comma-separated list</p>
+      </div>
+      <div class="field">
+        <label>Link / access URL</label>
+        <input type="url" id="f-link" placeholder="https://…">
+      </div>
+      <div class="field">
+        <label>User guidance</label>
+        <textarea id="f-guidance" placeholder="Tips for getting the best results…"></textarea>
+      </div>
+      <div class="field">
+        <label>Submitted by</label>
+        <input type="text" id="f-author" placeholder="Your name or team">
+      </div>
+      <div class="field">
+        <label>Point of contact name *</label>
+        <input type="text" id="f-contact-name" placeholder="Who should users contact for help or feedback?">
+        <p class="field-hint">This will be shown on the tool card</p>
+      </div>
+      <div class="field">
+        <label>Point of contact email *</label>
+        <input type="email" id="f-contact-email" placeholder="contact@school.org">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeSubmit()">Cancel</button>
+      <button class="btn-submit-form" onclick="submitTool()">Submit for review</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 9l2.5 2.5 4-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  <span id="toastMsg">Done!</span>
+</div>
+
+<script>
+var catEmoji = {
+  "Content Creation": "✏️", "Assessment": "📊", "Planning": "📅",
+  "Differentiation": "🎯", "Research": "🔬", "Communication": "💬"
+};
+var catBg = {
+  "Content Creation": "#E8F5E9", "Assessment": "#E8F0FE",
+  "Planning": "#FEF7E0",         "Differentiation": "#F3E8FD",
+  "Research": "#FCE8E6",         "Communication": "#E8F0FE"
+};
+var typeClass = { "Prompt": "type-prompt", "Gem": "type-gem", "App": "type-app", "Template": "type-template" };
+
+var tools = [
+  { id:1, name:"Unit Plan Generator", type:"Prompt", category:"Planning", validated:true,
+    desc:"Generates a full unit plan outline from a given standard or learning objective, including pacing, essential questions, and suggested assessments.",
+    useCases:["Unit planning","Standards alignment","Curriculum mapping"],
+    guidance:"Paste your target standard(s) and grade level into the prompt. Works best with 1–3 standards at a time.",
+    link:"#", added:"2025-04-10", author:"Curriculum Team", contactName:"Jordan Lee", contactEmail:"jordan.lee@school.org" },
+  { id:2, name:"Rubric Builder", type:"App", category:"Assessment", validated:true,
+    desc:"An interactive app that generates custom rubrics based on task type, grade level, and competency focus. Outputs ready-to-use rubric tables.",
+    useCases:["Performance tasks","Writing assessment","Project evaluation"],
+    guidance:"Specify the task type and number of criteria. The app will generate 4-point rubric rows — review and edit before distributing.",
+    link:"#", added:"2025-04-15", author:"Ana Rivera", contactName:"Ana Rivera", contactEmail:"a.rivera@school.org" },
+  { id:3, name:"Differentiation Scaffold Prompt", type:"Prompt", category:"Differentiation", validated:true,
+    desc:"Takes any existing lesson activity and generates tiered versions for below-grade, on-grade, and above-grade learners.",
+    useCases:["Tiered instruction","IEP support","Enrichment"],
+    guidance:"Paste your original activity text. The prompt returns three labeled versions — review for accuracy and cultural sensitivity.",
+    link:"#", added:"2025-04-18", author:"Miguel Torres", contactName:"Miguel Torres", contactEmail:"m.torres@school.org" },
+  { id:4, name:"Standards Evidence Finder", type:"Gem", category:"Research", validated:false,
+    desc:"A gem configured to analyze student work samples and identify which standards are demonstrated, with evidence citations.",
+    useCases:["Standards tagging","Portfolio review","Evidence collection"],
+    guidance:"Upload or paste student work. Works best with written responses. Output is a list of matched standards with text evidence.",
+    link:"#", added:"2025-04-20", author:"Research Team", contactName:"Sam Okafor", contactEmail:"s.okafor@school.org" },
+  { id:5, name:"Parent Communication Drafts", type:"Template", category:"Communication", validated:true,
+    desc:"A library of tone-matched email templates for common parent communications: progress updates, meeting requests, concern responses.",
+    useCases:["Parent emails","Progress reports","Meeting invitations"],
+    guidance:"Fill in the bracketed fields. Templates are written at a grade 8 reading level and available in English and Spanish.",
+    link:"#", added:"2025-04-22", author:"Family Engagement Team", contactName:"Priya Nair", contactEmail:"p.nair@school.org" },
+  { id:6, name:"Formative Check Generator", type:"Prompt", category:"Assessment", validated:true,
+    desc:"Creates 5-question exit tickets, quick checks, and warm-up quizzes from any topic or standard. Multiple question formats supported.",
+    useCases:["Exit tickets","Warm-ups","Quick formative checks"],
+    guidance:"Specify the topic, grade, and question format (MC, short answer, true/false). Best used mid-unit for pacing checks.",
+    link:"#", added:"2025-04-25", author:"Instructional Team", contactName:"Jordan Lee", contactEmail:"jordan.lee@school.org" },
+  { id:7, name:"Lesson Seed Expander", type:"Gem", category:"Content Creation", validated:false,
+    desc:"Takes a brief lesson idea or bullet point and expands it into a full lesson structure with objectives, activities, and closure.",
+    useCases:["Lesson drafting","Rapid prototyping","PD sessions"],
+    guidance:"Provide 2–5 bullet points describing your lesson idea. The gem expands each into a structured section.",
+    link:"#", added:"2025-04-28", author:"Dev Patel", contactName:"Dev Patel", contactEmail:"d.patel@school.org" },
+  { id:8, name:"IEP Goal Suggestion Tool", type:"App", category:"Differentiation", validated:false,
+    desc:"Generates SMART IEP goal drafts based on student need area, grade level, and current performance data entered by the educator.",
+    useCases:["IEP writing","Goal-setting","Special education support"],
+    guidance:"Enter the student's need area and baseline data. Review all output carefully with your special education team before including in official documents.",
+    link:"#", added:"2025-05-01", author:"SPED Department", contactName:"Casey Bloom", contactEmail:"c.bloom@school.org" },
+  { id:9, name:"Curriculum Research Summarizer", type:"Gem", category:"Research", validated:true,
+    desc:"Summarizes academic articles and research papers in plain language, extracting key findings, methodology, and implications for practice.",
+    useCases:["Literature review","Research synthesis","PD prep"],
+    guidance:"Paste the abstract or full article text. Output includes a 3-sentence summary, key finding bullets, and practice implications.",
+    link:"#", added:"2025-05-02", author:"Research Team", contactName:"Sam Okafor", contactEmail:"s.okafor@school.org" },
+  { id:10, name:"Slide Deck Content Writer", type:"Prompt", category:"Content Creation", validated:false,
+    desc:"Drafts concise, engaging slide content from an outline or topic description — following visual storytelling best practices.",
+    useCases:["PD slide decks","Curriculum presentations","Staff meetings"],
+    guidance:"Provide your slide titles or outline. Each output slide has a headline, 3 bullet points, and a speaker note.",
+    link:"#", added:"2025-05-03", author:"Comm Team", contactName:"Priya Nair", contactEmail:"p.nair@school.org" },
+  { id:11, name:"Scope & Sequence Mapper", type:"App", category:"Planning", validated:true,
+    desc:"Interactive app that helps teams map standards to a yearly scope and sequence, identify gaps, and balance pacing across units.",
+    useCases:["Curriculum planning","Vertical alignment","Standards coverage audits"],
+    guidance:"Start by entering your grade band and subject. The app exports a color-coded scope and sequence table in CSV format.",
+    link:"#", added:"2025-05-04", author:"Curriculum Team", contactName:"Jordan Lee", contactEmail:"jordan.lee@school.org" },
+  { id:12, name:"Student Work Feedback Template", type:"Template", category:"Content Creation", validated:true,
+    desc:"A structured template for providing consistent, standards-aligned written feedback on student work, using the SBI model.",
+    useCases:["Written feedback","Peer review guidance","Portfolio comments"],
+    guidance:"Copy the template and fill in the three sections for each piece of student work. Works for both formative and summative contexts.",
+    link:"#", added:"2025-05-05", author:"Instructional Team", contactName:"Miguel Torres", contactEmail:"m.torres@school.org" }
+];
+
+var state = { cat:"all", type:"all", validated:"all", search:"", sort:"newest" };
+var activeId = null;
+
+function getFiltered() {
+  var list = tools.slice();
+  if (state.cat !== "all") list = list.filter(function(t){ return t.category === state.cat; });
+  if (state.type !== "all") list = list.filter(function(t){ return t.type === state.type; });
+  if (state.validated === "true") list = list.filter(function(t){ return t.validated; });
+  if (state.search) {
+    var q = state.search.toLowerCase();
+    list = list.filter(function(t){
+      return t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) ||
+             t.category.toLowerCase().includes(q) || t.useCases.join(" ").toLowerCase().includes(q);
+    });
+  }
+  if (state.sort === "alpha") list.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  else if (state.sort === "type") list.sort(function(a,b){ return a.type.localeCompare(b.type); });
+  else list.sort(function(a,b){ return new Date(b.added) - new Date(a.added); });
+  return list;
+}
+
+function render() {
+  var list = getFiltered();
+  document.getElementById("resultCount").textContent = list.length;
+  document.getElementById("heroTotal").textContent = tools.length;
+  document.getElementById("heroValidated").textContent = tools.filter(function(t){ return t.validated; }).length;
+
+  // sidebar counts
+  ["Content Creation","Assessment","Planning","Differentiation","Research","Communication"].forEach(function(c){
+    var el = document.getElementById("cnt-" + c);
+    if (el) el.textContent = tools.filter(function(t){ return t.category === c; }).length;
+  });
+  document.getElementById("cnt-all").textContent = tools.length;
+
+  var grid = document.getElementById("toolGrid");
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No tools found</h3><p>Try adjusting your search or filters.</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map(function(t, i){
+    var bg = catBg[t.category] || "#F1F3F4";
+    var tc = typeClass[t.type] || "type-prompt";
+    return '<div class="tool-card" style="animation-delay:' + (i*0.04) + 's" onclick="openDetail(' + t.id + ')">' +
+      '<div class="card-emoji" style="background:' + bg + '">' + (catEmoji[t.category] || "🛠") + '</div>' +
+      '<div class="card-top-row">' +
+        '<span class="card-name">' + t.name + '</span>' +
+        (t.validated ? '<span class="card-validated"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>' : '') +
+      '</div>' +
+      '<p class="card-desc">' + (t.desc.length > 90 ? t.desc.substring(0,90) + '…' : t.desc) + '</p>' +
+      '<div class="card-footer">' +
+        '<div class="card-meta-info">' +
+          '<span class="card-type-chip ' + tc + '">' + t.type + '</span>' +
+          '<span class="card-contact-line">Contact: <a href="mailto:' + t.contactEmail + '" onclick="event.stopPropagation()">' + t.contactName + '</a></span>' +
+        '</div>' +
+        '<button class="btn-use" onclick="event.stopPropagation(); handleCardUse(' + t.id + ')">' +
+          'Use<svg viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M7 2l4.5 4.5L7 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join("");
+}
+
+function filterCat(btn) {
+  document.querySelectorAll(".nav-item[data-cat]").forEach(function(b){ b.classList.remove("active"); });
+  btn.classList.add("active");
+  state.cat = btn.dataset.cat;
+  // clear type when cat changes
+  state.type = "all";
+  document.querySelectorAll(".nav-item[data-type]").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".nav-item[data-validated]").forEach(function(b){ b.classList.remove("active"); });
+  state.validated = "all";
+  render();
+}
+
+function filterType(btn) {
+  var wasActive = btn.classList.contains("active");
+  document.querySelectorAll(".nav-item[data-type]").forEach(function(b){ b.classList.remove("active"); });
+  if (!wasActive) { btn.classList.add("active"); state.type = btn.dataset.type; }
+  else { state.type = "all"; }
+  // sync chips
+  syncChips();
+  render();
+}
+
+function filterValidated(btn) {
+  var wasActive = btn.classList.contains("active");
+  document.querySelectorAll(".nav-item[data-validated]").forEach(function(b){ b.classList.remove("active"); });
+  if (!wasActive) { btn.classList.add("active"); state.validated = "true"; }
+  else { state.validated = "all"; }
+  render();
+}
+
+function chipFilter(chip) {
+  document.querySelectorAll(".chip").forEach(function(c){ c.classList.remove("active"); });
+  chip.classList.add("active");
+  var val = chip.dataset.chip;
+  state.type = val === "all" ? "all" : val;
+  // sync sidebar
+  document.querySelectorAll(".nav-item[data-type]").forEach(function(b){ b.classList.remove("active"); });
+  if (val !== "all") {
+    var sb = document.querySelector('.nav-item[data-type="' + val + '"]');
+    if (sb) sb.classList.add("active");
+  }
+  render();
+}
+
+function syncChips() {
+  document.querySelectorAll(".chip").forEach(function(c){ c.classList.remove("active"); });
+  var chip = document.querySelector('.chip[data-chip="' + (state.type === "all" ? "all" : state.type) + '"]');
+  if (chip) chip.classList.add("active");
+  else document.querySelector('.chip[data-chip="all"]').classList.add("active");
+}
+
+function handleSearch(inp) {
+  state.search = inp.value;
+  document.getElementById("searchClear").style.display = state.search ? "flex" : "none";
+  render();
+}
+
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  state.search = "";
+  document.getElementById("searchClear").style.display = "none";
+  render();
+}
+
+function handleSort(val) { state.sort = val; render(); }
+
+function openDetail(id) {
+  var t = tools.find(function(x){ return x.id === id; });
+  if (!t) return;
+  activeId = id;
+  var bg = catBg[t.category] || "#F1F3F4";
+  var tc = typeClass[t.type] || "type-prompt";
+  document.getElementById("mEmoji").textContent = catEmoji[t.category] || "🛠";
+  document.getElementById("mEmoji").style.background = bg;
+  document.getElementById("mTitle").textContent = t.name;
+  document.getElementById("mChips").innerHTML =
+    '<span class="modal-chip ' + tc + '">' + t.type + '</span>' +
+    '<span class="modal-chip" style="background:' + bg + ';color:#444">' + t.category + '</span>' +
+    (t.validated ? '<span class="modal-validated"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Validated</span>' : '');
+  document.getElementById("mDesc").textContent = t.desc;
+  document.getElementById("mDetails").innerHTML =
+    '<div class="info-pill"><p class="info-pill-label">Submitted by</p><p class="info-pill-value">' + t.author + '</p></div>' +
+    '<div class="info-pill"><p class="info-pill-label">Date added</p><p class="info-pill-value">' + fmtDate(t.added) + '</p></div>' +
+    '<div class="info-pill"><p class="info-pill-label">Tool type</p><p class="info-pill-value">' + t.type + '</p></div>' +
+    '<div class="info-pill"><p class="info-pill-label">Status</p><p class="info-pill-value">' + (t.validated ? "✓ Validated" : "Pending review") + '</p></div>';
+  document.getElementById("mUseCases").innerHTML = t.useCases.map(function(u){ return '<span class="tag">' + u + '</span>'; }).join("");
+  document.getElementById("mGuidance").textContent = t.guidance;
+  document.getElementById("mContact").innerHTML = t.contactName
+    ? '<div class="modal-contact-row">' +
+        '<div class="contact-avatar">' + t.contactName.split(" ").map(function(w){return w[0];}).join("") + '</div>' +
+        '<div><p class="contact-name">' + t.contactName + '</p><a class="contact-email" href="mailto:' + t.contactEmail + '">' + t.contactEmail + '</a></div>' +
+      '</div>'
+    : '<p style="font-size:13px;color:var(--text3)">No contact listed.</p>';
+  document.getElementById("detailOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDetail() {
+  document.getElementById("detailOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+function closeDetailBg(e) { if (e.target === document.getElementById("detailOverlay")) closeDetail(); }
+
+function handleUseTool() { showToast("Opening tool…"); closeDetail(); }
+function handleCardUse(id) { openDetail(id); }
+
+function openSubmit() {
+  document.getElementById("submitOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeSubmit() {
+  document.getElementById("submitOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+function closeSubmitBg(e) { if (e.target === document.getElementById("submitOverlay")) closeSubmit(); }
+
+function submitTool() {
+  var name = document.getElementById("f-name").value.trim();
+  var type = document.getElementById("f-type").value;
+  var cat  = document.getElementById("f-cat").value;
+  var desc = document.getElementById("f-desc").value.trim();
+  var cname = document.getElementById("f-contact-name").value.trim();
+  var cemail = document.getElementById("f-contact-email").value.trim();
+  if (!name || !type || !cat || !desc || !cname || !cemail) {
+    showToast("Please fill in all required fields.");
+    return;
+  }
+  var uses = document.getElementById("f-uses").value.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+  tools.push({
+    id: tools.length + 1, name: name, type: type, category: cat, validated: false,
+    desc: desc,
+    useCases: uses.length ? uses : ["General use"],
+    guidance: document.getElementById("f-guidance").value.trim() || "No guidance provided.",
+    link: document.getElementById("f-link").value.trim() || "#",
+    added: new Date().toISOString().split("T")[0],
+    author: document.getElementById("f-author").value.trim() || "Anonymous",
+    contactName: cname, contactEmail: cemail
+  });
+  ["f-name","f-type","f-cat","f-desc","f-uses","f-link","f-guidance","f-author","f-contact-name","f-contact-email"].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = "";
+  });
+  closeSubmit();
+  render();
+  showToast("Tool submitted for review!");
+}
+
+function fmtDate(s) {
+  return new Date(s).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+}
+
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  document.getElementById("toastMsg").textContent = msg;
+  t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); }, 3000);
+}
+
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape") { closeDetail(); closeSubmit(); }
+});
+
+render();
+</script>
+</body>
+</html>
