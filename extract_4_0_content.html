@@ -7,7 +7,6 @@
     <title>Course Content Extractor - 4.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
-    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -146,8 +145,7 @@
 
                         <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
                             <strong style="display:block; margin-bottom:8px;">File Format:</strong>
-                            <label><input type="radio" name="exp-format" value="docx" checked> Word (.docx)</label>
-                            <label><input type="radio" name="exp-format" value="md"> Markdown (.md)</label>
+                            <label><input type="radio" name="exp-format" value="md" checked> Markdown (.md)</label>
                             <label><input type="radio" name="exp-format" value="txt"> Plain Text (.txt)</label>
                         </div>
                     </div>
@@ -1254,7 +1252,7 @@ function renderCourseViewer() {
     });
 }
 
-// ── WORD EXPORT ROUTINES ───────────────────────────────────────────────────
+// ── EXPORT ROUTINES ────────────────────────────────────────────────────────
 function openExportModal() {
     if (validModules.length === 0) return showToast("No course loaded to export.", "error");
     const container = document.getElementById('export-checkbox-container');
@@ -1262,7 +1260,7 @@ function openExportModal() {
     validModules.forEach((mod, idx) => {
         container.innerHTML += `<label style="display:block;"><input type="checkbox" class="mod-exp-cb" value="${idx}"> ${padNum(mod.num)} ${escapeHtml(mod.title)}</label>`;
     });
-    document.querySelector('input[name="exp-format"][value="docx"]').checked = true;
+    document.querySelector('input[name="exp-format"][value="md"]').checked = true;
     document.getElementById('export-modal').classList.add('active');
 }
 
@@ -1292,25 +1290,14 @@ function downloadBlob(blob, filename) {
     setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
 }
 
-function buildDocxBlob(content) {
-    const htmlBody = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\r\n').map(line => `<p>${line}</p>`).join('');
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
-    return htmlDocx.asBlob(fullHtml);
-}
-
 function getExportExtension(format) {
     if (format === 'md') return 'md';
-    if (format === 'txt') return 'txt';
-    return 'docx';
+    return 'txt';
 }
 
-function triggerDownload(content, filename, format = 'docx') {
-    if (format === 'docx') {
-        downloadBlob(buildDocxBlob(content), filename);
-    } else {
-        const mime = format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
-        downloadBlob(new Blob([content], { type: mime }), filename);
-    }
+function triggerDownload(content, filename, format = 'md') {
+    const mime = format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
+    downloadBlob(new Blob([content], { type: mime }), filename);
 }
 
 async function buildModuleContent(mod, options) {
@@ -1398,7 +1385,7 @@ async function buildModuleContent(mod, options) {
     return modContent;
 }
 
-async function exportFullCourse(format = 'docx') {
+async function exportFullCourse(format = 'md') {
     const options = {
         exDocs: document.getElementById('ex-docs').checked,
         exInt: document.getElementById('ex-int').checked,
@@ -1416,7 +1403,7 @@ async function exportFullCourse(format = 'docx') {
     const ext = getExportExtension(format);
     triggerDownload(fullContent, `Course_Content_Export.${ext}`, format);
 }
-async function exportSeparateModules(format = 'docx') {
+async function exportSeparateModules(format = 'md') {
     // 1. Determine which modules the user actually checked
     const selectedIndexes = Array.from(document.querySelectorAll('.mod-exp-cb:checked')).map(cb => parseInt(cb.value));
     
@@ -1447,12 +1434,8 @@ async function exportSeparateModules(format = 'docx') {
         const modContent = await buildModuleContent(mod, options);
         const safeTitle = mod.title.replace(/[^a-zA-Z0-9]/g, '_');
 
-        // 3. Package into the right file type and add to ZIP
-        if (format === 'docx') {
-            zip.file(`Module_${modNum}_${safeTitle}.${ext}`, buildDocxBlob(modContent));
-        } else {
-            zip.file(`Module_${modNum}_${safeTitle}.${ext}`, modContent);
-        }
+        // 3. Add the module in the selected text format
+        zip.file(`Module_${modNum}_${safeTitle}.${ext}`, modContent);
     }
 
     // 4. Download the final ZIP payload
@@ -1461,4 +1444,4 @@ async function exportSeparateModules(format = 'docx') {
 }
 </script>
 </body>
-</html>
+</html>

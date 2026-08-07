@@ -7,7 +7,6 @@
     <title>Course Content Extractor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
-    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -211,10 +210,7 @@
                             <strong style="display:block; margin-bottom:10px; color:var(--primary); font-size:0.95rem;">File Format:</strong>
                             <div style="display:flex; flex-wrap:wrap; gap:20px; font-size:0.95rem;">
                                 <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                                    <input type="radio" name="exp-format" value="docx" checked style="accent-color:var(--primary);"> Word (.docx)
-                                </label>
-                                <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                                    <input type="radio" name="exp-format" value="md" style="accent-color:var(--primary);"> Markdown (.md)
+                                    <input type="radio" name="exp-format" value="md" checked style="accent-color:var(--primary);"> Markdown (.md)
                                 </label>
                                 <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
                                     <input type="radio" name="exp-format" value="txt" style="accent-color:var(--primary);"> Plain Text (.txt)
@@ -1649,7 +1645,7 @@ function openExportModal() {
 
     document.getElementById('export-select-all').checked = false;
     document.querySelector('input[name="exp-type"][value="single"]').checked = true;
-    document.querySelector('input[name="exp-format"][value="docx"]').checked = true;
+    document.querySelector('input[name="exp-format"][value="md"]').checked = true;
     document.getElementById('export-module-list').style.display = 'none';
     document.getElementById('export-modal').classList.add('active');
 }
@@ -1772,34 +1768,18 @@ function downloadBlob(blob, filename) {
     setTimeout(() => { URL.revokeObjectURL(link.href); document.body.removeChild(link); }, 100);
 }
 
-function buildDocxBlob(content) {
-    // Convert the plain text to HTML paragraphs for the DOCX converter
-    const safeText = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const htmlBody = safeText.split('\r\n').map(line => `<p style="margin: 0 0 8px 0; font-family: sans-serif;">${line}</p>`).join('');
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${htmlBody}</body></html>`;
-    return htmlDocx.asBlob(fullHtml);
-}
-
 function getExportExtension(format) {
     if (format === 'md') return 'md';
-    if (format === 'txt') return 'txt';
-    return 'docx';
+    return 'txt';
 }
 
-function triggerDownload(content, filename, format = 'docx') {
-    if (format === 'docx') {
-        // Generate a true .docx file using the library
-        const blob = buildDocxBlob(content);
-        downloadBlob(blob, filename);
-    } else {
-        // Markdown and plain text are just the raw content saved with the right extension/mime type
-        const mime = format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
-        const blob = new Blob([content], { type: mime });
-        downloadBlob(blob, filename);
-    }
+function triggerDownload(content, filename, format = 'md') {
+    const mime = format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
+    const blob = new Blob([content], { type: mime });
+    downloadBlob(blob, filename);
 }
 
-async function exportFullCourse(format = 'docx') {
+async function exportFullCourse(format = 'md') {
     const options = {
         exDocs: !document.getElementById('inc-docs').checked,
         exInt: !document.getElementById('inc-int').checked,
@@ -1822,7 +1802,7 @@ async function exportFullCourse(format = 'docx') {
     triggerDownload(fullContent, `${safeName}_Export.${ext}`, format);
 }
 
-async function exportSeparateModules(selectedIds, format = 'docx') {
+async function exportSeparateModules(selectedIds, format = 'md') {
     const options = {
         exDocs: !document.getElementById('inc-docs').checked,
         exInt: !document.getElementById('inc-int').checked,
@@ -1849,14 +1829,7 @@ async function exportSeparateModules(selectedIds, format = 'docx') {
         const modNum = padNum(mod.num);
         const safeTitle = mod.title.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
         
-        if (format === 'docx') {
-            // Create the DOCX blob
-            const blob = buildDocxBlob(modContent);
-            folder.file(`${modNum}_${safeTitle}.${ext}`, blob);
-        } else {
-            // Markdown / plain text is just the raw content
-            folder.file(`${modNum}_${safeTitle}.${ext}`, modContent);
-        }
+        folder.file(`${modNum}_${safeTitle}.${ext}`, modContent);
     }
 
     // Generate the Zip and trigger a single download
