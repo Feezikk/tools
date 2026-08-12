@@ -180,6 +180,7 @@ let folderIndex = new Map();
 let courseUnlockStates = new Set();
 let availableCoursesFromScan = new Map();
 let customCourseName = "";
+let sitemapFileKey = "";
 
 const IGNORE_TITLES = ["style guide", "styleguide"];
 const IGNORE_IDS = ["wf", "gs"];
@@ -187,6 +188,41 @@ const IGNORE_IDS = ["wf", "gs"];
 function padNum(num) { return (num == null) ? "00" : num.toString().padStart(2, '0'); }
 function escapeHtml(t) { return !t ? "" : t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 function generateSafeId(prefix, str) { return prefix + '-' + str.replace(/[^a-zA-Z0-9-]/g, '-'); }
+
+function normalizeArchivePath(path) {
+    const parts = String(path || "").replace(/\\/g, '/').split('/');
+    const normalized = [];
+    for (const part of parts) {
+        if (!part || part === '.') continue;
+        if (part === '..') normalized.pop();
+        else normalized.push(part);
+    }
+    return normalized.join('/');
+}
+
+function resolveFileKey(reference, baseFileKey = "") {
+    if (!reference) return null;
+
+    let cleanRef = String(reference).split(/[?#]/)[0].replace(/\\/g, '/');
+    try { cleanRef = decodeURIComponent(cleanRef); } catch (e) { /* Keep the source path as-is. */ }
+
+    if (baseFileKey && !cleanRef.startsWith('/')) {
+        const baseFolder = baseFileKey.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
+        const relativeKey = normalizeArchivePath(`${baseFolder}/${cleanRef}`);
+        if (fileMap.has(relativeKey)) return relativeKey;
+    }
+
+    const normalizedRef = normalizeArchivePath(cleanRef);
+    if (fileMap.has(normalizedRef)) return normalizedRef;
+
+    const suffix = `/${normalizedRef}`;
+    const suffixMatches = Array.from(fileMap.keys()).filter(key => key === normalizedRef || key.endsWith(suffix));
+    if (suffixMatches.length === 1) return suffixMatches[0];
+
+    const targetName = normalizedRef.split('/').pop();
+    const nameMatches = fileNameIndex.get(targetName) || [];
+    return nameMatches.length === 1 ? nameMatches[0] : null;
+}
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
@@ -303,14 +339,12 @@ document.getElementById('folder-input').addEventListener('change', async (e) => 
         }
     }
 
-    let sitemapFound = false;
-    for (const key of rootFallbackMap.keys()) {
-        if (key.endsWith('sitemap.xml')) {
-            sitemapFound = true;
-            availableCoursesFromScan.set("4.0 Course", rootFallbackMap);
-            break;
-        }
-    }
+    const sitemapCandidates = Array.from(rootFallbackMap.keys())
+        .filter(key => /(^|\/)sitemap\.xml$/i.test(key))
+        .sort((a, b) => a.split('/').length - b.split('/').length || a.length - b.length);
+    const sitemapFound = sitemapCandidates.length > 0;
+    sitemapFileKey = sitemapFound ? sitemapCandidates[0] : "";
+    if (sitemapFound) availableCoursesFromScan.set("4.0 Course", rootFallbackMap);
 
     if (!sitemapFound) {
         status.innerHTML = `<span style="color:#dc3545;">Error: No valid course structure or 'sitemap.xml' found.</span>`;
@@ -353,8 +387,7 @@ async function runIndexing() {
     }
 
     // 2. Parse Sitemap XML
-    let sitemapFile = null;
-    for (const key of fileMap.keys()) if (key.endsWith('sitemap.xml')) { sitemapFile = fileMap.get(key); break; }
+    const sitemapFile = fileMap.get(sitemapFileKey);
 
     const sitemapText = await sitemapFile.text();
     const xmlDoc = parser.parseFromString(sitemapText, "text/xml");
@@ -407,11 +440,8 @@ async function runIndexing() {
                 const locationId = `${fullLesID}.${padNum(pageNum)}`;
                 
                 if (page.src) {
-                    const targetName = page.src.split('/').pop();
-                    const matchedFiles = fileNameIndex.get(targetName);
-                    if (matchedFiles && matchedFiles.length > 0) {
-                        tasks.push(() => processHTMLPage(matchedFiles[0], locationId, page));
-                    }
+                    const pageFileKey = resolveFileKey(page.src, sitemapFileKey);
+                    if (pageFileKey) tasks.push(() => processHTMLPage(pageFileKey, locationId, page));
                 }
             });
         });
@@ -449,10 +479,10 @@ async function processHTMLPage(fileKey, locationId, pageRef) {
             if (tvSrc) {
                 const tvFileName = tvSrc.split('/').pop();
                 let tvContent = "";
-                const matchedFiles = fileNameIndex.get(tvFileName);
-                if (matchedFiles && matchedFiles.length > 0) {
+                const tvFileKey = resolveFileKey(tvSrc, fileKey);
+                if (tvFileKey) {
                     try {
-                        const rawTvText = await fileMap.get(matchedFiles[0]).text();
+                        const rawTvText = await fileMap.get(tvFileKey).text();
                         const tvDoc = parser.parseFromString(rawTvText, "text/html");
                         
                         let tvLines = [""];
@@ -571,15 +601,7 @@ async function processHTMLPage(fileKey, locationId, pageRef) {
                     let cleanPath = targetPath.replace(/^\/+/, '');
                     let jsonFileKey = null;
 
-                    if (fileMap.has(cleanPath)) {
-                        jsonFileKey = cleanPath;
-                    } else {
-                        const targetName = cleanPath.split('/').pop();
-                        const matchedFiles = fileNameIndex.get(targetName);
-                        if (matchedFiles && matchedFiles.length > 0) {
-                            jsonFileKey = matchedFiles.find(f => f.endsWith(cleanPath)) || matchedFiles[0];
-                        }
-                    }
+                    jsonFileKey = resolveFileKey(cleanPath, fileKey);
 
                     if (jsonFileKey) {
                         interactiveTasks.push(processLegacyInteractive(jsonFileKey, intLocationId, targetPath));
