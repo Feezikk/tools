@@ -9,7 +9,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet" />
   
   <style>
     /* ─── DESIGN TOKENS (DYNAMIC THEMES) ─────────────────────────── */
@@ -154,22 +154,6 @@
       background-repeat: repeat;
       background-size: 450px 150px;
     }
-	  
-	  .action-link-small {
-      text-decoration: none;
-      color: var(--ink);
-      background: var(--mist);
-      padding: 8px 12px; /* Reduced padding to match smaller text */
-      border-radius: 99px; /* Pill shape */
-      font-size: 0.75rem; /* Made the text smaller */
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1; /* Makes buttons equal width */
-      gap: 6px;
-      transition: all 0.3s ease;
-    }
 
     [data-theme="night"] #stars {
       opacity: 0.6;
@@ -178,7 +162,7 @@
 
     #dust {
       position: fixed;
-      inset: -30px; /* Oversized to prevent edges showing during parallax */
+      inset: -30px;
       pointer-events: none;
       z-index: 0;
       background-image:
@@ -270,8 +254,9 @@
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       font-weight: 300;
       color: color-mix(in srgb, var(--ink) 70%, transparent);
-      max-width: 480px;
+      max-width: 520px;
       margin-inline: auto;
+      line-height: 1.5;
       transition: color 1.5s ease;
       animation: fadeDown .6s .2s ease both;
     }
@@ -294,17 +279,12 @@
 
     .celestial-orb {
       fill: var(--sky-orb);
-      /* JavaScript calculates and sets these translation variables */
       transform: translate(var(--orb-x, 0px), var(--orb-y, 0px));
       transition: fill 1.5s ease, transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .moon-cutout {
       transform-origin: 160px 30px;
-      /* Phase-only offset — the mask already travels with the orb automatically,
-         since it's attached via the mask attribute to an element that shares the
-         same ambient transform. Re-adding --orb-x/--orb-y here would double it up
-         and throw the cutout circle far outside the visible orb. */
       transform: translate(var(--cutout-x, 20px), var(--cutout-y, -20px));
       transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -338,24 +318,25 @@
     main {
       position: relative;
       z-index: 1;
-      max-width: 1100px;
+      max-width: 600px;
       margin: 0 auto;
       padding: 48px 24px 80px;
     }
 
+    /* Increased size & restyled to match tagline weight */
     .section-label {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: .18em;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      font-weight: 700;
+      letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--terracotta);
-      margin-bottom: 28px;
+      margin-bottom: 24px;
+      text-align: center;
     }
 
     .tools-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+      display: flex;
+      justify-content: center;
     }
 
     /* ─── TOOL CARDS ─────────────────────────────────────────────── */
@@ -365,12 +346,13 @@
       color: var(--ink);
       background: var(--card-bg);
       border-radius: var(--radius);
-      padding: 28px;
+      padding: 32px;
       border: 2px solid transparent;
       box-shadow: 0 4px 20px var(--shadow);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
+      width: 100%;
       position: relative;
       overflow: hidden;
       transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color 1.5s ease, color 1.5s ease;
@@ -402,10 +384,10 @@
     .tool-card:hover::before { opacity: .06; }
 
     .card-icon {
-      font-size: 2.4rem;
+      font-size: 2.5rem;
       line-height: 1;
       background: var(--mist);
-      width: 60px; height: 60px;
+      width: 64px; height: 64px;
       border-radius: var(--radius-sm);
       display: grid;
       place-items: center;
@@ -419,28 +401,28 @@
 
     .card-name {
       font-family: var(--font-display);
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       font-weight: 700;
     }
 
     .card-desc {
-      margin-top: 4px;
-      font-size: .9rem;
+      margin-top: 8px;
+      font-size: 1rem;
       font-weight: 300;
       color: color-mix(in srgb, var(--ink) 70%, transparent);
-      line-height: 1.55;
+      line-height: 1.6;
       transition: color 1.5s ease;
     }
 
     .card-arrow {
-      margin-top: auto;
+      margin-top: 12px;
       align-self: flex-end;
-      width: 36px; height: 36px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       background: var(--mist);
       display: grid;
       place-items: center;
-      font-size: 1rem;
+      font-size: 1.1rem;
       position: relative;
       z-index: 1;
       transition: all .4s cubic-bezier(0.5, -0.5, 0.2, 1.5);
@@ -456,118 +438,6 @@
       background-position: center;
       transform: translateX(6px);
     }
-	  
-	/* ─── MULTI-ACTION CARD BUTTONS ──────────────────────────────── */
-    .card-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: auto; /* Pushes the buttons to the bottom of the card */
-      position: relative;
-      z-index: 1;
-    }
-
-    .action-link {
-      text-decoration: none;
-      color: var(--ink);
-      background: var(--mist);
-      padding: 10px 16px;
-      border-radius: 99px; /* Pill shape */
-      font-size: 0.85rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1; /* Makes buttons equal width */
-      gap: 6px;
-      transition: all 0.3s ease;
-    }
-
-    .action-link span {
-      transition: transform 0.3s cubic-bezier(0.5, -0.5, 0.2, 1.5);
-    }
-
-    .action-link:hover,
-    .action-link:focus-visible {
-      background-color: var(--card-accent);
-      color: #fff;
-    }
-
-    .action-link:hover span,
-    .action-link:focus-visible span {
-      transform: translateX(4px);
-    }  
-	  
-	/* ─── MINI CARDS (LESSER IMPORTANCE) ─────────────────────────── */
-    .mini-cards-column {
-      display: flex;
-      flex-direction: column;
-      gap: 20px; 
-    }
-
-    .tool-card.mini {
-      flex-direction: row;
-      align-items: center;
-      padding: 20px 24px;
-      flex: 1; 
-    }
-
-    .tool-card.mini .card-content {
-      flex: 1; 
-    }
-
-    .tool-card.mini .card-name {
-      font-size: 1.15rem;
-    }
-
-    .tool-card.mini .card-desc {
-      font-size: 0.85rem;
-      margin-top: 2px;
-    }
-
-    .tool-card.mini .card-arrow {
-      margin-top: 0; 
-      flex-shrink: 0; 
-    }
-
-    /* ─── IN DEV BADGE ───────────────────────────────────────────── */
-    .dev-badge {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      background-color: var(--ink);
-      color: var(--cream);
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      padding: 4px 10px;
-      border-radius: 99px;
-      z-index: 2;
-      pointer-events: none;
-      animation: badgePulse 2.5s infinite ease-in-out;
-      transition: background-color 1.5s ease, color 1.5s ease;
-    }
-
-    /* ─── "MORE COMING" PLACEHOLDER ──────────────────────────────── */
-    .card-placeholder {
-      border: 2px dashed color-mix(in srgb, var(--ink) 20%, transparent);
-      background: transparent;
-      box-shadow: none;
-      color: color-mix(in srgb, var(--ink) 50%, transparent);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 10px;
-      min-height: 160px;
-      border-radius: var(--radius);
-      padding: 28px;
-      animation: fadeUp .55s ease both; /* Adjusted to let JS handle the delay */
-      transition: border-color 1.5s ease, color 1.5s ease;
-    }
-    .card-placeholder .plus { font-size: 2rem; line-height: 1; }
-    .card-placeholder p { font-size: .85rem; line-height: 1.5; }
 
     /* ─── FOOTER & MASCOT ────────────────────────────────────────── */
     footer {
@@ -671,11 +541,6 @@
       100% { transform: translateY(-5px) scale(1.01) rotate(0deg); }
     }
 
-    @keyframes badgePulse {
-      0%, 100% { transform: scale(1); opacity: 0.85; }
-      50%      { transform: scale(1.05); opacity: 1; }
-    }
-
     @keyframes floatBob {
       0%, 100% { transform: translateY(0); }
       50%      { transform: translateY(-10px); }
@@ -684,6 +549,7 @@
     @keyframes earTwitchLeft {
       0%, 88%, 100% { transform: rotate(0deg); }
       92% { transform: rotate(-10deg); }
+
       96% { transform: rotate(4deg); }
     }
     
@@ -763,14 +629,9 @@
         scroll-behavior: auto !important;
       }
       #dust { animation: none; transform: none !important; }
-      .mascot-wrap, .ear-left, .ear-right, .dev-badge, html[data-theme="night"] .z1, html[data-theme="night"] .z2, html[data-theme="night"] .z3 {
+      .mascot-wrap, .ear-left, .ear-right, html[data-theme="night"] .z1, html[data-theme="night"] .z2, html[data-theme="night"] .z3 {
         animation: none !important; 
       }
-    }
-
-    /* ─── RESPONSIVE ─────────────────────────────────────────────── */
-    @media (max-width: 480px) {
-      .tools-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -782,267 +643,53 @@
   <button id="themeToggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
 
   <header>
-    <div class="llama-badge"><span class="dot"></span> Tool Hub<span class="dot"></span></div>
+    <div class="llama-badge"><span class="dot"></span> Tool Hub <span class="dot"></span></div>
     <h1>Llama<span class="accent">Tools</span></h1>
-    <p class="tagline">A cozy collection of handy tools, growing one llama-step at a time.</p>
+    <p class="tagline">Our cozy herd of tools has migrated! Trot across the digital fence to find your favorite llama tools grazing in their new home.</p>
     
-   <div class="divider">
-	  <svg class="mountain-divider" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg">
-
-		<defs>
-		  <clipPath id="horizon-clip">
-			<rect x="0" y="0" width="320" height="50" />
-		  </clipPath>
+    <div class="divider">
+      <svg class="mountain-divider" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="horizon-clip">
+            <rect x="0" y="0" width="320" height="50" />
+          </clipPath>
           <mask id="moon-mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="0" width="320" height="60">
             <rect x="0" y="0" width="320" height="60" fill="white" />
             <circle class="moon-cutout" cx="160" cy="30" r="10" fill="black" />
           </mask>
-		</defs>
+        </defs>
 
-		<g clip-path="url(#horizon-clip)">
-		  <circle class="celestial-orb" cx="160" cy="30" r="10" mask="url(#moon-mask)" />
-		</g>
+        <g clip-path="url(#horizon-clip)">
+          <circle class="celestial-orb" cx="160" cy="30" r="10" mask="url(#moon-mask)" />
+        </g>
 
-		<g id="cloud-layer-back"></g>
+        <g id="cloud-layer-back"></g>
 
-		<path class="mtn-back" d="M 30 50 L 80 16 L 130 50 L 190 12 L 250 50 Z" />
+        <path class="mtn-back" d="M 30 50 L 80 16 L 130 50 L 190 12 L 250 50 Z" />
 
-		<path class="mtn-front" d="M 50 50 L 105 32 L 150 50 L 210 26 L 275 50 Z" />
+        <path class="mtn-front" d="M 50 50 L 105 32 L 150 50 L 210 26 L 275 50 Z" />
 
-		<g id="cloud-layer-front"></g>
+        <g id="cloud-layer-front"></g>
 
-		<line class="mtn-line" x1="0" y1="50" x2="320" y2="50" stroke-width="2" stroke-linecap="round" />
-	  </svg>
-</div>
+        <line class="mtn-line" x1="0" y1="50" x2="320" y2="50" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </div>
   </header>
 
   <main>
-    <p class="section-label">🦙 In the Pasture</p>
+    <p class="section-label">🔒 Secure Pasture</p>
 
     <div class="tools-grid" id="toolsGrid">
-
-      <a class="tool-card" href="text_version_editor.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #E07A5F;">
-        <div class="card-icon">✏️</div>
+      <a class="tool-card" href="https://develop.flvs.net/collaborate/develop/llamatools/index.html" rel="noopener noreferrer" style="--card-accent: #E07A5F;">
+        <div class="card-icon">🦙</div>
         <div class="card-content">
-          <div class="card-name">Text Version Editor</div>
-          <div class="card-desc">Weave your transcripts into perfectly formatted text versions to keep things accessible for the whole herd.</div>
+          <div class="card-name">LlamaTools (VPN Access)</div>
+          <div class="card-desc">The herd has packed up its saddles and trotted over to a cozy new meadow behind the secure VPN. Saddle up and click here to join them in the new pasture!</div>
         </div>
         <div class="card-arrow">→</div>
       </a>
-
-      <a class="tool-card" href="course_explorer/index.html" target="_blank"  rel="noopener noreferrer" style="--card-accent: #3D9BE9;">
-        <div class="card-icon">🔭</div>
-        <div class="card-content">
-          <div class="card-name">Course Explorer</div>
-          <div class="card-desc">Survey your pasture at a glance to make sure every module is grazing in the right spot.</div>
-        </div>
-        <div class="card-arrow">→</div>
-      </a>
-
-      <a class="tool-card" href="multi_course_explorer.html" target="_blank"  rel="noopener noreferrer" style="--card-accent: #81B29A;">
-        <div class="card-icon">🗺️</div>
-        <div class="card-content">
-          <div class="card-name">Multi-Course Explorer</div>
-          <div class="card-desc">Compare and navigate across multiple courses. Spot patterns in a herd.</div>
-        </div>
-        <div class="card-arrow">→</div>
-      </a>
-		
-	  <a class="tool-card" href="course_colors.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #C882A4;">
-        <div class="card-icon">🎨</div>
-        <div class="card-content">
-          <div class="card-name">Course Colors</div>
-          <div class="card-desc">Weave the perfect visual identity for your courses. Mix and dye vibrant color palettes to make your content stand out like a brightly woven llama blanket.</div>
-        </div>
-        <div class="card-arrow">→</div>
-      </a>
-
-     <!-- Multi-Action Card -->
-      <div class="tool-card" style="--card-accent: #E07A5F;">
-        <div class="card-icon">📄</div>
-        <div class="card-content">
-          <div class="card-name">Content Extractor</div>
-          <div class="card-desc">Chew through your course material and gracefully extract all the content. Select your pasture below.</div>
-        </div>
-        <div class="card-actions">
-          <a href="extract_content.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
-            CB Version <span>→</span>
-          </a>
-          <a href="extract_4_0_content.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
-            4.0 Version <span>→</span>
-          </a>
-        </div>
-      </div>
-		
-	  <a class="tool-card" href="assessment_checker/assessment_checker.html" target="_blank"  rel="noopener noreferrer" style="--card-accent: #FFD166;">
-        <div class="dev-badge">🚧 In Dev</div>
-        <div class="card-icon">✅</div>
-        <div class="card-content">
-          <div class="card-name">Assessment Checker</div>
-          <div class="card-desc">Review and validate assessments quickly. No llama left behind on quality checks.</div>
-        </div>
-        <div class="card-arrow">→</div>
-      </a>
-		
-     
-		
-      <a class="tool-card" href="guided_notes_assist.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #3D9BE9;">
-        <div class="card-icon">📓</div>
-        <div class="card-content">
-          <div class="card-name">Guided Notes Assist</div>
-          <div class="card-desc">Keep your herd of documents orderly by generating tidy file names for your guided notes.</div>
-        </div>
-        <div class="card-arrow">→</div>
-      </a>
-		
-		
-	<!-- Multi-Action Card: Magic IPP Automation -->
-      <div class="tool-card" style="--card-accent: #E07A5F;">
-        <div class="card-icon">🪄</div>
-        <div class="card-content">
-          <div class="card-name">Magic IPP Automation</div>
-          <div class="card-desc">Wave a wand and watch your lesson data automatically organize itself into the pasture—no manual entry required.</div>
-        </div>
-        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1;">
-          <div class="card-actions" style="margin-top: 0;">
-            <a href="ipp_automation.zip" target="_blank" rel="noopener noreferrer" class="action-link-small">
-              Chrome (.zip) <span>→</span>
-            </a>
-            <a href="ipp_how_to.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
-              Setup <span>→</span>
-            </a>
-          </div>
-			<hr />
-          <div class="card-actions" style="margin-top: 0;">
-            <a href="ipp_automation_firefox.xpi" target="_blank" rel="noopener noreferrer" class="action-link-small">
-              Firefox (.xpi) <span>→</span>
-            </a>
-            <a href="ipp_how_to_firefox.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
-              Setup <span>→</span>
-            </a>
-          </div>
-        </div>
-      </div>
-		
-		
-	<!-- Multi-Action Card: Educator Configurator -->
-      <div class="tool-card" style="--card-accent: #81B29A;">
-        <div class="card-icon">⚙️</div>
-        <div class="card-content">
-          <div class="card-name">Educator Configurator</div>
-          <div class="card-desc">Fine-tune your educator environment without getting your wool in a tangle. Keep your settings perfectly adjusted to guide your herd with ease.</div>
-       
-        </div>
-        <div class="card-actions">
-          <a href="educator_configurator.xpi" target="_blank" rel="noopener noreferrer" class="action-link-small">
-            Firefox (.ipx) <span>→</span>
-          </a>
-          <a href="ipp_how_to_firefox.html" target="_blank" rel="noopener noreferrer" class="action-link-small">
-            Setup <span>→</span>
-          </a>
-        </div>
-      </div>
-		
-		
- <div class="mini-cards-column">
-        <a class="tool-card mini" href="extract_objectives.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #81B29A;">
-          <div class="card-content">
-            <div class="card-name">Extract Objectives</div>
-            <div class="card-desc">Pull out all the juicy objectives from a course without breaking a sweat.</div>
-          </div>
-          <div class="card-arrow">→</div>
-        </a>
-
-        <a class="tool-card mini" href="site_mapper.html" target="_blank" rel="noopener noreferrer" style="--card-accent: #FFD166;">
-          <div class="card-content">
-            <div class="card-name">Sitemap Mapper</div>
-            <div class="card-desc">Map json file name to course page number.</div>
-          </div>
-          <div class="card-arrow">→</div>
-        </a>
-      </div>
-
-      <div class="card-placeholder">
-        <span class="plus">＋</span>
-        <p>More tools grazing<br>in the fields — coming soon.</p>
-      </div>
-		
     </div>
   </main>
-
-  <footer>
-    <p class="footer-note">Made with <span class="heart">♥</span> and a sprinkle of llama magic</p>
-
-    <div class="mascot-wrap" tabindex="0" role="button" aria-label="Pet the llama">
-      <div class="mascot-tooltip">Give me a pet!</div>
-      <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" width="160" height="160" aria-label="Llama mascot">
-        <ellipse cx="80" cy="112" rx="38" ry="28" fill="var(--llama-coat)"/>
-        <rect x="66" y="68" width="28" height="46" rx="14" fill="var(--llama-coat)"/>
-        <ellipse cx="80" cy="62" rx="24" ry="22" fill="var(--llama-snout)"/>
-        <ellipse cx="80" cy="74" rx="12" ry="8" fill="var(--llama-snout-hl)"/>
-        
-        <g class="eyes-open">
-          <circle cx="71" cy="58" r="4" fill="var(--llama-eyes)"/>
-          <circle cx="89" cy="58" r="4" fill="var(--llama-eyes)"/>
-          <circle cx="72.5" cy="56.5" r="1.5" fill="#fff"/>
-          <circle cx="90.5" cy="56.5" r="1.5" fill="#fff"/>
-        </g>
-        <g class="eyes-closed">
-          <path d="M68 59 Q71 63 74 59" stroke="var(--llama-eyes)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <path d="M86 59 Q89 63 92 59" stroke="var(--llama-eyes)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        </g>
-        <g class="zzzs">
-          <text x="100" y="45" font-family="var(--font-display)" font-weight="900" font-size="12" fill="var(--sky)" class="z1">Z</text>
-          <text x="115" y="30" font-family="var(--font-display)" font-weight="900" font-size="16" fill="var(--sky)" class="z2">Z</text>
-          <text x="135" y="15" font-family="var(--font-display)" font-weight="900" font-size="20" fill="var(--sky)" class="z3">Z</text>
-        </g>
-
-        <ellipse cx="76" cy="76" rx="2.5" ry="2" fill="var(--llama-nose)"/>
-        <ellipse cx="84" cy="76" rx="2.5" ry="2" fill="var(--llama-nose)"/>
-        
-        <g class="ear-left" transform-origin="62 50">
-          <ellipse cx="62" cy="44" rx="7" ry="12" fill="var(--llama-coat)" transform="rotate(-12 62 44)"/>
-          <ellipse cx="63" cy="44" rx="3.5" ry="7" fill="var(--llama-inner-ear)" transform="rotate(-12 63 44)"/>
-        </g>
-        <g class="ear-right" transform-origin="98 50">
-          <ellipse cx="98" cy="44" rx="7" ry="12" fill="var(--llama-coat)" transform="rotate(12 98 44)"/>
-          <ellipse cx="97" cy="44" rx="3.5" ry="7" fill="var(--llama-inner-ear)" transform="rotate(12 97 44)"/>
-        </g>
-
-       <defs>
-          <g id="front-leg">
-            <rect x="0" y="0" width="14" height="15" fill="var(--llama-legs)"/>
-            <g class="hoof" transform="translate(0 15)">
-               <ellipse cx="4.5" cy="4" rx="2.5" ry="5" fill="var(--llama-legs)" transform="rotate(-5 4.5 4)"/>
-               <ellipse cx="9.5" cy="4" rx="2.5" ry="5" fill="var(--llama-legs)" transform="rotate(5 9.5 4)"/>
-            </g>
-          </g>
-          <g id="back-leg">
-            <rect x="0" y="0" width="14" height="13" fill="var(--llama-legs)"/>
-            <g class="hoof" transform="translate(0 13)">
-               <ellipse cx="4.5" cy="4" rx="2.5" ry="5" fill="var(--llama-legs)" transform="rotate(-5 4.5 4)"/>
-               <ellipse cx="9.5" cy="4" rx="2.5" ry="5" fill="var(--llama-legs)" transform="rotate(5 9.5 4)"/>
-            </g>
-          </g>
-        </defs>
-
-        <use href="#front-leg" x="52" y="130" />
-        <use href="#back-leg" x="70" y="132" />
-        <use href="#back-leg" x="88" y="132" />
-        <use href="#front-leg" x="94" y="130" />
-
-        <ellipse cx="80" cy="41" rx="20" ry="5" fill="var(--llama-blanket)"/>
-        <rect x="66" y="16" width="28" height="26" rx="6" fill="var(--llama-blanket)"/>
-        <rect x="63" y="37" width="34" height="5" rx="2.5" fill="var(--llama-trim)"/>
-        <circle cx="80" cy="24" r="3" fill="var(--llama-trim)"/>
-        <circle cx="72" cy="30" r="2" fill="var(--llama-trim)" opacity=".7"/>
-        <circle cx="88" cy="30" r="2" fill="var(--llama-trim)" opacity=".7"/>
-        <path d="M74 80 Q80 86 86 80" stroke="var(--llama-nose)" stroke-width="2" stroke-linecap="round" fill="none"/>
-        <rect x="63" y="92" width="34" height="10" rx="5" fill="var(--sky)" opacity=".85"/>
-        <circle cx="80" cy="97" r="4" fill="var(--llama-trim)"/>
-      </svg>
-    </div>
-  </footer>
 
   <script>
     // --- 1. Theme Management & Dynamic Sun/Moon (Auto & Manual) ---
@@ -1070,23 +717,19 @@
       const now = new Date();
       const t = now.getHours() + (now.getMinutes() / 60);
 
-      // Check if the night theme is currently applied (either naturally or manually forced)
       const isNightTheme = document.documentElement.getAttribute('data-theme') === 'night';
 
       let theta;
       let isActuallyNightTime = false;
 
       if (t >= 6 && t < 18) {
-        // Day arc (6:00 AM to 5:59 PM)
         theta = ((t - 6) / 12) * Math.PI;
       } else {
-        // Night arc (6:00 PM to 5:59 AM)
         isActuallyNightTime = true;
         const tn = t < 6 ? t + 24 : t;
         theta = ((tn - 18) / 12) * Math.PI;
       }
 
-      // Calculate absolute SVG coordinates
       const newX = 160 + (130 * Math.cos(theta));
       const newY = 60 - (50 * Math.sin(theta));
 
@@ -1096,7 +739,6 @@
       document.documentElement.style.setProperty('--orb-x', `${translateX}px`);
       document.documentElement.style.setProperty('--orb-y', `${translateY}px`);
 
-      // --- Moon Phase Calculation ---
       if (isActuallyNightTime || isNightTheme) {
         const knownNewMoon = 1704974220000; 
         const lunarCycle = 29.53058867 * 24 * 60 * 60 * 1000;
@@ -1191,22 +833,7 @@
       }
     });
 
-    // --- 3. Card Animation Fix & Dynamic Delays ---
-    
-    // Assign dynamic animation delays to all cards
-    function setDynamicCardDelays() {
-      const cards = document.querySelectorAll('.tool-card, .card-placeholder');
-      let currentDelay = 0.30;
-      const delayStep = 0.08;
-      
-      cards.forEach(card => {
-        card.style.animationDelay = `${currentDelay.toFixed(2)}s`;
-        currentDelay += delayStep;
-      });
-    }
-    setDynamicCardDelays();
-
-    // Handle hover/focus resets
+    // --- 3. Card Animation Fix ---
     document.querySelectorAll('.tool-card').forEach(card => {
       card.addEventListener('animationend', (e) => {
         if (e.animationName === 'fadeUp') {
@@ -1287,16 +914,13 @@
         
         const baseY = isFront ? 5 : 0;
         cloud.style.setProperty('--random-y', `${Math.random() * 15 + baseY}px`); 
-        
         cloud.style.setProperty('--random-scale', `${Math.random() * 0.8 + 0.6}`); 
-        
         cloud.style.opacity = Math.random() * 0.5 + 0.5;
 
         const startDelay = Math.random() * 8; 
         cloud.style.animation = `driftAcross ${Math.random() * 20 + 25}s linear ${startDelay}s both`; 
         
         targetLayer.appendChild(cloud);
-        
         cloud.addEventListener('animationend', () => cloud.remove());
       }
 
@@ -1304,7 +928,6 @@
     }
 
     setTimeout(spawnClouds, 1500);
-
   </script>
 
 </body>
